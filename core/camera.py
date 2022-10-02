@@ -23,9 +23,9 @@ class Camera:
         self.projection_matrix = self.get_projection_matrix()
 
     def rotate(self):
-        rel_x, rel_y = pg.mouse.get_rel()
-        self.yaw += rel_x * Camera.SENSITIVITY
-        self.pitch -= rel_y * Camera.SENSITIVITY
+        delta_x, delta_y = pg.mouse.get_rel()
+        self.yaw += delta_x * Camera.SENSITIVITY
+        self.pitch -= delta_y * Camera.SENSITIVITY
         self.pitch = max(-89, min(89, self.pitch))
 
     def update_camera_vectors(self):
@@ -36,7 +36,7 @@ class Camera:
         self.forward.z = glm.sin(yaw) * glm.cos(pitch)
 
         self.forward = glm.normalize(self.forward)
-        self.right = glm.normalize(glm.cross(self.forward, glm.vec3(0, 1, 0)))
+        self.right = glm.normalize(glm.cross(self.forward, glm.vec3(0, 1, 0)))  # default UP is (0, 1, 0)
         self.up = glm.normalize(glm.cross(self.right, self.forward))
 
     def update(self):

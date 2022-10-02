@@ -1,7 +1,7 @@
 import argparse
 
 # Demos
-from demos import demo_01_generic
+from demos import demo_01_cube
 from demos import demo_02_gltf
 
 
@@ -16,7 +16,7 @@ def main():
 
     # Store every demo in a dictionary for easy access
     demos = {
-        'demo_01': demo_01_generic.run,
+        'demo_01': demo_01_cube.run,
         'demo_02': demo_02_gltf.run
     }
 

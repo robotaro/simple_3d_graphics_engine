@@ -7,9 +7,6 @@ import copy
 
 VERTEX_UNIT_SIZE_BYTES = 4
 
-def extract_scenes(gltf_obj: GLTF2) -> dict:
-
-    pass
 
 
 def extract_nodes(gltf_obj: GLTF2) -> dict:
@@ -29,6 +26,15 @@ def extract_nodes(gltf_obj: GLTF2) -> dict:
 
     return nodes
 
+def extract_scenes(gltf_obj: GLTF2) -> dict:
+
+    scenes = dict()
+    for index, scene in enumerate(gltf_obj.scenes):
+        scenes[index] = {"name": scene.name,
+                        "root_node_index": scene.nodes[0]}
+
+    return scenes
+
 
 def extract_materials(gltf_obj: GLTF2) -> dict:
 
@@ -45,6 +51,7 @@ def extract_materials(gltf_obj: GLTF2) -> dict:
                             "pbr_metallic_roughness": material.pbrMetallicRoughness,
                             "extensions": copy.deepcopy(material.extensions)}
     return materials
+
 
 def extract_array_from_buffer(gltf_obj, accessor, output_dtype=np.float32):
 
@@ -95,7 +102,7 @@ def extract_meshes(gltf_obj: GLTF2) -> dict:
     return meshes
 
 
-def load_gltf_file(fpath: str) -> dict:
+def load_gltf(fpath: str) -> dict:
 
     """
     This function reads both .gltf and .glb file formats
@@ -111,14 +118,6 @@ def load_gltf_file(fpath: str) -> dict:
     file_dict['nodes'] = extract_nodes(gltf_obj=gltf_obj)
     file_dict['materials'] = extract_materials(gltf_obj=gltf_obj)
     file_dict['meshes'] = extract_meshes(gltf_obj=gltf_obj)
+    file_dict['scenes'] = extract_scenes(gltf_obj=gltf_obj)
 
     return file_dict
-
-
-if __name__ == "__main__":
-
-    fpath = r"D:\Dropbox\Xande and Jane Sharefolder\3D Sketchfab models\Nara The Desert Dancer (Free download)\nara_the_desert_dancer_free_download.glb"
-
-    gltf_dict = load_gltf_file(fpath=fpath)
-
-    g = 0

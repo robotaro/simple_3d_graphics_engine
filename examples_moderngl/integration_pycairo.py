@@ -88,7 +88,7 @@ class CairoExample(Example):
         ctx.set_source_rgb(0.8, 0.8, 0.8)
         ctx.show_text("Example Text")
         # Copy surface to texture
-        texture = self.ctx.texture((width, height), 4, data=surface.get_data())
+        texture = self.ctx.texture((width, height), 4, data=surface.sort_triangles_by_index())
         texture.swizzle = 'BGRA' # use Cairo channel order (alternatively, the shader could do the swizzle)
         return texture
 

@@ -4,8 +4,11 @@ from utilities import utils_gltf
 def run():
 
     glb_fpath = r"D:\Dropbox\Xande and Jane Sharefolder\3D Sketchfab models\Nara The Desert Dancer (Free download)\nara_the_desert_dancer_free_download.glb"
+    gltf_blueprint = utils_gltf.load_gltf(fpath=glb_fpath)
 
-    gltf_loader = utils_gltf.GLFTLoader()
-    gltf_loader.load(glb_fpath)
-    scenes = gltf_loader.get_scene_dicts()
+    app = Engine()
+    app.main_scene.from_gltf_blueprint(blueprint=gltf_blueprint)
+    app.run()
+
+    g = 0
 
