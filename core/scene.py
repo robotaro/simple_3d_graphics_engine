@@ -37,13 +37,6 @@ class Scene:
         for child_index in node.child_indices:
             self.__update_node(index=child_index, parent_index=index)
 
-    def create_node(self, name="", parent_index=-1) -> int:
-
-
-
-        pass
-
-
     def from_gltf_blueprint(self, blueprint: dict, scene_index=0):
 
         """
@@ -71,15 +64,17 @@ class Scene:
         # Update all nodes starting from the root node
         self.__update_node(index=self.root_node_key)
 
-        # MESHES
+    def update(self):
 
-
-        g = 0
-
-
-
-
+        self.__update_node(index=self.root_node_key)
 
     def render(self):
 
+        #
+
         pass
+
+    def destroy(self):
+
+        for mesh in self.meshes:
+            mesh.destroy()

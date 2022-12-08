@@ -15,3 +15,4 @@ class ShaderProgram:
 
     def destroy(self):
         self.program.release()
+

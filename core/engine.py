@@ -29,6 +29,10 @@ class Engine:
 
         pass
 
+    def update(self):
+
+        self.main_scene.update()
+
     def render(self):
 
         # Clear framebuffer
@@ -51,4 +55,5 @@ class Engine:
         previous_time = time.perf_counter()
         while True:
             self._process_events()
+            self.update()
             self.render()
