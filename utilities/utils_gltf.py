@@ -96,13 +96,13 @@ def extract_meshes(gltf_obj: GLTF2) -> dict:
 
         meshes[mesh_index] = {
             "primitives": primitives,
-            "node_index": 45
+            "node_index": 45  # TODO: Figure out why?
         }
 
     return meshes
 
 
-def load_gltf(fpath: str) -> dict:
+def load_gltf_to_blueprint(fpath: str) -> dict:
 
     """
     This function reads both .gltf and .glb file formats
