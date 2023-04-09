@@ -1,0 +1,15 @@
+{
+    "edge_width": 1.0,
+    "edge_color_up": [1, 1, 1],
+    "edge_color_hover": [1, 1, 1],
+    "edge_color_down": [1, 1, 1],
+    "background_color_up": [0.5, 0.5, 0.5],
+    "background_color_hover": [0.5, 0.5, 0.5],
+    "background_color_down": [0.5, 0.5, 0.5],
+    "padding":{
+        "top": 10,
+        "left": 10,
+        "bottom": 10,
+        "right": 10
+    }
+}
