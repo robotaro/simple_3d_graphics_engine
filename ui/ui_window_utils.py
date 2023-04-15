@@ -3,7 +3,7 @@ import copy
 from typing import List, Union, Tuple
 from dataclasses import dataclass
 from bs4 import BeautifulSoup
-from core import constants as const
+from ui import ui_constants as const
 
 
 @dataclass

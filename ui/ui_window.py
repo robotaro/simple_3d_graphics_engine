@@ -1,5 +1,8 @@
 import os
 import sys
+
+import matplotlib.pyplot as plt
+
 sys.path.insert(0,os.path.dirname(os.path.dirname(__file__)))
 
 import copy
@@ -10,9 +13,10 @@ from bs4 import BeautifulSoup
 import freetype
 from typing import List, Union, Tuple
 
-from ui.ui_window_blueprint import UIWindowBlueprint
+
 import ui.ui_window_utils as ui_utils
-from core import constants as const
+from ui.ui_font import UIFont
+from ui import ui_constants as constants
 
 class UIWindow:
     
@@ -64,28 +68,25 @@ class UIWindow:
         self.widget_properties = np.ndarray((0, UIWindow.NUM_WIDGET_PROPERTIES), dtype=np.float32)  # TODO: Make this int32?
         
         # Font Variables
-        self.font_texture = np.ndarray((0, 0), dtype=np.float32) 
-        self.font_vertices = np.ndarray((0, 0), dtype=np.float32) 
-        self.font_uvs = np.ndarray((0, 0), dtype=np.float32) 
-        self.font_y_offsets = np.ndarray((0, 0), dtype=np.float32) 
-        self.font_x_advances = np.ndarray((0, 0), dtype=np.float32)
+        self.font = UIFont()
     
-    def load(self, xml_fpath: str, window_id: str, theme_json_fpath: str):
+    def load(self, blueprint_xml_fpath: str, window_id: str, theme_json_fpath: str):
         
         # Load UI theme
         with open(theme_json_fpath, 'r') as file:
+
+            # Load theme
             self.theme = json.load(file)
-            face = freetype.Face(self.theme['font']['filepath'])
-            glyphs = self.font_generate_glyphs(freefont_face=face)
-            self.font_texture = self.font_generate_texture(glyths=glyphs)
-            self.font_vertices, self.font_uvs, self.font_y_offsets, self.font_x_advances = self.font_generate_vertices_uvs_offset_advances(glyphs=glyphs)
+
+            # Load font here
+            self.font.load(ttf_fpath=self.theme['font']['filepath'])
 
         # Load UI window blueprint
-        with open(xml_fpath) as file:
+        with open(blueprint_xml_fpath) as file:
             root_soup = BeautifulSoup(file.read(), features="html.parser")
             
-            # Get window with specified ID
-            window_soup = root_soup.find(attrs={'id': window_id})
+            # Find window root node - there should be only one
+            window_soup = root_soup.find("window", recursive=False)
             if window_soup is None:
                 raise ValueError(f"[ERROR] Could not find blueprint for window {window_id}")
             
@@ -96,8 +97,7 @@ class UIWindow:
                                                          widget_index_map=widget_index_map)
             self.initialize_widgets(widgets=widgets, theme=self.theme)
             self.update_widgets()
-            
-        g = 0
+
     
     def initialize_widgets(self, widgets: List[ui_utils.GUIWidgetNode], theme: dict):
         
@@ -109,7 +109,7 @@ class UIWindow:
         for widget in widgets:
             
             # Type
-            self.widget_types[widget.index] = const.WIDGET_TYPE_MAP[widget.type]
+            self.widget_types[widget.index] = constants.WIDGET_TYPE_MAP[widget.type]
             
             # Padding
             self.widget_properties[widget.index, UIWindow.INDEX_PAD_LEFT] = theme[widget.type]['padding_left']
@@ -118,8 +118,8 @@ class UIWindow:
             self.widget_properties[widget.index, UIWindow.INDEX_PAD_BOTTOM] = theme[widget.type]['padding_bottom']
             
             # Target size
-            width = widget.attributes.get(const.WIDGET_WIDTH, const.DEFAULT_WIDGET_SIZE)
-            height = widget.attributes.get(const.WIDGET_HEIGHT, const.DEFAULT_WIDGET_SIZE)
+            width = widget.attributes.get(constants.WIDGET_WIDTH, constants.DEFAULT_WIDGET_SIZE)
+            height = widget.attributes.get(constants.WIDGET_HEIGHT, constants.DEFAULT_WIDGET_SIZE)
             self.widget_properties[widget.index, UIWindow.INDEX_TARGET_WIDTH] = width
             self.widget_properties[widget.index, UIWindow.INDEX_TARGET_HEIGHT] = height
             
@@ -201,7 +201,7 @@ class UIWindow:
                         padding_b: float) -> None:
         
         parent_index = self.widget_connections[widget_index, UIWindow.INDEX_PARENT]
-        parent_width =  self.widget_properties[parent_index, dimension_index]
+        parent_width = self.widget_properties[parent_index, dimension_index]
         parent_internal_fixed_width = self.widget_properties[parent_index, dimension_fixed_sum_index]
         parent_internal_variable_size = self.widget_properties[parent_index, dimension_variable_sum_index]
         parent_available_size = parent_width - (padding_a + padding_b) - parent_internal_fixed_width
@@ -215,102 +215,7 @@ class UIWindow:
     def set_widget_position(self) -> None:
         pass
       
-    def font_generate_glyphs(self, freefont_face: freetype.Face) -> dict:
 
-        glyphs = dict()
-        for unicode_char in string.printable:
-            char_int_value = ord(unicode_char)
-            freefont_face.load_char(unicode_char)
-            glyphs[unicode_char] = {
-                "unicode_char": unicode_char,
-                "sheet_row": char_int_value // const. FONT_SHEET_COLS,
-                "sheet_col": char_int_value % const. FONT_SHEET_COLS,
-                "width": int(freefont_face.glyph.bitmap.width),
-                "height": int(freefont_face.glyph.bitmap.rows),
-                "buffer": np.array(freefont_face.glyph.bitmap.buffer, dtype=np.uint8),
-                "offset_hor_bearing_x": freefont_face.glyph.metrics.horiBearingX // const. FONT_CHAR_SIZE,
-                "offset_hor_bearing_y": freefont_face.glyph.metrics.horiBearingY // const. FONT_CHAR_SIZE,
-                "offset_hor_advance": freefont_face.glyph.metrics.horiAdvance // const. FONT_CHAR_SIZE,
-                "offset_ver_bearing_x": freefont_face.glyph.metrics.vertBearingX // const. FONT_CHAR_SIZE,
-                "offset_ver_bearing_y": freefont_face.glyph.metrics.vertBearingY // const. FONT_CHAR_SIZE,
-                "offset_ver_advance": freefont_face.glyph.metrics.vertAdvance // const. FONT_CHAR_SIZE
-                }
-        
-        return glyphs
-    
-    def font_generate_texture(self, glyths: dict) -> np.ndarray:
-        
-        """
-        This function generates a "sprite sheet" of the function as an image (texture)
-
-        Returns
-        -------
-        _type_
-            _description_
-        """
-        
-        texture_size_rc = (const. FONT_TEXTURE_HEIGHT, const. FONT_TEXTURE_WIDTH)
-        font_texture = np.zeros(texture_size_rc, dtype=np.uint8)
-
-        for _, glyth in glyths.items():
-
-            x0 = glyth['sheet_col'] * const. FONT_SHEET_CELL_WIDTH
-            x1 = x0 + glyth['width']
-            y0 = glyth['sheet_row'] * const. FONT_SHEET_CELL_HEIGHT
-            y1 = y0 + glyth['height']
-
-            glyph_size_pixels = (glyth['height'], glyth['width'])
-            font_texture[y0:y1, x0:x1] = np.reshape(glyth['buffer'], glyph_size_pixels)
-            
-        return font_texture
-
-    def font_generate_vertices_uvs_offset_advances(sel, glyphs: dict):
-        
-        # Allocate memory for the output vertices
-        vertices = np.zeros((const. FONT_NUM_GLYPHS, const. FONT_NUM_VERTICES_PER_CHAR), dtype=np.float32)
-        uvs = np.zeros((const. FONT_NUM_GLYPHS, const. FONT_NUM_VERTICES_PER_CHAR), dtype=np.float32)
-        y_offsets = np.zeros((const. FONT_NUM_GLYPHS,), dtype=np.float32)
-        x_advances = np.zeros((const. FONT_NUM_GLYPHS,), dtype=np.float32)
-
-        for char in string.printable:
-
-            current_glyph = glyphs[char]
-            char_decimal = ord(char)
-
-            char_cell_row = char_decimal // const. FONT_SHEET_COLS
-            char_cell_col = char_decimal % const. FONT_SHEET_COLS
-
-            # TODO: Make creating the rectangle vertices a function on its own! Avoid code repetition!
-            x_min = 0
-            x_max = current_glyph['width']
-            y_min = -(current_glyph['offset_hor_bearing_y'] // 2)
-            y_max = y_min + current_glyph['height']
-
-            a_x, a_y = x_min, y_max
-            b_x, b_y = x_max, y_max
-            c_x, c_y = x_min, y_min
-            d_x, d_y = x_max, y_min
-
-            vertices[char_decimal, :] = (c_x, c_y, b_x, b_y, a_x, a_y, 
-                                         c_x, c_y, d_x, d_y, b_x, b_y)
-
-            u_min = (char_cell_col * const. FONT_SHEET_CELL_WIDTH) / const. FONT_TEXTURE_WIDTH
-            u_max = (u_min + current_glyph['width']) / const. FONT_TEXTURE_WIDTH
-            v_min = (char_cell_row * const. FONT_SHEET_CELL_HEIGHT) / const. FONT_TEXTURE_HEIGHT
-            v_max = (v_min + current_glyph['height']) / const. FONT_TEXTURE_HEIGHT
-
-            a_x, a_y = u_min, v_max
-            b_x, b_y = u_max, v_max
-            c_x, c_y = u_min, v_min
-            d_x, d_y = u_max, v_min
-
-            uvs[char_decimal, :] = (c_x, c_y, b_x, b_y, a_x, a_y, 
-                                    c_x, c_y, d_x, d_y, b_x, b_y)
-
-            y_offsets[char_decimal] = current_glyph['offset_hor_bearing_y']
-            x_advances[char_decimal] = current_glyph['width']
-
-        return vertices, uvs, y_offsets, x_advances
 
 # ==============================================================
 #                         DEBUG
@@ -319,7 +224,7 @@ class UIWindow:
 def main():
     window = UIWindow()
     window.load(
-        xml_fpath="D:\\git_repositories\\alexandrepv\\gui_framework\\data\\blueprints\\gui_blueprint_2.xml",
+        blueprint_xml_fpath="D:\\git_repositories\\alexandrepv\\gui_framework\\data\\blueprints\\gui_blueprint_2.xml",
         window_id="main_window",
         theme_json_fpath="D:\\git_repositories\\alexandrepv\\gui_framework\\data\\themes\\default_theme.json"
     )

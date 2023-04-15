@@ -92,7 +92,7 @@ class WindowGLFW:
     def mouse_button_callback(self, glfw_window, button, action, mods):
         
         for button in constants.MOUSE_BUTTONS:
-            # NOTE: Button numbers already match the GLFW numbers in the costants
+            # NOTE: Button numbers already match the GLFW numbers in the constants
             if action == glfw.PRESS:
                 self.mouse_state[button] = constants.BUTTON_PRESSED
             if action == glfw.RELEASE:
@@ -127,7 +127,6 @@ class WindowGLFW:
         self.mouse_state[constants.MOUSE_POSITION_LAST_FRAME] = self.mouse_state[constants.MOUSE_POSITION]
         self.mouse_state[constants.MOUSE_SCROLL_POSITION_LAST_FRAME] = self.mouse_state[constants.MOUSE_SCROLL_POSITION]
 
-    
     # ========================================================================
     #                             Main Functions
     # ========================================================================
