@@ -1,4 +1,4 @@
-from ui.ui_window import UIWindow
+from ui.ui_window_dod import UIWindow
 
 if __name__ == "__main__":
 
