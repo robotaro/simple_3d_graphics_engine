@@ -1,62 +1,131 @@
 import numpy as np
+import ui.ui_utils as utils
 
+class UIWidget:
 
-class GUIWidget:
+    _widget_type = 'undefined'
 
-    def __init__(self, width, height):
+    def __init__(self,
+                 widget_id: str,
+                 width_str: str,
+                 height_str: str,
+                 level=0):
 
         # Initialize widget properties
-        self.width = width
-        self.height = height
-        self.parent = None  # Parent widget, initially set to None
+        self._id = widget_id
+        self.level = level
+        self.width_pixels, self.width_ratio = utils.string2value(input_value=width_str)
+        self.height_pixels, self.height_ratio = utils.string2value(input_value=height_str)
+        self.x = 0.0
+        self.y = 0.0
 
-    def set_width(self, width, parent_width=None):
+        # Topology
+        self.parent = None
+        self.children = []
 
-        # Set the width of the widget
-        if isinstance(width, str):
-            # If width is a string, assume it's a percentage and calculate the width accordingly
-            if parent_width is None:
-                raise ValueError("Parent width is required for percentage-based width")
-            percentage = float(width.rstrip('%')) / 100
-            self.width = int(parent_width * percentage)
-        else:
-            # If width is an integer, use it as the fixed width
-            self.width = width
-
-    def set_height(self, height, parent_height=None):
-        # Set the height of the widget
-        if isinstance(height, str):
-            # If height is a string, assume it's a percentage and calculate the height accordingly
-            if parent_height is None:
-                raise ValueError("Parent height is required for percentage-based height")
-            percentage = float(height.rstrip('%')) / 100
-            self.height = int(parent_height * percentage)
-        else:
-            # If height is an integer, use it as the fixed height
-            self.height = height
+    def add_child_widget(self, widget):
+        # Add child widget to the list of widgets
+        widget.parent = self
+        self.children.append(widget)
 
     def draw_text(self, text: str, x: float, y: float):
         pass
 
     def draw(self, offset_x=0, offset_y=0) -> None:
-        # Render the widget
-        # Use ModernGL or other OpenGL techniques to render the widget
         pass
 
-    def update_size(self):
+    def update_dimensions(self):
+        for child_widget in self.children:
+            child_widget.update_dimensions()
+
+
+# =======================================================================================
+#                                   Window
+# =======================================================================================
+
+
+class UIWindow(UIWidget):
+
+    _widget_type = 'window'
+
+    def __init__(self, widget_id: str, width_str: str, height_str: str):
+        super().__init__(widget_id=widget_id, width_str=width_str, height_str=height_str)
+        self.title = ''
+
+    def add_child_widget(self, widget):
+        # TODO: Make UIWindow a UIWidget?
+        widget.parent = self
+        self.children.append(widget)
+
+
+    def draw(self):
+        # Render the GUI window and all widgets
+        # Use ModernGL or other OpenGL techniques to render the window and widgets
         pass
 
+# =======================================================================================
+#                                      Column
+# =======================================================================================
 
-class GUIRow(GUIWidget):
-    def __init__(self, width, height, spacing):
+class UIColumn(UIWidget):
+
+    _widget_type = 'column'
+
+    def __init__(self, widget_id: str, width_str: str, height_str: str, spacing: float, level=0):
         # Initialize row properties
-        super().__init__(width, height)
+        super().__init__(widget_id=widget_id,
+                         width_str=width_str,
+                         height_str=height_str,
+                         level=level)
+        self.spacing = spacing
+
+    def draw(self):
+        # Render the row and all child widgets
+        # Use ModernGL or other OpenGL techniques to render the row and its child widgets
+        pass
+
+    def update_dimensions(self):
+        """
+        :return:
+        """
+
+        # If width is fixed no further processing is required
+        if self.width_ratio is None:
+            for child_widget in self.children:
+                child_widget.update_dimensions()
+            return
+
+        if self.parent is None:
+            print('Impossible case?')
+            parent_width = self.parent.width_pixels
+            parent_height = self.parent.height_pixels
+
+        # Update width
+        num_children = len(self.children)
+        self.width_pixels = self.width_ratio * self.parent.width_pixels
+        total_width = self.width_pixels - (self.spacing * (num_children - 1))
+        widget_width = total_width / num_children
+
+        for child_widget in self.children:
+            child_widget.update_dimensions()
+
+
+# =======================================================================================
+#                                      Row
+# =======================================================================================
+
+class UIRow(UIWidget):
+
+    _widget_type = 'row'
+
+    def __init__(self, widget_id: str, width_str: str, height_str: str, spacing: float, level=0):
+        # Initialize row properties
+        super().__init__(widget_id=widget_id,
+                         width_str=width_str,
+                         height_str=height_str,
+                         level=level)
         self.spacing = spacing
         self.widgets = []  # List to store child widgets
-
-    def add_widget(self, widget):
-        # Add child widget to the list of widgets
-        self.widgets.append(widget)
 
     def set_width(self, width):
         # Set the width of the row and update the widths of child widgets
@@ -72,13 +141,20 @@ class GUIRow(GUIWidget):
         # Use ModernGL or other OpenGL techniques to render the row and its child widgets
         pass
 
-    # Other methods for handling events, updating state, etc.
+# =======================================================================================
+#                                   Button
+# =======================================================================================
 
+class UIButton(UIWidget):
 
-class GUIButton(GUIWidget):
-    def __init__(self, width, height, text):
+    _widget_type = 'button'
+
+    def __init__(self, widget_id: str, width_str: str, height_str: str, text: str, level=0):
         # Initialize button properties
-        super().__init__(width, height)
+        super().__init__(widget_id=widget_id,
+                         width_str=width_str,
+                         height_str=height_str,
+                         level=level)
         self.text = text
 
     def draw(self, offset_x=0, offset_y=0) -> None:
@@ -90,5 +166,3 @@ class GUIButton(GUIWidget):
         # Draw button text
 
         pass
-
-    # Other methods for handling events, updating state, etc.

@@ -16,7 +16,7 @@ class UIFont:
         self.font_y_offsets = np.ndarray((0, 0), dtype=np.float32)
         self.font_x_advances = np.ndarray((0, 0), dtype=np.float32)
 
-    def load(self, ttf_fpath) -> bool:
+    def load(self, ttf_fpath, debug=False) -> bool:
 
         glyphs = self.generate_glyphs(ttf_fpath=ttf_fpath)
         self.font_texture = self.font_generate_texture(glyths=glyphs)
@@ -24,8 +24,9 @@ class UIFont:
         (self.font_vertices, self.font_uvs, self.font_y_offsets, self.font_x_advances) = output
 
         # [ DEBUG ]
-        plt.imshow(self.font_texture)
-        plt.show()
+        if debug:
+            plt.imshow(self.font_texture)
+            plt.show()
         return True
 
     def generate_glyphs(self, ttf_fpath: str) -> dict:
@@ -61,14 +62,10 @@ class UIFont:
         return glyphs
 
     def font_generate_texture(self, glyths: dict) -> np.ndarray:
-
         """
         This function generates a "sprite sheet" of the function as an image (texture)
-
-        Returns
-        -------
-        _type_
-            _description_
+        :param glyths: Dictionasry of glyphs created by
+        :return:
         """
 
         texture_size_rc = (constants.FONT_TEXTURE_HEIGHT, constants.FONT_TEXTURE_WIDTH)

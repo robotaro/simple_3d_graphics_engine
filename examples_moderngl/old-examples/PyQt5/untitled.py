@@ -57,7 +57,7 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
         self.vao = self.ctx.vertex_array(prog, content, ibo)
 
     def paintGL(self):
-        self.ctx.viewport = (0, 0, self.width(), self.height())
+        self.ctx.viewport = (0, 0, self.width_pixels(), self.height_pixels())
         self.ctx.clear(0.9, 0.9, 0.9)
         self.vao.render()
         self.ctx.finish()

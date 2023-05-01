@@ -34,7 +34,7 @@ class DrawCanvas(glcanvas.GLCanvas):
         self.size = self.GetClientSize()
         self.SetCurrent(self.glcanvas)
         if not self.ctx is None:
-            self.ctx.set_viewport(0, 0, self.Size.width, self.Size.height)
+            self.ctx.set_viewport(0, 0, self.Size.width_pixels, self.Size.height_pixels)
 
     def InitGL(self):
         # Initilize the skia context with the moderngl context
@@ -60,7 +60,7 @@ class DrawCanvas(glcanvas.GLCanvas):
         self.OnDraw()
 
     def OnDraw(self):
-        self.SetContextViewport(0, 0, self.Size.width, self.Size.height)
+        self.SetContextViewport(0, 0, self.Size.width_pixels, self.Size.height_pixels)
         self.ctx.clear(255.0, 255.0, 255.0, 0.0)
         self.DrawContext()
         self.SwapBuffers()

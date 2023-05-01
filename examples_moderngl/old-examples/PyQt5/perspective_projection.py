@@ -59,7 +59,7 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
         self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, ['in_vert', 'in_color'])
 
     def paintGL(self):
-        width, height = self.width(), self.height()
+        width, height = self.width_pixels(), self.height_pixels()
         self.ctx.viewport = (0, 0, width, height)
         self.ctx.clear(0.9, 0.9, 0.9)
         self.ctx.enable(ModernGL.DEPTH_TEST)

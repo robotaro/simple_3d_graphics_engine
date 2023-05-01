@@ -56,6 +56,6 @@ tex.use()
 
 vao = ctx.simple_vertex_array(prog, vbo, 'in_vert', 'in_text')
 
-while wnd.update():
+while wnd.update_dimensions():
     ctx.clear(1.0, 1.0, 1.0, 1.0)
     vao.render()

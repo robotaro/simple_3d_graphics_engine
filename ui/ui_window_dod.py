@@ -89,7 +89,6 @@ class UIWindowDOD:
             self.initialize_widgets(widgets=widgets, theme=self.theme)
             self.update_widgets()
 
-    
     def initialize_widgets(self, widgets: List[ui_utils.GUIWidgetNode], theme: dict):
         
         self.widget_types = np.zeros((len(widgets), ), dtype=np.int32)

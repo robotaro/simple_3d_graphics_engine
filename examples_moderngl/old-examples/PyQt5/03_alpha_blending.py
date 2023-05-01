@@ -62,14 +62,14 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
         self.timer.restart()
 
     def paintGL(self):
-        self.ctx.viewport = (0, 0, self.width(), self.height())
+        self.ctx.viewport = (0, 0, self.width_pixels(), self.height_pixels())
         self.ctx.clear(0.9, 0.9, 0.9)
-        self.scale.value = (self.height() / self.width() * 0.75, 0.75)
+        self.scale.value = (self.height_pixels() / self.width_pixels() * 0.75, 0.75)
         self.rotation.value = self.timer.elapsed() / 1000
         self.ctx.enable(ModernGL.BLEND)
         self.vao.render(instances=10)
         self.ctx.finish()
-        self.update()
+        self.update_dimensions()
 
 
 app = QtWidgets.QApplication([])

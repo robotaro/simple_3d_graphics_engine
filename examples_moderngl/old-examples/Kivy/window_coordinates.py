@@ -56,11 +56,11 @@ class CustomWidget(Widget):
             Callback(self.draw)
 
     def draw(self, *args):
-        self.width, self.height = Window.size
-        self.ctx.viewport = (0, 0, self.width, self.height)
+        self.width_pixels, self.height_pixels = Window.size
+        self.ctx.viewport = (0, 0, self.width_pixels, self.height_pixels)
         self.ctx.clear(0.9, 0.9, 0.9)
         self.ctx.enable(ModernGL.BLEND)
-        self.window_size.value = (self.width, self.height)
+        self.window_size.value = (self.width_pixels, self.height_pixels)
         self.vao.render()
 
     def ask_update(self, *args):
