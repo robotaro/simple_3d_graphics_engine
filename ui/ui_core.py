@@ -1,9 +1,16 @@
 import json
 from bs4 import BeautifulSoup
+import warnings
+from bs4 import GuessedAtParserWarning
+warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
 
 from ui.ui_font import UIFont
-from ui.ui_widgets import UIWindow, UIWidget, UIColumn, UIButton, UIRow
-import ui.ui_utils as utils
+from ui.widgets.ui_widget import UIWidget
+from ui.widgets.ui_window import UIWindow
+from ui.widgets.ui_row import UIRow
+from ui.widgets.ui_column import UIColumn
+from ui.widgets.ui_button import UIButton
+
 import ui.ui_constants as constants
 
 class UICore:
@@ -14,7 +21,7 @@ class UICore:
         self.font = UIFont()
 
     def load(self, blueprint_xml_fpath: str, theme_json_fpath: str) -> None:
-
+        
         """
         Loads current UI described in the ui blueprint
         :param blueprint_xml_fpath:
@@ -32,14 +39,14 @@ class UICore:
 
         # Load UI window blueprint
         with open(blueprint_xml_fpath) as file:
-            root_soup = BeautifulSoup(file.read(), features="html.parser")
+            root_soup = BeautifulSoup(file.read(), features="lxml")
 
             # Find window root node - there should be only one
-            ui_soup = root_soup.find("ui", recursive=False)
+            ui_soup = root_soup.find("ui")
             if ui_soup is None:
                 raise ValueError(f"[ERROR] Could not find UI root '<ui>'")
 
-            for window_soup in ui_soup.find_all("window"):
+            for window_soup in root_soup.find_all("window"):
                 window_widget = UIWindow(
                     widget_id=window_soup.attrs.get('id', 'no_id'),
                     width_str=window_soup.attrs.get('height', '100%'),
@@ -122,12 +129,9 @@ class UICore:
 
         def recursive_print(widget: UIWidget):
             spaces = ' ' * (widget.level * 2)
-            print(f'{spaces}> {widget._widget_type} : {widget._id}')
+            print(f'{spaces}> {widget._widget_type} : {widget._id} ({widget.width_pixels}, {widget.height_pixels})')
             for child_widget in widget.children:
                 recursive_print(child_widget)
 
         for window in self.windows:
             recursive_print(window)
-
-
-

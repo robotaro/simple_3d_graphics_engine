@@ -17,4 +17,5 @@ matplotlib==3.6.2
 
 # UI
 beautifulsoup4==4.12.2
+lxml==4.9.2
 freetype-py==2.3.0
