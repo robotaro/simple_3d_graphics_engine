@@ -34,5 +34,17 @@ class UIWidget:
         pass
 
     def update_dimensions(self):
+        """
+        This should be called at the end of each overwritten update_dimensions
+        :return:
+        """
+        for child_widget in self.children:
+            child_widget.update_dimensions()
+
+    def update_position(self):
+        """
+        This should be called at the end of each overwritten update_position
+        :return:
+        """
         for child_widget in self.children:
             child_widget.update_dimensions()

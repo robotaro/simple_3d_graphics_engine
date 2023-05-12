@@ -57,7 +57,6 @@ class UICore:
 
     def build_widget_tree(self, parent_soup: BeautifulSoup, parent_widget: UIWidget, level=0):
 
-        # Increment level for all children
         level += 1
 
         for child_soup in parent_soup.findChildren(recursive=False):
@@ -113,8 +112,9 @@ class UICore:
         for window in self.windows:
             window.update_dimensions()
 
-    def update_positions(self):
-        pass
+    def update_position(self):
+        for window in self.windows:
+            window.update_positions()
 
     # =======================================================
     #                       DEBUG

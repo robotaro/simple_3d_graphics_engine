@@ -45,3 +45,7 @@ class UIColumn(UIWidget):
         for child_widget in self.children:
             child_widget.update_dimensions()
 
+    def update_position(self):
+
+        pass
+

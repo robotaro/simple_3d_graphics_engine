@@ -9,10 +9,15 @@ class UIWindow(UIWidget):
         self.title = ''
 
     def add_child_widget(self, widget):
-        # TODO: Make UIWindow a UIWidget?
         widget.parent = self
         self.children.append(widget)
 
+    def update_dimensions(self):
+        super().update_dimensions()
+        pass
+
+    def update_positions(self):
+        pass
 
     def draw(self):
         # Render the GUI window and all widgets
