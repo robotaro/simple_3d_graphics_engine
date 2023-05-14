@@ -12,10 +12,6 @@ class UIWindow(UIWidget):
         widget.parent = self
         self.children.append(widget)
 
-    def update_dimensions(self):
-        super().update_dimensions()
-        pass
-
     def update_positions(self):
         pass
 

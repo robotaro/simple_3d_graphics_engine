@@ -116,6 +116,21 @@ class UICore:
         for window in self.windows:
             window.update_positions()
 
+    def draw(self):
+        """
+        Generate all render commands and add them to the drawlist. The drawlist will
+        group them according to thei scissor requirements.
+
+        IDEA: Maybe create a dicitonary with scissors as tuples
+
+         - render commandas are tuples (fast to generate)
+         
+
+        :return:
+        """
+        pass
+
+
     # =======================================================
     #                       DEBUG
     # =======================================================

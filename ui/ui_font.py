@@ -18,7 +18,7 @@ class UIFont:
 
     def load(self, ttf_fpath, debug=False) -> bool:
 
-        glyphs = self.generate_glyphs(ttf_fpath=ttf_fpath)
+        glyphs = self.generate_glyphs(font_ttf_fpath=ttf_fpath)
         self.font_texture = self.font_generate_texture(glyths=glyphs)
         output = self.font_generate_vertices_uvs_offset_advances(glyphs=glyphs)
         (self.font_vertices, self.font_uvs, self.font_y_offsets, self.font_x_advances) = output
@@ -29,14 +29,14 @@ class UIFont:
             plt.show()
         return True
 
-    def generate_glyphs(self, ttf_fpath: str) -> dict:
+    def generate_glyphs(self, font_ttf_fpath: str) -> dict:
 
         # Check if file exists
-        if not os.path.isfile(ttf_fpath):
-            raise FileNotFoundError(f"[ERROR] Font file '{ttf_fpath}' not found")
+        if not os.path.isfile(font_ttf_fpath):
+            raise FileNotFoundError(f"[ERROR] Font file '{font_ttf_fpath}' not found")
 
         # Load font and set initial size
-        face = freetype.Face(ttf_fpath)
+        face = freetype.Face(font_ttf_fpath)
         face.set_char_size(constants.FONT_CHAR_SIZE ** 2)
 
         # Generate glyp look-up dictionary

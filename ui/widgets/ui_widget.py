@@ -35,9 +35,24 @@ class UIWidget:
 
     def update_dimensions(self):
         """
-        This should be called at the end of each overwritten update_dimensions
         :return:
         """
+
+        # WIDTH
+        if self.width_ratio is None:
+            for child_widget in self.children:
+                child_widget.update_dimensions()
+        else:
+            self.width_pixels = self.width_ratio * self.parent.width_pixels
+
+        # HEIGHT
+        if self.height_ratio is None:
+            for child_widget in self.children:
+                child_widget.update_dimensions()
+        else:
+            self.height_pixels = self.height_ratio * self.parent.height_pixels
+
+
         for child_widget in self.children:
             child_widget.update_dimensions()
 
