@@ -9,6 +9,7 @@ class UIColumn(UIWidget):
         super().__init__(widget_id=widget_id,
                          width_str=width_str,
                          height_str=height_str,
+                         spacing_y=spacing,
                          level=level)
         self.spacing = spacing
 
