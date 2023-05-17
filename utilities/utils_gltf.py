@@ -1,12 +1,10 @@
 import os
 from pygltflib import GLTF2, BufferFormat
 import struct
-import glm
 import numpy as np
 import copy
 
 VERTEX_UNIT_SIZE_BYTES = 4
-
 
 
 def extract_nodes(gltf_obj: GLTF2) -> dict:
@@ -31,7 +29,7 @@ def extract_scenes(gltf_obj: GLTF2) -> dict:
     scenes = dict()
     for index, scene in enumerate(gltf_obj.scenes):
         scenes[index] = {"name": scene.name,
-                        "root_node_index": scene.nodes[0]}
+                         "root_node_index": scene.nodes[0]}
 
     return scenes
 
@@ -112,7 +110,7 @@ def load_gltf_to_blueprint(fpath: str) -> dict:
     try:
         gltf_obj = GLTF2().load(fpath)
     except:
-        raise Exception("[ERROR] Failed to load '{fpath}'")
+        raise Exception(f"[ERROR] Failed to load '{fpath}'")
 
     file_dict = dict()
     file_dict['nodes'] = extract_nodes(gltf_obj=gltf_obj)

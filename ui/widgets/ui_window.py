@@ -4,9 +4,17 @@ class UIWindow(UIWidget):
 
     _widget_type = 'window'
 
-    def __init__(self, widget_id: str, width_str: str, height_str: str):
+    def __init__(self,
+                 widget_id: str,
+                 width_str: str,
+                 height_str: str,
+                 title='No Title',
+                 x=0,
+                 y=0):
         super().__init__(widget_id=widget_id, width_str=width_str, height_str=height_str)
-        self.title = ''
+        self.x = x
+        self.y = y
+        self.title = title
 
     def add_child_widget(self, widget):
         widget.parent = self
@@ -16,6 +24,5 @@ class UIWindow(UIWidget):
         pass
 
     def draw(self):
-        # Render the GUI window and all widgets
-        # Use ModernGL or other OpenGL techniques to render the window and widgets
-        pass
+
+        super().draw()

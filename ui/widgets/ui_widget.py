@@ -5,7 +5,7 @@ import numpy as np
 
 class UIWidget:
 
-    _widget_type = 'undefined'
+    _widget_type = 'base_widget'
 
     def __init__(self,
                  widget_id: str,
@@ -41,8 +41,9 @@ class UIWidget:
     def draw_text(self, text: str, x: float, y: float):
         pass
 
-    def draw(self, offset_x=0, offset_y=0) -> None:
-        pass
+    def draw(self) -> None:
+        for child in self.children:
+            child.draw()
 
     def get_children_fixed_width_sum(self) -> int:
         return sum([child.width_pixels for child in self.children if child.width_ratio is None])
@@ -51,10 +52,6 @@ class UIWidget:
         return sum([child.height_pixels for child in self.children if child.height_ratio is None])
 
     def update_dimensions(self):
-        """
-        :return:
-        """
-
         if self.width_ratio is not None:
             parent_spacing_sum = max(2, len(self.children) + 1) * self.parent.spacing_x
             parent_children_width_sum = self.parent.get_children_fixed_width_sum()

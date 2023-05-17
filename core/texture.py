@@ -4,7 +4,7 @@ import moderngl as mgl
 
 class Texture:
     def __init__(self, context):
-        self.ctx = context
+        self.context = context
         self.textures = {}
         self.textures[0] = self.get_texture(path='textures/img.png')
         self.textures[1] = self.get_texture(path='textures/img_1.png')
@@ -26,7 +26,7 @@ class Texture:
             textures.append(texture)
 
         size = textures[0].get_size()
-        texture_cube = self.ctx.texture_cube(size=size, components=3, data=None)
+        texture_cube = self.context.texture_cube(size=size, components=3, data=None)
 
         for i in range(6):
             texture_data = pg.image.tostring(textures[i], 'RGB')
@@ -37,8 +37,8 @@ class Texture:
     def get_texture(self, path):
         texture = pg.image.load(path).convert()
         texture = pg.transform.flip(texture, flip_x=False, flip_y=True)
-        texture = self.ctx.texture(size=texture.get_size(), components=3,
-                                   data=pg.image.tostring(texture, 'RGB'))
+        texture = self.context.texture(size=texture.get_size(), components=3,
+                                       data=pg.image.tostring(texture, 'RGB'))
         # mipmaps
         texture.filter = (mgl.LINEAR_MIPMAP_LINEAR, mgl.LINEAR)
         texture.build_mipmaps()

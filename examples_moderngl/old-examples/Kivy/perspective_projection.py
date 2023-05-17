@@ -53,16 +53,16 @@ class CustomWidget(Widget):
                 grid += struct.pack('6f', -16.0, i - 16.0, 0.0, 0.0, 0.0, 0.0)
                 grid += struct.pack('6f', 16.0, i - 16.0, 0.0, 0.0, 0.0, 0.0)
 
-            self.vbo = self.ctx.buffer(grid)
-            self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, ['in_vert', 'in_color'])
+            self.vbo = self.context.buffer(grid)
+            self.vao = self.context.simple_vertex_array(self.prog, self.vbo, ['in_vert', 'in_color'])
 
             Callback(self.draw)
 
     def draw(self, *args):
         width, height = Window.size
-        self.ctx.viewport = (0, 0, width, height)
-        self.ctx.clear(0.9, 0.9, 0.9)
-        self.ctx.enable(ModernGL.DEPTH_TEST)
+        self.context.viewport = (0, 0, width, height)
+        self.context.clear(0.9, 0.9, 0.9)
+        self.context.enable(ModernGL.DEPTH_TEST)
 
         proj = Matrix44.perspective_projection(45.0, width / height, 0.1, 1000.0)
         lookat = Matrix44.look_at(

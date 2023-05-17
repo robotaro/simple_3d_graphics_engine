@@ -36,7 +36,7 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
             '''),
         ])
 
-        vbo = self.ctx.buffer(struct.pack(
+        vbo = self.context.buffer(struct.pack(
             '8f',
             -0.5, -0.5,
             -0.5, 0.5,
@@ -44,7 +44,7 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
             0.5, 0.5,
         ))
 
-        ibo = self.ctx.buffer(struct.pack(
+        ibo = self.context.buffer(struct.pack(
             '6i',
             0, 1, 2,    # triangle 1
             1, 2, 3,    # triangle 2
@@ -57,10 +57,10 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
         self.vao = self.ctx.vertex_array(prog, content, ibo)
 
     def paintGL(self):
-        self.ctx.viewport = (0, 0, self.width_pixels(), self.height_pixels())
-        self.ctx.clear(0.9, 0.9, 0.9)
+        self.context.viewport = (0, 0, self.width_pixels(), self.height_pixels())
+        self.context.clear(0.9, 0.9, 0.9)
         self.vao.render()
-        self.ctx.finish()
+        self.context.finish()
 
 
 app = QtWidgets.QApplication([])

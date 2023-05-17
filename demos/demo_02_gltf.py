@@ -1,9 +1,11 @@
 from core.engine import Engine
 from utilities import utils_gltf
+import os
 
 def main():
 
-    glb_fpath = r"D:\Dropbox\Xande and Jane Sharefolder\3D Sketchfab models\Nara The Desert Dancer (Free download)\nara_the_desert_dancer_free_download.glb"
+    path_parts = ["data", "models", "Fox7cc12qk5uw399hqw.gltf"]
+    glb_fpath = os.path.join(*path_parts)
     gltf_blueprint = utils_gltf.load_gltf_to_blueprint(fpath=glb_fpath)
 
     app = Engine()

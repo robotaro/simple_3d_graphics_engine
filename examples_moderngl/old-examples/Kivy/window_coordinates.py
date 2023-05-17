@@ -44,22 +44,22 @@ class CustomWidget(Widget):
 
             self.window_size = self.prog.uniforms['WindowSize']
 
-            self.vbo = self.ctx.buffer(struct.pack(
+            self.vbo = self.context.buffer(struct.pack(
                 '15f',
                 0.0, 100.0, 1.0, 0.0, 0.0,
                 -86.0, -50.0, 0.0, 1.0, 0.0,
                 86.0, -50.0, 0.0, 0.0, 1.0,
             ))
 
-            self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, ['in_vert', 'in_color'])
+            self.vao = self.context.simple_vertex_array(self.prog, self.vbo, ['in_vert', 'in_color'])
 
             Callback(self.draw)
 
     def draw(self, *args):
         self.width_pixels, self.height_pixels = Window.size
-        self.ctx.viewport = (0, 0, self.width_pixels, self.height_pixels)
-        self.ctx.clear(0.9, 0.9, 0.9)
-        self.ctx.enable(ModernGL.BLEND)
+        self.context.viewport = (0, 0, self.width_pixels, self.height_pixels)
+        self.context.clear(0.9, 0.9, 0.9)
+        self.context.enable(ModernGL.BLEND)
         self.window_size.value = (self.width_pixels, self.height_pixels)
         self.vao.render()
 

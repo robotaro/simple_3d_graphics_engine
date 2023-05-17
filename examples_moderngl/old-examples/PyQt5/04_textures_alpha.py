@@ -63,7 +63,7 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
         self.scale = prog.uniforms['scale']
         self.rotation = prog.uniforms['rotation']
 
-        vbo = self.ctx.buffer(struct.pack(
+        vbo = self.context.buffer(struct.pack(
             '12f',
             1.0, 0.0, 0.5, 1.0,
             -0.5, 0.86, 1.0, 0.0,
@@ -73,13 +73,13 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
         self.vao = self.ctx.simple_vertex_array(prog, vbo, ['vert', 'tex_coord'])
 
     def paintGL(self):
-        self.ctx.viewport = (0, 0, self.width_pixels(), self.height_pixels())
-        self.ctx.clear(0.5, 0.5, 0.5)
-        self.ctx.enable(ModernGL.BLEND)
+        self.context.viewport = (0, 0, self.width_pixels(), self.height_pixels())
+        self.context.clear(0.5, 0.5, 0.5)
+        self.context.enable(ModernGL.BLEND)
         self.scale.value = (self.height_pixels() / self.width_pixels() * 0.75, 0.75)
         self.rotation.value = self.timer.elapsed() / 1000
         self.vao.render()
-        self.ctx.finish()
+        self.context.finish()
         self.update_dimensions()
 
 

@@ -45,7 +45,7 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
 
         self.window_size = self.prog.uniforms['WindowSize']
 
-        self.vbo = self.ctx.buffer(struct.pack(
+        self.vbo = self.context.buffer(struct.pack(
             '15f',
             0.0, 100.0, 1.0, 0.0, 0.0,
             -86.0, -50.0, 0.0, 1.0, 0.0,
@@ -56,9 +56,9 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
 
     def paintGL(self):
         width, height = self.width_pixels(), self.height_pixels()
-        self.ctx.viewport = (0, 0, width, height)
-        self.ctx.clear(0.9, 0.9, 0.9)
-        self.ctx.enable(ModernGL.BLEND)
+        self.context.viewport = (0, 0, width, height)
+        self.context.clear(0.9, 0.9, 0.9)
+        self.context.enable(ModernGL.BLEND)
         self.window_size.value = (width, height)
         self.vao.render()
 

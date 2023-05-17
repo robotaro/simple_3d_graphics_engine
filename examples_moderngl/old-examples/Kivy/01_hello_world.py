@@ -36,8 +36,8 @@ class CustomWidget(Widget):
 
             self.prog = self.ctx.program(self.vert, self.frag])
 
-            self.vbo = self.ctx.buffer(struct.pack('6f', 0.0, 0.8, -0.6, -0.8, 0.6, -0.8))
-            self.vao = self.ctx.simple_vertex_array(self.prog, self.vbo, ['vert'])
+            self.vbo = self.context.buffer(struct.pack('6f', 0.0, 0.8, -0.6, -0.8, 0.6, -0.8))
+            self.vao = self.context.simple_vertex_array(self.prog, self.vbo, ['vert'])
 
             self.draw()
 

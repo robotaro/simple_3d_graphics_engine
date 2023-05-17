@@ -92,16 +92,16 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
             grid += struct.pack('6f', i - 32, -32.0, 0.0, i - 32, 32.0, 0.0)
             grid += struct.pack('6f', -32.0, i - 32, 0.0, 32.0, i - 32, 0.0)
 
-        self.vbo = self.ctx.buffer(grid)
+        self.vbo = self.context.buffer(grid)
         self.vao = self.ctx.simple_vertex_array(prog, self.vbo, ['vert'])
 
     def paintGL(self):
 
-        self.ctx.viewport = (0, 0, self.width_pixels(), self.height_pixels())
+        self.context.viewport = (0, 0, self.width_pixels(), self.height_pixels())
         self.ratio.value = self.width_pixels() / self.height_pixels()
-        self.ctx.clear(0.9, 0.9, 0.9)
+        self.context.clear(0.9, 0.9, 0.9)
         self.vao.render(ModernGL.LINES, 65 * 4)
-        self.ctx.finish()
+        self.context.finish()
 
 
 app = QtWidgets.QApplication([])
