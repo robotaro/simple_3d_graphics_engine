@@ -1,29 +1,26 @@
-import pygame as pg
 import moderngl as mgl
 from core import constants
 import sys
 import time
+
+from core.window_glfw import WindowGLFW
 from core.scene import Scene
 
 
 class Engine:
 
-    def __init__(self, window_size=constants.WINDOW_SIZE):
+    def __init__(self, window_size=constants.WINDOW_DEFAULT_SIZE):
 
-        self.window_size = window_size
-        pg.init()
-
-        # Initialise Window (PyGame)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MAJOR_VERSION, constants.OPENGL_MAJOR_VERSION)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_MINOR_VERSION, constants.OPENGL_MINOR_VERSION)
-        pg.display.gl_set_attribute(pg.GL_CONTEXT_PROFILE_MASK, pg.GL_CONTEXT_PROFILE_CORE)
-        pg.display.set_mode(self.window_size, flags=pg.OPENGL | pg.DOUBLEBUF)
+        self.window = WindowGLFW(window_size=window_size)
 
         # Setup drawing context (ModernGL)
         self.context = mgl.create_context()
         self.context.enable(flags=mgl.DEPTH_TEST | mgl.CULL_FACE)
 
         self.main_scene = Scene(self)
+
+        # Flags
+        self._running = False
 
     def create_vbo(self, name: str):
 
@@ -43,17 +40,12 @@ class Engine:
         # Swap buffers
         pg.display.flip()
 
-    def _process_events(self):
-        for event in pg.event.get():
-            if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
-
-                pg.quit()
-                sys.exit()
-
     def run(self):
 
+        # Create window here
+
         previous_time = time.perf_counter()
-        while True:
-            self._process_events()
+        while self._running:
+
             self.update()
             self.render()

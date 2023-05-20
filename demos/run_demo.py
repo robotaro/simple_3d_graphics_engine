@@ -1,7 +1,7 @@
 import argparse
 
 # Demos
-from demos import demo_01_cube
+from demos import demo_01_window
 from demos import demo_02_gltf
 
 

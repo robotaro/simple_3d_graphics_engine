@@ -1,5 +1,4 @@
 import pygame as pg
-import moderngl as mgl
 import sys
 from model import *
 from camera import Camera

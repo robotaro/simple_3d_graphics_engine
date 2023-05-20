@@ -1,16 +1,24 @@
-
-# [DEBUG] Added to allow running from this folder
-import os
-import sys
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
-
-import time
 import glfw
 import numpy as np
 from core import constants as constants
 
+
 class WindowGLFW:
+
+    """
+    The WindowGLFW is a wrapper around the GLFW module to simplify development.
+    A window is created when the costructor is called and should be utilised as:
+
+    window = WindowGLFW(...)
+    while not window.should_close():
+        window.pool_events()
+
+        # Your render code here
+
+        window.swap_buffers()
+    window.terminate()
+
+    """
     
     __slots__ = ('window_size',
                  'window_title',
@@ -24,8 +32,8 @@ class WindowGLFW:
     # ========================================================================
 
     def __init__(self,
-                 window_size=constants.WINDOW_SIZE,
-                 window_title=constants.WINDOW_TITLE,
+                 window_size=constants.WINDOW_DEFAULT_SIZE,
+                 window_title=constants.WINDOW_DEFAULT_TITLE,
                  vertical_sync=False):
 
         # ModernGL variables
@@ -43,12 +51,19 @@ class WindowGLFW:
         # TODO: Find out about samples hing before creating the window
         glfw.window_hint(glfw.SAMPLES, 4)
 
-        self.window_glfw = glfw.create_window(self.window_size[0], self.window_size[1], window_title, None, None)
+        self.window_glfw = glfw.create_window(width=self.window_size[0],
+                                              height=self.window_size[1],
+                                              title=window_title,
+                                              monitor=None,
+                                              share=None)
 
         # Create a windowed mode window and its OpenGL context
         if not self.window_glfw:
             glfw.terminate()
             raise Exception('[ERROR] Could not create GLFW window.')
+
+        glfw.make_context_current(self.window_glfw)
+        glfw.swap_interval(1 if self.vertical_sync else 0)
 
         # Assign callback functions
         glfw.set_key_callback(self.window_glfw, self.key_callback)
@@ -130,38 +145,15 @@ class WindowGLFW:
     # ========================================================================
     #                             Main Functions
     # ========================================================================
-    
-    def run(self):
 
-        # [ Setup ]
-        
-        glfw.make_context_current(self.window_glfw)
-        glfw.swap_interval(1 if self.vertical_sync else 0)
+    def should_close(self):
+        return glfw.window_should_close(self.window_glfw)
 
+    def pool_events(self):
+        glfw.poll_events()
 
-        # [ Main Loop ]
-        #t0 = time.perf_counter()
-        while not glfw.window_should_close(self.window_glfw):
-            
-            # 1) Get window inputs
-            glfw.poll_events()
-            
-            # 2) Process window inputs in GUI
-            # TODO: Will this be processed in the callbacks themselves?
-            
-            # 3) Process window inputs and GUI outputs in APP
-            
-            # 4) Render APP
+    def swap_buffers(self):
+        glfw.swap_buffers(self.window_glfw)
 
-            # 5) Render GUI
-            
-            # 6) Swap Buffers
-            glfw.swap_buffers(self.window_glfw)
-            
-            # 7) Update input by frame
-            self.update_inputs_per_frame()
-            
-            # 8) Update frame time
-            
-
+    def terminate(self):
         glfw.terminate()
