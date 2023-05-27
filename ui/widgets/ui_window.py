@@ -19,10 +19,3 @@ class UIWindow(UIWidget):
     def add_child_widget(self, widget):
         widget.parent = self
         self.children.append(widget)
-
-    def update_positions(self):
-        pass
-
-    def draw(self):
-
-        super().draw()

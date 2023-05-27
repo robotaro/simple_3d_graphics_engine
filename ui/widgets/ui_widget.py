@@ -67,10 +67,10 @@ class UIWidget:
         for child_widget in self.children:
             child_widget.update_dimensions()
 
-    def update_position(self):
+    def update_positions(self):
         """
         This should be called at the end of each overwritten update_position
         :return:
         """
         for child_widget in self.children:
-            child_widget.update_dimensions()
+            child_widget.update_positions()

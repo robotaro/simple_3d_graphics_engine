@@ -61,7 +61,7 @@ def main():
     while not window.should_close():
         window.pool_events()
 
-        context.clear(0.9, 0.9, 0.9)
+        context.clear(0.0, 0.0, 0.0)
         vao.render()
 
         window.swap_buffers()

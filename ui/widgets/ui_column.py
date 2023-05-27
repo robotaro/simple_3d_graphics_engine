@@ -18,7 +18,7 @@ class UIColumn(UIWidget):
         # Use ModernGL or other OpenGL techniques to render the row and its child widgets
         pass
 
-    def update_position(self):
-
-        pass
+    def update_positions(self):
+        self.x = 8
+        super().update_positions()
 

@@ -1,3 +1,7 @@
+import os.path
+
+# Application-related constants
+WORKING_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Default OpenGL constants
 OPENGL_MAJOR_VERSION = 3
@@ -7,9 +11,7 @@ OPENGL_MINOR_VERSION = 3
 MOUSE_LEFT = 0
 MOUSE_RIGHT = 1
 MOUSE_MIDDLE = 2
-MOUSE_BUTTONS = (MOUSE_LEFT,
-                 MOUSE_RIGHT,
-                 MOUSE_MIDDLE)
+MOUSE_BUTTONS = (MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE)
 MOUSE_POSITION = 'position'
 MOUSE_POSITION_LAST_FRAME = 'position_last_frame'
 MOUSE_SCROLL_POSITION = 'scroll_position'

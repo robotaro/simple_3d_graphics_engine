@@ -12,10 +12,6 @@
         "padding_left": 5,
         "padding_bottom": 5
     },
-    "font":{
-        "filepath": "data/fonts/ProggyClean.ttf",
-        "char_size": 32
-    },
     "window":{
         "title_bar_background_color": [1, 1, 1],
         "title_bar_height": 80,

@@ -1,4 +1,5 @@
 import json
+import os
 
 import bs4
 from bs4 import BeautifulSoup
@@ -6,14 +7,15 @@ import warnings
 from bs4 import GuessedAtParserWarning
 warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
 
+from core import constants
 from ui.ui_font import UIFont
 from ui.widgets.ui_widget import UIWidget
 from ui.widgets.ui_window import UIWindow
 from ui.widgets.ui_row import UIRow
 from ui.widgets.ui_column import UIColumn
 from ui.widgets.ui_button import UIButton
+from ui import ui_constants
 
-import ui.ui_constants as constants
 
 class UICore:
 
@@ -22,7 +24,7 @@ class UICore:
         self.windows = []
         self.font = UIFont()
 
-    def load(self, blueprint_xml_fpath: str, theme_json_fpath: str) -> None:
+    def load(self, blueprint_xml_fpath: str, theme_json_fpath: str, font_ttf_fpath: str) -> None:
 
         """
         Loads current UI described in the ui blueprint
@@ -33,26 +35,27 @@ class UICore:
 
         # Load UI theme
         with open(theme_json_fpath, 'r') as file:
+
             # Load theme
             self.theme = json.load(file)
 
-            # Load font here
-            self.font.load(ttf_fpath=self.theme['font']['filepath'])
+            # Load font
+            self.font.load(ttf_fpath=font_ttf_fpath)
 
         # Load UI window blueprint
         with open(blueprint_xml_fpath) as file:
             root_soup = BeautifulSoup(file.read(), features="lxml")
 
             # Find window root node - there should be only one
-            ui_soup = root_soup.find(constants.KEY_ELEMENT_UI)
+            ui_soup = root_soup.find(ui_constants.KEY_ELEMENT_UI)
             if ui_soup is None:
-                raise ValueError(f"[ERROR] Could not find UI root '<{constants.KEY_ELEMENT_UI}>'")
+                raise ValueError(f"[ERROR] Could not find UI root '<{ui_constants.KEY_ELEMENT_UI}>'")
 
-            for window_soup in root_soup.find_all(constants.KEY_ELEMENT_WINDOW):
+            for window_soup in root_soup.find_all(ui_constants.KEY_ELEMENT_WINDOW):
                 window_widget = UIWindow(
-                    widget_id=window_soup.attrs.get(constants.KEY_ATTRS_ID, 'no_id'),
-                    width_str=window_soup.attrs.get(constants.KEY_ATTRS_WIDTH, '100%'),
-                    height_str=window_soup.attrs.get(constants.KEY_ATTRS_HEIGHT, '100%'))
+                    widget_id=window_soup.attrs.get(ui_constants.KEY_ATTRS_ID, 'no_id'),
+                    width_str=window_soup.attrs.get(ui_constants.KEY_ATTRS_WIDTH, '100%'),
+                    height_str=window_soup.attrs.get(ui_constants.KEY_ATTRS_HEIGHT, '100%'))
 
                 self.windows.append(window_widget)
                 self.build_widget_tree(parent_soup=window_soup, parent_widget=window_widget)
@@ -64,18 +67,18 @@ class UICore:
         for child_soup in parent_soup.findChildren(recursive=False):
             new_widget = None
 
-            if constants.KEY_ATTRS_ID not in child_soup.attrs:
+            if ui_constants.KEY_ATTRS_ID not in child_soup.attrs:
                 raise AttributeError(f"[ERROR] Missing widget ID on {child_soup.attrs.name} widget")
 
-            if child_soup.name == constants.KEY_ELEMENT_COLUMN:
+            if child_soup.name == ui_constants.KEY_ELEMENT_COLUMN:
                 new_widget = self.soup2ui_column(soup=child_soup, level=level)
                 parent_widget.add_child_widget(widget=new_widget)
 
-            if child_soup.name == constants.KEY_ELEMENT_ROW:
+            if child_soup.name == ui_constants.KEY_ELEMENT_ROW:
                 new_widget = self.soup2ui_row(soup=child_soup, level=level)
                 parent_widget.add_child_widget(widget=new_widget)
 
-            if child_soup.name == constants.KEY_ELEMENT_BUTTON:
+            if child_soup.name == ui_constants.KEY_ELEMENT_BUTTON:
                 new_widget = self.soup2ui_button(soup=child_soup, level=level)
                 parent_widget.add_child_widget(widget=new_widget)
 
@@ -86,11 +89,11 @@ class UICore:
 
     @staticmethod
     def soup2ui_column(soup: BeautifulSoup, level: int) -> UIColumn:
-        width_str = soup.attrs.get(constants.KEY_ATTRS_WIDTH, '100%')
-        height_str = soup.attrs.get(constants.KEY_ATTRS_HEIGHT, '100%')
-        spacing = soup.attrs.get(constants.KEY_ATTRS_SPACING, constants.DEFAULT_SPACING_COLUMN)
+        width_str = soup.attrs.get(ui_constants.KEY_ATTRS_WIDTH, '100%')
+        height_str = soup.attrs.get(ui_constants.KEY_ATTRS_HEIGHT, '100%')
+        spacing = soup.attrs.get(ui_constants.KEY_ATTRS_SPACING, ui_constants.DEFAULT_SPACING_COLUMN)
         return UIColumn(
-            widget_id=soup.attrs[constants.KEY_ATTRS_ID],
+            widget_id=soup.attrs[ui_constants.KEY_ATTRS_ID],
             width_str=width_str,
             height_str=height_str,
             spacing=float(spacing),
@@ -98,11 +101,11 @@ class UICore:
 
     @staticmethod
     def soup2ui_row(soup: BeautifulSoup, level: int) -> UIRow:
-        width_str = soup.attrs.get(constants.KEY_ATTRS_WIDTH, '100%')
-        height_str = soup.attrs.get(constants.KEY_ATTRS_HEIGHT, '100%')
-        spacing = soup.attrs.get(constants.KEY_ATTRS_SPACING, constants.DEFAULT_SPACING_ROW)
+        width_str = soup.attrs.get(ui_constants.KEY_ATTRS_WIDTH, '100%')
+        height_str = soup.attrs.get(ui_constants.KEY_ATTRS_HEIGHT, '100%')
+        spacing = soup.attrs.get(ui_constants.KEY_ATTRS_SPACING, ui_constants.DEFAULT_SPACING_ROW)
         return UIRow(
-            widget_id=soup.attrs[constants.KEY_ATTRS_ID],
+            widget_id=soup.attrs[ui_constants.KEY_ATTRS_ID],
             width_str=width_str,
             height_str=height_str,
             spacing=float(spacing),
@@ -110,11 +113,11 @@ class UICore:
 
     @staticmethod
     def soup2ui_button(soup: BeautifulSoup, level: int) -> UIButton:
-        width_str = soup.attrs.get(constants.KEY_ATTRS_WIDTH, '100%')
-        height_str = soup.attrs.get(constants.KEY_ATTRS_HEIGHT, '100%')
+        width_str = soup.attrs.get(ui_constants.KEY_ATTRS_WIDTH, '100%')
+        height_str = soup.attrs.get(ui_constants.KEY_ATTRS_HEIGHT, '100%')
         text = 'No text' if len(soup.text) == 0 else soup.text
         return UIButton(
-            widget_id=soup.attrs[constants.KEY_ATTRS_ID],
+            widget_id=soup.attrs[ui_constants.KEY_ATTRS_ID],
             width_str=width_str,
             height_str=height_str,
             text=text,
@@ -124,24 +127,13 @@ class UICore:
         for window in self.windows:
             window.update_dimensions()
 
-    def update_position(self):
+    def update_positions(self):
         for window in self.windows:
             window.update_positions()
 
     def draw(self):
-        """
-        Generate all render commands and add them to the drawlist. The drawlist will
-        group them according to thei scissor requirements.
-
-        IDEA: Maybe create a dicitonary with scissors as tuples
-
-         - render commandas are tuples (fast to generate)
-         
-
-        :return:
-        """
-        pass
-
+        for window in self.windows:
+            window.draw()
 
     # =======================================================
     #                       DEBUG
@@ -156,7 +148,7 @@ class UICore:
 
         def recursive_print(widget: UIWidget):
             spaces = ' ' * (widget.level * 2)
-            print(f'{spaces}> {widget._widget_type} : {widget._id} ({widget.width_pixels}, {widget.height_pixels}) [level {widget.level}]')
+            print(f'{spaces}> {widget._widget_type} : {widget._id} ({widget.width_pixels}, {widget.height_pixels})')
             for child_widget in widget.children:
                 recursive_print(child_widget)
 

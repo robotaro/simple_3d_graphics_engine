@@ -1,8 +1,8 @@
 import argparse
 
 # Demos
-from demos import demo_01_window
-from demos import demo_02_gltf
+from demos import demo_01_simple_window
+from demos import demo_02_engine_window
 
 
 def main():

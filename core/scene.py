@@ -70,8 +70,6 @@ class Scene:
 
     def render(self):
 
-        #
-
         pass
 
     def destroy(self):
