@@ -55,7 +55,10 @@ class UICore:
                 window_widget = UIWindow(
                     widget_id=window_soup.attrs.get(ui_constants.KEY_ATTRS_ID, 'no_id'),
                     width_str=window_soup.attrs.get(ui_constants.KEY_ATTRS_WIDTH, '100%'),
-                    height_str=window_soup.attrs.get(ui_constants.KEY_ATTRS_HEIGHT, '100%'))
+                    height_str=window_soup.attrs.get(ui_constants.KEY_ATTRS_HEIGHT, '100%'),
+                    x=float(window_soup.attrs.get(ui_constants.KEY_ATTRS_X, '0')),
+                    y=float(window_soup.attrs.get(ui_constants.KEY_ATTRS_Y, '0')),
+                )
 
                 self.windows.append(window_widget)
                 self.build_widget_tree(parent_soup=window_soup, parent_widget=window_widget)
@@ -148,7 +151,9 @@ class UICore:
 
         def recursive_print(widget: UIWidget):
             spaces = ' ' * (widget.level * 2)
-            print(f'{spaces}> {widget._widget_type} : {widget._id} ({widget.width_pixels}, {widget.height_pixels})')
+            dimensions = f"({widget.width_pixels}, {widget.height_pixels})"
+            positions = f"({widget.x}, {widget.y})"
+            print(f"{spaces}> {widget._widget_type} : {widget._id} {dimensions} {positions}")
             for child_widget in widget.children:
                 recursive_print(child_widget)
 

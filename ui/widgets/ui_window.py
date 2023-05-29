@@ -1,5 +1,6 @@
 from ui.widgets.ui_widget import UIWidget
 
+
 class UIWindow(UIWidget):
 
     _widget_type = 'window'

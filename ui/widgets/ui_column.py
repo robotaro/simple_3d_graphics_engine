@@ -1,5 +1,6 @@
 from ui.widgets.ui_widget import UIWidget
 
+
 class UIColumn(UIWidget):
 
     _widget_type = 'column'
@@ -17,8 +18,3 @@ class UIColumn(UIWidget):
         # Render the row and all child widgets
         # Use ModernGL or other OpenGL techniques to render the row and its child widgets
         pass
-
-    def update_positions(self):
-        self.x = 8
-        super().update_positions()
-
