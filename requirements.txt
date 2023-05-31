@@ -18,3 +18,7 @@ matplotlib==3.6.2
 beautifulsoup4==4.12.2
 lxml==4.9.2
 freetype-py==2.3.0
+
+# Code Checking
+pytest==7.3.1
+flake8==6.0.0

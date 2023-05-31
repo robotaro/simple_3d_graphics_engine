@@ -33,6 +33,10 @@ class UIWidget:
         self.parent = None
         self.children = []
 
+    @property
+    def num_children(self):
+        return len(self.children)
+
     def add_child_widget(self, widget):
         # Add child widget to the list of widgets
         widget.parent = self
@@ -73,12 +77,9 @@ class UIWidget:
         :return:
         """
 
-        try:
-            if self.parent is not None:
-                self.x = self.parent.x + self.parent.spacing_x
-                self.y = self.parent.y + self.parent.spacing_y
-        except:
-            g = 0
+        if self.parent is not None:
+            self.x = self.parent.x + self.parent.spacing_x
+            self.y = self.parent.y + self.parent.spacing_y
 
         for child_widget in self.children:
             child_widget.update_positions()
