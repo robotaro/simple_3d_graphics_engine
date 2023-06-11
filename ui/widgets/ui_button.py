@@ -27,7 +27,7 @@ class UIButton(UIWidget):
 
         if self.parent._widget_type == 'column':
             self.y = self.parent.y + self.parent.spacing_y
-            g = 0
+
         if self.parent._widget_type == 'row':
             self.x = self.parent.num_children * self.parent.spacing_x
             parent_center_y = self.parent.y + self.parent.height_pixels * 0.5

@@ -21,7 +21,7 @@ def main():
     ui.update_dimensions()
     ui.update_positions()
     ui.draw()
-    ui.print_widget_tree()
+    ui.show_debug_plot()
 
 
 if __name__ == "__main__":

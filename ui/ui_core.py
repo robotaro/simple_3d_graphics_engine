@@ -1,13 +1,8 @@
 import json
-import os
-
-import bs4
 from bs4 import BeautifulSoup
 import warnings
 from bs4 import GuessedAtParserWarning
-warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
 
-from core import constants
 from ui.ui_font import UIFont
 from ui.widgets.ui_widget import UIWidget
 from ui.widgets.ui_window import UIWindow
@@ -15,6 +10,12 @@ from ui.widgets.ui_row import UIRow
 from ui.widgets.ui_column import UIColumn
 from ui.widgets.ui_button import UIButton
 from ui import ui_constants
+
+# [ DEBUG ]
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+
+warnings.filterwarnings('ignore', category=GuessedAtParserWarning)
 
 
 class UICore:
@@ -159,3 +160,39 @@ class UICore:
 
         for window in self.windows:
             recursive_print(window)
+
+    def show_debug_plot(self):
+
+        def recursive_get_dimensions(widget: UIWidget, widget_dimensions: list):
+
+            rectangle = (widget._widget_type,
+                         widget.x,
+                         widget.y,
+                         widget.width_pixels,
+                         widget.height_pixels)
+            widget_dimensions.append(rectangle)
+
+            for child_widget in widget.children:
+                recursive_get_dimensions(widget=child_widget, widget_dimensions=widget_dimensions)
+
+        fig, ax = plt.subplots(1)
+
+        for window in self.windows:
+
+            list_of_dimensions = []
+            recursive_get_dimensions(widget=window, widget_dimensions=list_of_dimensions)
+
+            rectangles = [Rectangle((item[1], item[2]), item[3], item[4], facecolor="none", edgecolor="b")
+                          for item in list_of_dimensions]
+
+            # Add collection to axes
+            for rectangle in rectangles:
+                ax.add_patch(rectangle)
+
+        ax.set_xlim(0, 1600)
+        ax.set_ylim(0, 1000)
+        ax.invert_yaxis()
+        ax.set_aspect("equal")
+        plt.tight_layout()
+
+        plt.show()
