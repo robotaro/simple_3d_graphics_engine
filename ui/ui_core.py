@@ -163,6 +163,13 @@ class UICore:
 
     def show_debug_plot(self):
 
+        COLORMAP = {
+            "row": "r",
+            "column": "b",
+            "button": "k",
+            "window": "g",
+        }
+
         def recursive_get_dimensions(widget: UIWidget, widget_dimensions: list):
 
             rectangle = (widget._widget_type,
@@ -182,7 +189,9 @@ class UICore:
             list_of_dimensions = []
             recursive_get_dimensions(widget=window, widget_dimensions=list_of_dimensions)
 
-            rectangles = [Rectangle((item[1], item[2]), item[3], item[4], facecolor="none", edgecolor="b")
+            rectangles = [Rectangle((item[1], item[2]), item[3], item[4],
+                                    facecolor="none",
+                                    edgecolor=COLORMAP[item[0]])
                           for item in list_of_dimensions]
 
             # Add collection to axes

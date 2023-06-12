@@ -26,6 +26,7 @@ class UIButton(UIWidget):
     def update_positions(self):
 
         if self.parent._widget_type == 'column':
+            # TODO: Not finished
             self.y = self.parent.y + self.parent.spacing_y
 
         if self.parent._widget_type == 'row':
