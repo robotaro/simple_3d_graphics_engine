@@ -64,6 +64,8 @@ class UICore:
                 self.windows.append(window_widget)
                 self.build_widget_tree(parent_soup=window_soup, parent_widget=window_widget)
 
+        g = 0
+
     def build_widget_tree(self, parent_soup: BeautifulSoup, parent_widget: UIWidget, level=0):
 
         level += 1
@@ -133,7 +135,7 @@ class UICore:
 
     def update_positions(self):
         for window in self.windows:
-            window.update_positions()
+            window.update_position()
 
     def draw(self):
         for window in self.windows:
@@ -161,7 +163,7 @@ class UICore:
         for window in self.windows:
             recursive_print(window)
 
-    def show_debug_plot(self):
+    def show_debug_plot(self, plot_width_pixels=600, plot_height_pixels=400):
 
         COLORMAP = {
             "row": "r",
@@ -198,8 +200,8 @@ class UICore:
             for rectangle in rectangles:
                 ax.add_patch(rectangle)
 
-        ax.set_xlim(0, 1600)
-        ax.set_ylim(0, 1000)
+        ax.set_xlim(0, plot_width_pixels)
+        ax.set_ylim(0, plot_height_pixels)
         ax.invert_yaxis()
         ax.set_aspect("equal")
         plt.tight_layout()

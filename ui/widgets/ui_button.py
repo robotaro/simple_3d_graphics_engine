@@ -22,17 +22,3 @@ class UIButton(UIWidget):
         # Draw button text
 
         pass
-
-    def update_positions(self):
-
-        if self.parent._widget_type == 'column':
-            # TODO: Not finished
-            self.y = self.parent.y + self.parent.spacing_y
-
-        if self.parent._widget_type == 'row':
-            self.x = self.parent.num_children * self.parent.spacing_x
-            parent_center_y = self.parent.y + self.parent.height_pixels * 0.5
-            self.y = parent_center_y - self.height_pixels * 0.5
-
-        for child_widget in self.children:
-            child_widget.update_positions()

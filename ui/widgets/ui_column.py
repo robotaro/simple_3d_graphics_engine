@@ -18,3 +18,18 @@ class UIColumn(UIWidget):
         # Render the row and all child widgets
         # Use ModernGL or other OpenGL techniques to render the row and its child widgets
         pass
+
+    def update_child_positions(self) -> None:
+
+        """
+        TODO: This can only be called after all children have updated their dimensions
+        :return: None
+        """
+
+        center_x = self.x + self.width_pixels * 0.5
+
+        y_offset = self.y + self.spacing_y
+        for child in self.children:
+            child.x = center_x - child.width_pixels * 0.5
+            child.y = y_offset
+            y_offset += child.height_pixels + self.spacing_y

@@ -20,3 +20,12 @@ class UIWindow(UIWidget):
     def add_child_widget(self, widget):
         widget.parent = self
         self.children.append(widget)
+
+    def update_child_positions(self) -> None:
+
+        # NOTE: Window should only have ONE child!
+        if len(self.children) > 1:
+            print('[WARNING] Window widget should only have one child!')
+
+        self.children[0].x = self.x + self.spacing_x
+        self.children[0].y = self.y + self.spacing_y

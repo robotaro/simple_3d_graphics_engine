@@ -71,15 +71,17 @@ class UIWidget:
         for child_widget in self.children:
             child_widget.update_dimensions()
 
-    def update_positions(self):
+    def update_position(self):
         """
         This should be called at the end of each overwritten update_position
         :return:
         """
 
-        if self.parent is not None:
-            self.x = self.parent.x + self.parent.spacing_x
-            self.y = self.parent.y + self.parent.spacing_y
+        self.update_child_positions()
 
         for child_widget in self.children:
-            child_widget.update_positions()
+            child_widget.update_position()
+
+    def update_child_positions(self) -> None:
+        # Abstract
+        pass

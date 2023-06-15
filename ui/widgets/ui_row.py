@@ -22,3 +22,18 @@ class UIRow(UIWidget):
         # Generate vertices here
 
         pass
+
+    def update_child_positions(self) -> None:
+
+        """
+        TODO: This can only be called after all children have updated their dimensions
+        :return: None
+        """
+
+        center_y = self.y + self.height_pixels * 0.5
+
+        x_offset = self.x + self.spacing_x
+        for child in self.children:
+            child.x = x_offset
+            child.y = center_y - child.height_pixels * 0.5
+            x_offset += child.width_pixels + self.spacing_x
