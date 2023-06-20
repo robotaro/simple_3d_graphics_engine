@@ -64,8 +64,6 @@ class UICore:
                 self.windows.append(window_widget)
                 self.build_widget_tree(parent_soup=window_soup, parent_widget=window_widget)
 
-        g = 0
-
     def build_widget_tree(self, parent_soup: BeautifulSoup, parent_widget: UIWidget, level=0):
 
         level += 1
@@ -174,12 +172,12 @@ class UICore:
 
         def recursive_get_dimensions(widget: UIWidget, widget_dimensions: list):
 
-            rectangle = (widget._widget_type,
-                         widget.x,
-                         widget.y,
-                         widget.width_pixels,
-                         widget.height_pixels)
-            widget_dimensions.append(rectangle)
+            widget_dimensions.append(
+                (widget._widget_type,
+                 widget.x,
+                 widget.y,
+                 widget.width_pixels,
+                 widget.height_pixels))
 
             for child_widget in widget.children:
                 recursive_get_dimensions(widget=child_widget, widget_dimensions=widget_dimensions)
