@@ -7,6 +7,7 @@ import ui.ui_constants as constants
 # [ DEBUG ]
 import matplotlib.pyplot as plt
 
+
 class UIFont:
 
     def __init__(self):
@@ -16,20 +17,21 @@ class UIFont:
         self.font_y_offsets = np.ndarray((0, 0), dtype=np.float32)
         self.font_x_advances = np.ndarray((0, 0), dtype=np.float32)
 
+        # Flags
+        self._font_loaded = False
+
     def load(self, ttf_fpath, debug=False) -> bool:
 
         glyphs = self.generate_glyphs(font_ttf_fpath=ttf_fpath)
-        self.font_texture = self.font_generate_texture(glyths=glyphs)
-        output = self.font_generate_vertices_uvs_offset_advances(glyphs=glyphs)
+        self.font_texture = self.generate_texture(glyths=glyphs)
+        output = self.generate_vertices_uvs_offset_advances(glyphs=glyphs)
         (self.font_vertices, self.font_uvs, self.font_y_offsets, self.font_x_advances) = output
 
-        # [ DEBUG ]
-        if debug:
-            plt.imshow(self.font_texture)
-            plt.show()
+        self._font_loaded = True
         return True
 
-    def generate_glyphs(self, font_ttf_fpath: str) -> dict:
+    @staticmethod
+    def generate_glyphs(font_ttf_fpath: str) -> dict:
 
         # Check if file exists
         if not os.path.isfile(font_ttf_fpath):
@@ -61,10 +63,11 @@ class UIFont:
 
         return glyphs
 
-    def font_generate_texture(self, glyths: dict) -> np.ndarray:
+    @staticmethod
+    def generate_texture(glyths: dict) -> np.ndarray:
         """
         This function generates a "sprite sheet" of the function as an image (texture)
-        :param glyths: Dictionasry of glyphs created by
+        :param glyths: Dictionary of glyphs created by
         :return:
         """
 
@@ -82,7 +85,8 @@ class UIFont:
 
         return font_texture
 
-    def font_generate_vertices_uvs_offset_advances(self, glyphs: dict):
+    @staticmethod
+    def generate_vertices_uvs_offset_advances(glyphs: dict):
 
         # Allocate memory for the output vertices
         vertices = np.zeros((constants.FONT_NUM_GLYPHS, constants.FONT_NUM_VERTICES_PER_CHAR), dtype=np.float32)
@@ -127,3 +131,31 @@ class UIFont:
             y_offsets[char_decimal] = current_glyph['offset_hor_bearing_y']
 
         return vertices, uvs, y_offsets, x_advances
+
+    def generate_text_vertices_and_uvs(self, text: str, x_offset: float, y_offset: float):
+        """
+        Once the font is loaded, you can use this function to generate a list of tuples containing the vertices
+        and UV locations for all characters in the text
+
+        :param text: str, Input text that you want to convert to characters to be rendered
+        :param x_offset: float, horizontal offset where the left side of the first character should appear
+        :param y_offset: float, vertical offset where the base line of the text should appear.
+        :return: list
+        """
+
+        # TODO: This function needs to be "Numbafied", and final output text must be common memory space
+
+        if not self._font_loaded:
+            raise Exception("[ERROR] Font not loaded. Please load a font before generating the vertices and UVs.")
+
+        num_chars = len(text)
+
+        vertices = np.ndarray((num_chars, 12), dtype=np.float32)
+        uvs = np.ndarray((num_chars, 12), dtype=np.float32)
+        for index, char in enumerate(text):
+            char_decimal = ord(char)
+            vertices[index, :] = self.font_vertices[char_decimal, :]
+            uvs[index, :] = self.font_uvs[char_decimal, :]
+
+        return vertices, uvs
+

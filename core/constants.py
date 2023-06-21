@@ -36,3 +36,9 @@ WINDOW_DEFAULT_TITLE = "Application Window"
 
 
 BACKGROUND_COLOR_RGB = (0.08, 0.16, 0.18)
+
+# Font
+FONT_VERTICES_NUM_COLUMNS = 12  # 6 vertices, 2 dimensions each
+FONT_UVS_NUM_COLUMNS = 12  # 6 vertices, 2 dimensions each
+
+

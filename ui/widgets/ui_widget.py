@@ -3,6 +3,9 @@ from ui import ui_constants as constants
 import numpy as np
 
 
+from ui.ui_font import UIFont
+
+
 class UIWidget:
 
     _widget_type = 'base_widget'
@@ -26,8 +29,15 @@ class UIWidget:
         self.spacing_x = spacing_x
         self.spacing_y = spacing_y
 
-        self.vertices = np.ndarray((constants.DEFAULT_WIDGET_MAX_NUM_VERTICES, 3), dtype=np.float32)
+        # Rendering variables
+        self.vertices = np.ndarray((constants.DEFAULT_WIDGET_MAX_NUM_VERTICES, 2), dtype=np.float32)
         self.num_vertices = 0
+
+        # Base Text: Text at 0,0
+        self.base_text_vertices = np.ndarray((0, 2), dtype=np.float32)
+        self.base_text_num_vertices = 0
+        self.base_text_uvs = np.ndarray((0, 0), dtype=np.float32)
+        self.base_text_num_uvs = 0
 
         # Topology
         self.parent = None
@@ -42,7 +52,7 @@ class UIWidget:
         widget.parent = self
         self.children.append(widget)
 
-    def draw_text(self, text: str, x: float, y: float):
+    def draw_text(self, font: UIFont, text: str, x: float, y: float):
         pass
 
     def draw(self) -> None:
@@ -57,6 +67,7 @@ class UIWidget:
 
     def update_dimensions(self):
 
+        # TODO: Avoid algorithm repetition for WIDTH and HEIGHT
         if self.width_ratio is not None:
             parent_spacing_sum = max(2, len(self.parent.children) + 1) * self.parent.spacing_x
             parent_children_width_sum = self.parent.get_children_fixed_width_sum()

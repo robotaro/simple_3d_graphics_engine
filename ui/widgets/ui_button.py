@@ -6,11 +6,13 @@ class UIButton(UIWidget):
     _widget_type = 'button'
 
     def __init__(self, widget_id: str, width_str: str, height_str: str, text: str, level=0):
+
         # Initialize button properties
         super().__init__(widget_id=widget_id,
                          width_str=width_str,
                          height_str=height_str,
                          level=level)
+
         self.text = text
 
     def draw(self, offset_x=0, offset_y=0) -> None:
@@ -19,6 +21,9 @@ class UIButton(UIWidget):
 
         # Draw button background
 
+
         # Draw button text
 
+
         pass
+

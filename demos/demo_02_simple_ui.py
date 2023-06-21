@@ -18,6 +18,8 @@ def main():
 
     ui = UICore()
     ui.load(blueprint_xml_fpath=xml_fath, theme_json_fpath=json_fath, font_ttf_fpath=font_fpath)
+
+    text_chars = ui.font.generate_text_vertices_and_uvs(text="Apple", x_offset=100, y_offset=50)
     ui.update_dimensions()
     ui.update_positions()
     ui.draw()
