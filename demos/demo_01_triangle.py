@@ -70,11 +70,12 @@ class TriangleApp(WindowGLFW):
 
 
 def main():
+
     app = TriangleApp(
         window_size=(800, 600),
         window_title="First Window - A Simple Triangle",
-        vertical_sync=True
-    )
+        vertical_sync=True)
+
     app.run()
 
 

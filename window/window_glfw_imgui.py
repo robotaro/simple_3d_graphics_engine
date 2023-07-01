@@ -107,20 +107,6 @@ class WindowGLFWImGUI(WindowGLFW):
             self.context.clear(0.0, 0.0, 0.0)
             self.render()
 
-            # start new frame context
-            imgui.new_frame()
-
-            # open new window context
-            imgui.begin("Your first window!", True)
-
-            # draw text label inside of current window
-            imgui.text("Hello world!")
-
-            # close current window context
-            imgui.end()
-
-            # pass all drawing commands to the rendering pipeline
-            # and close frame context
             imgui.render()
             self.imgui_renderer.render(imgui.get_draw_data())
 
