@@ -1,4 +1,5 @@
 import glfw
+import moderngl
 import numpy as np
 from core import constants
 
@@ -29,7 +30,8 @@ class WindowGLFW:
                  'vertical_sync',
                  'mouse_state',
                  'keyboard_state',
-                 'window_glfw')
+                 'window_glfw',
+                 'context')
     
     # ========================================================================
     #                          Initialization functions
@@ -68,6 +70,8 @@ class WindowGLFW:
 
         glfw.make_context_current(self.window_glfw)
         glfw.swap_interval(1 if self.vertical_sync else 0)
+
+        self.context = moderngl.create_context()
 
         # Assign callback functions
         glfw.set_key_callback(self.window_glfw, self._glfw_callback_keyboard)
@@ -130,10 +134,10 @@ class WindowGLFW:
         self.window_size = (width, height)
 
     def _glfw_callback_framebuffer_size(self, glfw_window, width, height):
-        raise NotImplementedError('[ERROR] Function not implemented')
+        pass
     
     def _glfw_callback_drop_files(self, glfw_window, file_list):
-        raise NotImplementedError('[ERROR] Function not implemented')
+        pass
 
     # ========================================================================
     #                         Per Frame Update Functions
