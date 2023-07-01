@@ -1,5 +1,4 @@
-import core
-from core.window_glfw import WindowGLFW
+from window.window_glfw import WindowGLFW
 
 def demo_gui():
 

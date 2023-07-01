@@ -1,7 +1,4 @@
-import struct
-import numpy as np
-import moderngl as mgl
-from core.window_glfw_imgui import WindowGLFWImGUI
+from window.window_glfw_imgui import WindowGLFWImGUI
 
 
 def main():

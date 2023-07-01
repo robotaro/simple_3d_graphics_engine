@@ -70,14 +70,14 @@ class WindowGLFW:
         glfw.swap_interval(1 if self.vertical_sync else 0)
 
         # Assign callback functions
-        glfw.set_key_callback(self.window_glfw, self.glfw_callback_keyboard)
-        glfw.set_char_callback(self.window_glfw, self.glfw_callback_char)
-        glfw.set_cursor_pos_callback(self.window_glfw, self.glfw_callback_mouse_move)
-        glfw.set_mouse_button_callback(self.window_glfw, self.glfw_callback_mouse_button)
-        glfw.set_window_size_callback(self.window_glfw, self.glfw_callback_window_resize)
-        glfw.set_scroll_callback(self.window_glfw, self.glfw_callback_mouse_scroll)
-        glfw.set_framebuffer_size_callback(self.window_glfw, self.glfw_callback_framebuffer_size)
-        glfw.set_drop_callback(self.window_glfw, self.glfw_callback_drop_files)
+        glfw.set_key_callback(self.window_glfw, self._glfw_callback_keyboard)
+        glfw.set_char_callback(self.window_glfw, self._glfw_callback_char)
+        glfw.set_cursor_pos_callback(self.window_glfw, self._glfw_callback_mouse_move)
+        glfw.set_mouse_button_callback(self.window_glfw, self._glfw_callback_mouse_button)
+        glfw.set_window_size_callback(self.window_glfw, self._glfw_callback_window_resize)
+        glfw.set_scroll_callback(self.window_glfw, self._glfw_callback_mouse_scroll)
+        glfw.set_framebuffer_size_callback(self.window_glfw, self._glfw_callback_framebuffer_size)
+        glfw.set_drop_callback(self.window_glfw, self._glfw_callback_drop_files)
         
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
@@ -100,19 +100,19 @@ class WindowGLFW:
         return np.ones((constants.KEYBOARD_SIZE,), dtype=np.int8) * constants.KEY_STATE_UP
     
     # ========================================================================
-    #                       Input Callback functions
+    #                       GLFW Callback functions
     # ========================================================================
 
-    def glfw_callback_keyboard(self, glfw_window, key, scancode, action, mods):
+    def _glfw_callback_keyboard(self, glfw_window, key, scancode, action, mods):
         if action == glfw.PRESS:
             self.keyboard_state[key] = constants.KEY_STATE_DOWN
         if action == glfw.RELEASE:
             self.keyboard_state[key] = constants.KEY_STATE_UP
 
-    def glfw_callback_char(self, glfw_window, char):
+    def _glfw_callback_char(self, glfw_window, char):
         pass
 
-    def glfw_callback_mouse_button(self, glfw_window, button, action, mods):
+    def _glfw_callback_mouse_button(self, glfw_window, button, action, mods):
         for button in constants.MOUSE_BUTTONS:
             # NOTE: Button numbers already match the GLFW numbers in the constants
             if action == glfw.PRESS:
@@ -120,26 +120,26 @@ class WindowGLFW:
             if action == glfw.RELEASE:
                 self.mouse_state[button] = constants.BUTTON_RELEASED
 
-    def glfw_callback_mouse_move(self, glfw_window, x, y):
+    def _glfw_callback_mouse_move(self, glfw_window, x, y):
         self.mouse_state[constants.MOUSE_POSITION] = (x, y)
 
-    def glfw_callback_mouse_scroll(self, glfw_window, x_offset, y_offset):
+    def _glfw_callback_mouse_scroll(self, glfw_window, x_offset, y_offset):
         self.mouse_state[constants.MOUSE_SCROLL_POSITION] += y_offset
 
-    def glfw_callback_window_resize(self, glfw_window, width, height):
+    def _glfw_callback_window_resize(self, glfw_window, width, height):
         self.window_size = (width, height)
 
-    def glfw_callback_framebuffer_size(self, glfw_window, width, height):
+    def _glfw_callback_framebuffer_size(self, glfw_window, width, height):
         raise NotImplementedError('[ERROR] Function not implemented')
     
-    def glfw_callback_drop_files(self, glfw_window, file_list):
+    def _glfw_callback_drop_files(self, glfw_window, file_list):
         raise NotImplementedError('[ERROR] Function not implemented')
 
     # ========================================================================
     #                         Per Frame Update Functions
     # ========================================================================
 
-    def update_inputs_per_frame(self):
+    def _update_inputs(self):
 
         # Mouse Inputs
         for button in constants.MOUSE_BUTTONS:
@@ -153,37 +153,19 @@ class WindowGLFW:
         self.mouse_state[constants.MOUSE_SCROLL_POSITION_LAST_FRAME] = self.mouse_state[constants.MOUSE_SCROLL_POSITION]
 
     # ========================================================================
-    #                    Custom Window Control Functions
+    #                      Application Callback Functions
     # ========================================================================
 
-    def should_close(self):
-        return glfw.window_should_close(self.window_glfw)
-
-    def pool_events(self):
-        glfw.poll_events()
-
-    def swap_buffers(self):
-        glfw.swap_buffers(self.window_glfw)
-
-    def terminate(self):
-        glfw.terminate()
-
-    # ========================================================================
-    #                      Main Loop Callback Functions
-    # ========================================================================
-
-    def app_setup(self):
-        """
-        Create your OpenGL context here and initialise your application
-        :return:
-        """
+    def setup(self):
         pass
 
-    def app_render(self):
-        """
-        Execute any rendering function here
-        :return:
-        """
+    def update(self):
+        pass
+
+    def render(self):
+        pass
+
+    def shutdown(self):
         pass
 
     # ========================================================================
@@ -192,12 +174,14 @@ class WindowGLFW:
 
     def run(self):
 
-        self.app_setup()
+        self.setup()
 
         while not glfw.window_should_close(self.window_glfw):
             glfw.poll_events()
-            self.update_inputs_per_frame()
-            self.app_render()
+            self._update_inputs()
+            self.update()
+            self.render()
             glfw.swap_buffers(self.window_glfw)
 
+        self.shutdown()
         glfw.terminate()

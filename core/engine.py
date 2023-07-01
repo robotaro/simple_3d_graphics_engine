@@ -1,9 +1,7 @@
 import moderngl as mgl
 from core import constants
-import sys
-import time
 
-from core.window_glfw import WindowGLFW
+from window.window_glfw import WindowGLFW
 from core.scene import Scene
 
 
@@ -34,11 +32,11 @@ class Engine(WindowGLFW):
 
         pass
 
-    def app_setup(self):
+    def setup(self):
 
         self.main_scene.update()
 
-    def app_render(self):
+    def render(self):
 
         self.context.clear(color=constants.BACKGROUND_COLOR_RGB)
         self.main_scene.render()
