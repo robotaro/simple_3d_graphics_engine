@@ -1,35 +1,21 @@
-import glfw
 import numpy as np
-from core import constants
+from core import constants as constants
+
+import glfw
+import imgui
+from core.window_glfw import WindowGLFW
+from imgui.integrations.glfw import GlfwRenderer
 
 
-class WindowGLFW:
-
-    """
-    The WindowGLFW is a wrapper around the GLFW module to simplify development.
-    A window is created when the constructor is called and should be utilised as:
-
-    window = WindowGLFW(...)
-    while not window.should_close():
-        window.pool_events()
-
-        # Your render code here
-
-        window.swap_buffers()
-    window.terminate()
-
-    or, use the window as a baseclass and call:
-
-    window = WindowGLFW(...)
-
-    """
+class WindowGLFWImGUI(WindowGLFW):
     
     __slots__ = ('window_size',
                  'window_title',
                  'vertical_sync',
                  'mouse_state',
                  'keyboard_state',
-                 'window_glfw')
+                 'window_glfw',
+                 'imgui_renderer')
     
     # ========================================================================
     #                          Initialization functions
@@ -67,6 +53,10 @@ class WindowGLFW:
             raise Exception('[ERROR] Could not create GLFW window.')
 
         glfw.make_context_current(self.window_glfw)
+
+        imgui.create_context()
+        self.imgui_renderer = GlfwRenderer(self.window_glfw)
+
         glfw.swap_interval(1 if self.vertical_sync else 0)
 
         # Assign callback functions
@@ -78,7 +68,7 @@ class WindowGLFW:
         glfw.set_scroll_callback(self.window_glfw, self.glfw_callback_mouse_scroll)
         glfw.set_framebuffer_size_callback(self.window_glfw, self.glfw_callback_framebuffer_size)
         glfw.set_drop_callback(self.window_glfw, self.glfw_callback_drop_files)
-        
+
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
         
@@ -103,31 +93,39 @@ class WindowGLFW:
     #                       Input Callback functions
     # ========================================================================
 
-    def glfw_callback_keyboard(self, glfw_window, key, scancode, action, mods):
-        if action == glfw.PRESS:
-            self.keyboard_state[key] = constants.KEY_STATE_DOWN
-        if action == glfw.RELEASE:
-            self.keyboard_state[key] = constants.KEY_STATE_UP
-
     def glfw_callback_char(self, glfw_window, char):
-        pass
+
+        self.imgui_renderer.char_callback(window=glfw_window, char=char)
+
+    def glfw_callback_keyboard(self, glfw_window, key, scancode, action, mods):
+
+        super().glfw_callback_keyboard(
+            glfw_window=glfw_window,
+            key=key,
+            scancode=scancode,
+            action=action,
+            mods=mods)
+
+        self.imgui_renderer.keyboard_callback(glfw_window, key, scancode, action, mods)
 
     def glfw_callback_mouse_button(self, glfw_window, button, action, mods):
-        for button in constants.MOUSE_BUTTONS:
-            # NOTE: Button numbers already match the GLFW numbers in the constants
-            if action == glfw.PRESS:
-                self.mouse_state[button] = constants.BUTTON_PRESSED
-            if action == glfw.RELEASE:
-                self.mouse_state[button] = constants.BUTTON_RELEASED
+
+        super().glfw_callback_mouse_button(
+            glfw_window=glfw_window,
+            button=button,
+            action=action,
+            mods=mods)
 
     def glfw_callback_mouse_move(self, glfw_window, x, y):
+        self.imgui_renderer.mouse_callback(glfw_window, x, y)
         self.mouse_state[constants.MOUSE_POSITION] = (x, y)
 
     def glfw_callback_mouse_scroll(self, glfw_window, x_offset, y_offset):
+        self.imgui_renderer.scroll_callback(glfw_window, x_offset, y_offset)
         self.mouse_state[constants.MOUSE_SCROLL_POSITION] += y_offset
 
     def glfw_callback_window_resize(self, glfw_window, width, height):
-        self.window_size = (width, height)
+        self.imgui_renderer.resize_callback(glfw_window, width, height)
 
     def glfw_callback_framebuffer_size(self, glfw_window, width, height):
         raise NotImplementedError('[ERROR] Function not implemented')
@@ -166,6 +164,8 @@ class WindowGLFW:
         glfw.swap_buffers(self.window_glfw)
 
     def terminate(self):
+        self.imgui_renderer.shutdown()
+        imgui.destroy_context()
         glfw.terminate()
 
     # ========================================================================
@@ -184,7 +184,14 @@ class WindowGLFW:
         Execute any rendering function here
         :return:
         """
+
         pass
+
+    def gui_render(self):
+
+        # Render ImGui
+        imgui.render()
+        self.imgui_renderer.render(imgui.get_draw_data())
 
     # ========================================================================
     #                             Main Function
@@ -193,11 +200,35 @@ class WindowGLFW:
     def run(self):
 
         self.app_setup()
+        imgui.create_context()
+        io = imgui.get_io()
+
 
         while not glfw.window_should_close(self.window_glfw):
             glfw.poll_events()
+            self.imgui_renderer.process_inputs()
+
             self.update_inputs_per_frame()
             self.app_render()
+
+            # start new frame context
+            imgui.new_frame()
+
+            # open new window context
+            imgui.begin("Your first window!", True)
+
+            # draw text label inside of current window
+            imgui.text("Hello world!")
+
+            # close current window context
+            imgui.end()
+
+            # pass all drawing commands to the rendering pipeline
+            # and close frame context
+            imgui.render()
+            self.imgui_renderer.render(imgui.get_draw_data())
+
             glfw.swap_buffers(self.window_glfw)
 
+        self.imgui_renderer.shutdown()
         glfw.terminate()

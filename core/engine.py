@@ -34,11 +34,11 @@ class Engine(WindowGLFW):
 
         pass
 
-    def callback_setup(self):
+    def app_setup(self):
 
         self.main_scene.update()
 
-    def callback_render(self):
+    def app_render(self):
 
         self.context.clear(color=constants.BACKGROUND_COLOR_RGB)
         self.main_scene.render()

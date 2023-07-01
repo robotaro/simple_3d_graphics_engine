@@ -7,6 +7,10 @@ WORKING_DIR = os.path.dirname(os.path.dirname(__file__))
 OPENGL_MAJOR_VERSION = 3
 OPENGL_MINOR_VERSION = 3
 
+# Window
+WINDOW_DEFAULT_SIZE = (1280, 720)
+WINDOW_DEFAULT_TITLE = "Application Window"
+
 # Mouse Input
 MOUSE_LEFT = 0
 MOUSE_RIGHT = 1
@@ -29,10 +33,6 @@ KEY_STATE_UP = 1
 KEY_LEFT_CTRL = 29
 KEY_LEFT_SHIFT = 42
 KEY_LEFT_ALT = 56
-
-# Window
-WINDOW_DEFAULT_SIZE = (1280, 720)
-WINDOW_DEFAULT_TITLE = "Application Window"
 
 
 BACKGROUND_COLOR_RGB = (0.08, 0.16, 0.18)
