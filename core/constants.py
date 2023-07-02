@@ -1,15 +1,22 @@
-import os.path
+import os
 
-# Application-related constants
-WORKING_DIR = os.path.dirname(os.path.dirname(__file__))
+# Default Directories
+ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+RESOURCES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources")
+SHADERS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "shaders")
 
 # Default OpenGL constants
-OPENGL_MAJOR_VERSION = 3
-OPENGL_MINOR_VERSION = 3
+OPENGL_MAJOR_VERSION = 4
+OPENGL_MINOR_VERSION = 0
 
 # Window
 WINDOW_DEFAULT_SIZE = (1280, 720)
 WINDOW_DEFAULT_TITLE = "Application Window"
+
+# OpenGL Shaders
+MACRO_DEFINED_VERTEX_SHADER = "VERTEX_SHADER"
+MACRO_DEFINED_VERTEX_GEOMETRY = "GEOMETRY_SHADER"
+MACRO_DEFINED_VERTEX_FRAGMENT = "FRAGMENT_SHADER"
 
 # Mouse Input
 MOUSE_LEFT = 0
