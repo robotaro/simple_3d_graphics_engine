@@ -1,4 +1,4 @@
-from window.window_glfw_imgui import WindowGLFWImGUI
+from core.window.window_glfw_imgui import WindowGLFWImGUI
 import imgui
 
 
@@ -19,7 +19,6 @@ class DemoImGUI(WindowGLFWImGUI):
 
         # close current window context
         imgui.end()
-
 
 def main():
 

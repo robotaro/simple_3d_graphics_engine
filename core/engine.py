@@ -1,8 +1,8 @@
 import moderngl as mgl
 from core import constants
 
-from window.window_glfw import WindowGLFW
-from core.scene import Scene
+from core.window.window_glfw import WindowGLFW
+from core.scene.scene import Scene
 
 
 class Engine(WindowGLFW):

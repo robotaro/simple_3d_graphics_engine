@@ -1,10 +1,9 @@
-import moderngl
 import numpy as np
 from core import constants as constants
 
 import glfw
 import imgui
-from window.window_glfw import WindowGLFW
+from core.window.window_glfw import WindowGLFW
 from imgui.integrations.glfw import GlfwRenderer
 
 

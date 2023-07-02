@@ -1,6 +1,6 @@
 import numpy as np
 import moderngl as mgl
-from window.window_glfw import WindowGLFW
+from core.window.window_glfw import WindowGLFW
 
 
 class TriangleApp(WindowGLFW):

@@ -1,6 +1,4 @@
-import numpy as np
-
-from core.node import Node
+from core.scene.node import Node
 import glm
 
 NO_PARENT_KEY = -1

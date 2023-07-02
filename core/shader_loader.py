@@ -1,6 +1,10 @@
 
 
-class ShaderProgram:
+class ShaderLoader:
+
+    """
+    This class loads and compiles all shaders located in the "shaders" folder
+    """
 
     def __init__(self, ctx, shader_program_name: str):
         self.ctx = ctx
@@ -12,6 +16,11 @@ class ShaderProgram:
 
         self.program = self.ctx.program(vertex_shader=vertex_shader,
                                         fragment_shader=fragment_shader)
+
+    def load_shaders(self, directory: str, recursively=True) -> dict:
+
+
+
 
     def destroy(self):
         self.program.release()
