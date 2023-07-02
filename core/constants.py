@@ -1,15 +1,28 @@
+import os
+
+# Default Directories
+ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+RESOURCES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources")
+SHADERS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "shaders")
 
 # Default OpenGL constants
-OPENGL_MAJOR_VERSION = 3
-OPENGL_MINOR_VERSION = 3
+OPENGL_MAJOR_VERSION = 4
+OPENGL_MINOR_VERSION = 0
+
+# Window
+WINDOW_DEFAULT_SIZE = (1280, 720)
+WINDOW_DEFAULT_TITLE = "Application Window"
+
+# OpenGL Shaders
+MACRO_DEFINED_VERTEX_SHADER = "VERTEX_SHADER"
+MACRO_DEFINED_VERTEX_GEOMETRY = "GEOMETRY_SHADER"
+MACRO_DEFINED_VERTEX_FRAGMENT = "FRAGMENT_SHADER"
 
 # Mouse Input
 MOUSE_LEFT = 0
 MOUSE_RIGHT = 1
 MOUSE_MIDDLE = 2
-MOUSE_BUTTONS = (MOUSE_LEFT,
-                 MOUSE_RIGHT,
-                 MOUSE_MIDDLE)
+MOUSE_BUTTONS = (MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE)
 MOUSE_POSITION = 'position'
 MOUSE_POSITION_LAST_FRAME = 'position_last_frame'
 MOUSE_SCROLL_POSITION = 'scroll_position'
@@ -28,9 +41,11 @@ KEY_LEFT_CTRL = 29
 KEY_LEFT_SHIFT = 42
 KEY_LEFT_ALT = 56
 
-# Window
-WINDOW_DEFAULT_SIZE = (1280, 720)
-WINDOW_DEFAULT_TITLE = "Application Window"
-
 
 BACKGROUND_COLOR_RGB = (0.08, 0.16, 0.18)
+
+# Font
+FONT_VERTICES_NUM_COLUMNS = 12  # 6 vertices, 2 dimensions each
+FONT_UVS_NUM_COLUMNS = 12  # 6 vertices, 2 dimensions each
+
+

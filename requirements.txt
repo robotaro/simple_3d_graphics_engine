@@ -7,14 +7,29 @@ moderngl==5.7.4
 glfw==2.5.5
 numpy==1.21.6
 
-# Loading models
+# Geometry Libraries
+trimesh==3.22.3
+
+# General IO
+PyYAML==6.0
+
+# 3D Loading models
 pywavefront==1.3.3  # OBJ only
 pygltflib==1.15.3   # GLTF and GLB
 
-# Require for debugging
-matplotlib==3.6.2
-
-# UI
+# Custom UI
 beautifulsoup4==4.12.2
 lxml==4.9.2
 freetype-py==2.3.0
+
+# ImGUI
+imgui==2.0.0
+PyOpenGL==3.1.7
+
+# Code Checking
+pytest==7.3.1
+flake8==6.0.0
+
+# [DEBUG]
+matplotlib==3.6.2
+
