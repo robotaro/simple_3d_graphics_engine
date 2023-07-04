@@ -1,8 +1,8 @@
-from core.window.window_glfw import WindowGLFW
+from core.window import Window
 
 def demo_gui():
 
-    window = WindowGLFW(window_size=(1024, 768), window_title="GUI Demo")
+    window = Window(window_size=(1024, 768), window_title="GUI Demo")
 
     window.run()
 

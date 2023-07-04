@@ -1,8 +1,10 @@
 from core import constants
 import moderngl
 
+from core.utilities import utils_files
 
-class ShaderLoader:
+
+class ShaderLibrary:
 
     """
     This class loads and compiles all shaders located in the "shaders" folder.
@@ -14,24 +16,22 @@ class ShaderLoader:
 
     """
 
-    def __init__(self, mgl_context, shader_program_name: str):
+    def __init__(self, mgl_context: moderngl.Context):
         self.mgl_context = mgl_context
-        with open(f'shaders/{shader_program_name}.vert') as file:
-            vertex_shader = file.read()
-
-        with open(f'shaders/{shader_program_name}.frag') as file:
-            fragment_shader = file.read()
-
-
 
     def load_shaders(self, directory: str, recursively=True) -> dict:
 
+        shaders = {}
 
+        filenames = utils_files.list_filenames(directory=directory)
 
-
-        self.program = self.mgl_context.program(vertex_shader=vertex_shader,
-                                                fragment_shader=fragment_shader)
+        self.program = self.mgl_context.program(
+            vertex_shader=vertex_shader,
+            fragment_shader=fragment_shader)
 
     def destroy(self):
         self.program.release()
 
+# DEBUG
+loader = ShaderLibrary(mgl_context=None)
+loader.load_shaders(directory=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\shaders")

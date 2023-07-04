@@ -3,35 +3,28 @@ import moderngl
 import numpy as np
 from core import constants
 
+# ImGUI
+import imgui
+from imgui.integrations.glfw import GlfwRenderer
 
-class WindowGLFW:
+
+class Window:
 
     """
-    The WindowGLFW is a wrapper around the GLFW module to simplify development.
+    The Window class is a GLFW wrapper around the GLFW module to simplify development.
+    In addition, ImGUI has been integrated to provide expeditious testing debugging.
     A window is created when the constructor is called and should be utilised as:
-
-    window = WindowGLFW(...)
-    while not window.should_close():
-        window.pool_events()
-
-        # Your render code here
-
-        window.swap_buffers()
-    window.terminate()
-
-    or, use the window as a baseclass and call:
-
-    window = WindowGLFW(...)
 
     """
     
-    __slots__ = ('window_size',
-                 'window_title',
-                 'vertical_sync',
-                 'mouse_state',
-                 'keyboard_state',
-                 'window_glfw',
-                 'context')
+    __slots__ = ("window_size",
+                 "window_title",
+                 "vertical_sync",
+                 "mouse_state",
+                 "keyboard_state",
+                 "window_glfw",
+                 "context",
+                 "imgui_renderer")
     
     # ========================================================================
     #                          Initialization functions
@@ -85,7 +78,10 @@ class WindowGLFW:
         
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
-        
+
+        # ImGUI variables
+        self.imgui_renderer = None
+
     # ========================================================================
     #                           Input State Functions
     # ========================================================================
@@ -107,14 +103,16 @@ class WindowGLFW:
     #                       GLFW Callback functions
     # ========================================================================
 
+    def _glfw_callback_char(self, glfw_window, char):
+        self.imgui_renderer.char_callback(window=glfw_window, char=char)
+
     def _glfw_callback_keyboard(self, glfw_window, key, scancode, action, mods):
         if action == glfw.PRESS:
             self.keyboard_state[key] = constants.KEY_STATE_DOWN
         if action == glfw.RELEASE:
             self.keyboard_state[key] = constants.KEY_STATE_UP
 
-    def _glfw_callback_char(self, glfw_window, char):
-        pass
+        self.imgui_renderer.keyboard_callback(glfw_window, key, scancode, action, mods)
 
     def _glfw_callback_mouse_button(self, glfw_window, button, action, mods):
         for button in constants.MOUSE_BUTTONS:
@@ -126,12 +124,15 @@ class WindowGLFW:
 
     def _glfw_callback_mouse_move(self, glfw_window, x, y):
         self.mouse_state[constants.MOUSE_POSITION] = (x, y)
+        self.imgui_renderer.mouse_callback(glfw_window, x, y)
 
     def _glfw_callback_mouse_scroll(self, glfw_window, x_offset, y_offset):
         self.mouse_state[constants.MOUSE_SCROLL_POSITION] += y_offset
+        self.imgui_renderer.scroll_callback(glfw_window, x_offset, y_offset)
 
     def _glfw_callback_window_resize(self, glfw_window, width, height):
         self.window_size = (width, height)
+        self.imgui_renderer.resize_callback(glfw_window, width, height)
 
     def _glfw_callback_framebuffer_size(self, glfw_window, width, height):
         pass
@@ -180,12 +181,27 @@ class WindowGLFW:
 
         self.setup()
 
+        imgui.create_context()
+        self.imgui_renderer = GlfwRenderer(self.window_glfw)
+
         while not glfw.window_should_close(self.window_glfw):
             glfw.poll_events()
+            self.imgui_renderer.process_inputs()
+
             self._update_inputs()
-            self.update()
+
+            self.context.clear(0.0, 0.0, 0.0)
+
+            # App Render
             self.render()
+
+            imgui.render()
+            self.imgui_renderer.render(imgui.get_draw_data())
+
             glfw.swap_buffers(self.window_glfw)
 
+
         self.shutdown()
+
+        self.imgui_renderer.shutdown()
         glfw.terminate()

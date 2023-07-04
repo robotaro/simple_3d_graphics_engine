@@ -1,9 +1,6 @@
 
 import os
 
-from ui.ui_core import UICore
-from ui.ui_font import UIFont
-
 
 def fix_path(input_path: str):
     working_dir = os.path.dirname(os.path.dirname(__file__))

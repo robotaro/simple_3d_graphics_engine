@@ -1,5 +1,5 @@
 from vbo import VBO
-from shader_loader import ShaderProgram
+from shader_library import ShaderProgram
 
 
 class VAO:

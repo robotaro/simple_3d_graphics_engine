@@ -4,7 +4,7 @@ from core import constants as constants
 import glfw
 import imgui
 from core.window.window_glfw import WindowGLFW
-from imgui.integrations.glfw import GlfwRenderer
+
 
 
 class WindowGLFWImGUI(WindowGLFW):
@@ -32,41 +32,11 @@ class WindowGLFWImGUI(WindowGLFW):
             window_title=window_title,
             vertical_sync=vertical_sync)
 
-        self.imgui_renderer = None
-        
-    # ========================================================================
-    #                           Input State Functions
-    # ========================================================================
-
-    def initialise_mouse_state(self) -> dict:
-        return {
-            constants.MOUSE_LEFT: constants.BUTTON_UP,
-            constants.MOUSE_RIGHT: constants.BUTTON_UP,
-            constants.MOUSE_MIDDLE: constants.BUTTON_UP,
-            constants.MOUSE_POSITION: (0, 0),
-            constants.MOUSE_POSITION_LAST_FRAME: (0, 0),
-            constants.MOUSE_SCROLL_POSITION: 0
-        }
-        
-    def initialise_keyboard_state(self) -> np.array:
-        return np.ones((constants.KEYBOARD_SIZE,), dtype=np.int8) * constants.KEY_STATE_UP
     
     # ========================================================================
     #                       Input Callback functions
     # ========================================================================
 
-    def _glfw_callback_char(self, glfw_window, char):
-        self.imgui_renderer.char_callback(window=glfw_window, char=char)
-
-    def _glfw_callback_keyboard(self, glfw_window, key, scancode, action, mods):
-        super()._glfw_callback_keyboard(
-            glfw_window=glfw_window,
-            key=key,
-            scancode=scancode,
-            action=action,
-            mods=mods)
-
-        self.imgui_renderer.keyboard_callback(glfw_window, key, scancode, action, mods)
 
     def _glfw_callback_mouse_button(self, glfw_window, button, action, mods):
         super()._glfw_callback_mouse_button(
