@@ -1,9 +1,10 @@
-import glfw
-import moderngl
+# Core modules
 import numpy as np
 from core import constants
 
-# ImGUI
+# Graphics
+import glfw
+import moderngl
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 
@@ -185,10 +186,15 @@ class Window:
         self.imgui_renderer = GlfwRenderer(self.window_glfw)
 
         while not glfw.window_should_close(self.window_glfw):
+
             glfw.poll_events()
             self.imgui_renderer.process_inputs()
 
             self._update_inputs()
+
+            imgui.new_frame()
+            self.update()
+            imgui.end()
 
             self.context.clear(0.0, 0.0, 0.0)
 
@@ -199,7 +205,6 @@ class Window:
             self.imgui_renderer.render(imgui.get_draw_data())
 
             glfw.swap_buffers(self.window_glfw)
-
 
         self.shutdown()
 

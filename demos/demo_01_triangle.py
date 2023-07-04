@@ -1,9 +1,9 @@
 import numpy as np
 import moderngl as mgl
-from core.window.window_glfw import WindowGLFW
+from core.window import Window
 
 
-class TriangleApp(WindowGLFW):
+class TriangleApp(Window):
 
     def __init__(self, window_size: tuple, window_title: str, vertical_sync=False):
 

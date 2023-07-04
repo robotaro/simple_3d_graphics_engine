@@ -1,15 +1,13 @@
-from core.window.window_glfw_imgui import WindowGLFWImGUI
+from core.window import Window
 import imgui
 
 
-class DemoImGUI(WindowGLFWImGUI):
+class DemoImGUI(Window):
 
     def setup(self):
         pass
 
-    def render(self):
-        # start new frame context
-        imgui.new_frame()
+    def update(self):
 
         # open new window context
         imgui.begin("Your first window!", True)
@@ -17,8 +15,8 @@ class DemoImGUI(WindowGLFWImGUI):
         # draw text label inside of current window
         imgui.text("Hello world!")
 
-        # close current window context
-        imgui.end()
+    def render(self):
+        pass
 
 def main():
 
