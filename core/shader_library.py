@@ -1,5 +1,5 @@
 import os
-import re
+from typing import Union
 from dataclasses import dataclass
 from core.utilities import utils_io
 
@@ -7,10 +7,8 @@ from core.utilities import utils_io
 @dataclass
 class Shader:
     label: str
-    source_code: str
     source_code_lines: list
     version: int
-    version_directive_line_index: int
     contains_main: bool
     includes: list
 
@@ -30,15 +28,17 @@ class ShaderLibrary:
         for relative_fpath in relative_glsl_fpaths:
 
             new_shader = self.load_shader(relative_glsl_fpath=relative_fpath)
+            if new_shader is None:
+                continue
+
             self.shaders[new_shader.label] = new_shader
 
-        # Step 3) Assemble source code based on shader's include structures
+        # Step 3) Solve shader dependencies
         for key, shader in self.shaders.items():
             self.solve_shader_dependencies(shader_key=key)
 
-        # TODO:
-        # 1) Remove version directive from code lines
-        # 2)
+    def get_shader_source_code(self, shader_key: str, extra_directives: Union[dict, None]=None):
+        return self.assemble_source_code(shader_key=shader_key, extra_directives=extra_directives)
 
     def load_shader(self, relative_glsl_fpath: str):
 
@@ -52,13 +52,15 @@ class ShaderLibrary:
             # GLSL Source code
             code_lines = file.readlines()
 
-            # Version
+            # Get version
             version_details = [(index, line) for index, line in enumerate(code_lines)
                                if line.strip().startswith("#version")]
-            version_directive_line_index = -1
             version = 0
             if len(version_details) > 0:
                 version = int(version_details[0][1].replace("#version", "").strip())
+
+            # Remove the line with the "#version"
+            code_lines = [line for line in code_lines if not line.strip().startswith("#version")]
 
             # Contain mains
             contains_main = len([line for line in code_lines if "main()" in line]) > 0
@@ -72,10 +74,8 @@ class ShaderLibrary:
 
             new_blueprint = Shader(
                 label=label,
-                source_code="",  # Not ready yet
                 source_code_lines=code_lines,
                 version=version,
-                version_directive_line_index=version_directive_line_index,
                 contains_main=contains_main,
                 includes=includes_sorted_descending
             )
@@ -96,10 +96,6 @@ class ShaderLibrary:
 
         shader = self.shaders[shader_key]
 
-        # If shader source code has already been assembled, there is nothing else to do
-        if len(shader.source_code) > 0:
-            return
-
         for (line_index, include_shader_key) in shader.includes:
             self.solve_shader_dependencies(shader_key=include_shader_key)
 
@@ -108,9 +104,39 @@ class ShaderLibrary:
             b = a + 1
             shader.source_code_lines[a:b] = self.shaders[include_shader_key].source_code_lines
 
-        # Once all dependencies are handled, you can now assemblye the GLSL source code :)
-        print(f'Source code assembled: {shader_key}')
-        shader.source_code = "".join(shader.source_code_lines)
+    def assemble_source_code(self, shader_key: str, extra_directives: Union[dict, None]=None):
+        """
+        This function assembles all lines of code, including the extra directives, into a single
+        string to be used for shader compilation later on. The version of the shader is added to the
+        first line, and extra directives are added below, followed by the rest of the code
+
+        example of extra_directives:
+
+        {
+            "VERTEX_SHADER": 1
+            "PART_A": 0
+        }
+
+        turns into:
+
+        #define VERTEX_SHADER 1
+        #define PART_A 0
+
+        :param shader_key: str, unique shader
+        :param extra_directives: dict, keys are the directive
+        :return:
+        """
+
+        if extra_directives is None:
+            extra_directives = {}
+
+        shader = self.shaders[shader_key]
+
+        version_line = f"#version {shader.version}\n"
+        directive_lines = [f"#define {key} {value}\n" for key, value in extra_directives.items()]
+        header_lines = [version_line] + directive_lines
+
+        return "".join(header_lines + shader.source_code_lines)
 
 
 library = ShaderLibrary(shader_directory=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\shaders")
