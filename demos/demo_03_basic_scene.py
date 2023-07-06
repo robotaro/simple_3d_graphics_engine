@@ -1,27 +1,30 @@
-
 import os
 
+from core.window import Window
 
-def fix_path(input_path: str):
-    working_dir = os.path.dirname(os.path.dirname(__file__))
-    return os.path.join(working_dir, input_path).replace("/", os.sep).replace("\\", os.sep)
+
+class BasicScene(Window):
+
+    def __init__(self,
+                 window_size: tuple,
+                 window_title: str,
+                 vertical_sync=True):
+        super().__init__(window_size=window_size,
+                         window_title=window_title,
+                         vertical_sync=vertical_sync)
+
+        self.shader_library = ShaderLibrary(mgl_context=self.context)
 
 
 def main():
 
-    xml_fath = fix_path(input_path=os.path.join(*["data", "ui", "ui_blueprint.xml"]))
-    json_fath = fix_path(input_path=os.path.join(*["data", "ui", "default_theme.json"]))
-    font_fpath = fix_path(input_path=os.path.join(*["data", "fonts", "ProggyClean.ttf"]))
+    app = BasicScene(
+        window_size=(1024, 768),
+        window_title="Basic Scene",
+        vertical_sync=True
+    )
 
-    ui = UICore()
-    ui.load(blueprint_xml_fpath=xml_fath, theme_json_fpath=json_fath, font_ttf_fpath=font_fpath)
-
-    text_chars = ui.font.generate_text_vertices_and_uvs(text="Apple", x_offset=100, y_offset=50)
-    ui.update_dimensions()
-    ui.update_positions()
-    ui.draw()
-    ui.show_debug_plot()
-
+    app.run()
 
 if __name__ == "__main__":
     main()

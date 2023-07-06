@@ -1,11 +1,11 @@
 import moderngl as mgl
 from core import constants
 
-from core.window.window_glfw import WindowGLFW
+from core.window import Window
 from core.scene.scene import Scene
 
 
-class Engine(WindowGLFW):
+class Engine(Window):
 
     def __init__(self, 
                  window_size=constants.WINDOW_DEFAULT_SIZE,
@@ -19,7 +19,6 @@ class Engine(WindowGLFW):
             vertical_sync=vertical_sync)
 
         # OpenGL context must be created after the window
-        self.context = mgl.create_context()
         self.context.enable(flags=mgl.DEPTH_TEST | mgl.CULL_FACE)
 
         self.main_scene = Scene(self)
@@ -27,8 +26,7 @@ class Engine(WindowGLFW):
         # Flags
         self._running = False
 
-
-    def create_vbo(self, name: str):
+    def create_scene(self, name: str):
 
         pass
 

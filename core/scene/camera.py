@@ -1,6 +1,57 @@
-import glm
-import pygame as pg
+from abc import ABC, abstractmethod
 
+
+class CameraInterface(ABC):
+    """
+    An abstract class which describes the interface expected by the viewer for using this object as a camera
+    """
+
+    def __init__(self):
+        self.projection_matrix = None
+        self.view_matrix = None
+        self.view_projection_matrix = None
+
+    def get_projection_matrix(self):
+        if self.projection_matrix is None:
+            raise ValueError("update_matrices() must be called before to update the projection matrix")
+        return self.projection_matrix
+
+    def get_view_matrix(self):
+        if self.view_matrix is None:
+            raise ValueError("update_matrices() must be called before to update the view matrix")
+        return self.view_matrix
+
+    def get_view_projection_matrix(self):
+        if self.view_projection_matrix is None:
+            raise ValueError("update_matrices() must be called before to update the view-projection matrix")
+        return self.view_projection_matrix
+
+    @abstractmethod
+    def update_matrices(self, width, height):
+        pass
+
+    @property
+    @abstractmethod
+    def position(self):
+        pass
+
+    @property
+    @abstractmethod
+    def forward(self):
+        pass
+
+    @property
+    @abstractmethod
+    def up(self):
+        pass
+
+    @property
+    @abstractmethod
+    def right(self):
+        pass
+
+    def gui(self, imgui):
+        pass
 
 class Camera:
 
