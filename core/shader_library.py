@@ -12,12 +12,17 @@ class Shader:
     contains_main: bool
     includes: list
 
-
 class ShaderLibrary:
+
+    """
+    This class loads assemble the final code for all shaders in a specific folder.
+    As GLSL does not support #imports, this class manages all the imports
+    """
 
     def __init__(self, shader_directory: str):
         self.shader_directory = shader_directory
         self.shaders = {}
+        self.load_shaders()
 
     def load_shaders(self):
 
@@ -27,7 +32,7 @@ class ShaderLibrary:
         # Step 2) For each glsl filepath, create a new shader entry and loa its respective code
         for relative_fpath in relative_glsl_fpaths:
 
-            new_shader = self.load_shader(relative_glsl_fpath=relative_fpath)
+            new_shader = self._load_single_shader(relative_glsl_fpath=relative_fpath)
             if new_shader is None:
                 continue
 
@@ -35,12 +40,9 @@ class ShaderLibrary:
 
         # Step 3) Solve shader dependencies
         for key, shader in self.shaders.items():
-            self.solve_shader_dependencies(shader_key=key)
+            self._solve_shader_dependencies(shader_key=key)
 
-    def get_shader_source_code(self, shader_key: str, extra_directives: Union[dict, None]=None):
-        return self.assemble_source_code(shader_key=shader_key, extra_directives=extra_directives)
-
-    def load_shader(self, relative_glsl_fpath: str):
+    def _load_single_shader(self, relative_glsl_fpath: str):
 
         new_blueprint = None
         absolute_glsl_fpath = os.path.join(self.shader_directory, relative_glsl_fpath)
@@ -82,7 +84,7 @@ class ShaderLibrary:
 
         return new_blueprint
 
-    def solve_shader_dependencies(self, shader_key: str) -> None:
+    def _solve_shader_dependencies(self, shader_key: str) -> None:
 
         """
         This function replaces the "#include" directives with the respective code from another
@@ -97,16 +99,16 @@ class ShaderLibrary:
         shader = self.shaders[shader_key]
 
         for (line_index, include_shader_key) in shader.includes:
-            self.solve_shader_dependencies(shader_key=include_shader_key)
+            self._solve_shader_dependencies(shader_key=include_shader_key)
 
             # Replace include with code lines from dependency
             a = line_index
-            b = a + 1
+            b = line_index + 1
             shader.source_code_lines[a:b] = self.shaders[include_shader_key].source_code_lines
 
-    def assemble_source_code(self, shader_key: str, extra_directives: Union[dict, None]=None):
+    def generate_source_code(self, shader_key: str, extra_definitions: Union[dict, None]=None) -> str:
         """
-        This function assembles all lines of code, including the extra directives, into a single
+        This function assembles all lines of code, including the extra definitions, into a single
         string to be used for shader compilation later on. The version of the shader is added to the
         first line, and extra directives are added below, followed by the rest of the code
 
@@ -123,21 +125,17 @@ class ShaderLibrary:
         #define PART_A 0
 
         :param shader_key: str, unique shader
-        :param extra_directives: dict, keys are the directive
-        :return:
+        :param extra_definitions: dict, keys are the directive
+        :return: str, source code
         """
 
-        if extra_directives is None:
-            extra_directives = {}
+        if extra_definitions is None:
+            extra_definitions = {}
 
         shader = self.shaders[shader_key]
 
         version_line = f"#version {shader.version}\n"
-        directive_lines = [f"#define {key} {value}\n" for key, value in extra_directives.items()]
+        directive_lines = [f"#define {key} {value}\n" for key, value in extra_definitions.items()]
         header_lines = [version_line] + directive_lines
 
         return "".join(header_lines + shader.source_code_lines)
-
-
-library = ShaderLibrary(shader_directory=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\shaders")
-library.load_shaders()

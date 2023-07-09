@@ -1,9 +1,8 @@
-from vao import VAO
-from texture import Texture
+
 
 
 class Mesh:
-    def __init__(self, vao: VAO, texture: Texture):
+    def __init__(self, ):
         self.vao = vao
         self.texture = texture
 

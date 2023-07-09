@@ -9,20 +9,29 @@ class DemoImGUI(Window):
 
     def update(self):
 
+        imgui.new_frame()
+
         # open new window context
         imgui.begin("Your first window!", True)
 
         # draw text label inside of current window
         imgui.text("Hello world!")
 
+        imgui.end()
+
+        imgui.end_frame()
+
     def render(self):
         pass
+
 
 def main():
 
     app = DemoImGUI(window_size=(800, 600),
                     window_title="ImGUI Demo",
-                    vertical_sync=True)
+                    vertical_sync=True,
+                    enable_imgui=True)
+
     app.run()
 
 

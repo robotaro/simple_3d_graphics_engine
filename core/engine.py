@@ -39,3 +39,6 @@ class Engine(Window):
         self.context.clear(color=constants.BACKGROUND_COLOR_RGB)
         self.main_scene.render()
 
+    def run(self):
+        pass
+

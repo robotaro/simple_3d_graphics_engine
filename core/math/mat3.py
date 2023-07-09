@@ -1,9 +1,9 @@
-from numba import jit
+from numba import njit
 import numpy as np
-from core import quaternion
+from core.math import quaternion
 
 
-@jit(nopython=True)
+@njit
 def look_at_direction(direction, up_vector, output_mat3):
 
     """
@@ -30,7 +30,7 @@ def look_at_direction(direction, up_vector, output_mat3):
     output_mat3[:, 2] = forward
 
 
-@jit(nopython=True)
+@njit
 def rotate_around_vector(vector, angle, output_mat3):
     """
     Implementation based on description from : http://scipp.ucsc.edu/~haber/ph216/rotation_12.pdf
@@ -95,6 +95,7 @@ def slerp_mat3(mat3_a, mat3_b, t_value):
     quaternion.quat_to_mat3(quat_c, output_mat3)
 
     return output_mat3
+
 
 def euler(x_rad=0, y_rad=0, z_rad=0, order='xyz'):
 

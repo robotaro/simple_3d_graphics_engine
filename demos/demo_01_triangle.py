@@ -5,11 +5,9 @@ from core.window import Window
 
 class TriangleApp(Window):
 
-    def __init__(self, window_size: tuple, window_title: str, vertical_sync=False):
+    def __init__(self, *args, **kwargs):
 
-        super().__init__(window_size=window_size,
-                         window_title=window_title,
-                         vertical_sync=vertical_sync)
+        super().__init__(*args, **kwargs)
 
         self.context = mgl.create_context()
         self.program = None
@@ -74,7 +72,9 @@ def main():
     app = TriangleApp(
         window_size=(800, 600),
         window_title="First Window - A Simple Triangle",
-        vertical_sync=True)
+        vertical_sync=True,
+        enable_imgui=False
+    )
 
     app.run()
 

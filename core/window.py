@@ -21,6 +21,7 @@ class Window:
     __slots__ = ("window_size",
                  "window_title",
                  "vertical_sync",
+                 "enable_imgui",
                  "mouse_state",
                  "keyboard_state",
                  "window_glfw",
@@ -34,12 +35,14 @@ class Window:
     def __init__(self,
                  window_size=constants.WINDOW_DEFAULT_SIZE,
                  window_title=constants.WINDOW_DEFAULT_TITLE,
-                 vertical_sync=False):
+                 vertical_sync=False,
+                 enable_imgui=True):
 
         # ModernGL variables
         self.window_size = window_size
         self.window_title = window_title
         self.vertical_sync = vertical_sync
+        self.enable_imgui = enable_imgui
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -192,17 +195,16 @@ class Window:
 
             self._update_inputs()
 
-            imgui.new_frame()
             self.update()
-            imgui.end()
 
             self.context.clear(0.0, 0.0, 0.0)
 
             # App Render
             self.render()
 
-            imgui.render()
-            self.imgui_renderer.render(imgui.get_draw_data())
+            if self.enable_imgui:
+                imgui.render()
+                self.imgui_renderer.render(imgui.get_draw_data())
 
             glfw.swap_buffers(self.window_glfw)
 

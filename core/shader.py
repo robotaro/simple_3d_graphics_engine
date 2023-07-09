@@ -13,7 +13,7 @@ class Shader:
 
     def load(self, glsl_fpath: str) -> bool:
 
-        # Load shader code as invididual lines
+        # Load shader code as individual lines
         with open(glsl_fpath, "r") as file:
             self.shader_code_lines = file.read()
 
@@ -28,10 +28,9 @@ class Shader:
         #    geometry_shader=
         #)
 
+
+        pass
+
     def destroy(self):
         if self.program is not None:
             self.program.release()
-
-# DEBUG
-loader = ShaderLibrary(mgl_context=None)
-loader.load_shaders(directory=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\shaders")

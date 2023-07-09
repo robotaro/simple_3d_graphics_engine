@@ -3,7 +3,7 @@ import os
 # Default Directories
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 RESOURCES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources")
-SHADERS_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "shaders")
+SHADERS_DIRECTORY = os.path.join(os.path.dirname(os.path.dirname(__file__)), "shaders")
 
 # Default OpenGL constants
 OPENGL_MAJOR_VERSION = 4
@@ -47,5 +47,10 @@ BACKGROUND_COLOR_RGB = (0.08, 0.16, 0.18)
 # Font
 FONT_VERTICES_NUM_COLUMNS = 12  # 6 vertices, 2 dimensions each
 FONT_UVS_NUM_COLUMNS = 12  # 6 vertices, 2 dimensions each
+
+# Camera
+CAMERA_Z_NEAR = 0.01
+CAMERA_Z_FAR = 1000.0
+CAMERA_ZOOM_SPEED = 0.05
 
 
