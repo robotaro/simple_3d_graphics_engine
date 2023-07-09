@@ -2,9 +2,6 @@ from core import constants
 
 
 class Settings:
-    """
-    Singleton definitions of settings can be used
-    """
 
     _instance = None
 

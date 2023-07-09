@@ -1,8 +1,10 @@
 import os
+import yaml
 
 from core import constants
 from core.window import Window
 from core.shader_library import ShaderLibrary
+from core.renderer import Renderer
 
 
 class BasicScene(Window):
@@ -10,9 +12,9 @@ class BasicScene(Window):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.shader_library = ShaderLibrary(shader_directory=constants.SHADERS_DIRECTORY)
-        source_code = self.shader_library.generate_source_code(shader_key="lines_instanced_positions.vs.glsl")
+        self.shader_library = ShaderLibrary(context=self.context)
 
+        self.renderer = Renderer(window=self, shader_library=self.shader_library)
 
 
 def main():
