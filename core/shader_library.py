@@ -180,13 +180,31 @@ class ShaderLibrary:
             b = line_index + 1
             shader.source_code_lines[a:b] = self.shader_blueprints[include_shader_key].source_code_lines
 
+    def _blueprint2source_code(self, blueprint: dict, shader_type: str) -> Union[str, None]:
+
+        extra_definitions = blueprint.get("extra_definitions", {})
+
+        source = None
+        blueprint_key = f"{shader_type}_shader"
+        if blueprint_key in blueprint:
+            shader_name = blueprint[blueprint_key]
+            if shader_name not in self.shader_blueprints:
+                raise KeyError(f"[ERROR] Shader '{shader_name}' not found in shader library")
+            source = self.generate_source_code(
+                shader_key=shader_name,
+                shader_type="vertex",
+                extra_definitions=extra_definitions)
+
+        return source
+
     def _compile_programs(self) -> list:
         """
-        Create a series of
+        Compiles all programs defined in the YAML definition file. The programs
 
         :param context:
         :param shader_programs_yaml_fpath:
-        :return:
+        :return: list, List of dictionaries containing the shader
+                 program that failed and its respective description
         """
 
         compilation_errors = []
@@ -197,38 +215,12 @@ class ShaderLibrary:
 
         for key, blueprint in config.items():
 
-            # TODO: Remove code repetition down here
-            extra_definitions = blueprint.get("extra_definitions", {})
+            # Generate source code for all individual shaders that will make the final program
+            vertex_source = self._blueprint2source_code(shader_type="vertex", blueprint=blueprint)
+            geometry_source = self._blueprint2source_code(shader_type="geometry", blueprint=blueprint)
+            fragment_source = self._blueprint2source_code(shader_type="fragment", blueprint=blueprint)
 
-            vertex_source = None
-            if "vertex_shader" in blueprint:
-                shader_name = blueprint["vertex_shader"]
-                if shader_name not in self.shader_blueprints:
-                    raise KeyError(f"[ERROR] Shader '{shader_name}' not found in shader library")
-                vertex_source = self.generate_source_code(
-                    shader_key=shader_name,
-                    shader_type="vertex",
-                    extra_definitions=extra_definitions)
-
-            geometry_source = None
-            if "geometry_shader" in blueprint:
-                shader_name = blueprint["geometry_shader"]
-                if shader_name not in self.shader_blueprints:
-                    raise KeyError(f"[ERROR] Shader '{shader_name}' not found in shader library")
-                geometry_source = self.generate_source_code(
-                    shader_key=shader_name,
-                    shader_type="geometry",
-                    extra_definitions=extra_definitions)
-
-            fragment_source = None
-            if "fragment_shader" in blueprint:
-                shader_name = blueprint["fragment_shader"]
-                if shader_name not in self.shader_blueprints:
-                    raise KeyError(f"[ERROR] Shader '{shader_name}' not found in shader library")
-                fragment_source = self.generate_source_code(
-                    shader_key=shader_name,
-                    shader_type="fragment",
-                    extra_definitions=extra_definitions)
+            # Compile the program
             try:
                 new_program = self.context.program(
                     vertex_shader=vertex_source,
@@ -239,5 +231,7 @@ class ShaderLibrary:
                 compilation_errors.append({"program_id": key, "description": error.args[0]})
 
         return compilation_errors
+
+
 
 

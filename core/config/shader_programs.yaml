@@ -1,11 +1,21 @@
-# This config defines
+# This config defines all the shader programs that will be
+# assembled and compiled by the ShaderLibrary class
 
-fragment_program:
+# ======================[ Lines Demo ]=======================
+outline_program:
   vertex_shader: "lines_instanced_positions.vs.glsl"
   fragment_shader: "fragment_picking/frag_map.fs.glsl"
   extra_definitions:
-    smooth_shading: 1
-    texture: 0
-    face_color: 0
     instanced: 0
 
+depth_only_program:
+  vertex_shader: "lines_instanced_positions.vs.glsl"
+  fragment_shader: "shadow_mapping/depth_only.fs.glsl"
+  extra_definitions:
+    instanced: 0
+
+fragmap_program:
+  vertex_shader: "lines_instanced_positions.vs.glsl"
+  fragment_shader: "fragment_picking/frag_map.fs.glsl"
+  extra_definitions:
+    instanced: 0
