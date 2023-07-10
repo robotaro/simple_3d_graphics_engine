@@ -1,6 +1,11 @@
 # This config defines all the shader programs that will be
 # assembled and compiled by the ShaderLibrary class
 
+# ======================[ Triangle Demo ]=======================
+triangle_demo:
+  vertex_shader: "demo_triangle.glsl"
+  fragment_shader: "demo_triangle.glsl"
+
 # ======================[ Lines Demo ]=======================
 outline_program:
   vertex_shader: "lines_instanced_positions.vs.glsl"
@@ -19,3 +24,5 @@ fragmap_program:
   fragment_shader: "fragment_picking/frag_map.fs.glsl"
   extra_definitions:
     instanced: 0
+
+

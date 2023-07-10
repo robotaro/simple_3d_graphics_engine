@@ -1,16 +1,14 @@
 from typing import Tuple
 import numpy as np
 
-from core.settings import SETTINGS
-
-from core.scene.camera import CameraInterface, ViewerCamera
+from core.scene.cameras.camera_interface import CameraInterface, MainCamera
 
 
 class Viewport:
     def __init__(self, extents: Tuple[int, int, int, int], camera: CameraInterface):
         self.extents = extents
         self._camera = camera
-        self._using_temp_camera = not isinstance(camera, ViewerCamera)
+        self._using_temp_camera = not isinstance(camera, MainCamera)
 
     @property
     def camera(self):
@@ -19,7 +17,7 @@ class Viewport:
     @camera.setter
     def camera(self, camera: CameraInterface):
         self._camera = camera
-        self._using_temp_camera = not isinstance(camera, ViewerCamera)
+        self._using_temp_camera = not isinstance(camera, MainCamera)
 
     def contains(self, x: int, y: int) -> bool:
         """
@@ -44,7 +42,7 @@ class Viewport:
         fwd = self.camera.forward
         pos = self.camera.position
 
-        self.camera = ViewerCamera(45)
+        self.camera = MainCamera(45)
         self.camera.position = np.copy(pos)
         self.camera.target = pos + fwd * 3
         self.camera.update_matrices(*self.extents[2:])

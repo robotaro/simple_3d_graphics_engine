@@ -13,8 +13,8 @@ class BasicScene(Window):
         super().__init__(*args, **kwargs)
 
         self.shader_library = ShaderLibrary(context=self.context)
-
         self.renderer = Renderer(window=self, shader_library=self.shader_library)
+
 
 
 def main():

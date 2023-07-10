@@ -15,14 +15,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from functools import lru_cache
-
 import moderngl
 import numpy as np
+
+from core.settings import SETTINGS
+from core.math import so3
 from core.scene.material import Material
 
 
 class Node(object):
-    """Interface for nodes."""
 
     def __init__(
         self,
@@ -65,28 +66,6 @@ class Node(object):
         n_rotations = self._rotations.shape[0]
         n_scales = self._scales.shape[0]
 
-        if n_frames > 1:
-            assert n_positions == 1 or n_frames == n_positions, (
-                f"Number of position frames" f" ({n_positions}) must be 1 or match number of Node frames {n_frames}"
-            )
-            assert n_rotations == 1 or n_frames == n_rotations, (
-                f"Number of rotations frames" f" ({n_rotations}) must be 1 or match number of Node frames {n_frames}"
-            )
-            assert n_scales == 1 or n_frames == n_scales, (
-                f"Number of scales frames" f" ({n_scales}) must be 1 or match number of Node frames {n_frames}"
-            )
-        else:
-            n_frames = max(n_positions, n_rotations, n_scales)
-            assert (
-                (n_positions == 1 or n_positions == n_frames)
-                and (n_rotations == 1 or n_rotations == n_frames)
-                and (n_scales == 1 or n_scales == n_frames)
-            ), (
-                f"Number of position"
-                f"({n_positions}), rotation ({n_rotations}) and scale ({n_scales})"
-                "frames must be 1 or match."
-            )
-
         # Frames
         self.model_matrix = self.get_local_transform()
 
@@ -112,7 +91,7 @@ class Node(object):
 
         # GUI
         self.name = name if name is not None else type(self).__name__
-        self.uid = C.next_gui_id()
+        self.uid = SETTINGS.next_gui_id()
         self.unique_name = self.name + "{}".format(self.uid)
         self.icon = icon if icon is not None else "\u0082"
         self._enabled = True
@@ -407,7 +386,7 @@ class Node(object):
             self.position = pos
 
         # Rotation controls
-        euler_angles = rot2euler_numpy(self.rotation[np.newaxis], degrees=True)[0]
+        euler_angles = so3.rot2euler_numpy(self.rotation[np.newaxis], degrees=True)[0]
         ur, euler_angles = imgui.drag_float3(
             "Rotation##pos{}".format(self.unique_name),
             *euler_angles,
@@ -415,7 +394,7 @@ class Node(object):
             format="%.2f",
         )
         if ur:
-            self.rotation = euler2rot_numpy(np.array(euler_angles)[np.newaxis], degrees=True)[0]
+            self.rotation = so3.euler2rot_numpy(np.array(euler_angles)[np.newaxis], degrees=True)[0]
 
         # Scale controls
         us, scale = imgui.drag_float(

@@ -1,11 +1,4 @@
-from typing import Tuple
-import yaml
-
-from core.settings import SETTINGS
-from core import constants
 from core.window import Window
-from core.scene.scene import Scene
-from core.scene.camera import CameraInterface
 from core.shader_library import ShaderLibrary
 
 

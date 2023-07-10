@@ -37,10 +37,10 @@ class ShaderLibrary:
         self.shader_blueprints = {}
         self.programs = {}
 
-        # initialise
-        self.load_shaders()
+        # Compile shaders and store any compilation errors
+        self.compilation_errors = self.load_shaders()
 
-    def load_shaders(self):
+    def load_shaders(self) -> list:
 
         # Step 1) List all .glsl files in the directory
         relative_glsl_fpaths = utils_io.list_filepaths(directory=self.shader_directory, extension=".glsl")
@@ -59,7 +59,9 @@ class ShaderLibrary:
             self._solve_shader_dependencies(shader_key=key)
 
         # Step 4) Compile all shaders
-        self._compile_programs()
+        errors = self._compile_programs()
+
+        return errors
 
     def generate_source_code(self,
                              shader_key: str,
