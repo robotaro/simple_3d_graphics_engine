@@ -143,7 +143,7 @@ class Camera(Node, CameraInterface):
         self.hide_frustum()
 
         # Compute lines for each frame
-        all_lines = np.zeros((self.n_frames, 24, 3), dtype=np.float32)
+        """all_lines = np.zeros((self.n_frames, 24, 3), dtype=np.float32)
         frame_id = self.current_frame_id
         for i in range(self.n_frames):
             # Set the current frame id to use the camera matrices from the respective frame
@@ -213,7 +213,7 @@ class Camera(Node, CameraInterface):
         self.origin = RigidBodies(np.array([0.0, 0.0, 0.0])[np.newaxis], ori[np.newaxis])
         self.add(self.origin, show_in_hierarchy=False)
 
-        self.current_frame_id = frame_id
+        self.current_frame_id = frame_id"""
 
     def hide_path(self):
         if self.path is not None:
@@ -228,7 +228,7 @@ class Camera(Node, CameraInterface):
         self.hide_path()
 
         # Compute position and orientation for each frame
-        all_points = np.zeros((self.n_frames, 3), dtype=np.float32)
+        """all_points = np.zeros((self.n_frames, 3), dtype=np.float32)
         all_oris = np.zeros((self.n_frames, 3, 3), dtype=np.float32)
         frame_id = self.current_frame_id
         for i in range(self.n_frames):
@@ -260,7 +260,7 @@ class Camera(Node, CameraInterface):
             self.parent.add(path_lines, show_in_hierarchy=False, enabled=self.enabled)
 
         self.path = (path_spheres, path_lines)
-        self.current_frame_id = frame_id
+        self.current_frame_id = frame_id"""
 
     def render_outline(self, *args, **kwargs):
         # Only render the mesh outline, this avoids outlining

@@ -36,8 +36,7 @@ class Node(object):
         material=None,
         is_selectable=True,
         gui_affine=True,
-        gui_material=True,
-        n_frames=1,
+        gui_material=True
     ):
         """
         :param name: Name of the node
@@ -61,10 +60,6 @@ class Node(object):
         self._positions = position if len(position.shape) != 1 else position[np.newaxis]
         self._rotations = rotation if len(rotation.shape) != 2 else rotation[np.newaxis]
         self._scales = (scale if isinstance(scale, np.ndarray) else np.array([scale])).astype(np.float32)
-
-        n_positions = self._positions.shape[0]
-        n_rotations = self._rotations.shape[0]
-        n_scales = self._scales.shape[0]
 
         # Frames
         self.model_matrix = self.get_local_transform()
