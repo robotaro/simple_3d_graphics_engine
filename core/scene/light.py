@@ -4,6 +4,7 @@ from functools import lru_cache
 import numpy as np
 
 from core.scene.node import Node
+from core.utilities import utils_camera
 
 
 class Light(Node):
@@ -88,7 +89,7 @@ class Light(Node):
         self.mesh.spheres.color = (*tuple(light_color), 1.0)
 
     def update_rotation(self):
-        self.rotation = look_at(np.array([0, 0, 0]), self.direction, np.array([0.0, 1.0, 0.0]))[:3, :3].T
+        self.rotation = utils_camera.look_at(np.array([0, 0, 0]), self.direction, np.array([0.0, 1.0, 0.0]))[:3, :3].T
 
     def create_shadowmap(self, ctx):
         if self.shadow_map is None:
@@ -111,10 +112,10 @@ class Light(Node):
     @staticmethod
     @lru_cache()
     def _compute_light_matrix(position, direction, size, near, far):
-        P = orthographic_projection(size, size, near, far)
+        P = utils_camera.orthographic_projection(size, size, near, far)
         p = np.array(position)
         d = np.array(direction)
-        V = look_at(p, p + d, np.array([0.0, 1.0, 0.0]))
+        V = utils_camera.look_at(p, p + d, np.array([0.0, 1.0, 0.0]))
         return (P @ V).astype("f4")
 
     def mvp(self):
@@ -158,15 +159,21 @@ class Light(Node):
         )
 
         size = self.shadow_map_size
-        view_from_ndc = np.linalg.inv(orthographic_projection(size, size, self.shadow_map_near, self.shadow_map_far))
+        view_from_ndc = np.linalg.inv(
+            utils_camera.orthographic_projection(
+                scale_x=size,
+                scale_y=size,
+                znear=self.shadow_map_near,
+                zfar=self.shadow_map_far)
+        )
         lines = np.apply_along_axis(lambda x: (view_from_ndc @ np.append(x, 1.0))[:3], 1, lines)
 
-        if self._debug_lines is None:
+        """if self._debug_lines is None:
             self._debug_lines = Lines(lines, r_base=0.05, mode="lines", cast_shadow=False, is_selectable=False)
             self.add(self._debug_lines, show_in_hierarchy=False)
         else:
             self._debug_lines.lines = lines
-            self._debug_lines.redraw()
+            self._debug_lines.redraw()"""
 
     def render_outline(self, *args, **kwargs):
         if self.mesh.enabled:

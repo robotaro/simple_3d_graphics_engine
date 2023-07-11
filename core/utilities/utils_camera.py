@@ -2,6 +2,15 @@ import numpy as np
 from numba import njit
 
 
+def _transform_vector(transform, vector):
+    """Apply affine transformation (4-by-4 matrix) to a 3D vector."""
+    return (transform @ np.concatenate([vector, np.array([1])]))[:3]
+
+
+def _transform_direction(transform, vector):
+    """Apply affine transformation (4-by-4 matrix) to a 3D directon."""
+    return (transform @ np.concatenate([vector, np.array([0])]))[:3]
+
 def normalize(x):
     return x / np.linalg.norm(x)
 

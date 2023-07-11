@@ -1,5 +1,11 @@
+import numpy as np
+import trimesh
+
+from core import constants
+from core.utilities import utils_camera, utils
 
 
+from core.scene.cameras.camera_interface import CameraInterface
 
 
 class MainCamera(CameraInterface):
@@ -172,8 +178,8 @@ class MainCamera(CameraInterface):
             return
         cam_pose = np.linalg.inv(self.view_matrix)
         y_axis = cam_pose[:3, 1]
-        rot = rotation_matrix(angle, y_axis, self.target)
-        self.position = _transform_vector(rot, self.position)
+        rot = trimesh.transformations.rotation_matrix(angle, y_axis, self.target)
+        self.position = utils_camera._transform_vector(rot, self.position)
 
     def _rotation_from_mouse_delta(self, mouse_dx: int, mouse_dy: int):
         z_axis = -self.forward
@@ -185,23 +191,23 @@ class MainCamera(CameraInterface):
             # We are either hovering exactly below or above the scene's target but we want to move away or we are
             # not hitting the singularity anyway.
             x_axis = -self.right
-            rot_x = rotation_matrix(self.ROT_FACTOR * -mouse_dy, x_axis, self.target)
+            rot_x = trimesh.transformations.rotation_matrix(self.ROT_FACTOR * -mouse_dy, x_axis, self.target)
             rot = rot_x @ rot
 
         y_axis = np.cross(self.forward, self.right)
         x_speed = self.ROT_FACTOR / 10 if 1 - np.abs(dot) < 0.01 else self.ROT_FACTOR
-        rot = rotation_matrix(x_speed * -mouse_dx, y_axis, self.target) @ rot
+        rot = trimesh.transformations.rotation_matrix(x_speed * -mouse_dx, y_axis, self.target) @ rot
         return rot
 
     def rotate_azimuth_elevation(self, mouse_dx: int, mouse_dy: int):
         """Rotate the camera position left-right and up-down orbiting around the target (roll is not allowed)."""
         rot = self._rotation_from_mouse_delta(mouse_dx, mouse_dy)
-        self.position = _transform_vector(rot, self.position)
+        self.position = utils_camera._transform_vector(rot, self.position)
 
     def rotate_first_person(self, mouse_dx: int, mouse_dy: int):
         """Rotate the camera target left-right and up-down (roll is not allowed)."""
         rot = self._rotation_from_mouse_delta(mouse_dx, mouse_dy)
-        self.target = _transform_direction(rot, self.target - self.position) + self.position
+        self.target = utils_camera._transform_direction(rot, self.target - self.position) + self.position
 
     def intersect_trackball(self, x: int, y: int, width: int, height: int):
         """
@@ -249,9 +255,9 @@ class MainCamera(CameraInterface):
         angle = max(np.arccos(np.dot(utils_camera.normalize(current), utils_camera.normalize(start))), dist)
 
         # Compute resulting rotation and apply it to the starting position and up vector.
-        rot = rotation_matrix(angle, axis, self.target)
-        self.position = _transform_vector(rot, self._trackball_start_position)
-        self.up = _transform_direction(rot, self._trackball_start_up)
+        rot = trimesh.transformations.rotation_matrix(angle, axis, self.target)
+        self.position = utils_camera._transform_vector(rot, self._trackball_start_position)
+        self.up = utils_camera._transform_direction(rot, self._trackball_start_up)
 
     def rotate_start(self, x: int, y: int, width: int, height: int):
         """Start rotating the camera. Called on mouse button press."""
@@ -285,13 +291,13 @@ class MainCamera(CameraInterface):
 
         pixel_2d = np.array([screen_x, screen_y, 0 if self.is_ortho else -1])
         cam2world = np.linalg.inv(self.view_matrix)
-        pixel_3d = _transform_vector(cam2world, pixel_2d)
+        pixel_3d = utils_camera._transform_vector(cam2world, pixel_2d)
         if self.is_ortho:
             ray_origin = pixel_3d
             ray_dir = self.forward
         else:
             eye_origin = np.zeros(3)
-            ray_origin = _transform_vector(cam2world, eye_origin)
+            ray_origin = utils_camera._transform_vector(cam2world, eye_origin)
             ray_dir = pixel_3d - ray_origin
         ray_dir = ray_dir / np.linalg.norm(ray_dir)
 

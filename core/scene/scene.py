@@ -18,8 +18,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import moderngl
 import numpy as np
 
+from core import constants
 from core.scene.node import Node
 from core.scene.light import Light
+from core.scene.cameras.main_camera import MainCamera
+from core.utilities import utils
 
 
 class Scene(Node):
@@ -38,8 +41,7 @@ class Scene(Node):
         self.ctx = None
 
         self.backface_culling = True
-        self.fps = C.scene_fps
-        self.background_color = C.background_color
+        self.background_color = constants.BACKGROUND_COLOR_RGBA
 
         # Default Setup
         # If you update the number of lights, make sure to change the respective `define` statement in
@@ -135,7 +137,7 @@ class Scene(Node):
 
         # Setup the camera target cursor for rendering.
         camera = kwargs["camera"]
-        if isinstance(camera, ViewerCamera):
+        if isinstance(camera, MainCamera):
             # Scale target and trackball depending on distance from camera to target and fov.
             if camera.is_ortho:
                 scale = camera.ortho_size * 0.8
@@ -225,15 +227,15 @@ class Scene(Node):
 
     @property
     def bounds(self):
-        return compute_union_of_bounds([n for n in self.nodes if n not in self.lights])
+        return utils.compute_union_of_bounds([n for n in self.nodes if n not in self.lights])
 
     @property
     def current_bounds(self):
-        return compute_union_of_current_bounds([n for n in self.nodes if n not in self.lights])
+        return utils.compute_union_of_current_bounds([n for n in self.nodes if n not in self.lights])
 
     @property
     def bounds_without_floor(self):
-        return compute_union_of_current_bounds([n for n in self.nodes if n not in self.lights and n != self.floor])
+        return utils.compute_union_of_current_bounds([n for n in self.nodes if n not in self.lights and n != self.floor])
 
     def auto_set_floor(self):
         """Finds the minimum lower bound in the y coordinate from all the children bounds and uses that as the floor"""
@@ -248,7 +250,7 @@ class Scene(Node):
             if n not in self.lights:
                 centers.append(n.current_center)
 
-        if isinstance(self.camera, ViewerCamera) and len(centers) > 0:
+        if isinstance(self.camera, MainCamera) and len(centers) > 0:
             self.camera.target = np.array(centers).mean(0)
 
     @property
@@ -377,7 +379,10 @@ class Scene(Node):
                     imgui.spacing()
 
     def gui(self, imgui):
-        imgui.text(f"FPS: {self.fps:.1f}")
+
+        # Removed
+        #imgui.text(f"FPS: {self.fps:.1f}")
+
         # Background color
         uc, color = imgui.color_edit4("Background", *self.background_color)
         if uc:
@@ -433,7 +438,7 @@ class Scene(Node):
             if self.is_selected(camera):
                 flags |= imgui.TREE_NODE_SELECTED
 
-            if isinstance(camera, ViewerCamera):
+            if isinstance(camera, MainCamera):
                 name = camera.name
             else:
                 name = f"Camera: {camera.name}"
