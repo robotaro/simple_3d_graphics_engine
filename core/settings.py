@@ -10,11 +10,12 @@ class Settings:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __getattr__(self, item):
-        return getattr(self.instance, item)
+    def __init__(self):
+        self._gui_counter = 0
 
-    def __setattr__(self, key, value):
-        return setattr(self.instance, key, value)
+    def next_gui_id(self):
+        self._gui_counter += 1
+        return self._gui_counter
 
 
 # Global singleton definition

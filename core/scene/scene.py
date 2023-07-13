@@ -29,6 +29,7 @@ class Scene(Node):
     """Generic scene node"""
 
     def __init__(self, **kwargs):
+
         """Create a scene with a name."""
         kwargs["gui_material"] = False
         super(Scene, self).__init__(**kwargs)
@@ -280,7 +281,7 @@ class Scene(Node):
     def collect_nodes(self, req_enabled=True, obj_type=Node):
         nodes = []
 
-        # Use head recursion in order to collect the most deep nodes first
+        # Use head recursion in order to collect the deepest nodes first
         # These are likely to be nodes which should be rendered first (i.e. transparent parent nodes should be last)
         def rec_collect_nodes(nn):
             if not req_enabled or nn.enabled:
@@ -537,17 +538,6 @@ class Scene(Node):
     @property
     def n_lights(self):
         return len(self.lights)
-
-    @property
-    def n_frames(self):
-        n_frames = 1
-        ns = self.collect_nodes(req_enabled=False)
-        for n in ns:
-            if n._enabled_frames is None:
-                n_frames = max(n_frames, n.n_frames)
-            else:
-                n_frames = max(n_frames, n._enabled_frames.shape[0])
-        return n_frames
 
     def render_outline(self, *args, **kwargs):
         # No outline when the scene node is selected

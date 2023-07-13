@@ -102,11 +102,6 @@ class Node(object):
                 "icon": "\u0088",
                 "is_visible": gui_material,
             },
-            "animation": {
-                "fn": self.gui_animation,
-                "icon": "\u0098",
-                "is_visible": (lambda: self._n_frames > 1)(),
-            },
             "io": {
                 "fn": self.gui_io,
                 "icon": "\u009a",

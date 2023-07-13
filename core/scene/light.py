@@ -4,7 +4,8 @@ from functools import lru_cache
 import numpy as np
 
 from core.scene.node import Node
-from core.utilities import utils_camera
+from core.utilities import utils_camera, utils
+from core.scene.renderables.rigid_bodies import RigidBodies
 
 
 class Light(Node):
@@ -58,7 +59,7 @@ class Light(Node):
     def facing_origin(cls, **kwargs):
         pos = np.array(kwargs["position"])
         dir = -pos / np.linalg.norm(pos)
-        theta, phi = spherical_coordinates_from_direction(dir, degrees=True)
+        theta, phi = utils.spherical_coordinates_from_direction(dir, degrees=True)
         return cls(elevation=theta, azimuth=phi, **kwargs)
 
     @property
@@ -194,7 +195,7 @@ class Light(Node):
 
     @property
     def direction(self):
-        return direction_from_spherical_coordinates(self.elevation, self.azimuth, degrees=True)
+        return utils.direction_from_spherical_coordinates(self.elevation, self.azimuth, degrees=True)
 
     def redraw(self, **kwargs):
         if self._debug_lines:
