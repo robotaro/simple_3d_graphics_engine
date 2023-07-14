@@ -27,7 +27,7 @@ class SceneLoader:
             if scene_soup is None:
                 raise ValueError(f"[ERROR] Could not find Scene node")
 
-            new_scene = Scene()
+            #new_scene = Scene()
 
             self.build_node_tree(parent_soup=scene_soup, parent_node=new_scene)
 
@@ -41,8 +41,8 @@ class SceneLoader:
             #if ui_constants.KEY_ATTRS_ID not in child_soup.attrs:
             #    raise AttributeError(f"[ERROR] Missing widget ID on {child_soup.attrs.name} widget")
 
-            if child_soup.name == "plane":
-                new_node = self.soup2ui_column(soup=child_soup, level=level)
+            if child_soup.name == "light":
+                new_node = self.soup2light(soup=child_soup, level=level)
                 parent_widget.add_child_widget(widget=new_widget)
 
             if new_widget is None:
@@ -51,45 +51,15 @@ class SceneLoader:
             self.build_node_tree(parent_soup=child_soup, parent_widget=new_widget, level=level)
 
 
-    @staticmethod
-    def soup2plane(soup: BeautifulSoup, level: int) -> Plane:
 
-        # Get Parameters
-        width_str = soup.attrs.get(ui_constants.KEY_ATTRS_WIDTH, '100%')
-        height_str = soup.attrs.get(ui_constants.KEY_ATTRS_HEIGHT, '100%')
-        spacing = soup.attrs.get(ui_constants.KEY_ATTRS_SPACING, ui_constants.DEFAULT_SPACING_COLUMN)
+    def soup2light(self, soup: BeautifulSoup, level: int) -> None:
 
-        return UIColumn(
-            widget_id=soup.attrs[ui_constants.KEY_ATTRS_ID],
-            width_str=width_str,
-            height_str=height_str,
-            spacing=float(spacing),
-            level=level)
+        # Get String Parameters
+        position = self._get_attrs_position(soup=soup)
 
-    @staticmethod
-    def soup2ui_row(soup: BeautifulSoup, level: int) -> UIRow:
-        width_str = soup.attrs.get(ui_constants.KEY_ATTRS_WIDTH, '100%')
-        height_str = soup.attrs.get(ui_constants.KEY_ATTRS_HEIGHT, '100%')
-        spacing = soup.attrs.get(ui_constants.KEY_ATTRS_SPACING, ui_constants.DEFAULT_SPACING_ROW)
-        return UIRow(
-            widget_id=soup.attrs[ui_constants.KEY_ATTRS_ID],
-            width_str=width_str,
-            height_str=height_str,
-            spacing=float(spacing),
-            level=level)
+        # Convert string paramters to
+        pass
 
-    @staticmethod
-    def soup2ui_button(soup: BeautifulSoup, level: int) -> UIButton:
-        width_str = soup.attrs.get(ui_constants.KEY_ATTRS_WIDTH, '100%')
-        height_str = soup.attrs.get(ui_constants.KEY_ATTRS_HEIGHT, '100%')
-        text = 'No text' if len(soup.text) == 0 else soup.text
-        return UIButton(
-            widget_id=soup.attrs[ui_constants.KEY_ATTRS_ID],
-            width_str=width_str,
-            height_str=height_str,
-            text=text,
-            level=level)
-
-# [DEBUG]
-loader = SceneLoader()
-loader.load(scene_xml_fpath=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\scenes\default_scene.xml")
+    def _get_attrs_position(self, soup: BeautifulSoup) -> tuple:
+        position_str = soup.attrs.get("position", "0 0 0")
+        return tuple([float(part) for part in position_str.strip(" ").split(" ")])

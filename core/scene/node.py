@@ -1,19 +1,4 @@
-"""
-Copyright (C) 2022  ETH Zurich, Manuel Kaufmann, Velko Vechev, Dario Mylonopoulos
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
 from functools import lru_cache
 import moderngl
 import numpy as np
@@ -24,6 +9,8 @@ from core.scene.material import Material
 
 
 class Node(object):
+
+    # TODO: Add __slots__
 
     def __init__(
         self,
@@ -113,7 +100,8 @@ class Node(object):
         self._show_in_hierarchy = True
         self.is_selectable = is_selectable
 
-        self.nodes = []
+        # Node hierarchy
+        self.children = []
         self.parent = None
 
     # Selected Mode
@@ -186,19 +174,6 @@ class Node(object):
         self._scales = scales
         self.update_transform(None if self.parent is None else self.parent.model_matrix)
 
-    @staticmethod
-    @lru_cache()
-    def _compute_transform(pos, rot, scale):
-        rotation = np.eye(4)
-        rotation[:3, :3] = np.array(rot)
-
-        trans = np.eye(4)
-        trans[:3, 3] = np.array(pos)
-
-        scale = np.diag([scale, scale, scale, 1])
-
-        return (trans @ rotation @ scale).astype("f4")
-
     def get_local_transform(self):
         """Construct local transform as a 4x4 matrix from this node's position, orientation and scale."""
         return self._compute_transform(tuple(self.position), tuple(map(tuple, self.rotation)), self.scale)
@@ -210,7 +185,7 @@ class Node(object):
         else:
             self.model_matrix = parent_transform.astype("f4") @ self.get_local_transform()
 
-        for n in self.nodes:
+        for n in self.children:
             n.update_transform(self.model_matrix)
 
     @property
@@ -284,7 +259,7 @@ class Node(object):
         n._show_in_hierarchy = show_in_hierarchy
         n._expanded = expanded
         n._enabled = enabled if n._enabled_frames is None else n._enabled_frames[n.current_frame_id]
-        self.nodes.append(n)
+        self.children.append(n)
         n.parent = self
         n.update_transform(self.model_matrix)
 
@@ -297,7 +272,7 @@ class Node(object):
         for n in nodes:
             n.release()
             try:
-                self.nodes.remove(n)
+                self.children.remove(n)
             except:
                 pass
 
@@ -328,6 +303,170 @@ class Node(object):
         """
         return self.material.color[3] < 1.0
 
+    # Renderable
+    @staticmethod
+    def once(func):
+        def _decorator(self, *args, **kwargs):
+            if self.is_renderable:
+                return
+            else:
+                func(self, *args, **kwargs)
+                self.is_renderable = True
+
+        return _decorator
+
+    def make_renderable(self, ctx):
+        """
+        Prepares this object for rendering. This function must be called before `render` is used.
+        :param ctx: The moderngl context.
+        """
+        pass
+
+    def render(self, camera, position=None, rotation=None, **kwargs):
+        """Render the current frame in this sequence."""
+        pass
+
+    def render_positions(self, prog):
+        """
+        Render with a VAO with only positions bound, used for shadow mapping, fragmap and depth prepass.
+        """
+        pass
+
+    def redraw(self, **kwargs):
+        """Perform update and redraw operations. Push to the GPU when finished. Recursively redraw child nodes"""
+        for n in self.children:
+            n.redraw(**kwargs)
+
+    def set_camera_matrices(self, prog, camera, **kwargs):
+        """Set the model view projection matrix in the given program."""
+        # Transpose because np is row-major but OpenGL expects column-major.
+        prog["model_matrix"].write(self.model_matrix.T.astype("f4").tobytes())
+        prog["view_projection_matrix"].write(camera.get_view_projection_matrix().T.astype("f4").tobytes())
+
+    def receive_shadow(self, program, **kwargs):
+        """
+        Call this function if the renderable is to receive shadows.
+        :param program: The shader program that can shade with shadows.
+        :param kwargs: The render kwargs.
+        """
+        if kwargs.get("shadows_enabled", False):
+            lights = kwargs["lights"]
+
+            for i, light in enumerate(lights):
+                if light.shadow_enabled and light.shadow_map:
+                    light_matrix = light.mvp() @ self.model_matrix
+                    program[f"dirLights[{i}].matrix"].write(light_matrix.T.tobytes())
+
+                    # Bind shadowmap to slot i + 1, we reserve slot 0 for the mesh texture
+                    # and use slots 1 to (#lights + 1) for shadow maps
+                    light.shadow_map.use(location=i + 1)
+
+            # Set sampler uniforms
+            uniform = program[f"shadow_maps"]
+            uniform.value = 1 if uniform.array_length == 1 else [*range(1, len(lights) + 1)]
+
+    def release(self):
+        """
+        Release all OpenGL resources used by this node and any of its children. Subclasses that instantiate OpenGL
+        objects should implement this method with '@hooked' to avoid leaking resources.
+        """
+        for n in self.children:
+            n.release()
+
+    def on_selection(self, node, instance_id, tri_id):
+        """
+        Called when the node is selected
+
+        :param node:  the node which was clicked (can be None if the selection wasn't a mouse event)
+        :param instance_id: the id of the instance that was clicked, 0 if the object is not instanced
+                            (can be None if the selection wasn't a mouse event)
+        :param tri_id: the id of the triangle that was clicked from the 'node' mesh
+                       (can be None if the selection wasn't a mouse event)
+        """
+        pass
+
+    def key_event(self, key, wnd_keys):
+        """
+        Handle shortcut key presses (if you are the selected object)
+        """
+        pass
+
+    def update_frames(self, *args, **kwargs):
+        pass
+
+    def add_frames(self, *args, **kwargs):
+        pass
+
+    def remove_frames(self, *args, **kwargs):
+        pass
+
+    # =========================================================================
+    #                           Render Functions
+    # =========================================================================
+
+    def render_shadowmap(self, light_matrix):
+        if not self.cast_shadow or self.depth_only_program is None or self.color[3] == 0.0:
+            return
+
+        prog = self.depth_only_program
+        prog["model_matrix"].write(self.model_matrix.T.tobytes())
+        prog["view_projection_matrix"].write(light_matrix.T.tobytes())
+
+        self.render_positions(prog)
+
+    def render_fragmap(self, ctx, camera, uid=None):
+        if not self.fragmap or self.fragmap_program is None:
+            return
+
+        # Transpose because np is row-major but OpenGL expects column-major.
+        prog = self.fragmap_program
+        self.set_camera_matrices(prog, camera)
+
+        # Render with the specified object uid, if None use the node uid instead.
+        prog["obj_id"] = uid or self.uid
+
+        if self.backface_culling or self.backface_fragmap:
+            ctx.enable(moderngl.CULL_FACE)
+        else:
+            ctx.disable(moderngl.CULL_FACE)
+
+        # If backface_fragmap is enabled for this node only render backfaces
+        if self.backface_fragmap:
+            ctx.cull_face = "front"
+
+        self.render_positions(prog)
+
+        # Restore cull face to back
+        if self.backface_fragmap:
+            ctx.cull_face = "back"
+
+    def render_depth_prepass(self, camera, **kwargs):
+        if not self.depth_prepass or self.depth_only_program is None:
+            return
+
+        prog = self.depth_only_program
+        self.set_camera_matrices(prog, camera)
+        self.render_positions(prog)
+
+    def render_outline(self, ctx, camera):
+        if self.outline and self.outline_program is not None:
+            prog = self.outline_program
+            self.set_camera_matrices(prog, camera)
+
+            if self.backface_culling:
+                ctx.enable(moderngl.CULL_FACE)
+            else:
+                ctx.disable(moderngl.CULL_FACE)
+            self.render_positions(prog)
+
+        # Render children node recursively.
+        for n in self.children:
+            n.render_outline(ctx, camera)
+
+    # =========================================================================
+    #                            GUI Callbacks
+    # =========================================================================
+
     def gui(self, imgui):
         """
         Render GUI for custom node properties and controls. Implementation optional.
@@ -339,29 +478,6 @@ class Node(object):
 
     def gui_modes(self, imgui):
         """Render GUI with toolbar (tools) for this particular node"""
-
-    def gui_animation(self, imgui):
-        """Render GUI for animation related settings"""
-
-        if self._enabled_frames is None:
-            if self.n_frames > 1:
-                u, fid = imgui.slider_int(
-                    "Frame##r_{}".format(self.unique_name),
-                    self.current_frame_id,
-                    min_value=0,
-                    max_value=self.n_frames - 1,
-                )
-                if u:
-                    self.current_frame_id = fid
-        else:
-            u, fid = imgui.slider_int(
-                "Frame##r_{}".format(self.unique_name),
-                self._internal_frame_id,
-                min_value=0,
-                max_value=self._enabled_frames.shape[0] - 1,
-            )
-            if u:
-                self.current_frame_id = fid
 
     def gui_affine(self, imgui):
         """Render GUI for affine transformations"""
@@ -438,169 +554,13 @@ class Node(object):
 
     def gui_context_menu(self, imgui, x: int, y: int):
         _, self.enabled = imgui.checkbox("Enabled", self.enabled)
-        if any([n._show_in_hierarchy for n in self.nodes]):
+        if any([n._show_in_hierarchy for n in self.children]):
             imgui.spacing()
             imgui.separator()
             imgui.spacing()
-            for n in self.nodes:
+            for n in self.children:
                 if not n._show_in_hierarchy:
                     continue
                 if imgui.begin_menu(f"{n.name}##{n.uid}"):
                     n.gui_context_menu(imgui, x, y)
                     imgui.end_menu()
-
-    # Renderable
-    @staticmethod
-    def once(func):
-        def _decorator(self, *args, **kwargs):
-            if self.is_renderable:
-                return
-            else:
-                func(self, *args, **kwargs)
-                self.is_renderable = True
-
-        return _decorator
-
-    def make_renderable(self, ctx):
-        """
-        Prepares this object for rendering. This function must be called before `render` is used.
-        :param ctx: The moderngl context.
-        """
-        pass
-
-    def render(self, camera, position=None, rotation=None, **kwargs):
-        """Render the current frame in this sequence."""
-        pass
-
-    def render_positions(self, prog):
-        """
-        Render with a VAO with only positions bound, used for shadow mapping, fragmap and depth prepass.
-        """
-        pass
-
-    def redraw(self, **kwargs):
-        """Perform update and redraw operations. Push to the GPU when finished. Recursively redraw child nodes"""
-        for n in self.nodes:
-            n.redraw(**kwargs)
-
-    def set_camera_matrices(self, prog, camera, **kwargs):
-        """Set the model view projection matrix in the given program."""
-        # Transpose because np is row-major but OpenGL expects column-major.
-        prog["model_matrix"].write(self.model_matrix.T.astype("f4").tobytes())
-        prog["view_projection_matrix"].write(camera.get_view_projection_matrix().T.astype("f4").tobytes())
-
-    def receive_shadow(self, program, **kwargs):
-        """
-        Call this function if the renderable is to receive shadows.
-        :param program: The shader program that can shade with shadows.
-        :param kwargs: The render kwargs.
-        """
-        if kwargs.get("shadows_enabled", False):
-            lights = kwargs["lights"]
-
-            for i, light in enumerate(lights):
-                if light.shadow_enabled and light.shadow_map:
-                    light_matrix = light.mvp() @ self.model_matrix
-                    program[f"dirLights[{i}].matrix"].write(light_matrix.T.tobytes())
-
-                    # Bind shadowmap to slot i + 1, we reserve slot 0 for the mesh texture
-                    # and use slots 1 to (#lights + 1) for shadow maps
-                    light.shadow_map.use(location=i + 1)
-
-            # Set sampler uniforms
-            uniform = program[f"shadow_maps"]
-            uniform.value = 1 if uniform.array_length == 1 else [*range(1, len(lights) + 1)]
-
-    def render_shadowmap(self, light_matrix):
-        if not self.cast_shadow or self.depth_only_program is None or self.color[3] == 0.0:
-            return
-
-        prog = self.depth_only_program
-        prog["model_matrix"].write(self.model_matrix.T.tobytes())
-        prog["view_projection_matrix"].write(light_matrix.T.tobytes())
-
-        self.render_positions(prog)
-
-    def render_fragmap(self, ctx, camera, uid=None):
-        if not self.fragmap or self.fragmap_program is None:
-            return
-
-        # Transpose because np is row-major but OpenGL expects column-major.
-        prog = self.fragmap_program
-        self.set_camera_matrices(prog, camera)
-
-        # Render with the specified object uid, if None use the node uid instead.
-        prog["obj_id"] = uid or self.uid
-
-        if self.backface_culling or self.backface_fragmap:
-            ctx.enable(moderngl.CULL_FACE)
-        else:
-            ctx.disable(moderngl.CULL_FACE)
-
-        # If backface_fragmap is enabled for this node only render backfaces
-        if self.backface_fragmap:
-            ctx.cull_face = "front"
-
-        self.render_positions(prog)
-
-        # Restore cull face to back
-        if self.backface_fragmap:
-            ctx.cull_face = "back"
-
-    def render_depth_prepass(self, camera, **kwargs):
-        if not self.depth_prepass or self.depth_only_program is None:
-            return
-
-        prog = self.depth_only_program
-        self.set_camera_matrices(prog, camera)
-        self.render_positions(prog)
-
-    def render_outline(self, ctx, camera):
-        if self.outline and self.outline_program is not None:
-            prog = self.outline_program
-            self.set_camera_matrices(prog, camera)
-
-            if self.backface_culling:
-                ctx.enable(moderngl.CULL_FACE)
-            else:
-                ctx.disable(moderngl.CULL_FACE)
-            self.render_positions(prog)
-
-        # Render children node recursively.
-        for n in self.nodes:
-            n.render_outline(ctx, camera)
-
-    def release(self):
-        """
-        Release all OpenGL resources used by this node and any of its children. Subclasses that instantiate OpenGL
-        objects should implement this method with '@hooked' to avoid leaking resources.
-        """
-        for n in self.nodes:
-            n.release()
-
-    def on_selection(self, node, instance_id, tri_id):
-        """
-        Called when the node is selected
-
-        :param node:  the node which was clicked (can be None if the selection wasn't a mouse event)
-        :param instance_id: the id of the instance that was clicked, 0 if the object is not instanced
-                            (can be None if the selection wasn't a mouse event)
-        :param tri_id: the id of the triangle that was clicked from the 'node' mesh
-                       (can be None if the selection wasn't a mouse event)
-        """
-        pass
-
-    def key_event(self, key, wnd_keys):
-        """
-        Handle shortcut key presses (if you are the selected object)
-        """
-        pass
-
-    def update_frames(self, *args, **kwargs):
-        pass
-
-    def add_frames(self, *args, **kwargs):
-        pass
-
-    def remove_frames(self, *args, **kwargs):
-        pass

@@ -228,26 +228,26 @@ class Scene(Node):
 
     @property
     def bounds(self):
-        return utils.compute_union_of_bounds([n for n in self.nodes if n not in self.lights])
+        return utils.compute_union_of_bounds([n for n in self.children if n not in self.lights])
 
     @property
     def current_bounds(self):
-        return utils.compute_union_of_current_bounds([n for n in self.nodes if n not in self.lights])
+        return utils.compute_union_of_current_bounds([n for n in self.children if n not in self.lights])
 
     @property
     def bounds_without_floor(self):
-        return utils.compute_union_of_current_bounds([n for n in self.nodes if n not in self.lights and n != self.floor])
+        return utils.compute_union_of_current_bounds([n for n in self.children if n not in self.lights and n != self.floor])
 
     def auto_set_floor(self):
         """Finds the minimum lower bound in the y coordinate from all the children bounds and uses that as the floor"""
-        if self.floor is not None and len(self.nodes) > 0:
+        if self.floor is not None and len(self.children) > 0:
             self.floor.position[1] = self.current_bounds[1, 0]
             self.floor.update_transform()
 
     def auto_set_camera_target(self):
         """Sets the camera target to the average of the center of all objects in the scene"""
         centers = []
-        for n in self.nodes:
+        for n in self.children:
             if n not in self.lights:
                 centers.append(n.current_center)
 
@@ -287,10 +287,10 @@ class Scene(Node):
             if not req_enabled or nn.enabled:
                 if isinstance(nn, obj_type):
                     nodes.append(nn)
-                for n_child in nn.nodes:
+                for n_child in nn.children:
                     rec_collect_nodes(n_child)
 
-        for n in self.nodes:
+        for n in self.children:
             rec_collect_nodes(n)
         return nodes
 
@@ -507,7 +507,7 @@ class Scene(Node):
                 flags |= imgui.TREE_NODE_DEFAULT_OPEN
             if self.is_selected(r):
                 flags |= imgui.TREE_NODE_SELECTED
-            if not any(c.show_in_hierarchy for c in r.nodes):
+            if not any(c.show_in_hierarchy for c in r.children):
                 flags |= imgui.TREE_NODE_LEAF
             r.expanded = imgui.tree_node("{} {}##tree_node_{}".format(r.icon, r.name, r.unique_name), flags)
             if imgui.is_item_clicked():
@@ -526,7 +526,7 @@ class Scene(Node):
 
             if r.expanded:
                 # Recursively render children nodes
-                self.gui_hierarchy(imgui, r.nodes)
+                self.gui_hierarchy(imgui, r.children)
                 imgui.tree_pop()
 
             if not curr_enabled:

@@ -3,5 +3,4 @@
     <light label="Back Light" position="0.0 10.0 -15.0" color="1.0, 1.0 1.0" />
     <plane label="floor" position="0 0 0" width="100" depth="100"/>
 
-
 </scene>

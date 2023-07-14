@@ -1,6 +1,20 @@
 import numpy as np
-from core import mat3
-from core.default import *
+from core.math import mat3
+from functools import lru_cache
+
+
+@lru_cache()
+def compute_transform(pos: tuple, rot: tuple, scale: tuple):
+    rotation = np.eye(4)
+    rotation[:3, :3] = np.array(rot)
+
+    trans = np.eye(4)
+    trans[:3, 3] = np.array(pos)
+
+    scale = np.diag([scale, scale, scale, 1])
+
+    return (trans @ rotation @ scale).astype("f4")
+
 
 def create(position: np.array, rotation: mat3):
 
@@ -9,9 +23,11 @@ def create(position: np.array, rotation: mat3):
     mat[:3, 3] = position
     return mat
 
+
 def mul_vector(tr_mat4: np.ndarray, vector3: np.array):
 
     return np.matmul(tr_mat4[0:3, 0:3], vector3) + tr_mat4[:3, 3]
+
 
 def perspective(fovy_deg, aspect, near, far):
 
@@ -33,6 +49,7 @@ def perspective(fovy_deg, aspect, near, far):
                      [0, sy, 0, 0],
                      [0, 0, zz, zw],
                      [0, 0, -1, 0]], dtype=np.float32)
+
 
 def orthographic(left, right, bottom, top, near, far):
     dx = right - left
