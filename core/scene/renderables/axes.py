@@ -17,9 +17,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import numpy as np
 from core.scene.node import Node
 from core.scene.renderables.spheres import Spheres
+from core.scene.renderables.arrows import Arrows
 
 
-class RigidBodies(Node):
+class Axes(Node):
     """
     A sequence of N 3D positions and orientations in space.
     """
@@ -46,7 +47,7 @@ class RigidBodies(Node):
         """
         self._rb_pos = rb_pos[np.newaxis] if rb_pos.ndim == 2 else rb_pos
         self._rb_ori = rb_ori[np.newaxis] if rb_ori.ndim == 3 else rb_ori
-        super(RigidBodies, self).__init__(color=color, icon=icon, **kwargs)
+        super(Axes, self).__init__(color=color, icon=icon, **kwargs)
 
         self.radius = radius
         self.length = length
@@ -55,8 +56,8 @@ class RigidBodies(Node):
         self._add_node(self.spheres, show_in_hierarchy=False)
 
         self.coords = []
-        r_base = radius_cylinder or length / 50
-        r_head = r_base * 2
+        radius_base = radius_cylinder or length / 50
+        radius_head = radius_base * 2
         c = [0.0, 0.0, 0.0, 1.0]
         for i in range(3):
             line = self.rb_ori[..., :, i]
@@ -64,10 +65,10 @@ class RigidBodies(Node):
             color = c.copy()
             color[i] = 1.0
             axs = Arrows(
-                self.rb_pos,
-                self.rb_pos + line,
-                r_base=r_base,
-                r_head=r_head,
+                origins=self.rb_pos,
+                tips=self.rb_pos + line,
+                radius_base=radius_base,
+                radius_head=radius_head,
                 color=tuple(color),
                 is_selectable=False,
             )
@@ -159,7 +160,7 @@ class RigidBodies(Node):
             max_value=10.0,
             format="%.3f",
         )
-        super(RigidBodies, self).gui(imgui)
+        super(Axes, self).gui(imgui)
 
     def update_frames(self, rb_pos, rb_ori, frames):
         self.rb_pos[frames] = rb_pos

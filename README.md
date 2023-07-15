@@ -7,6 +7,13 @@ Maybe check the following projects for inspiration:
 
 https://github.com/ubuntunux/PyEngine3D
 
+## High Performance Computing Sources
+- https://www.taichi-lang.org/ (Very interesting)
+- https://www.ray.io/
+- https://numba.pydata.org/
+- https://www.dask.org/
+
+
 ## Widget TODOs
 
 ### Column

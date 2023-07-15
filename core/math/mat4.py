@@ -2,9 +2,12 @@ import numpy as np
 from core.math import mat3
 from functools import lru_cache
 
+DEG2RAD = np.pi / 180.0
 
 @lru_cache()
-def compute_transform(pos: tuple, rot: tuple, scale: tuple):
+def compute_transform(pos: tuple, rot: tuple, scale: float):
+    # TODO: refactor this to simplify scale!
+
     rotation = np.eye(4)
     rotation[:3, :3] = np.array(rot)
 

@@ -1,6 +1,9 @@
 from bs4 import BeautifulSoup
 from core.scene.scene import Scene
 from core.scene.node import Node
+from core.scene.renderables.light import Light
+
+from core.utilities import utils_xml
 
 
 class SceneLoader:
@@ -27,7 +30,7 @@ class SceneLoader:
             if scene_soup is None:
                 raise ValueError(f"[ERROR] Could not find Scene node")
 
-            #new_scene = Scene()
+            new_scene = Scene()
 
             self.build_node_tree(parent_soup=scene_soup, parent_node=new_scene)
 
@@ -36,30 +39,28 @@ class SceneLoader:
         level += 1
 
         for child_soup in parent_soup.findChildren(recursive=False):
-            new_widget = None
-
-            #if ui_constants.KEY_ATTRS_ID not in child_soup.attrs:
-            #    raise AttributeError(f"[ERROR] Missing widget ID on {child_soup.attrs.name} widget")
+            new_node = None
 
             if child_soup.name == "light":
                 new_node = self.soup2light(soup=child_soup, level=level)
-                parent_widget.add_child_widget(widget=new_widget)
+                parent_node.add(new_node)
 
-            if new_widget is None:
+            # DEBUG
+            continue
+
+
+            if new_node is None:
                 raise ValueError(f"[ERROR] Widget type {child_soup.name} is not supported")
 
             self.build_node_tree(parent_soup=child_soup, parent_widget=new_widget, level=level)
 
 
-
     def soup2light(self, soup: BeautifulSoup, level: int) -> None:
 
         # Get String Parameters
-        position = self._get_attrs_position(soup=soup)
+        position = utils_xml.get_attribute_tuple_float(soup=soup, attribute="position")
+        if position is None:
+            position = (0.0, 0.0, 0.0)
 
         # Convert string paramters to
-        pass
-
-    def _get_attrs_position(self, soup: BeautifulSoup) -> tuple:
-        position_str = soup.attrs.get("position", "0 0 0")
-        return tuple([float(part) for part in position_str.strip(" ").split(" ")])
+        return

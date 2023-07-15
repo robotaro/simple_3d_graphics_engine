@@ -20,7 +20,8 @@ import numpy as np
 
 from core import constants
 from core.scene.node import Node
-from core.scene.light import Light
+from core.scene.renderables.light import Light
+from core.scene.renderables.lines_2d import Lines2D
 from core.scene.cameras.main_camera import MainCamera
 from core.utilities import utils
 
@@ -68,10 +69,10 @@ class Scene(Node):
         self.ambient_strength = 2.0
 
         # Scene items
-        self.origin = CoordinateSystem(name="Origin", length=0.1, gui_affine=False, gui_material=False)
-        self.add(self.origin)
+        #self.origin = CoordinateSystem(name="Origin", length=0.1, gui_affine=False, gui_material=False)
+        #self.add(self.origin)
 
-        self.floor = ChessboardPlane(100.0, 200, (0.9, 0.9, 0.9, 1.0), (0.82, 0.82, 0.82, 1.0), name="Floor")
+        """self.floor = ChessboardPlane(100.0, 200, (0.9, 0.9, 0.9, 1.0), (0.82, 0.82, 0.82, 1.0), name="Floor")
         self.floor.material.diffuse = 0.1
         self.add(self.floor)
 
@@ -90,7 +91,7 @@ class Scene(Node):
             color=(0.2, 0.2, 0.2, 1),
             mode="lines",
         )
-        self.add(self.camera_target, show_in_hierarchy=False, enabled=False)
+        self.add(self.camera_target, show_in_hierarchy=False, enabled=False)"""
 
         # Camera trackball.
         N = 50

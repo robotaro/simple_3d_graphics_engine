@@ -1,19 +1,4 @@
-"""
-Copyright (C) 2022  ETH Zurich, Manuel Kaufmann, Velko Vechev, Dario Mylonopoulos
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
 import moderngl
 import numpy as np
 from moderngl_window.opengl.vao import VAO
@@ -59,8 +44,6 @@ class Spheres(Node):
             assert color.shape[1] == 4 and positions.shape[1] == color.shape[0]
             self.sphere_colors = color
 
-        if "n_frames" not in kwargs:
-            kwargs["n_frames"] = positions.shape[0]
         super().__init__(icon=icon, **kwargs)
 
         self._sphere_positions = positions

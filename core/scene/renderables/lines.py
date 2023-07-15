@@ -1,26 +1,14 @@
-"""
-Copyright (C) 2022  ETH Zurich, Manuel Kaufmann, Velko Vechev, Dario Mylonopoulos
 
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
 import moderngl
 import numpy as np
 import trimesh
 from moderngl_window.opengl.vao import VAO
 
-from core.utilities import utils, utils_camera
+from core.geometry_3d import shapes_3d
+from core.utilities import utils_decorators
 from core.scene.node import Node
+from core.scene.material import Material
+
 
 class Lines(Node):
     """Render lines as cylinders or cones. Can render approx. 600k lines at 40 fps."""
@@ -28,7 +16,7 @@ class Lines(Node):
     def __init__(
         self,
         lines,
-        r_base=0.01,
+        radius_base=0.01,
         r_tip=None,
         color=(0.0, 0.0, 1.0, 1.0),
         mode="line_strip",
@@ -38,7 +26,7 @@ class Lines(Node):
         """
         Initializer.
         :param lines: Set of 3D coordinates as a np array of shape (F, L, 3) or (L, 3).
-        :param r_base: Thickness of the line.
+        :param radius_base: Thickness of the line.
         :param r_tip: If set, the thickness of the line will taper from r_base to r_tip. If set to 0.0 it will create
           a proper cone.
         :param color: Color of the line (4-tuple) or array of color (N_LINES, 4), one for each line.
@@ -56,8 +44,8 @@ class Lines(Node):
 
         self._lines = lines
         self.mode = mode
-        self.r_base = r_base
-        self.r_tip = r_tip if r_tip is not None else r_base
+        self.r_base = radius_base
+        self.r_tip = r_tip if r_tip is not None else radius_base
 
         self.vertices, self.faces = self.get_mesh()
         self.n_lines = self.lines.shape[1] // 2 if mode == "lines" else self.lines.shape[1] - 1
@@ -72,7 +60,7 @@ class Lines(Node):
             ), "Color must be a tuple of 4 values or a numpy array of shape (N_LINES, 4)"
             self.line_colors = color
 
-        super(Lines, self).__init__(n_frames=self.lines.shape[0], **kwargs)
+        super(Lines, self).__init__(**kwargs)
 
         self._need_upload = True
         self.draw_edges = False
@@ -228,13 +216,13 @@ class Lines(Node):
 
         # If r_tip is below a certain threshold, we create a proper cone, i.e. with just a single vertex at the top.
         if self.r_tip < 1e-5:
-            data = _create_cone_from_to(v0s, v1s, radius=1.0)
+            data = shapes_3d.create_cone_from_to(v0s, v1s, radius=1.0)
         else:
-            data = _create_cylinder_from_to(v0s, v1s, radius1=1.0, radius2=1.0)
+            data = shapes_3d.create_cylinder_from_to(v0s, v1s, radius1=1.0, radius2=1.0)
 
         return data["vertices"][0], data["faces"]
 
-    @hooked
+    @utils_decorators.hooked
     def release(self):
         if self.is_renderable:
             self.vao.release()
@@ -390,7 +378,7 @@ class Lines2D(Node):
         self.set_camera_matrices(self.prog, camera, **kwargs)
         self.vao.render(self.prog, vertices=self.n_lines * 2)
 
-    @hooked
+    @utils_decorators.hooked
     def release(self):
         if self.is_renderable:
             self.vao.release()

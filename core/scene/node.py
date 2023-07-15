@@ -4,7 +4,7 @@ import moderngl
 import numpy as np
 
 from core.settings import SETTINGS
-from core.math import so3
+from core.math import so3, mat4
 from core.scene.material import Material
 
 
@@ -40,31 +40,20 @@ class Node(object):
          the number of ones in the mask must match the number of frames of the object.
         :param n_frames: How many frames this renderable has.
         """
-        # Transform & Animation
-        position = np.zeros(3, dtype=np.float32) if position is None else np.array(position, dtype=np.float32)
-        rotation = np.eye(3, dtype=np.float32) if rotation is None else np.array(rotation, dtype=np.float32)
 
-        self._positions = position if len(position.shape) != 1 else position[np.newaxis]
-        self._rotations = rotation if len(rotation.shape) != 2 else rotation[np.newaxis]
-        self._scales = (scale if isinstance(scale, np.ndarray) else np.array([scale])).astype(np.float32)
+        # Node variables
+        self.uid = SETTINGS.next_gui_id()
+        self.children = []
+        self.parent = None
 
-        # Frames
-        self.model_matrix = self.get_local_transform()
+        # Transform
+        self._position = np.zeros(3, dtype=np.float32) if position is None else np.array(position, dtype=np.float32)
+        self._rotation = np.eye(3, dtype=np.float32) if rotation is None else np.array(rotation, dtype=np.float32)
+        self._scale = scale
+        self.transform = self.get_local_transform()
 
         # Material
         self.material = Material(color=color) if material is None else material
-
-        # Renderable Attributes
-        self.is_renderable = False
-        self.backface_culling = True
-        self.backface_fragmap = False
-        self.draw_outline = False
-
-        # Flags to enable rendering passes
-        self.cast_shadow = False
-        self.depth_prepass = False
-        self.fragmap = False
-        self.outline = False
 
         # Programs for render passes. Subclasses are responsible for setting these.
         self.depth_only_program = None  # Required for depth_prepass and cast_shadow passes
@@ -73,7 +62,6 @@ class Node(object):
 
         # GUI
         self.name = name if name is not None else type(self).__name__
-        self.uid = SETTINGS.next_gui_id()
         self.unique_name = self.name + "{}".format(self.uid)
         self.icon = icon if icon is not None else "\u0082"
         self._enabled = True
@@ -100,9 +88,21 @@ class Node(object):
         self._show_in_hierarchy = True
         self.is_selectable = is_selectable
 
-        # Node hierarchy
-        self.children = []
-        self.parent = None
+        # Renderable Attributes
+        self.is_renderable = False
+        self.backface_culling = True
+        self.backface_fragmap = False
+        self.draw_outline = False
+
+        # Flags to enable rendering passes
+        self.cast_shadow = False
+        self.depth_prepass = False
+        self.fragmap = False
+        self.outline = False
+
+    # =========================================================================
+    #                            Setters and Getters
+    # =========================================================================
 
     # Selected Mode
     @property
@@ -110,83 +110,50 @@ class Node(object):
         return self._selected_mode
 
     @selected_mode.setter
-    def selected_mode(self, selected_mode):
+    def selected_mode(self, selected_mode: str):
         self._selected_mode = selected_mode
 
-    # Transform
     @property
     def position(self):
-        idx = self.current_frame_id if self._positions.shape[0] > 1 else 0
-        return self._positions[idx]
+        return self._position
 
     @position.setter
-    def position(self, position):
-        idx = self.current_frame_id if self._positions.shape[0] > 1 else 0
-        self._positions[idx] = np.array(position, dtype=np.float32).copy()
-        self.update_transform(None if self.parent is None else self.parent.model_matrix)
-
-    @property
-    def positions(self):
-        return self._positions
-
-    @positions.setter
-    def positions(self, positions):
-        self._positions = positions
-        self.update_transform(None if self.parent is None else self.parent.model_matrix)
+    def position(self, position: np.array):
+        self._position = position
+        self.update_transform(parent_transform=None if self.parent is None else self.parent.transform)
 
     @property
     def rotation(self):
-        idx = self.current_frame_id if self._rotations.shape[0] > 1 else 0
-        return self._rotations[idx]
+        return self._rotation
 
     @rotation.setter
-    def rotation(self, rotation):
-        idx = self.current_frame_id if self._rotations.shape[0] > 1 else 0
-        self._rotations[idx] = rotation
-        self.update_transform(None if self.parent is None else self.parent.model_matrix)
+    def rotation(self, rotation: np.array):
+        self._rotation = rotation
+        self.update_transform(parent_transform=None if self.parent is None else self.parent.transform)
 
     @property
-    def rotations(self):
-        return self._rotations
-
-    @rotations.setter
-    def rotations(self, rotations):
-        self._rotations = rotations
-        self.update_transform(None if self.parent is None else self.parent.model_matrix)
-
-    @property
-    def scale(self):
-        idx = self.current_frame_id if self._scales.shape[0] > 1 else 0
-        return self._scales[idx]
+    def scale(self) -> float:
+        return self._scale
 
     @scale.setter
-    def scale(self, scale):
-        idx = self.current_frame_id if self._scales.shape[0] > 1 else 0
-        self._scales[idx] = scale
-        self.update_transform(None if self.parent is None else self.parent.model_matrix)
-
-    @property
-    def scales(self):
-        return self._scales
-
-    @scales.setter
-    def scales(self, scales):
-        self._scales = scales
-        self.update_transform(None if self.parent is None else self.parent.model_matrix)
+    def scale(self, scale: float):
+        self._scale = scale
+        self.update_transform(parent_transform=None if self.parent is None else self.parent.transform)
 
     def get_local_transform(self):
-        """Construct local transform as a 4x4 matrix from this node's position, orientation and scale."""
-        return self._compute_transform(tuple(self.position), tuple(map(tuple, self.rotation)), self.scale)
+        # TODO: WTF??? what??? Why so complicated?
+        return mat4.compute_transform(tuple(self.position), tuple(map(tuple, self.rotation)), self.scale)
 
     def update_transform(self, parent_transform=None):
+        # TODO: Use update transform as part of the pipeline
         """Update the model matrix of this node and all of its descendants."""
         if parent_transform is None:
-            self.model_matrix = self.get_local_transform()
+            self.transform = self.get_local_transform()
         else:
-            self.model_matrix = parent_transform.astype("f4") @ self.get_local_transform()
+            self.transform = parent_transform.astype("f4") @ self.get_local_transform()
 
         for n in self.children:
-            n.update_transform(self.model_matrix)
+            n.update_transform(self.transform)
 
     @property
     def color(self):
@@ -237,7 +204,7 @@ class Node(object):
         val = self.get_local_bounds(points)
 
         # Transform bounding box with the model matrix.
-        val = (self.model_matrix @ np.vstack((val, np.array([1.0, 1.0]))))[:3]
+        val = (self.transform @ np.vstack((val, np.array([1.0, 1.0]))))[:3]
 
         # If any of the elements is NaN return an empty bounding box.
         if np.isnan(val).any():
@@ -245,23 +212,28 @@ class Node(object):
         else:
             return val
 
+    # =========================================================================
+    #                            Node Hierarchy Functions
+    # =========================================================================
+
     def add(self, *nodes, **kwargs):
         self._add_nodes(*nodes, **kwargs)
 
-    def _add_node(self, n: "Node", show_in_hierarchy=True, expanded=False, enabled=True):
+    def _add_node(self, node: "Node", show_in_hierarchy=True, expanded=False, enabled=True):
         """
         Add a single node
         :param show_in_hierarchy: Whether to show the node in the scene hierarchy.
         :param expanded: Whether the node is initially expanded in the GUI.
         """
-        if n is None:
+        if node is None:
             return
-        n._show_in_hierarchy = show_in_hierarchy
-        n._expanded = expanded
-        n._enabled = enabled if n._enabled_frames is None else n._enabled_frames[n.current_frame_id]
-        self.children.append(n)
-        n.parent = self
-        n.update_transform(self.model_matrix)
+
+        node._show_in_hierarchy = show_in_hierarchy
+        node._expanded = expanded
+        node._enabled = enabled
+        self.children.append(node)
+        node.parent = self
+        node.update_transform(self.transform)
 
     def _add_nodes(self, *nodes, **kwargs):
         """Add multiple nodes"""
@@ -340,7 +312,7 @@ class Node(object):
     def set_camera_matrices(self, prog, camera, **kwargs):
         """Set the model view projection matrix in the given program."""
         # Transpose because np is row-major but OpenGL expects column-major.
-        prog["model_matrix"].write(self.model_matrix.T.astype("f4").tobytes())
+        prog["model_matrix"].write(self.transform.T.astype("f4").tobytes())
         prog["view_projection_matrix"].write(camera.get_view_projection_matrix().T.astype("f4").tobytes())
 
     def receive_shadow(self, program, **kwargs):
@@ -354,7 +326,7 @@ class Node(object):
 
             for i, light in enumerate(lights):
                 if light.shadow_enabled and light.shadow_map:
-                    light_matrix = light.mvp() @ self.model_matrix
+                    light_matrix = light.mvp() @ self.transform
                     program[f"dirLights[{i}].matrix"].write(light_matrix.T.tobytes())
 
                     # Bind shadowmap to slot i + 1, we reserve slot 0 for the mesh texture
@@ -409,7 +381,7 @@ class Node(object):
             return
 
         prog = self.depth_only_program
-        prog["model_matrix"].write(self.model_matrix.T.tobytes())
+        prog["model_matrix"].write(self.transform.T.tobytes())
         prog["view_projection_matrix"].write(light_matrix.T.tobytes())
 
         self.render_positions(prog)

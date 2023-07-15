@@ -5,7 +5,7 @@ import numpy as np
 
 from core.scene.node import Node
 from core.utilities import utils_camera, utils
-from core.scene.renderables.rigid_bodies import RigidBodies
+from core.scene.renderables.axes import Axes
 
 
 class Light(Node):
@@ -15,7 +15,7 @@ class Light(Node):
     def __init__(
         self,
         light_color=(1.0, 1.0, 1.0),
-        elevation=-90.0,
+        elevation_deg=-90.0,
         azimuth=0.0,
         strength=1.0,
         shadow_enabled=True,
@@ -27,7 +27,7 @@ class Light(Node):
         self._light_color = light_color
         self.strength = strength
         self._azimuth = azimuth
-        self._elevation = elevation
+        self._elevation_deg = elevation_deg
         self.update_rotation()
 
         self.shadow_enabled = shadow_enabled
@@ -43,7 +43,7 @@ class Light(Node):
 
         rot = np.eye(3)
         rot[2, 2] = -1
-        self.mesh = RigidBodies(
+        self.mesh = Axes(
             np.array([[0, 0, 0]], dtype=np.float32),
             np.array([rot], dtype=np.float32),
             radius=0.08,
@@ -60,15 +60,15 @@ class Light(Node):
         pos = np.array(kwargs["position"])
         dir = -pos / np.linalg.norm(pos)
         theta, phi = utils.spherical_coordinates_from_direction(dir, degrees=True)
-        return cls(elevation=theta, azimuth=phi, **kwargs)
+        return cls(elevation_deg=theta, azimuth=phi, **kwargs)
 
     @property
     def elevation(self):
-        return self._elevation
+        return self._elevation_deg
 
     @elevation.setter
     def elevation(self, elevation):
-        self._elevation = elevation
+        self._elevation_deg = elevation
         self.update_rotation()
 
     @property

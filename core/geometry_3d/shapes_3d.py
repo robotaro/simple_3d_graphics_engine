@@ -2,6 +2,7 @@ import numpy as np
 import trimesh
 from functools import lru_cache
 from core.utilities import utils
+from core.math import so3
 
 
 # Constants
@@ -77,7 +78,7 @@ def create_disk(n_disks=1, radius=1.0, sectors=None, plane="xz"):
 
     return {"vertices": vertices, "faces": faces}
 
-@lru_cache
+
 def create_cylinder_from_to(v1, v2, radius1=1.0, radius2=1.0, sectors=None):
     """
     Create cylinders from points v1 to v2.
@@ -135,7 +136,7 @@ def create_cylinder_from_to(v1, v2, radius1=1.0, radius2=1.0, sectors=None):
     ns = np.repeat(ns, n_cylinders, axis=0)
 
     # Rotate cylinders to align the the given data.
-    vs, ns = _rotate_cylinder_to(v2 - v1, vs, ns)
+    vs, ns = rotate_cylinder_to(v2 - v1, vs, ns)
 
     # Translate cylinders to the given positions
     vs += v1[:, np.newaxis]
@@ -143,7 +144,7 @@ def create_cylinder_from_to(v1, v2, radius1=1.0, radius2=1.0, sectors=None):
     return {"vertices": vs, "normals": ns, "faces": fs}
 
 
-def _create_cone_from_to(v1, v2, radius=1.0, sectors=None):
+def create_cone_from_to(v1, v2, radius=1.0, sectors=None):
     """
     Create a cone from points v1 to v2.
     :param v1: A np array of shape (N, 3).
@@ -188,7 +189,7 @@ def _create_cone_from_to(v1, v2, radius=1.0, sectors=None):
     ns = np.repeat(ns, n_cylinders, axis=0)
 
     # Rotate cones to align the the given data.
-    vs, ns = _rotate_cylinder_to(v2 - v1, vs, ns)
+    vs, ns = rotate_cylinder_to(v2 - v1, vs, ns)
 
     # Translate cones to the given positions
     vs += v1[:, np.newaxis]
@@ -196,7 +197,7 @@ def _create_cone_from_to(v1, v2, radius=1.0, sectors=None):
     return {"vertices": vs, "normals": ns, "faces": fs}
 
 
-def _rotate_cylinder_to(target, vs, ns):
+def rotate_cylinder_to(target, vs, ns):
     """
     Rotate vertices and normals such that the main axis of the cylinder aligns with `target`.
     :param target: A np array of shape (N, 3) specifying the target direction for each cylinder given in `vs`.
@@ -215,7 +216,7 @@ def _rotate_cylinder_to(target, vs, ns):
     theta[is_col] = 0.0
     theta[np.logical_and(dot < 0.0, is_col)] = np.pi
     a = a / np.linalg.norm(a, axis=1, keepdims=True)
-    rot = aa2rot(a * theta[..., np.newaxis])
+    rot = so3.aa2rot_numpy(a * theta[..., np.newaxis])
     vs = np.matmul(rot[:, np.newaxis], vs[..., np.newaxis]).squeeze(-1)
     ns = np.matmul(rot[:, np.newaxis], ns[..., np.newaxis]).squeeze(-1)
     return vs, ns
