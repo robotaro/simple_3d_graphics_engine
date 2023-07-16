@@ -21,9 +21,9 @@ class BasicScene(Window):
 
 def main():
 
-    loader = SceneLoader()
-    xml_fpath = r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\scenes\default_scene.xml"
-    new_scene = loader.load(scene_xml_fpath=xml_fpath)
+    # xml_fpath = r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\scenes\default_scene.xml"
+    # loader = SceneLoader()
+    # new_scene = loader.load(scene_xml_fpath=xml_fpath)
 
     app = BasicScene(
         window_size=(1024, 768),

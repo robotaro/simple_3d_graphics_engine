@@ -41,6 +41,11 @@ class ShaderLibrary:
         # Compile shaders and store any compilation errors
         self.compilation_errors = self.load_shaders()
 
+        # DEBUG
+        for error in self.compilation_errors:
+            print(f" GLSL Error in: {error['program_id']}")
+            print(f" {error['description']}")
+
     def get_program(self, program_id: str):
         return self.programs[program_id]
 

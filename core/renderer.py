@@ -19,7 +19,7 @@ class Renderer:
         self.shader_library = shader_library
 
         # Shaders for mesh mouse intersection.
-        self.frag_pick_prog = self.shader_library.get_program("fragment_picking/frag_pick.glsl")
+        self.frag_pick_prog = self.shader_library.get_program("fragment_picking")
         self.frag_pick_prog["position_texture"].value = 0  # Read from texture channel 0
         self.frag_pick_prog["obj_info_texture"].value = 1  # Read from texture channel 0
         self.picker_output = self.ctx.buffer(reserve=6 * 4)  # 3 floats, 3 ints
