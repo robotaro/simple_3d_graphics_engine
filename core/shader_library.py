@@ -39,17 +39,12 @@ class ShaderLibrary:
         self.programs = {}
 
         # Compile shaders and store any compilation errors
-        self.compilation_errors = self.load_shaders()
-
-        # DEBUG
-        for error in self.compilation_errors:
-            print(f" GLSL Error in: {error['program_id']}")
-            print(f" {error['description']}")
+        self.load_shaders()
 
     def get_program(self, program_id: str):
         return self.programs[program_id]
 
-    def load_shaders(self) -> list:
+    def load_shaders(self) -> None:
 
         # Step 1) List all .glsl files in the directory
         relative_glsl_fpaths = utils_io.list_filepaths(directory=self.shader_directory, extension=".glsl")
@@ -67,10 +62,24 @@ class ShaderLibrary:
         for key, shader in self.shader_blueprints.items():
             self._solve_shader_dependencies(shader_key=key)
 
-        # Step 4) Compile all shaders
-        errors = self._compile_programs()
+        # Step 4) Compile all programs
+        self._compile_programs()
 
-        return errors
+    def print_compilation_results(self):
+
+        print("[ Compilation Results ]")
+        for key, program_entry in self.programs.items():
+            errors = program_entry["compilation_errors"]
+            successful = len(errors) == 0
+            result = "Compiled" if successful else "Failed"
+            print(f" > {key}: {result}")
+            if not successful:
+                print(errors)
+                print("\n")
+
+    # =========================================================================
+    #                           Internal Functions
+    # =========================================================================
 
     def _generate_source_code(self,
                               shader_key: str,
@@ -203,28 +212,27 @@ class ShaderLibrary:
                 raise KeyError(f"[ERROR] Shader '{shader_name}' not found in shader library")
             source = self._generate_source_code(
                 shader_key=shader_name,
-                shader_type="vertex",
+                shader_type=shader_type,
                 extra_definitions=extra_definitions)
 
         return source
 
-    def _compile_programs(self) -> list:
+    def _compile_programs(self):
         """
         Compiles all programs defined in the YAML definition file. The programs
 
-        :param context:
-        :param shader_programs_yaml_fpath:
         :return: list, List of dictionaries containing the shader
                  program that failed and its respective description
         """
 
-        compilation_errors = []
-
-        config = {}
+        yaml_dict = None
         with open(self.shader_programs_config_fpath, 'r') as file:
-            config = yaml.safe_load(file)
+            yaml_dict = yaml.safe_load(file)
 
-        for key, blueprint in config.items():
+        if yaml_dict is None:
+            yaml_dict = {}
+
+        for key, blueprint in yaml_dict.items():
 
             # Generate source code for all individual shaders that will make the final program
             vertex_source = self._blueprint2source_code(shader_type="vertex", blueprint=blueprint)
@@ -232,16 +240,20 @@ class ShaderLibrary:
             fragment_source = self._blueprint2source_code(shader_type="fragment", blueprint=blueprint)
 
             # Compile the program
+            error_description = ''
+            compiled_program = None
             try:
-                new_program = self.context.program(
+                compiled_program = self.context.program(
                     vertex_shader=vertex_source,
                     geometry_shader=geometry_source,
                     fragment_shader=fragment_source)
-                self.programs[key] = new_program
+                self.programs[key] = {
+                    "name": compiled_program
+                }
             except Exception as error:
-                compilation_errors.append({"program_id": key, "description": error.args[0]})
+                error_description = error.args[0]
+            self.programs[key] = {"program": compiled_program, "compilation_errors": error_description}
 
-        return compilation_errors
 
 
 
