@@ -42,7 +42,7 @@ class ShaderLibrary:
         self.load_shaders()
 
     def get_program(self, program_id: str):
-        return self.programs[program_id]
+        return self.programs[program_id].get("program", None)
 
     def load_shaders(self) -> None:
 
@@ -80,61 +80,6 @@ class ShaderLibrary:
     # =========================================================================
     #                           Internal Functions
     # =========================================================================
-
-    def _generate_source_code(self,
-                              shader_key: str,
-                              shader_type: str,
-                              extra_definitions: Union[dict, None]=None) -> str:
-        """
-        This function assembles all lines of code, including the extra definitions, into a single
-        string to be used for shader compilation later on. The version of the shader is added to the
-        first line, and extra directives are added below, followed by the rest of the code.
-
-        [IMPORTANT] Extra definitions and shader type strings will be used in UPPER CASE! Please
-                    make sure that your GLSL code matches the UPPER CASE version of your variables!
-
-        Example of shader type:
-
-        shader_type = "fragment"
-
-        turns into:
-
-        #define FRAGMENT_SHADER
-
-        Example of extra_directives:
-
-        {
-            "VERTEX_SHADER": 1
-            "PART_A": 0
-        }
-
-        turns into:
-
-        #define VERTEX_SHADER 1
-        #define PART_A 0
-
-        :param shader_key: str, unique shader
-        :param shader_type: str, one of the valid types of shader. This directive is used to select the
-                            right part of the GLSL code to be compiled.
-        :param extra_definitions: dict, keys are the directive
-        :return: str, source code
-        """
-
-        if shader_type not in constants.SHADER_TYPES:
-            raise ValueError(f"[ERROR] Shader type '{shader_type}' not supported. "
-                             f"Shader type must be one of the following: {constants.SHADER_TYPES}")
-
-        if extra_definitions is None:
-            extra_definitions = {}
-
-        shader = self.shader_blueprints[shader_key]
-
-        header_lines = []
-        header_lines += [f"#version {shader.version}\n"]
-        header_lines += [f"#define {shader_type.upper()}_SHADER\n"]
-        header_lines += [f"#define {key.upper()} {value}\n" for key, value in extra_definitions.items()]
-
-        return "".join(header_lines + shader.source_code_lines)
 
     def _load_shader_file(self, relative_glsl_fpath: str):
 
@@ -216,6 +161,61 @@ class ShaderLibrary:
                 extra_definitions=extra_definitions)
 
         return source
+
+    def _generate_source_code(self,
+                              shader_key: str,
+                              shader_type: str,
+                              extra_definitions: Union[dict, None]=None) -> str:
+        """
+        This function assembles all lines of code, including the extra definitions, into a single
+        string to be used for shader compilation later on. The version of the shader is added to the
+        first line, and extra directives are added below, followed by the rest of the code.
+
+        [IMPORTANT] Extra definitions and shader type strings will be used in UPPER CASE! Please
+                    make sure that your GLSL code matches the UPPER CASE version of your variables!
+
+        Example of shader type:
+
+        shader_type = "fragment"
+
+        turns into:
+
+        #define FRAGMENT_SHADER
+
+        Example of extra_directives:
+
+        {
+            "VERTEX_SHADER": 1
+            "PART_A": 0
+        }
+
+        turns into:
+
+        #define VERTEX_SHADER 1
+        #define PART_A 0
+
+        :param shader_key: str, unique shader
+        :param shader_type: str, one of the valid types of shader. This directive is used to select the
+                            right part of the GLSL code to be compiled.
+        :param extra_definitions: dict, keys are the directive
+        :return: str, source code
+        """
+
+        if shader_type not in constants.SHADER_TYPES:
+            raise ValueError(f"[ERROR] Shader type '{shader_type}' not supported. "
+                             f"Shader type must be one of the following: {constants.SHADER_TYPES}")
+
+        if extra_definitions is None:
+            extra_definitions = {}
+
+        shader = self.shader_blueprints[shader_key]
+
+        header_lines = []
+        header_lines += [f"#version {shader.version}\n"]
+        header_lines += [f"#define {shader_type.upper()}_SHADER\n"]
+        header_lines += [f"#define {key.upper()} {value}\n" for key, value in extra_definitions.items()]
+
+        return "".join(header_lines + shader.source_code_lines)
 
     def _compile_programs(self):
         """

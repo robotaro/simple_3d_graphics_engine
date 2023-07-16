@@ -2,25 +2,25 @@
 
 #if defined VERTEX_SHADER
 
-    in vec3 in_position;
-    uniform mat4 view_projection_matrix;
-    uniform mat4 model_matrix;
+    in vec2 in_vert;
 
-    in vec4 in_color;
-    out vec4 v_color;
+    in vec3 in_color;
+    out vec3 v_color;    // Goes to the fragment shader
 
     void main() {
+        gl_Position = vec4(in_vert, 0.0, 1.0);
         v_color = in_color;
-        gl_Position = view_projection_matrix * model_matrix * vec4(in_position, 1.0);
     }
 
 #elif defined FRAGMENT_SHADER
 
+
+    in vec3 v_color;
     out vec4 f_color;
-    in vec4 v_color;
 
     void main() {
-        f_color = v_color;
+        // We're not interested in changing the alpha value
+        f_color = vec4(v_color, 1.0);
     }
 
 #endif
