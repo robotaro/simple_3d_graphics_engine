@@ -1,20 +1,5 @@
-"""
-Copyright (C) 2022  ETH Zurich, Manuel Kaufmann, Velko Vechev, Dario Mylonopoulos
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
-"""
 import numpy as np
+
 from core.scene.node import Node
 from core.scene.renderables.spheres import Spheres
 from core.scene.renderables.arrows import Arrows
@@ -161,28 +146,3 @@ class Axes(Node):
             format="%.3f",
         )
         super(Axes, self).gui(imgui)
-
-    def update_frames(self, rb_pos, rb_ori, frames):
-        self.rb_pos[frames] = rb_pos
-        self.rb_ori[frames] = rb_ori
-        self.n_frames = self.rb_pos.shape[0]
-        self.redraw()
-
-    def add_frames(self, rb_pos, rb_ori):
-        if len(rb_pos.shape) == 2:
-            rb_pos = rb_pos[np.newaxis]
-        self.rb_pos = np.append(self.rb_pos, rb_pos, axis=0)
-
-        if len(rb_ori.shape) == 3:
-            rb_ori = rb_ori[np.newaxis]
-        self.rb_ori = np.append(self.rb_ori, rb_ori, axis=0)
-
-        self.n_frames = self.rb_pos.shape[0]
-        self.redraw()
-
-    def remove_frames(self, frames):
-        self.rb_pos = np.delete(self.rb_pos, frames, axis=0)
-        self.rb_ori = np.delete(self.rb_ori, frames, axis=0)
-
-        self.n_frames = self.rb_pos.shape[0]
-        self.redraw()

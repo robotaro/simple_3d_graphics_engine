@@ -21,29 +21,16 @@ from functools import lru_cache
 
 import moderngl
 import numpy as np
-import tqdm
 import trimesh
 import trimesh.geometry
 from moderngl_window.opengl.vao import VAO
 from PIL import Image
 from trimesh.triangles import points_to_barycentric
 
-from aitviewer.scene.node import Node
-from aitviewer.shaders import (
-    get_depth_only_program,
-    get_flat_lit_with_edges_face_color_program,
-    get_flat_lit_with_edges_program,
-    get_fragmap_program,
-    get_outline_program,
-    get_smooth_lit_texturized_program,
-    get_smooth_lit_with_edges_face_color_program,
-    get_smooth_lit_with_edges_program,
-)
-from aitviewer.utils import set_lights_in_program, set_material_properties
-from aitviewer.utils.decorators import hooked
-from aitviewer.utils.so3 import euler2rot_numpy, rot2euler_numpy
-from aitviewer.utils.utils import compute_vertex_and_face_normals_sparse
-
+from core.scene.node import Node
+from core.utilities import utils
+from core.utilities import utils_decorators
+from core.math import so3
 
 class Meshes(Node):
     """A sequence of triangle meshes. This assumes that the mesh topology is fixed over the sequence."""
@@ -274,7 +261,7 @@ class Meshes(Node):
     def vertex_normals(self):
         """Get or compute all vertex normals (this might take a while for long sequences)."""
         if self._vertex_normals is None:
-            vertex_normals, _ = compute_vertex_and_face_normals_sparse(
+            vertex_normals, _ = utils.compute_vertex_and_face_normals_sparse(
                 self.vertices, self.faces, self._vertex_faces_sparse, normalize=True
             )
             self._vertex_normals = vertex_normals
@@ -284,7 +271,7 @@ class Meshes(Node):
     def face_normals(self):
         """Get or compute all face normals (this might take a while for long sequences)."""
         if self._face_normals is None:
-            _, face_normals = compute_vertex_and_face_normals_sparse(
+            _, face_normals = utils.compute_vertex_and_face_normals_sparse(
                 self.vertices, self.faces, self._vertex_faces_sparse, normalize=True
             )
             self._face_normals = face_normals
@@ -401,7 +388,7 @@ class Meshes(Node):
         :return: The vertex and face normals as a np arrays of shape (V, 3) and (F, 3) respectively.
         """
         vs = self.vertices[frame_id : frame_id + 1] if self.vertices.shape[0] > 1 else self.vertices
-        vn, fn = compute_vertex_and_face_normals_sparse(vs, self.faces, self._vertex_faces_sparse, normalize)
+        vn, fn = utils.compute_vertex_and_face_normals_sparse(vs, self.faces, self._vertex_faces_sparse, normalize)
         return vn.squeeze(0), fn.squeeze(0)
 
     @property
@@ -510,7 +497,7 @@ class Meshes(Node):
                 np.transpose(self.current_instance_transforms.astype("f4"), (0, 2, 1)).tobytes()
             )
 
-    @hooked
+    @utils_decorators.hooked
     def redraw(self, **kwargs):
         self._need_upload = True
 
@@ -524,14 +511,14 @@ class Meshes(Node):
 
     def _load_programs(self, vs, positions_vs):
         instanced = 1 if self.instance_transforms is not None else 0
-        self.smooth_prog = get_smooth_lit_with_edges_program(vs, instanced)
+        """self.smooth_prog = get_smooth_lit_with_edges_program(vs, instanced)
         self.flat_prog = get_flat_lit_with_edges_program(vs, instanced)
         self.smooth_face_prog = get_smooth_lit_with_edges_face_color_program(vs, instanced)
         self.flat_face_prog = get_flat_lit_with_edges_face_color_program(vs, instanced)
 
         self.depth_only_program = get_depth_only_program(positions_vs, instanced)
         self.outline_program = get_outline_program(positions_vs, instanced)
-        self.fragmap_program = get_fragmap_program(positions_vs, instanced)
+        self.fragmap_program = get_fragmap_program(positions_vs, instanced)"""
 
     # noinspection PyAttributeOutsideInit
     @Node.once
@@ -581,7 +568,7 @@ class Meshes(Node):
             self.vbo_uvs = ctx.buffer(self.uv_coords.astype("f4").tobytes())
             self.vao.buffer(self.vbo_uvs, "2f4", "in_uv")
 
-    @hooked
+    @utils_decorators.hooked
     def release(self):
         if self.is_renderable:
             self.vao.release()
@@ -623,7 +610,7 @@ class Meshes(Node):
             kwargs["shadows_enabled"],
             kwargs["ambient_strength"],
         )
-        set_material_properties(prog, self.material)
+        utils.set_material_properties(prog, self.material)
         self.receive_shadow(prog, **kwargs)
         return prog
 
@@ -707,17 +694,3 @@ class Meshes(Node):
             self.flat_shading = not self.flat_shading
         elif key == wnd_keys.E:
             self.draw_edges = not self.draw_edges
-
-    def update_frames(self, vertices, frames):
-        self.vertices[frames] = vertices
-        self.redraw()
-
-    def add_frames(self, vertices):
-        if len(vertices.shape) == 2:
-            vertices = vertices[np.newaxis]
-        self.vertices = np.append(self.vertices, vertices, axis=0)
-        self.n_frames = max(self.n_frames, self.vertices.shape[0])
-
-    def remove_frames(self, frames):
-        self.vertices = np.delete(self.vertices, frames, axis=0)
-        self.redraw()

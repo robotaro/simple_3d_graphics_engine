@@ -363,15 +363,6 @@ class Node(object):
         """
         pass
 
-    def update_frames(self, *args, **kwargs):
-        pass
-
-    def add_frames(self, *args, **kwargs):
-        pass
-
-    def remove_frames(self, *args, **kwargs):
-        pass
-
     # =========================================================================
     #                           Render Functions
     # =========================================================================
@@ -536,3 +527,10 @@ class Node(object):
                 if imgui.begin_menu(f"{n.name}##{n.uid}"):
                     n.gui_context_menu(imgui, x, y)
                     imgui.end_menu()
+
+    # =========================================================================
+    #                            Debug functions
+    # =========================================================================
+
+    def print_hierarchy(self, level=0):
+        print(f"{''.join(' ' for _ in range(level))}{self.name}")

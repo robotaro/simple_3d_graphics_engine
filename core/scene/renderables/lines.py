@@ -227,19 +227,6 @@ class Lines(Node):
         if self.is_renderable:
             self.vao.release()
 
-    def update_frames(self, lines, frames):
-        self.lines[frames] = lines
-        self.redraw()
-
-    def add_frames(self, lines):
-        if len(lines.shape) == 2:
-            lines = lines[np.newaxis]
-        self.lines = np.append(self.lines, lines, axis=0)
-
-    def remove_frames(self, frames):
-        self.lines = np.delete(self.lines, frames, axis=0)
-        self.redraw()
-
 
 class Lines2D(Node):
     """Render 2D lines."""

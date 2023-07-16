@@ -21,7 +21,7 @@ class Engine(Window):
         # OpenGL context must be created after the window
         self.context.enable(flags=mgl.DEPTH_TEST | mgl.CULL_FACE)
 
-        self.main_scene = Scene(self)
+        self.main_scene = Scene()
 
         # Flags
         self._running = False

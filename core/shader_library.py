@@ -24,7 +24,8 @@ class ShaderLibrary:
     As GLSL does not support #imports, this class manages all the imports
     """
 
-    def __init__(self, context: moderngl.Context,
+    def __init__(self,
+                 context: moderngl.Context,
                  shader_directory=constants.SHADERS_DIRECTORY,
                  shader_programs_config_fpath=constants.SHADER_PROGRAMS_YAML_FPATH):
 
@@ -39,6 +40,9 @@ class ShaderLibrary:
 
         # Compile shaders and store any compilation errors
         self.compilation_errors = self.load_shaders()
+
+    def get_program(self, program_id: str):
+        return self.programs[program_id]
 
     def load_shaders(self) -> list:
 
@@ -63,10 +67,10 @@ class ShaderLibrary:
 
         return errors
 
-    def generate_source_code(self,
-                             shader_key: str,
-                             shader_type: str,
-                             extra_definitions: Union[dict, None]=None) -> str:
+    def _generate_source_code(self,
+                              shader_key: str,
+                              shader_type: str,
+                              extra_definitions: Union[dict, None]=None) -> str:
         """
         This function assembles all lines of code, including the extra definitions, into a single
         string to be used for shader compilation later on. The version of the shader is added to the
@@ -192,7 +196,7 @@ class ShaderLibrary:
             shader_name = blueprint[blueprint_key]
             if shader_name not in self.shader_blueprints:
                 raise KeyError(f"[ERROR] Shader '{shader_name}' not found in shader library")
-            source = self.generate_source_code(
+            source = self._generate_source_code(
                 shader_key=shader_name,
                 shader_type="vertex",
                 extra_definitions=extra_definitions)

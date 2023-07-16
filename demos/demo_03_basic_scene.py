@@ -14,7 +14,6 @@ class BasicScene(Window):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-
         self.shader_library = ShaderLibrary(context=self.context)
         self.renderer = Renderer(window=self, shader_library=self.shader_library)
         self.scene = Scene()
@@ -32,9 +31,6 @@ def main():
         vertical_sync=True,
         enable_imgui=False
     )
-
-
-
 
     app.run()
 

@@ -13,6 +13,13 @@ https://github.com/ubuntunux/PyEngine3D
 - https://numba.pydata.org/
 - https://www.dask.org/
 
+## Gizmo sources
+- https://github.com/john-chapman/im3d
+- https://github.com/CedricGuillemet/ImGuizmo
+
+
+## Python 3D graphics sources
+https://github.com/eth-ait/aitviewer
 
 ## Widget TODOs
 

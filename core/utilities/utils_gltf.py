@@ -24,6 +24,7 @@ def extract_nodes(gltf_obj: GLTF2) -> dict:
 
     return nodes
 
+
 def extract_scenes(gltf_obj: GLTF2) -> dict:
 
     scenes = dict()
