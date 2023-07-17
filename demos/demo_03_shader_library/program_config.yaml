@@ -1,3 +1,0 @@
-demo_03:
-  vertex_shader: "demo3_shader_combined.glsl"
-  fragment_shader: "demo3_shader_combined.glsl"

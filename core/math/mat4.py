@@ -1,10 +1,12 @@
 import numpy as np
+from numba import njit
 from core.math import mat3
 from functools import lru_cache
 
 DEG2RAD = np.pi / 180.0
 
 @lru_cache()
+@njit
 def compute_transform(pos: tuple, rot: tuple, scale: float):
     # TODO: refactor this to simplify scale!
 

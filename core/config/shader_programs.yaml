@@ -26,3 +26,7 @@ fragmap_program:
 fragment_picking:
   vertex_shader: "fragment_picking/frag_pick.glsl"
   fragment_shader: "lit_with_edges.glsl"
+
+outline/outline_draw:
+  vertex_shader: "outline/outline_draw.glsl"
+  fragment_shader: "outline/outline_draw.glsl"

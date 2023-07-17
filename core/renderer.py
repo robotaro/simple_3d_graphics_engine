@@ -1,6 +1,8 @@
 import numpy as np
 import moderngl
 import struct
+from moderngl_window.opengl.vao import VAO
+from moderngl_window import geometry
 from typing import Tuple, Dict, List
 
 from core.window import Window
@@ -17,16 +19,17 @@ class Renderer:
 
         self.window = window
         self.shader_library = shader_library
+        self.context = self.window.context
 
         # Shaders for mesh mouse intersection.
-        self.frag_pick_prog = self.shader_library.get_program("fragment_picking")
-        self.frag_pick_prog["position_texture"].value = 0  # Read from texture channel 0
-        self.frag_pick_prog["obj_info_texture"].value = 1  # Read from texture channel 0
-        self.picker_output = self.ctx.buffer(reserve=6 * 4)  # 3 floats, 3 ints
+        #self.frag_pick_prog = self.shader_library.get_program("fragment_picking")
+        #self.frag_pick_prog["position_texture"].value = 0  # Read from texture channel 0
+        #self.frag_pick_prog["obj_info_texture"].value = 1  # Read from texture channel 0
+        self.picker_output = self.context.buffer(reserve=6 * 4)  # 3 floats, 3 ints
         self.picker_vao = VAO(mode=moderngl.POINTS)
 
         # Shaders for drawing outlines.
-        self.outline_draw_prog = load_program("outline/outline_draw.glsl")
+        self.outline_draw_prog = shader_library.get_program("outline/outline_draw")
         self.outline_quad = geometry.quad_2d(size=(2.0, 2.0), pos=(0.0, 0.0))
 
         # Create framebuffers
@@ -78,18 +81,18 @@ class Renderer:
         safe_release(self.outline_framebuffer)
 
         # Mesh mouse intersection
-        self.offscreen_p_depth = self.ctx.depth_texture(self.window.buffer_size)
-        self.offscreen_p_viewpos = self.ctx.texture(self.window.buffer_size, 4, dtype="f4")
-        self.offscreen_p_tri_id = self.ctx.texture(self.window.buffer_size, 4, dtype="f4")
-        self.offscreen_p = self.ctx.framebuffer(
+        self.offscreen_p_depth = self.context.depth_texture(self.window.buffer_size)
+        self.offscreen_p_viewpos = self.context.texture(self.window.buffer_size, 4, dtype="f4")
+        self.offscreen_p_tri_id = self.context.texture(self.window.buffer_size, 4, dtype="f4")
+        self.offscreen_p = self.context.framebuffer(
             color_attachments=[self.offscreen_p_viewpos, self.offscreen_p_tri_id],
             depth_attachment=self.offscreen_p_depth,
         )
         self.offscreen_p_tri_id.filter = (moderngl.NEAREST, moderngl.NEAREST)
 
         # Outline rendering
-        self.outline_texture = self.ctx.texture(self.window.buffer_size, 1, dtype="f4")
-        self.outline_framebuffer = self.ctx.framebuffer(color_attachments=[self.outline_texture])
+        self.outline_texture = self.context.texture(self.window.buffer_size, 1, dtype="f4")
+        self.outline_framebuffer = self.context.framebuffer(color_attachments=[self.outline_texture])
 
         # If in headlesss mode we create a framebuffer without multisampling that we can use
         # to resolve the default framebuffer before reading.
@@ -97,32 +100,32 @@ class Renderer:
             safe_release(self.headless_fbo_color)
             safe_release(self.headless_fbo_depth)
             safe_release(self.headless_fbo)
-            self.headless_fbo_color = self.ctx.texture(self.window.buffer_size, 4)
-            self.headless_fbo_depth = self.ctx.depth_texture(self.window.buffer_size)
-            self.headless_fbo = self.ctx.framebuffer(self.headless_fbo_color, self.headless_fbo_depth)
+            self.headless_fbo_color = self.context.texture(self.window.buffer_size, 4)
+            self.headless_fbo_depth = self.context.depth_texture(self.window.buffer_size)
+            self.headless_fbo = self.context.framebuffer(self.headless_fbo_color, self.headless_fbo_depth)
 
     def render_shadowmap(self, scene: Scene, **kwargs):
         """A pass to render the shadow map, i.e. render the entire scene once from the view of the light."""
         if kwargs["shadows_enabled"]:
-            self.ctx.enable_only(moderngl.DEPTH_TEST)
+            self.context.enable_only(moderngl.DEPTH_TEST)
             rs = scene.collect_nodes()
 
             for light in scene.lights:
                 if light.shadow_enabled:
-                    light.use(self.ctx)
+                    light.use(self.context)
                     light_matrix = light.mvp()
                     for r in rs:
                         r.render_shadowmap(light_matrix)
 
     def render_fragmap(self, scene: Scene, camera: CameraInterface, viewport):
         """A pass to render the fragment picking map, i.e. render the scene with world coords as colors."""
-        self.ctx.enable_only(moderngl.DEPTH_TEST)
+        self.context.enable_only(moderngl.DEPTH_TEST)
         self.offscreen_p.use()
         self.offscreen_p.viewport = viewport
 
         rs = scene.collect_nodes()
         for r in rs:
-            r.render_fragmap(self.ctx, camera)
+            r.render_fragmap(self.context, camera)
 
     def render_scene(self, scene: Scene, camera: CameraInterface, viewport, **kwargs):
         """Render the current scene to the framebuffer without time accounting and GUI elements."""
@@ -133,9 +136,9 @@ class Renderer:
         self.window.fbo.viewport = viewport
 
         # Configure OpenGL context.
-        self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)
-        self.ctx.cull_face = "back"
-        self.ctx.blend_func = (
+        self.context.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)
+        self.context.cull_face = "back"
+        self.context.blend_func = (
             moderngl.SRC_ALPHA,
             moderngl.ONE_MINUS_SRC_ALPHA,
             moderngl.ONE,
@@ -161,13 +164,13 @@ class Renderer:
 
         # Render outline of the nodes with outlining enabled, this potentially also renders their children.
         for n in nodes:
-            n.render_outline(self.ctx, camera)
+            n.render_outline(self.context, camera)
 
         # Render the outline effect to the window.
         self.window.use()
         self.window.fbo.depth_mask = False
         self.window.fbo.viewport = viewport
-        self.ctx.enable_only(moderngl.NOTHING)
+        self.context.enable_only(moderngl.NOTHING)
         self.outline_texture.use(0)
         self.outline_draw_prog["outline"] = 0
         self.outline_draw_prog["outline_color"] = color
@@ -245,7 +248,7 @@ class Renderer:
         if not kwargs["export"]:
             # If visualize is True draw a texture with the object id to the screen for debugging.
             if kwargs["visualize"]:
-                self.ctx.enable_only(moderngl.NOTHING)
+                self.context.enable_only(moderngl.NOTHING)
                 self.offscreen_p_tri_id.use(location=0)
                 self.vis_prog["hash_color"] = True
                 self.vis_quad.render(self.vis_prog)
@@ -254,7 +257,7 @@ class Renderer:
         """Given an x/y screen coordinate, get the intersected object, triangle id, and xyz point in camera space."""
 
         # Fragment picker uses already encoded position/object/triangle in the frag_pos program textures
-        self.frag_pick_prog["texel_pos"].value = (x, y)
+        #self.frag_pick_prog["texel_pos"].value = (x, y)
         self.offscreen_p_viewpos.use(location=0)
         self.offscreen_p_tri_id.use(location=1)
         self.picker_vao.transform(self.frag_pick_prog, self.picker_output, vertices=1)
@@ -273,7 +276,7 @@ class Renderer:
         # If in headless mode we first resolve the multisampled framebuffer into
         # a non multisampled one and read from that instead.
         if self.window_type == "headless":
-            self.ctx.copy_framebuffer(self.headless_fbo, self.window.fbo)
+            self.context.copy_framebuffer(self.headless_fbo, self.window.fbo)
             fbo = self.headless_fbo
         else:
             fbo = self.window.fbo
@@ -303,7 +306,7 @@ class Renderer:
         # If in headless mode we first resolve the multisampled framebuffer into
         # a non multisampled one and read from that instead.
         if self.window_type == "headless":
-            self.ctx.copy_framebuffer(self.headless_fbo, self.window.fbo)
+            self.context.copy_framebuffer(self.headless_fbo, self.window.fbo)
             fbo = self.headless_fbo
         else:
             fbo = self.window.fbo

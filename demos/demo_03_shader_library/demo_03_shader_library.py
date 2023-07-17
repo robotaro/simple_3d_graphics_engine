@@ -1,18 +1,14 @@
 import os
 import numpy as np
 
-from core import constants
 from core.window import Window
 from core.shader_library import ShaderLibrary
-from core.renderer import Renderer
-from core.scene.scene import Scene
-from core.scene.scene_loader import SceneLoader
 
 
 class BasicScene(Window):
 
     DEMO_DIRECTORY = os.path.dirname(__file__)
-    PROGRAM_CONFIG_FPATH = os.path.join(DEMO_DIRECTORY, "program_config.yaml")
+    PROGRAM_CONFIG_FPATH = os.path.join(DEMO_DIRECTORY, "shader_programs.yaml")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -27,6 +23,7 @@ class BasicScene(Window):
         g = 0
 
     def setup(self):
+
         # Point coordinates are put followed by the vec3 color values
         vertices = np.array([
             # x, y, red, green, blue
@@ -37,7 +34,6 @@ class BasicScene(Window):
 
         self.vbo = self.context.buffer(vertices)
 
-        # We control the 'in_vert' and `in_color' variables
         self.vao = self.context.vertex_array(
             self.program,
             [
@@ -63,7 +59,7 @@ def main():
 
     app = BasicScene(
         window_size=(1024, 768),
-        window_title="Basic Scene",
+        window_title="Shader Library demo",
         vertical_sync=True,
         enable_imgui=False
     )
