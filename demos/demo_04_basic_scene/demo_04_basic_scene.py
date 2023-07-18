@@ -6,7 +6,8 @@ from core.window import Window
 from core.shader_library import ShaderLibrary
 from core.renderer import Renderer
 from core.scene.scene import Scene
-from core.scene.scene_loader import SceneLoader
+from core.scene.light import DirectionalLight
+from core.scene.mesh import Mesh
 
 
 class BasicScene(Window):
@@ -19,14 +20,14 @@ class BasicScene(Window):
 
         self.shader_library = ShaderLibrary(context=self.context)
         self.renderer = Renderer(window=self, shader_library=self.shader_library)
-        self.scene = Scene()
-
-        self.program = self.shader_library.get_program("demo_04")
+        self.scene = None
 
     def setup(self):
+        light = DirectionalLight()
         pass
 
     def update(self):
+        self.renderer.render()
         pass
 
     def render(self):

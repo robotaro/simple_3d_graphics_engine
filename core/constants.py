@@ -57,5 +57,3 @@ FONT_UVS_NUM_COLUMNS = 12  # 6 vertices, 2 dimensions each
 CAMERA_Z_NEAR = 0.01
 CAMERA_Z_FAR = 1000.0
 CAMERA_ZOOM_SPEED = 0.05
-
-

@@ -1,532 +1,314 @@
-import moderngl
+
 import numpy as np
+import trimesh
 
-from core import constants
+from core.scene.mesh import Mesh
+from core.scene.camera import Camera
+from core.scene.light import Light, PointLight, DirectionalLight
 from core.scene.node import Node
-from core.scene.renderables.light import Light
-from core.scene.renderables.lines_2d import Lines2D
-from core.scene.cameras.main_camera import MainCamera
-from core.utilities import utils
+from core.utilities import utils_colors
 
 
-class Scene(Node):
-    """Generic scene node"""
+class Scene(object):
+    """A hierarchical scene graph.
 
-    def __init__(self, **kwargs):
+    Parameters
+    ----------
+    nodes : list of :class:`Node`
+        The set of all nodes in the scene.
+    bg_color : (4,) float, optional
+        Background color of scene.
+    ambient_light : (3,) float, optional
+        Color of ambient light. Defaults to no ambient light.
+    name : str, optional
+        The user-defined name of this object.
+    """
 
-        """Create a scene with a name."""
-        kwargs["gui_material"] = False
-        super(Scene, self).__init__(**kwargs)
+    def __init__(self,
+                 nodes=None,
+                 bg_color=None,
+                 ambient_light=None,
+                 name=None):
 
-        # References resources in the scene
-        self.lights = []
-        self.camera = None
-
-        # Scene has a reference to ctx
-        self.ctx = None
-
-        self.backface_culling = True
-        self.background_color = constants.BACKGROUND_COLOR_RGBA
-
-        self.setup_default_scene()
-
-        # Camera trackball.
-        N = 50
-        t = np.empty(N * 2, dtype=np.float32)
-        t[0::2] = np.linspace(0, 2.0 * np.pi, N)
-        t[1::2] = np.roll(np.linspace(0, 2.0 * np.pi, N), 1)
-        z = np.zeros_like(t)
-        c = np.cos(t)
-        s = np.sin(t)
-        trackball_vertices = np.concatenate(
-            (
-                np.vstack((z, c, s)).T,
-                np.vstack((c, z, s)).T,
-                np.vstack((c, s, z)).T,
-            )
-        )
-        trackball_colors = np.concatenate(
-            (
-                np.tile((1, 0, 0, 1), (N, 1)),
-                np.tile((0, 0.8, 0, 1), (N, 1)),
-                np.tile((0, 0, 1, 1), (N, 1)),
-            )
-        )
-
-        self.trackball = Lines2D(
-            trackball_vertices,
-            trackball_colors,
-            mode="lines",
-        )
-        self.add(self.trackball, show_in_hierarchy=False, enabled=False)
-
-        self.custom_font = None
-        self.properties_icon = "\u0094"
-
-        # Currently selected object, None if no object is selected
-        self.selected_object = None
-        # Object shown in the property panel
-        self.gui_selected_object = None
-
-        # The scene node in the GUI is expanded at the start.
-        self.expanded = True
-
-    def setup_default_scene(self):
-
-        # Default Setup
-        # If you update the number of lights, make sure to change the respective `define` statement in
-        # directional_lights.glsl as well!
-        # Influence of diffuse lighting is controlled globally for now, but should eventually be a material property.
-        self.lights.append(
-            Light.facing_origin(
-                light_color=(1.0, 1.0, 1.0),
-                name="Back Light",
-                position=(0.0, 10.0, -15.0),
-                shadow_enabled=False,
-            )
-        )
-        self.lights.append(
-            Light.facing_origin(
-                light_color=(1.0, 1.0, 1.0),
-                name="Front Light",
-                position=(0.0, 10.0, 15.0),
-            )
-        )
-        self.add(*self.lights)
-
-        self.ambient_strength = 2.0
-
-        # Scene items
-        # self.origin = CoordinateSystem(name="Origin", length=0.1, gui_affine=False, gui_material=False)
-        # self.add(self.origin)
-
-        """self.floor = ChessboardPlane(100.0, 200, (0.9, 0.9, 0.9, 1.0), (0.82, 0.82, 0.82, 1.0), name="Floor")
-        self.floor.material.diffuse = 0.1
-        self.add(self.floor)
-
-        # Camera cursor rendered at the camera target.
-        self.camera_target = Lines2D(
-            np.array(
-                [
-                    [-1, 0, 0],
-                    [1, 0, 0],
-                    [0, -1, 0],
-                    [0, 1, 0],
-                    [0, 0, -1],
-                    [0, 0, 1],
-                ]
-            ),
-            color=(0.2, 0.2, 0.2, 1),
-            mode="lines",
-        )
-        self.add(self.camera_target, show_in_hierarchy=False, enabled=False)"""
-
-    def render(self, **kwargs):
-        # As per https://learnopengl.com/Advanced-OpenGL/Blending
-
-        # Setup the camera target cursor for rendering.
-        camera = kwargs["camera"]
-        if isinstance(camera, MainCamera):
-            # Scale target and trackball depending on distance from camera to target and fov.
-            if camera.is_ortho:
-                scale = camera.ortho_size * 0.8
-            else:
-                scale = np.radians(camera.fov) * 0.4 * np.linalg.norm(camera.target - camera.position)
-
-            if self.camera_target.enabled:
-                self.camera_target.position = camera.target
-                self.camera_target.scale = scale * 0.05
-            if self.trackball.enabled:
-                self.trackball.position = camera.target
-                self.trackball.scale = scale
+        if bg_color is None:
+            bg_color = np.ones(4)
         else:
-            # If not a viewer camera, hide them.
-            self.camera_target.scale = 0
-            self.trackball.scale = 0
+            bg_color = utils_colors.format_color_vector(bg_color, 4)
 
-        # Collect all renderable nodes
-        rs = self.collect_nodes()
+        if ambient_light is None:
+            ambient_light = np.zeros(3)
 
-        transparent = []
+        if nodes is None:
+            nodes = set()
+        self._nodes = set()  # Will be added at the end of this function
 
-        # Draw all opaque objects first
-        for r in rs:
-            if not r.is_transparent():
-                # Turn off backface culling if enabled for the scene
-                # and requested by the current object
-                if self.backface_culling and r.backface_culling:
-                    self.ctx.enable(moderngl.CULL_FACE)
-                else:
-                    self.ctx.disable(moderngl.CULL_FACE)
+        self.bg_color = bg_color
+        self.ambient_light = ambient_light
+        self.name = name
 
-                self.safe_render(r, **kwargs)
-            else:
-                # Otherwise append to transparent list
-                transparent.append(r)
+        self._name_to_nodes = {}
+        self._obj_to_nodes = {}
+        self._obj_name_to_nodes = {}
+        self._mesh_nodes = set()
+        self._point_light_nodes = set()
+        self._spot_light_nodes = set()
+        self._directional_light_nodes = set()
+        self._camera_nodes = set()
+        self._main_camera_node = None
+        self._bounds = None
 
-        fbo = kwargs["fbo"]
+        # Transform tree
+        self._digraph = nx.DiGraph()
+        self._digraph.add_node('world')
+        self._path_cache = {}
 
-        # Draw back to front by sorting transparent objects based on distance to camera.
-        # As an approximation we only sort using the origin of the object
-        # which may be incorrect for large objects or objects significantly
-        # offset from their origin, but works in many cases.
-        for r in sorted(
-            transparent,
-            key=lambda x: np.linalg.norm(x.position - camera.position),
-            reverse=True,
-        ):
-            # Turn off backface culling if enabled for the scene
-            # and requested by the current object
-            if self.backface_culling and r.backface_culling:
-                self.ctx.enable(moderngl.CULL_FACE)
-            else:
-                self.ctx.disable(moderngl.CULL_FACE)
+        # Find root nodes and add them
+        if len(nodes) > 0:
+            node_parent_map = {n: None for n in nodes}
+            for node in nodes:
+                for child in node.children:
+                    if node_parent_map[child] is not None:
+                        raise ValueError('Nodes may not have more than '
+                                         'one parent')
+                    node_parent_map[child] = node
+            for node in node_parent_map:
+                if node_parent_map[node] is None:
+                    self.add_node(node)
 
-            # Render to depth buffer only
-            self.ctx.depth_func = "<"
+    @property
+    def name(self):
+        """str : The user-defined name of this object.
+        """
+        return self._name
 
-            fbo.color_mask = (False, False, False, False)
-            self.safe_render_depth_prepass(r, **kwargs)
-            fbo.color_mask = (True, True, True, True)
+    @name.setter
+    def name(self, value):
+        if value is not None:
+            value = str(value)
+        self._name = value
 
-            # Render normally with less equal depth comparison function,
-            # drawing only the pixels closer to the camera to avoid
-            # order dependent blending artifacts
-            self.ctx.depth_func = "<="
-            self.safe_render(r, **kwargs)
+    @property
+    def nodes(self):
+        """set of :class:`Node` : Set of nodes in the scene.
+        """
+        return self._nodes
 
-        # Restore the default depth comparison function
-        self.ctx.depth_func = "<"
+    @property
+    def bg_color(self):
+        """(3,) float : The scene background color.
+        """
+        return self._bg_color
 
-    def safe_render_depth_prepass(self, r, **kwargs):
-        if not r.is_renderable:
-            r.make_renderable(self.ctx)
-        r.render_depth_prepass(**kwargs)
+    @bg_color.setter
+    def bg_color(self, value):
+        if value is None:
+            value = np.ones(4)
+        else:
+            value = utils_colors.format_color_vector(value, 4)
+        self._bg_color = value
 
-    def safe_render(self, r, **kwargs):
-        if not r.is_renderable:
-            r.make_renderable(self.ctx)
-        r.render(**kwargs)
+    @property
+    def ambient_light(self):
+        """(3,) float : The ambient light in the scene.
+        """
+        return self._ambient_light
 
-    def make_renderable(self, ctx):
-        self.ctx = ctx
-        rs = self.collect_nodes(req_enabled=False)
-        for r in rs:
-            r.make_renderable(self.ctx)
+    @ambient_light.setter
+    def ambient_light(self, value):
+        if value is None:
+            value = np.zeros(3)
+        else:
+            value = utils_colors.format_color_vector(value, 3)
+        self._ambient_light = value
+
+    @property
+    def meshes(self):
+        """set of :class:`Mesh` : The meshes in the scene.
+        """
+        return set([n.mesh for n in self.mesh_nodes])
+
+    @property
+    def mesh_nodes(self):
+        """set of :class:`Node` : The nodes containing meshes.
+        """
+        return self._mesh_nodes
+
+    @property
+    def lights(self):
+        """set of :class:`Light` : The lights in the scene.
+        """
+        return self.point_lights | self.spot_lights | self.directional_lights
+
+    @property
+    def light_nodes(self):
+        """set of :class:`Node` : The nodes containing lights.
+        """
+        return (self.point_light_nodes | self.spot_light_nodes |
+                self.directional_light_nodes)
+
+    @property
+    def point_lights(self):
+        """set of :class:`PointLight` : The point lights in the scene.
+        """
+        return set([n.light for n in self.point_light_nodes])
+
+    @property
+    def point_light_nodes(self):
+        """set of :class:`Node` : The nodes containing point lights.
+        """
+        return self._point_light_nodes
+
+    @property
+    def spot_lights(self):
+        """set of :class:`SpotLight` : The spot lights in the scene.
+        """
+        return set([n.light for n in self.spot_light_nodes])
+
+    @property
+    def spot_light_nodes(self):
+        """set of :class:`Node` : The nodes containing spot lights.
+        """
+        return self._spot_light_nodes
+
+    @property
+    def directional_lights(self):
+        """set of :class:`DirectionalLight` : The directional lights in
+        the scene.
+        """
+        return set([n.light for n in self.directional_light_nodes])
+
+    @property
+    def directional_light_nodes(self):
+        """set of :class:`Node` : The nodes containing directional lights.
+        """
+        return self._directional_light_nodes
+
+    @property
+    def cameras(self):
+        """set of :class:`Camera` : The cameras in the scene.
+        """
+        return set([n.camera for n in self.camera_nodes])
+
+    @property
+    def camera_nodes(self):
+        """set of :class:`Node` : The nodes containing cameras in the scene.
+        """
+        return self._camera_nodes
+
+    @property
+    def main_camera_node(self):
+        """set of :class:`Node` : The node containing the main camera in the
+        scene.
+        """
+        return self._main_camera_node
+
+    @main_camera_node.setter
+    def main_camera_node(self, value):
+        if value not in self.nodes:
+            raise ValueError('New main camera node must already be in scene')
+        self._main_camera_node = value
 
     @property
     def bounds(self):
-        return utils.compute_union_of_bounds([n for n in self.children if n not in self.lights])
-
-    @property
-    def current_bounds(self):
-        return utils.compute_union_of_current_bounds([n for n in self.children if n not in self.lights])
-
-    @property
-    def bounds_without_floor(self):
-        return utils.compute_union_of_current_bounds([n for n in self.children if n not in self.lights and n != self.floor])
-
-    def auto_set_floor(self):
-        """Finds the minimum lower bound in the y coordinate from all the children bounds and uses that as the floor"""
-        if self.floor is not None and len(self.children) > 0:
-            self.floor.position[1] = self.current_bounds[1, 0]
-            self.floor.update_transform()
-
-    def auto_set_camera_target(self):
-        """Sets the camera target to the average of the center of all objects in the scene"""
-        centers = []
-        for n in self.children:
-            if n not in self.lights:
-                centers.append(n.current_center)
-
-        if isinstance(self.camera, MainCamera) and len(centers) > 0:
-            self.camera.target = np.array(centers).mean(0)
-
-    @property
-    def light_mode(self):
-        return self._light_mode
-
-    @light_mode.setter
-    def light_mode(self, mode):
-        if mode == "default":
-            self._light_mode = mode
-            self.ambient_strength = 2.0
-            for l in self.lights:
-                l.strength = 1.0
-        elif mode == "dark":
-            self._light_mode = mode
-            self.ambient_strength = 0.4
-            for l in self.lights:
-                l.strength = 1.0
-        elif mode == "diffuse":
-            self._light_mode = mode
-            self.ambient_strength = 1.0
-            for l in self.lights:
-                l.strength = 2.0
-        else:
-            raise ValueError(f"Invalid light mode: {mode}")
-
-    def collect_nodes(self, req_enabled=True, obj_type=Node):
-        nodes = []
-
-        # Use head recursion in order to collect the deepest nodes first
-        # These are likely to be nodes which should be rendered first (i.e. transparent parent nodes should be last)
-        def rec_collect_nodes(nn):
-            if not req_enabled or nn.enabled:
-                if isinstance(nn, obj_type):
-                    nodes.append(nn)
-                for n_child in nn.children:
-                    rec_collect_nodes(n_child)
-
-        for n in self.children:
-            rec_collect_nodes(n)
-        return nodes
-
-    def get_node_by_name(self, name):
-        assert name != ""
-        ns = self.collect_nodes()
-        for n in ns:
-            if n.name == name:
-                return n
-        return None
-
-    def get_node_by_uid(self, uid):
-        ns = self.collect_nodes()
-        for n in ns:
-            if n.uid == uid:
-                return n
-        return None
-
-    def select(self, obj, selected_node=None, selected_instance=None, selected_tri_id=None):
-        """Set 'obj' as the selected object"""
-        self.selected_object = obj
-        if isinstance(obj, Node):
-            self.selected_object.on_selection(selected_node, selected_instance, selected_tri_id)
-        # Always keep the last selected object in the property panel
-        if obj is not None:
-            self.gui_selected_object = obj
-
-    def is_selected(self, obj):
-        """Returns true if obj is currently selected"""
-        return obj == self.selected_object
-
-    def gui_selected(self, imgui):
-        """GUI to edit the selected node"""
-        if self.gui_selected_object:
-            s = self.gui_selected_object
-
-            # Custom GUI Elements
-            imgui.indent(22)
-            imgui.push_font(self.custom_font)
-            imgui.text(f"{s.icon} {s.name}")
-            imgui.pop_font()
-
-            # Modes
-            if hasattr(s, "gui_modes") and len(s.gui_modes) > 1:
-                imgui.push_font(self.custom_font)
-                imgui.spacing()
-                for i, (gm_key, gm_val) in enumerate(s.gui_modes.items()):
-                    if s.selected_mode == gm_key:
-                        imgui.push_style_color(imgui.COLOR_BUTTON, 0.26, 0.59, 0.98, 1.0)
-                    mode_clicked = imgui.button(f" {gm_val['icon']}{gm_val['title']} ")
-                    if s.selected_mode == gm_key:
-                        imgui.pop_style_color()
-                    if mode_clicked:
-                        s.selected_mode = gm_key
-                    if i != len(s.gui_modes) - 1:
-                        imgui.same_line()
-                imgui.pop_font()
-
-                # Mode specific GUI
-                imgui.spacing()
-                if "fn" in s.gui_modes[s.selected_mode]:
-                    s.gui_modes[s.selected_mode]["fn"](imgui)
-
-            # Custom GUI (i.e. Camera specific params)
-            s.gui(imgui)
-            imgui.unindent()
-
-            # General GUI elements
-            if hasattr(s, "gui_controls"):
-                imgui.spacing()
-                imgui.spacing()
-                imgui.spacing()
-                for i, (gc_key, gc_val) in enumerate(s.gui_controls.items()):
-                    if not gc_val["is_visible"]:
-                        continue
-                    imgui.begin_group()
-                    imgui.push_font(self.custom_font)
-                    imgui.text(f"{gc_val['icon']}")
-                    imgui.pop_font()
-                    imgui.end_group()
-                    imgui.same_line(spacing=8)
-                    imgui.begin_group()
-                    gc_val["fn"](imgui)
-                    imgui.end_group()
-                    imgui.spacing()
-                    imgui.spacing()
-                    imgui.spacing()
-
-    def gui(self, imgui):
-
-        # Removed
-        #imgui.text(f"FPS: {self.fps:.1f}")
-
-        # Background color
-        uc, color = imgui.color_edit4("Background", *self.background_color)
-        if uc:
-            self.background_color = color
-
-        _, self.ambient_strength = imgui.drag_float(
-            "Ambient strength",
-            self.ambient_strength,
-            0.01,
-            min_value=0.0,
-            max_value=10.0,
-            format="%.2f",
-        )
-
-    def gui_editor(self, imgui, viewports, viewport_mode):
-        """GUI to control scene settings."""
-        # Also include the camera GUI in the scene node.
-        self.gui_camera(imgui, viewports, viewport_mode)
-        imgui.spacing()
-        imgui.separator()
-        imgui.spacing()
-        self.gui_hierarchy(imgui, [self])
-        imgui.spacing()
-        imgui.separator()
-        imgui.spacing()
-        imgui.spacing()
-        self.gui_selected(imgui)
-
-    def gui_camera(self, imgui, viewports, viewport_mode):
-        # Label for the viewport position, if using multiple viewports.
-        if viewport_mode == "single":
-            suffixes = [""]
-        elif viewport_mode == "split_v":
-            suffixes = ["(left)", "(right)"]
-        elif viewport_mode == "split_h":
-            suffixes = ["(top)", "(bottom)"]
-        else:
-            suffixes = [
-                "(top left)",
-                "(top right)",
-                "(bottom left)",
-                "(bottom right)",
-            ]
-
-        for suffix, v in zip(suffixes, viewports):
-            camera = v.camera
-
-            # Camera GUI
-            imgui.push_font(self.custom_font)
-            imgui.push_style_var(imgui.STYLE_FRAME_PADDING, (0, 2))
-
-            flags = imgui.TREE_NODE_LEAF | imgui.TREE_NODE_FRAME_PADDING
-            if self.is_selected(camera):
-                flags |= imgui.TREE_NODE_SELECTED
-
-            if isinstance(camera, MainCamera):
-                name = camera.name
+        """(2,3) float : The axis-aligned bounds of the scene.
+        """
+        if self._bounds is None:
+            # Compute corners
+            corners = []
+            for mesh_node in self.mesh_nodes:
+                mesh = mesh_node.mesh
+                pose = self.get_pose(mesh_node)
+                corners_local = trimesh.bounds.corners(mesh.bounds)
+                corners_world = pose[:3,:3].dot(corners_local.T).T + pose[:3,3]
+                corners.append(corners_world)
+            if len(corners) == 0:
+                self._bounds = np.zeros((2,3))
             else:
-                name = f"Camera: {camera.name}"
-
-            camera_expanded = imgui.tree_node(f"{camera.icon}  {name}##tree_node_r_camera", flags)
-            if imgui.is_item_clicked():
-                self.select(camera)
-
-            # Add a right justified label with the viewport position.
-            if suffix:
-                imgui.same_line()
-                pos = imgui.get_cursor_pos_x()
-                avail = imgui.get_content_region_available()[0] - 3
-                # Only put the label if enough space is available for it.
-                if avail > imgui.calc_text_size(suffix)[0]:
-                    imgui.same_line()
-                    avail -= imgui.calc_text_size(suffix)[0]
-                    imgui.set_cursor_pos_x(pos + avail)
-                    imgui.text(suffix)
-                else:
-                    # Put an empty label to go to the next line.
-                    imgui.text("")
-
-            imgui.pop_style_var()
-            imgui.pop_font()
-            if camera_expanded:
-                imgui.tree_pop()
-
-    def gui_lights(self, imgui):
-        # Lights GUI
-        for _, light in enumerate(self.lights):
-            imgui.push_font(self.custom_font)
-            imgui.push_style_var(imgui.STYLE_FRAME_PADDING, (0, 2))
-
-            flags = imgui.TREE_NODE_LEAF | imgui.TREE_NODE_FRAME_PADDING
-            if self.is_selected(light):
-                flags |= imgui.TREE_NODE_SELECTED
-            light_expanded = imgui.tree_node(f"{light.icon} {light.name}##tree_node_r", flags)
-            if imgui.is_item_clicked():
-                self.select(light)
-
-            imgui.pop_style_var()
-            imgui.pop_font()
-            if light_expanded:
-                imgui.tree_pop()
-
-    def gui_hierarchy(self, imgui, rs):
-        # Nodes GUI
-        for r in rs:
-            # Skip nodes that shouldn't appear in the hierarchy.
-            if not r.show_in_hierarchy:
-                continue
-
-            # Visibility
-            curr_enabled = r.enabled
-            if not curr_enabled:
-                imgui.push_style_color(imgui.COLOR_TEXT, 1.0, 1.0, 1.0, 0.4)
-
-            # Title
-            imgui.push_font(self.custom_font)
-            imgui.push_style_var(imgui.STYLE_FRAME_PADDING, (0, 2))
-
-            flags = imgui.TREE_NODE_OPEN_ON_ARROW | imgui.TREE_NODE_FRAME_PADDING
-            if r.expanded:
-                flags |= imgui.TREE_NODE_DEFAULT_OPEN
-            if self.is_selected(r):
-                flags |= imgui.TREE_NODE_SELECTED
-            if not any(c.show_in_hierarchy for c in r.children):
-                flags |= imgui.TREE_NODE_LEAF
-            r.expanded = imgui.tree_node("{} {}##tree_node_{}".format(r.icon, r.name, r.unique_name), flags)
-            if imgui.is_item_clicked():
-                self.select(r)
-
-            imgui.pop_style_var()
-            imgui.pop_font()
-
-            if r != self:
-                # Aligns checkbox to the right side of the window
-                # https://github.com/ocornut/imgui/issues/196
-                imgui.same_line(position=imgui.get_window_content_region_max().x - 25)
-                eu, enabled = imgui.checkbox("##enabled_r_{}".format(r.unique_name), r.enabled)
-                if eu:
-                    r.enabled = enabled
-
-            if r.expanded:
-                # Recursively render children nodes
-                self.gui_hierarchy(imgui, r.children)
-                imgui.tree_pop()
-
-            if not curr_enabled:
-                imgui.pop_style_color(1)
-
-    def add_light(self, light):
-        self.lights.append(light)
+                corners = np.vstack(corners)
+                self._bounds = np.array([np.min(corners, axis=0),
+                                         np.max(corners, axis=0)])
+        return self._bounds
 
     @property
-    def n_lights(self):
-        return len(self.lights)
+    def centroid(self):
+        """(3,) float : The centroid of the scene's axis-aligned bounding box
+        (AABB).
+        """
+        return np.mean(self.bounds, axis=0)
 
-    def render_outline(self, *args, **kwargs):
-        # No outline when the scene node is selected
-        return
+    @property
+    def extents(self):
+        """(3,) float : The lengths of the axes of the scene's AABB.
+        """
+        return np.diff(self.bounds, axis=0).reshape(-1)
+
+    @property
+    def scale(self):
+        """(3,) float : The length of the diagonal of the scene's AABB.
+        """
+        return np.linalg.norm(self.extents)
+
+    def add(self, obj, name=None, pose=None,
+            parent_node=None, parent_name=None):
+        """Add an object (mesh, light, or camera) to the scene.
+
+        Parameters
+        ----------
+        obj : :class:`Mesh`, :class:`Light`, or :class:`Camera`
+            The object to add to the scene.
+        name : str
+            A name for the new node to be created.
+        pose : (4,4) float
+            The local pose of this node relative to its parent node.
+        parent_node : :class:`Node`
+            The parent of this Node. If None, the new node is a root node.
+        parent_name : str
+            The name of the parent node, can be specified instead of
+            `parent_node`.
+
+        Returns
+        -------
+        node : :class:`Node`
+            The newly-created and inserted node.
+        """
+        if isinstance(obj, Mesh):
+            node = Node(name=name, matrix=pose, mesh=obj)
+        elif isinstance(obj, Light):
+            node = Node(name=name, matrix=pose, light=obj)
+        elif isinstance(obj, Camera):
+            node = Node(name=name, matrix=pose, camera=obj)
+        else:
+            raise TypeError('Unrecognized object type')
+
+        if parent_node is None and parent_name is not None:
+            parent_nodes = self.get_nodes(name=parent_name)
+            if len(parent_nodes) == 0:
+                raise ValueError('No parent node with name {} found'
+                                 .format(parent_name))
+            elif len(parent_nodes) > 1:
+                raise ValueError('More than one parent node with name {} found'
+                                 .format(parent_name))
+            parent_node = list(parent_nodes)[0]
+
+        self.add_node(node, parent_node=parent_node)
+
+        return node
+
+    def clear(self):
+        """Clear out all nodes to form an empty scene.
+        """
+        self._nodes = set()
+
+        self._name_to_nodes = {}
+        self._obj_to_nodes = {}
+        self._obj_name_to_nodes = {}
+        self._mesh_nodes = set()
+        self._point_light_nodes = set()
+        self._spot_light_nodes = set()
+        self._directional_light_nodes = set()
+        self._camera_nodes = set()
+        self._main_camera_node = None
+        self._bounds = None
+
+        # Transform tree
+        self._path_cache = {}
