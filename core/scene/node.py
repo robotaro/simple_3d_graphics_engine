@@ -15,7 +15,7 @@ class Node:
         self.name = name
         self.children = []
 
-        self._matrix = None
+        self._transform = None
         self._scale = None
         self._rotation = None
         self._translation = None
@@ -32,6 +32,13 @@ class Node:
             self.scale = scale
         else:
             self.matrix = matrix
+
+        # Common flags
+        self._visible = True
+        self._selectable = True
+        self._selected = False
+        self._dirty_flag = True
+        self._instanced = False
 
     def add(self, child_node: "Node"):
         self.children.append(child_node)
@@ -66,7 +73,7 @@ class Node:
         if np.abs(np.linalg.norm(value) - 1.0) > 1e-3:
             raise ValueError('Quaternion must have norm == 1.0')
         self._rotation = value
-        self._matrix = None
+        self._transform = None
 
     @property
     def translation(self):
@@ -80,7 +87,7 @@ class Node:
         if value.shape != (3,):
             raise ValueError('Translation must be a (3,) vector')
         self._translation = value
-        self._matrix = None
+        self._transform = None
 
     @property
     def scale(self):
@@ -94,7 +101,7 @@ class Node:
         if value.shape != (3,):
             raise ValueError('Scale must be a (3,) vector')
         self._scale = value
-        self._matrix = None
+        self._transform = None
 
     @property
     def matrix(self):
@@ -104,13 +111,13 @@ class Node:
         it's just a copy of the internal matrix. You can set the whole
         matrix, but not an individual element.
         """
-        if self._matrix is None:
-            self._matrix = node_math.tqs2matrix(
+        if self._transform is None:
+            self._transform = node_math.tqs2matrix(
                 translation=self.translation,
                 quaternion=self.rotation,
                 scale=self.scale
             )
-        return self._matrix.copy()
+        return self._transform.copy()
 
     @matrix.setter
     def matrix(self, value):
@@ -122,4 +129,4 @@ class Node:
         self.rotation = node_math.matrix2quaternion(value)
         self.scale = node_math.matrix2scale(value)
         self.translation = node_math.matrix2translation(value)
-        self._matrix = value
+        self._transform = value

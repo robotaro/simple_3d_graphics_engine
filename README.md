@@ -42,6 +42,3 @@ https://github.com/eth-ait/aitviewer
 - [ ] Change text on buttons dynamically
 - [x] Draw background
 
-
-
-

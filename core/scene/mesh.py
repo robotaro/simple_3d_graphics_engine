@@ -3,32 +3,13 @@ import copy
 
 import numpy as np
 import trimesh
-
-from .primitive import Primitive
-from .constants import GLTF
-from .material import MetallicRoughnessMaterial
+from core.scene.node import Node
 
 
-class Mesh(object):
-    """A set of primitives to be rendered.
+class Mesh(Node):
 
-    Parameters
-    ----------
-    name : str
-        The user-defined name of this object.
-    primitives : list of :class:`Primitive`
-        The primitives associated with this mesh.
-    weights : (k,) float
-        Array of weights to be applied to the Morph Targets.
-    is_visible : bool
-        If False, the mesh will not be rendered.
-    """
-
-    def __init__(self, primitives, name=None, weights=None, is_visible=True):
-        self.primitives = primitives
-        self.name = name
-        self.weights = weights
-        self.is_visible = is_visible
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self._bounds = None
 
@@ -43,27 +24,6 @@ class Mesh(object):
         if value is not None:
             value = str(value)
         self._name = value
-
-    @property
-    def primitives(self):
-        """list of :class:`Primitive` : The primitives associated
-        with this mesh.
-        """
-        return self._primitives
-
-    @primitives.setter
-    def primitives(self, value):
-        self._primitives = value
-
-    @property
-    def weights(self):
-        """(k,) float : Weights to be applied to morph targets.
-        """
-        return self._weights
-
-    @weights.setter
-    def weights(self, value):
-        self._weights = value
 
     @property
     def is_visible(self):

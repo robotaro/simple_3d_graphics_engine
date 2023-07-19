@@ -6,7 +6,7 @@ from core.window import Window
 from core.shader_library import ShaderLibrary
 
 
-class Renderer(object):
+class Renderer:
 
     def __init__(self, window: Window, shader_library: ShaderLibrary):
 
