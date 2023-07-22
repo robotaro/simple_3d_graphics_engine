@@ -130,3 +130,17 @@ class Node:
         self.scale = node_math.matrix2scale(value)
         self.translation = node_math.matrix2translation(value)
         self._transform = value
+
+    @property
+    def visible(self):
+        return self._visible
+
+    @visible.setter
+    def visible(self, value: bool):
+        self._visible = value
+
+    # =========================================================================
+    #                       Rendering callback functions
+    # =========================================================================
+
+    def

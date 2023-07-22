@@ -4,6 +4,7 @@ import sys
 import numpy as np
 from core.window import Window
 from core.shader_library import ShaderLibrary
+from core.scene.scene import Scene
 
 
 class Renderer:
@@ -46,3 +47,19 @@ class Renderer:
         self._latest_zfar = scene.main_camera_node.camera.zfar
 
         return retval
+
+    # =========================================================================
+    #                      Rendering functions
+    # =========================================================================
+
+    def render(self, scene: Scene, camera):
+        pass
+
+    def renderpass_shadow(self):
+        pass
+
+    def renderpass_outline(self):
+        pass
+
+    def renderpass_outline(self):
+        pass
