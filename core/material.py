@@ -1,5 +1,5 @@
 
-class Material(object):
+class Material:
     """Per object material properties."""
 
     def __init__(

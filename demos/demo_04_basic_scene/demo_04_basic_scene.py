@@ -38,12 +38,11 @@ class BasicScene(Window):
         # DEBUG
         self.scene.root_node.print_hierarchy()
 
-
     def update(self):
-        self.renderer.render(scene=self.scene, camera=self.camera)
         pass
 
     def render(self):
+        self.renderer.render(scene=self.scene, camera=self.camera, flags=[])
         pass
 
 

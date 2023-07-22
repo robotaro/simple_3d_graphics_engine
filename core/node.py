@@ -1,5 +1,7 @@
-from core.settings import SETTINGS
 import numpy as np
+import moderngl
+
+from core.settings import SETTINGS
 from core.math import node_math
 
 
@@ -46,8 +48,6 @@ class Node:
         self._instanced = False
 
     def add(self, child_node: "Node"):
-        if not isinstance(child_node, Node):
-            g = 0
         child_node.parent = self
         self._children.append(child_node)
 
@@ -156,22 +156,48 @@ class Node:
         self._visible = value
 
     # =========================================================================
-    #                     Callback Functions
+    #                         Utility functions
+    # =========================================================================
+
+    def get_nodes_by_type(self, type: str, output_list: list):
+
+        if self._type == type:
+            output_list.append(self)
+
+        for child in self._children:
+            child.get_nodes_by_type(type=type)
+
+    @staticmethod
+    def once(func):
+        def _decorator(self, *args, **kwargs):
+            if self.is_renderable:
+                return
+            else:
+                func(self, *args, **kwargs)
+                self.is_renderable = True
+
+        return _decorator
+
+    # =========================================================================
+    #                          Callback Functions
     # =========================================================================
 
     def render(self):
+        pass
+
+    def make_renderable(self, context: moderngl.Context):
         pass
 
     def callback_immediate_mode_ui(self):
         pass
 
     # =========================================================================
-    #                     Debug Functions
+#                                Debug Functions
     # =========================================================================
 
     def print_hierarchy(self, level=0):
         """
-        Prints all node hierarchy from this node downwrds
+        Prints all node hierarchy from this node downwards
         :return:
         """
         spacing = "".join(["  " for _ in range(level)])

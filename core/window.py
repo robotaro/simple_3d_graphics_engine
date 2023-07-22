@@ -197,6 +197,7 @@ class Window:
 
             self.update()
 
+            # TODO: Consider if the scene should do this instead
             self.context.clear(0.0, 0.0, 0.0)
 
             # App Render
