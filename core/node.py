@@ -1,4 +1,4 @@
-
+from core.settings import SETTINGS
 import numpy as np
 from core.math import node_math
 
@@ -13,6 +13,7 @@ class Node:
                  matrix=None):
 
         self.name = name
+        self.uid = SETTINGS.next_gui_id()
         self.children = []
 
         self._transform = None
@@ -140,7 +141,11 @@ class Node:
         self._visible = value
 
     # =========================================================================
-    #                       Rendering callback functions
+    #                     Callback Functions
     # =========================================================================
 
-    def
+    def render(self):
+        pass
+
+    def callback_immediate_mode_ui(self):
+        pass

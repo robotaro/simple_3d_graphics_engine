@@ -3,6 +3,8 @@ import os
 from core.window import Window
 from core.shader_library import ShaderLibrary
 from core.renderer import Renderer
+from core.scene import Scene
+from core.camera import Camera
 from core.light import DirectionalLight
 
 
@@ -14,16 +16,21 @@ class BasicScene(Window):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Create basic structures for rendering
         self.shader_library = ShaderLibrary(context=self.context)
         self.renderer = Renderer(window=self, shader_library=self.shader_library)
-        self.scene = None
+        self.main_scene = Scene(name="Main Scene")
+        self.main_camera = Camera()
+
+        # Scene Setup
+        self.main_scene.root_node.add(self.main_camera)
 
     def setup(self):
         light = DirectionalLight()
         pass
 
     def update(self):
-        self.renderer.render()
+        self.renderer.render(scene=self.main_scene, camera=self.main_camera)
         pass
 
     def render(self):

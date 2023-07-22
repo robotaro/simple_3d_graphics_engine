@@ -2,9 +2,12 @@ from core import constants
 from core.window import Window
 from core.shader_library import ShaderLibrary
 from core.scene import Scene
+from core.scene import Camera
 
 
 class Renderer:
+
+    # TODO: Use slots!
 
     def __init__(self, window: Window, shader_library: ShaderLibrary):
 
@@ -23,7 +26,7 @@ class Renderer:
         self.headless_fbo = None
         self.create_framebuffers()
 
-    def render(self, scene, flags, seg_node_map=None):
+    def render(self, scene: Scene, camera: Camera, flags, seg_node_map=None):
 
         # Update context with meshes and textures
         self._update_context(scene, flags)
@@ -57,6 +60,11 @@ class Renderer:
     # =========================================================================
 
     def render(self, scene: Scene, camera):
+
+
+        # Forward pass
+
+        # Shadow pass
         pass
 
     def render_shadowmap(self, scene: Scene, flags: int):

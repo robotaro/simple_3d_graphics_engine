@@ -1,5 +1,5 @@
 import numpy as np
-
+from core.utilities import utils
 
 # TODO: Make this an interface light
 class Light(object):
@@ -52,7 +52,7 @@ class Light(object):
 
     @color.setter
     def color(self, value):
-        self._color = format_color_vector(value, 3)
+        self._color = utils.format_color_vector(value, 3)
 
     @property
     def intensity(self):
@@ -77,8 +77,7 @@ class Light(object):
                 self._shadow_texture.delete()
         self._shadow_texture = value
 
-    @abc.abstractmethod
-    def _generate_shadow_texture(self, size=None):
+    def generate_shadow_texture(self, size=None):
         """Generate a shadow texture for this light.
 
         Parameters
@@ -88,8 +87,7 @@ class Light(object):
         """
         pass
 
-    @abc.abstractmethod
-    def _get_shadow_camera(self, scene_scale):
+    def get_shadow_camera(self, scene_scale):
         """Generate and return a shadow mapping camera for this light.
 
         Parameters

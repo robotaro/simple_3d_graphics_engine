@@ -10,25 +10,11 @@ from core.utilities import utils_colors
 
 
 class Scene(object):
-    """A hierarchical scene graph.
-
-    Parameters
-    ----------
-    nodes : list of :class:`Node`
-        The set of all nodes in the scene.
-    bg_color : (4,) float, optional
-        Background color of scene.
-    ambient_light : (3,) float, optional
-        Color of ambient light. Defaults to no ambient light.
-    name : str, optional
-        The user-defined name of this object.
-    """
 
     def __init__(self,
-                 nodes=None,
+                 name=None,
                  bg_color=None,
-                 ambient_light=None,
-                 name=None):
+                 ambient_light=None):
 
         if bg_color is None:
             bg_color = np.ones(4)
@@ -38,10 +24,7 @@ class Scene(object):
         if ambient_light is None:
             ambient_light = np.zeros(3)
 
-        if nodes is None:
-            nodes = set()
-        self._nodes = set()  # Will be added at the end of this function
-
+        self.root_node = Node(name="root_node")
         self.bg_color = bg_color
         self.ambient_light = ambient_light
         self.name = name
@@ -58,22 +41,7 @@ class Scene(object):
         self._bounds = None
 
         # Transform tree
-        self._digraph = nx.DiGraph()
-        self._digraph.add_node('world')
         self._path_cache = {}
-
-        # Find root nodes and add them
-        if len(nodes) > 0:
-            node_parent_map = {n: None for n in nodes}
-            for node in nodes:
-                for child in node.children:
-                    if node_parent_map[child] is not None:
-                        raise ValueError('Nodes may not have more than '
-                                         'one parent')
-                    node_parent_map[child] = node
-            for node in node_parent_map:
-                if node_parent_map[node] is None:
-                    self.add_node(node)
 
     @property
     def name(self):
@@ -219,7 +187,7 @@ class Scene(object):
                 mesh = mesh_node.mesh
                 pose = self.get_pose(mesh_node)
                 corners_local = trimesh.bounds.corners(mesh.bounds)
-                corners_world = pose[:3,:3].dot(corners_local.T).T + pose[:3,3]
+                corners_world = pose[:3, :3].dot(corners_local.T).T + pose[:3,3]
                 corners.append(corners_world)
             if len(corners) == 0:
                 self._bounds = np.zeros((2,3))
@@ -248,56 +216,17 @@ class Scene(object):
         """
         return np.linalg.norm(self.extents)
 
-    def add(self, obj, name=None, pose=None,
-            parent_node=None, parent_name=None):
-        """Add an object (mesh, light, or camera) to the scene.
+    def render(self):
 
-        Parameters
-        ----------
-        obj : :class:`Mesh`, :class:`Light`, or :class:`Camera`
-            The object to add to the scene.
-        name : str
-            A name for the new node to be created.
-        pose : (4,4) float
-            The local pose of this node relative to its parent node.
-        parent_node : :class:`Node`
-            The parent of this Node. If None, the new node is a root node.
-        parent_name : str
-            The name of the parent node, can be specified instead of
-            `parent_node`.
+        #
 
-        Returns
-        -------
-        node : :class:`Node`
-            The newly-created and inserted node.
-        """
-        if isinstance(obj, Mesh):
-            node = Node(name=name, matrix=pose, mesh=obj)
-        elif isinstance(obj, Light):
-            node = Node(name=name, matrix=pose, light=obj)
-        elif isinstance(obj, Camera):
-            node = Node(name=name, matrix=pose, camera=obj)
-        else:
-            raise TypeError('Unrecognized object type')
+        pass
 
-        if parent_node is None and parent_name is not None:
-            parent_nodes = self.get_nodes(name=parent_name)
-            if len(parent_nodes) == 0:
-                raise ValueError('No parent node with name {} found'
-                                 .format(parent_name))
-            elif len(parent_nodes) > 1:
-                raise ValueError('More than one parent node with name {} found'
-                                 .format(parent_name))
-            parent_node = list(parent_nodes)[0]
-
-        self.add_node(node, parent_node=parent_node)
-
-        return node
 
     def clear(self):
         """Clear out all nodes to form an empty scene.
         """
-        self._nodes = set()
+        self.root_node = Node()
 
         self._name_to_nodes = {}
         self._obj_to_nodes = {}
