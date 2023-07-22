@@ -4,52 +4,42 @@ from core.node import Node
 
 class Camera(Node):
 
+    _type = "camera"
+
     def __init__(self,
-                 znear=constants.CAMERA_Z_NEAR,
-                 zfar=constants.CAMERA_Z_FAR,
+                 z_near=constants.CAMERA_Z_NEAR,
+                 z_far=constants.CAMERA_Z_FAR,
                  *args, **kwargs):
 
         super().__init__(*args, **kwargs)
-        self.znear = znear
-        self.zfar = zfar
+        self._z_near = z_near
+        self._z_far = z_far
 
     @property
-    def name(self):
-        """str : The user-defined name of this object.
-        """
-        return self._name
-
-    @name.setter
-    def name(self, value):
-        if value is not None:
-            value = str(value)
-        self._name = value
-
-    @property
-    def znear(self):
+    def z_near(self):
         """float : The distance to the near clipping plane.
         """
         return self._znear
 
-    @znear.setter
-    def znear(self, value):
+    @z_near.setter
+    def z_near(self, value):
         value = float(value)
         if value < 0:
             raise ValueError('z-near must be >= 0.0')
-        self._znear = value
+        self._z_near = value
 
     @property
-    def zfar(self):
+    def z_far(self):
         """float : The distance to the far clipping plane.
         """
-        return self._zfar
+        return self.zfar
 
-    @zfar.setter
+    @z_far.setter
     def zfar(self, value):
         value = float(value)
         if value <= 0 or value <= self.znear:
             raise ValueError('zfar must be >0 and >znear')
-        self._zfar = value
+        self.zfar = value
 
     def get_projection_matrix(self, width=None, height=None):
         """Return the OpenGL projection matrix for this camera.

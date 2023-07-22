@@ -5,6 +5,8 @@ from core.math import node_math
 
 class Node:
 
+    _type = "node"
+
     def __init__(self,
                  name=None,
                  rotation=None,
@@ -12,9 +14,11 @@ class Node:
                  translation=None,
                  matrix=None):
 
-        self.name = name
         self.uid = SETTINGS.next_gui_id()
-        self.children = []
+
+        self._name = name
+        self._parent = None
+        self._children = []
 
         self._transform = None
         self._scale = None
@@ -42,7 +46,10 @@ class Node:
         self._instanced = False
 
     def add(self, child_node: "Node"):
-        self.children.append(child_node)
+        if not isinstance(child_node, Node):
+            g = 0
+        child_node.parent = self
+        self._children.append(child_node)
 
     @property
     def name(self):
@@ -52,15 +59,23 @@ class Node:
 
     @name.setter
     def name(self, value):
-        if value is not None:
-            value = str(value)
+        """str : The user-defined name of this object.
+        """
         self._name = value
 
     @property
-    def camera(self):
-        """:class:`Camera` : The camera in this node.
+    def parent(self):
+        """str : The user-defined name of this object.
         """
-        return self._camera
+        return self.parent
+
+    @parent.setter
+    def parent(self, value):
+        """str : The user-defined name of this object.
+        """
+        if not isinstance(value, Node):
+            raise Exception(f"[ERROR] Parent is not a node type")
+        self._parent = value
 
     @property
     def rotation(self):
@@ -149,3 +164,19 @@ class Node:
 
     def callback_immediate_mode_ui(self):
         pass
+
+    # =========================================================================
+    #                     Debug Functions
+    # =========================================================================
+
+    def print_hierarchy(self, level=0):
+        """
+        Prints all node hierarchy from this node downwrds
+        :return:
+        """
+        spacing = "".join(["  " for _ in range(level)])
+        print(f"{spacing}> [{self._type}] Name: '{self.name}' | ID: {self.uid}")
+
+        for child in self._children:
+            child.print_hierarchy(level=(level + 1))
+

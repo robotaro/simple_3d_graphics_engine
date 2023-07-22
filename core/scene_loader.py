@@ -35,9 +35,6 @@ class SceneLoader:
 
             self.build_node_tree(parent_soup=scene_soup, parent_node=new_scene)
 
-        # DEBUG
-        new_scene.print_hierarchy()
-
     def build_node_tree(self, parent_soup: BeautifulSoup, parent_node: Node, level=0):
 
         level += 1

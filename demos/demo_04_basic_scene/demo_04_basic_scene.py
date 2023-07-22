@@ -5,6 +5,7 @@ from core.shader_library import ShaderLibrary
 from core.renderer import Renderer
 from core.scene import Scene
 from core.camera import Camera
+from core.mesh import Mesh
 from core.light import DirectionalLight
 
 
@@ -19,18 +20,27 @@ class BasicScene(Window):
         # Create basic structures for rendering
         self.shader_library = ShaderLibrary(context=self.context)
         self.renderer = Renderer(window=self, shader_library=self.shader_library)
-        self.main_scene = Scene(name="Main Scene")
-        self.main_camera = Camera()
 
-        # Scene Setup
-        self.main_scene.root_node.add(self.main_camera)
+        self.scene = None
+        self.camera = None
+        self.mesh = None
 
     def setup(self):
-        light = DirectionalLight()
-        pass
+
+        self.scene = Scene(name="Main Scene")
+        self.camera = Camera(name="Main Camera")
+        self.mesh = Mesh(name="Simple Mesh 1")
+
+        # Scene Setup
+        self.scene.root_node.add(self.camera)
+        self.scene.root_node.add(self.mesh)
+
+        # DEBUG
+        self.scene.root_node.print_hierarchy()
+
 
     def update(self):
-        self.renderer.render(scene=self.main_scene, camera=self.main_camera)
+        self.renderer.render(scene=self.scene, camera=self.camera)
         pass
 
     def render(self):
@@ -39,18 +49,15 @@ class BasicScene(Window):
 
 def main():
 
-    # xml_fpath = r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\scenes\default_scene.xml"
-    # loader = SceneLoader()
-    # new_scene = loader.load(scene_xml_fpath=xml_fpath)
-
     app = BasicScene(
         window_size=(1024, 768),
-        window_title="Shader Library demo",
+        window_title="Basic Scene Demo",
         vertical_sync=True,
         enable_imgui=False
     )
 
     app.run()
+
 
 if __name__ == "__main__":
     main()

@@ -1,8 +1,9 @@
 import numpy as np
 from core.utilities import utils
+from core.node import Node
 
-# TODO: Make this an interface light
-class Light(object):
+
+class Light(Node):
     """Base class for all light objects.
 
     Parameters

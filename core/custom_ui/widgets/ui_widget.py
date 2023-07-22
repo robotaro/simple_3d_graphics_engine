@@ -69,13 +69,13 @@ class UIWidget:
 
         # TODO: Avoid algorithm repetition for WIDTH and HEIGHT
         if self.width_ratio is not None:
-            parent_spacing_sum = max(2, len(self.parent.children) + 1) * self.parent.spacing_x
+            parent_spacing_sum = max(2, len(self.parent._children) + 1) * self.parent.spacing_x
             parent_children_width_sum = self.parent.get_children_fixed_width_sum()
             parent_available_width = self.parent.width_pixels - parent_spacing_sum - parent_children_width_sum
             self.width_pixels = self.width_ratio * parent_available_width
 
         if self.height_ratio is not None:
-            parent_spacing_sum = max(2, len(self.parent.children) + 1) * self.parent.spacing_y
+            parent_spacing_sum = max(2, len(self.parent._children) + 1) * self.parent.spacing_y
             parent_children_height_sum = self.parent.get_children_fixed_width_sum()
             parent_available_height = self.parent.height_pixels - parent_spacing_sum - parent_children_height_sum
             self.height_pixels = self.height_ratio * parent_available_height
