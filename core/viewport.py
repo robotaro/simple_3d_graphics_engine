@@ -1,9 +1,6 @@
 from typing import Tuple
 import numpy as np
 
-from core.scene.cameras.main_camera import MainCamera
-from core.scene.cameras.camera_interface import CameraInterface
-
 
 class Viewport:
     def __init__(self, extents: Tuple[int, int, int, int], camera: CameraInterface):

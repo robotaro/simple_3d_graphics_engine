@@ -1,8 +1,8 @@
 import numpy as np
 import moderngl
 
-from core.scene.node import Node
-from core.scene.material import Material
+from core.node import Node
+from core.material import Material
 from core.utilities import utils_decorators
 
 

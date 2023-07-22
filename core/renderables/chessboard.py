@@ -1,8 +1,8 @@
 import numpy as np
 import moderngl
 
-from core.scene.node import Node
-from core.scene.renderables.meshes import Meshes
+from core.node import Node
+from core.renderables.meshes import Meshes
 from core.utilities import utils
 
 

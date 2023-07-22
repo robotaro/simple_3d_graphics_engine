@@ -5,8 +5,8 @@ from moderngl_window.opengl.vao import VAO
 
 from core.utilities import utils
 from core.utilities.utils_decorators import hooked
-from core.scene.node import Node
-from core.scene.material import Material
+from core.node import Node
+from core.material import Material
 from core.geometry_3d import shapes_3d
 
 

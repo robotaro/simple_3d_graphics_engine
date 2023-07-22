@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
-from core.scene.scene import Scene
-from core.scene.node import Node
+from core.scene import Scene
+from core.node import Node
 from core.scene.renderables.light import Light
-from core.scene.renderables.chessboard import ChessboardPlane
+from core.renderables.chessboard import ChessboardPlane
 
 from core.utilities import utils_xml
 

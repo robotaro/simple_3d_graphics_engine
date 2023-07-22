@@ -2,10 +2,10 @@
 import numpy as np
 import trimesh
 
-from core.scene.mesh import Mesh
-from core.scene.camera import Camera
-from core.scene.light import Light, PointLight, DirectionalLight
-from core.scene.node import Node
+from core.mesh import Mesh
+from core.camera import Camera
+from core.light import Light
+from core.node import Node
 from core.utilities import utils_colors
 
 

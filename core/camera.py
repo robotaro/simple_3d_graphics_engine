@@ -1,6 +1,5 @@
-import numpy as np
 from core import constants
-from core.scene.node import Node
+from core.node import Node
 
 
 class Camera(Node):

@@ -1,13 +1,9 @@
 import os
-import numpy as np
 
-from core import constants
 from core.window import Window
 from core.shader_library import ShaderLibrary
 from core.renderer import Renderer
-from core.scene.scene import Scene
-from core.scene.light import DirectionalLight
-from core.scene.mesh import Mesh
+from core.light import DirectionalLight
 
 
 class BasicScene(Window):

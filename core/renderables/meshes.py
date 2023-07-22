@@ -14,9 +14,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-import os
 import pickle
-import re
 from functools import lru_cache
 
 import moderngl
@@ -27,10 +25,10 @@ from moderngl_window.opengl.vao import VAO
 from PIL import Image
 from trimesh.triangles import points_to_barycentric
 
-from core.scene.node import Node
+from core.node import Node
 from core.utilities import utils
 from core.utilities import utils_decorators
-from core.math import so3
+
 
 class Meshes(Node):
     """A sequence of triangle meshes. This assumes that the mesh topology is fixed over the sequence."""

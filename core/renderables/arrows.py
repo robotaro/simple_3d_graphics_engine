@@ -1,8 +1,8 @@
 
 import numpy as np
 
-from core.scene.node import Node
-from core.scene.renderables.lines import Lines
+from core.node import Node
+from core.renderables.lines import Lines
 
 
 class Arrows(Node):

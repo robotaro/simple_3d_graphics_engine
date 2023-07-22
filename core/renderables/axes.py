@@ -1,8 +1,8 @@
 import numpy as np
 
-from core.scene.node import Node
-from core.scene.renderables.spheres import Spheres
-from core.scene.renderables.arrows import Arrows
+from core.node import Node
+from core.renderables.spheres import Spheres
+from core.renderables.arrows import Arrows
 
 
 class Axes(Node):

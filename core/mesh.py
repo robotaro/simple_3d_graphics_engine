@@ -3,7 +3,7 @@ import copy
 
 import numpy as np
 import trimesh
-from core.scene.node import Node
+from core.node import Node
 
 
 class Mesh(Node):

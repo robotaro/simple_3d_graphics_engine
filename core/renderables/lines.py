@@ -1,13 +1,12 @@
 
 import moderngl
 import numpy as np
-import trimesh
 from moderngl_window.opengl.vao import VAO
 
 from core.geometry_3d import shapes_3d
 from core.utilities import utils_decorators
-from core.scene.node import Node
-from core.scene.material import Material
+from core.node import Node
+from core.material import Material
 
 
 class Lines(Node):
