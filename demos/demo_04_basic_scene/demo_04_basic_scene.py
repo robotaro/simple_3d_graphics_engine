@@ -18,7 +18,8 @@ class BasicScene(Window):
         super().__init__(*args, **kwargs)
 
         # Create basic structures for rendering
-        self.shader_library = ShaderLibrary(context=self.context)
+        shader_dir = os.path.dirname(__file__)
+        self.shader_library = ShaderLibrary(context=self.context, shader_directory=shader_dir)
         self.renderer = Renderer(window=self, shader_library=self.shader_library)
 
         self.scene = None

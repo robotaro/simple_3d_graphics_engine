@@ -17,19 +17,20 @@ class Renderer:
         self.shader_library = shader_library
 
         # Create Framebuffers
-        self.offscreen_p_depth = None
-        self.offscreen_p_viewpos = None
-        self.offscreen_p_tri_id = None
-        self.offscreen_p = None
+        self.offscreen_texture_depth = None
+        self.offscreen_texture_viewpos = None
+        self.offscreen_texture_tri_id = None
+        self.offscreen_framebuffer = None
         self.outline_texture = None
         self.outline_framebuffer = None
-        self.headless_fbo_color = None
-        self.headless_fbo_depth = None
-        self.headless_fbo = None
+        #self.headless_fbo_color = None
+        #self.headless_fbo_depth = None
+        #self.headless_fbo = None
         self.create_framebuffers()
 
         # Create programs
-        self.mesh_program = shader_library.get_program(program_id="")
+        self.mesh_program = shader_library.get_program(program_id="shader")
+        g = 0
 
     def render(self, scene: Scene, camera: Camera, flags, seg_node_map=None):
 
@@ -151,36 +152,37 @@ class Renderer:
             if b is not None:
                 b.release()
 
-        safe_release(self.offscreen_p_depth)
-        safe_release(self.offscreen_p_viewpos)
-        safe_release(self.offscreen_p_tri_id)
-        safe_release(self.offscreen_p)
+        safe_release(self.offscreen_texture_depth)
+        safe_release(self.offscreen_texture_viewpos)
+        safe_release(self.offscreen_texture_tri_id)
+        safe_release(self.offscreen_framebuffer)
         safe_release(self.outline_texture)
         safe_release(self.outline_framebuffer)
 
         # Mesh mouse intersection
-        self.offscreen_p_depth = self.ctx.depth_texture(self.wnd.buffer_size)
-        self.offscreen_p_viewpos = self.ctx.texture(self.wnd.buffer_size, 4, dtype="f4")
-        self.offscreen_p_tri_id = self.ctx.texture(self.wnd.buffer_size, 4, dtype="f4")
-        self.offscreen_p = self.ctx.framebuffer(
-            color_attachments=[self.offscreen_p_viewpos, self.offscreen_p_tri_id],
-            depth_attachment=self.offscreen_p_depth,
+        self.offscreen_texture_depth = self.window.context.depth_texture(self.window.buffer_size)
+        self.offscreen_texture_viewpos = self.window.context.texture(self.window.buffer_size, 4, dtype="f4")
+        self.offscreen_texture_tri_id = self.window.context.texture(self.window.buffer_size, 4, dtype="f4")
+        self.offscreen_framebuffer = self.window.context.framebuffer(
+            color_attachments=[self.offscreen_texture_viewpos, self.offscreen_texture_tri_id],
+            depth_attachment=self.offscreen_texture_depth,
         )
-        self.offscreen_p_tri_id.filter = (moderngl.NEAREST, moderngl.NEAREST)
+        self.offscreen_texture_tri_id.filter = (moderngl.NEAREST, moderngl.NEAREST)
 
         # Outline rendering
-        self.outline_texture = self.ctx.texture(self.wnd.buffer_size, 1, dtype="f4")
-        self.outline_framebuffer = self.ctx.framebuffer(color_attachments=[self.outline_texture])
+        self.outline_texture = self.window.context.texture(self.window.buffer_size, 1, dtype="f4")
+        self.outline_framebuffer = self.window.context.framebuffer(color_attachments=[self.outline_texture])
 
         # If in headlesss mode we create a framebuffer without multisampling that we can use
         # to resolve the default framebuffer before reading.
-        if self.window_type == "headless":
-            safe_release(self.headless_fbo_color)
-            safe_release(self.headless_fbo_depth)
-            safe_release(self.headless_fbo)
-            self.headless_fbo_color = self.ctx.texture(self.wnd.buffer_size, 4)
-            self.headless_fbo_depth = self.ctx.depth_texture(self.wnd.buffer_size)
-            self.headless_fbo = self.ctx.framebuffer(self.headless_fbo_color, self.headless_fbo_depth)
+        #if self.window_type == "headless":
+        #    safe_release(self.headless_fbo_color)
+        #    safe_release(self.headless_fbo_depth)
+        #    safe_release(self.headless_fbo)
+        #    self.headless_fbo_color = self.ctx.texture(self.wnd.buffer_size, 4)
+        #    self.headless_fbo_depth = self.ctx.depth_texture(self.wnd.buffer_size)
+        #    self.headless_fbo = self.ctx.framebuffer(self.headless_fbo_color, self.headless_fbo_depth)
+
 
     # =========================================================================
     #                      Rendering functions

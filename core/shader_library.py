@@ -38,11 +38,12 @@ class ShaderLibrary:
         self.shader_blueprints = {}
         self.programs = {}
 
-        # Compile shaders and store any compilation errors
         self.load_shaders()
 
+        self.compile_programs()
+
     def get_program(self, program_id: str):
-        return self.programs[program_id].get("program", None)
+        return self.programs.get(program_id, None)
 
     def load_shaders(self) -> None:
 
@@ -62,9 +63,6 @@ class ShaderLibrary:
         for key, shader in self.shader_blueprints.items():
             self._solve_shader_dependencies(shader_key=key)
 
-        # Step 4) Compile all programs
-        self._compile_programs()
-
     def print_compilation_results(self):
 
         print("[ Compilation Results ]")
@@ -76,6 +74,10 @@ class ShaderLibrary:
             if not successful:
                 print(errors)
                 print("\n")
+
+    def add_shader(self, ):
+        # TODO: Continue from here
+        pass
 
     # =========================================================================
     #                           Internal Functions
@@ -217,7 +219,7 @@ class ShaderLibrary:
 
         return "".join(header_lines + shader.source_code_lines)
 
-    def _compile_programs(self):
+    def compile_programs(self):
         """
         Compiles all programs defined in the YAML definition file. The programs
 
