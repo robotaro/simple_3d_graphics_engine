@@ -75,10 +75,6 @@ class ShaderLibrary:
                 print(errors)
                 print("\n")
 
-    def add_shader(self, ):
-        # TODO: Continue from here
-        pass
-
     # =========================================================================
     #                           Internal Functions
     # =========================================================================

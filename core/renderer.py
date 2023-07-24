@@ -5,13 +5,14 @@ from core.window import Window
 from core.shader_library import ShaderLibrary
 from core.scene import Scene
 from core.scene import Camera
+from core.viewport import Viewport
 
 
 class Renderer:
 
     # TODO: Use slots!
 
-    def __init__(self, window: Window, shader_library: ShaderLibrary):
+    def __init__(self, window: Window, shader_library: ShaderLibrary, ):
 
         self.window = window
         self.shader_library = shader_library
@@ -29,10 +30,21 @@ class Renderer:
         self.create_framebuffers()
 
         # Create programs
-        self.mesh_program = shader_library.get_program(program_id="shader")
+        self.mesh_program = shader_library.get_program(program_id="mesh_shader")
+        self.fragment_picker_program = None
+
+
         g = 0
 
     def render(self, scene: Scene, camera: Camera, flags, seg_node_map=None):
+
+        # Stage: Render shadowmaps
+
+        # Stage: For each viewport render viewport
+        #   - Render fragment map picking
+        #   - Render scene
+        #   - Render outline
+
 
         # Initialise object on the GPU if they haven't been already
         self._update_context(scene, flags)
@@ -41,7 +53,7 @@ class Renderer:
         self.render_shadowmap()
 
         # Make forward pass
-        retval = self.render_pass_forward(scene, flags, seg_node_map=seg_node_map)
+        retval = self._forward_pass(scene, flags, seg_node_map=seg_node_map)
 
         # If necessary, make normals pass
         if flags & (constants.RENDER_FLAG_VERTEX_NORMALS | constants.RENDER_FLAG_FACE_NORMALS):
@@ -52,6 +64,8 @@ class Renderer:
         self._latest_zfar = camera.z_far
 
         return retval
+
+    def render_scene(self, scene: Scene, camera: Camera):
 
     def _update_context(self, scene: Scene, flags: list):
 
@@ -183,10 +197,98 @@ class Renderer:
         #    self.headless_fbo_depth = self.ctx.depth_texture(self.wnd.buffer_size)
         #    self.headless_fbo = self.ctx.framebuffer(self.headless_fbo_color, self.headless_fbo_depth)
 
-
     # =========================================================================
     #                      Rendering functions
     # =========================================================================
+
+    def _forward_pass(self, scene: Scene, camera: Camera, viewport: Viewport,seg_node_map=None):
+
+        # Bind screen context to draw to it
+        self.window.context.screen.use()
+
+        # Set up viewport for render
+        self._configure_forward_pass_viewport(flags)
+
+        # Clear it
+        if bool(flags & RenderFlags.SEG):
+            glClearColor(0.0, 0.0, 0.0, 1.0)
+            if seg_node_map is None:
+                seg_node_map = {}
+        else:
+            glClearColor(*scene.bg_color)
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+        if not bool(flags & RenderFlags.SEG):
+            glEnable(GL_MULTISAMPLE)
+        else:
+            glDisable(GL_MULTISAMPLE)
+
+        # Set up camera matrices
+        V, P = self._get_camera_matrices(scene)
+
+        program = None
+        # Now, render each object in sorted order
+        for node in self._sorted_mesh_nodes(scene):
+            mesh = node.mesh
+
+            # Skip the mesh if it's not visible
+            if not mesh.is_visible:
+                continue
+
+            # If SEG, set color
+            if bool(flags & RenderFlags.SEG):
+                if node not in seg_node_map:
+                    continue
+                color = seg_node_map[node]
+                if not isinstance(color, (list, tuple, np.ndarray)):
+                    color = np.repeat(color, 3)
+                else:
+                    color = np.asanyarray(color)
+                color = color / 255.0
+
+            for primitive in mesh.primitives:
+
+                # First, get and bind the appropriate program
+                program = self._get_primitive_program(
+                    primitive, flags, ProgramFlags.USE_MATERIAL
+                )
+                program._bind()
+
+                # Set the camera uniforms
+                program.set_uniform('V', V)
+                program.set_uniform('P', P)
+                program.set_uniform(
+                    'cam_pos', scene.get_pose(scene.main_camera_node)[:3,3]
+                )
+                if bool(flags & RenderFlags.SEG):
+                    program.set_uniform('color', color)
+
+                # Next, bind the lighting
+                if not (flags & RenderFlags.DEPTH_ONLY or flags & RenderFlags.FLAT or
+                        flags & RenderFlags.SEG):
+                    self._bind_lighting(scene, program, node, flags)
+
+                # Finally, bind and draw the primitive
+                self._bind_and_draw_primitive(
+                    primitive=primitive,
+                    pose=scene.get_pose(node),
+                    program=program,
+                    flags=flags
+                )
+                self._reset_active_textures()
+
+        # Unbind the shader and flush the output
+        if program is not None:
+            program._unbind()
+        glFlush()
+
+        # If doing offscreen render, copy result from framebuffer and return
+        if flags & RenderFlags.OFFSCREEN:
+            return self._read_main_framebuffer(scene, flags)
+        else:
+            return
+
 
     def render_shadowmap(self, scene: Scene, flags: int):
 

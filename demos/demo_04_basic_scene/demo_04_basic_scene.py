@@ -12,14 +12,14 @@ from core.light import DirectionalLight
 class BasicScene(Window):
 
     DEMO_DIRECTORY = os.path.dirname(__file__)
-    PROGRAM_CONFIG_FPATH = os.path.join(DEMO_DIRECTORY, "program_config.yaml")
+    PROGRAM_CONFIG_FPATH = os.path.join(DEMO_DIRECTORY, "shader_programs.yaml")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Create basic structures for rendering
-        shader_dir = os.path.dirname(__file__)
-        self.shader_library = ShaderLibrary(context=self.context, shader_directory=shader_dir)
+        self.shader_library = ShaderLibrary(context=self.context,
+                                            shader_programs_config_fpath=BasicScene.PROGRAM_CONFIG_FPATH)
         self.renderer = Renderer(window=self, shader_library=self.shader_library)
 
         self.scene = None

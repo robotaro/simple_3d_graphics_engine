@@ -13,14 +13,19 @@ class Mesh(Node):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # Actual data stored here
+        self.vertices = None
+        self.normals = None
+        self.indices = None
+
         # Rendering variables
         self.vbo_vertices = None
+        self.vbo_normals = None
         self.vbo_indices = None
         self.vbo_uvs = None
         self.vao = None
 
         self._bounds = None
-
 
     @property
     def bounds(self):
@@ -55,29 +60,42 @@ class Mesh(Node):
                 return True
         return False
 
+    def release(self):
+        if self.vbo_vertices:
+            self.vbo_vertices.release()
+
+        if self.vbo_uvs:
+            self.vbo_uvs.release()
+
+        if self.vbo_indices:
+            self.vbo_indices.release()
+
+        if self.vao:
+            self.vao.release()
+
+
     # =========================================================================
     #                          Rendering functions
     # =========================================================================
 
     @Node.once
-    def make_renderable(self, ctx: moderngl.Context):
+    def make_renderable(self, ctx: moderngl.Context, program: moderngl.Program):
 
         self.vbo_vertices = ctx.buffer(self.vertices.astype("f4").tobytes())
         self.vbo_indices = ctx.buffer(self.faces.astype("i4").tobytes())
-        self.vbo_instance_base = ctx.buffer(reserve=self.n_lines * 12)
-        self.vbo_instance_tip = ctx.buffer(reserve=self.n_lines * 12)
-        self.vbo_instance_color = ctx.buffer(reserve=self.n_lines * 16)
 
-        # TODO: Remove moderngl-window VAO implementation
-        self.vao = VAO()
-        self.vbo_vertices = ctx.buffer(self.vertices.astype("f4").tobytes())
-        self.vbo_normals = ctx.buffer(self.normals.astype("f4").tobytes())
-        self.vbo_uvs = ctx.buffer(self.uvs.astype("f4").tobytes())
-
+        self.vao = ctx.vertex_array(
+            program,
+            [
+                (self.vbo_vertices, "3f4", "in_position"),
+                (self.vbo_uvs, "3f4", "in_normals"),
+                (self.vbo_uvs, "2f4", "in_uvs"),
+            ],
+        )
 
     def render(self, **kwargs):
-        # Set uniforms
-        pass
+        if self.vao:
+            self.vao.render(moderngl.TRIANGLES)
 
     # =========================================================================
     #                           Mesh Generation

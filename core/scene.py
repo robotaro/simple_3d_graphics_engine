@@ -218,10 +218,14 @@ class Scene(object):
 
     def render(self):
 
-        #
+        # Stage: Get renderable Nodes
 
-        pass
+        # Stage: Draw opaque objects first
 
+        # Stage: Draw transparent objects back to front
+
+        # =====================
+        self.root_node.render()  # A simple placeholder recursive rendering
 
     def clear(self):
         """Clear out all nodes to form an empty scene.
