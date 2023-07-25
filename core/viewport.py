@@ -1,21 +1,18 @@
 from typing import Tuple
 import numpy as np
 
+from core.camera import Camera
+
 
 class Viewport:
-    def __init__(self, extents: Tuple[int, int, int, int], camera: CameraInterface):
-        self.extents = extents
-        self._camera = camera
-        self._using_temp_camera = not isinstance(camera, MainCamera)
 
-    @property
-    def camera(self):
-        return self._camera
+    __slots__ = ["x", "y", "width", "height"]
 
-    @camera.setter
-    def camera(self, camera: CameraInterface):
-        self._camera = camera
-        self._using_temp_camera = not isinstance(camera, MainCamera)
+    def __init__(self, x: int, y: int, width: int, height: int):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
 
     def contains(self, x: int, y: int) -> bool:
         """
@@ -24,23 +21,11 @@ class Viewport:
         :param y: int, Y screen coordinate
         :return:
         """
-        e = self.extents
-        return x >= e[0] and x < e[0] + e[2] and y >= e[1] and y < e[1] + e[3]
+        return x >= self.x and x < (self.x + self.width) and y >= self.y and y < (self.y + self.height)
 
-    def set_temp_camera(self, camera: CameraInterface):
-        self.camera = camera
-        self._using_temp_camera = True
 
-    def reset_camera(self):
-        if not self._using_temp_camera:
-            return
+    def render(self, camera: Camera):
 
-        self._using_temp_camera = False
+        # TODO: Should the viewport render the scene with the camera?
 
-        fwd = self.camera.forward
-        pos = self.camera.position
-
-        self.camera = MainCamera(45)
-        self.camera.position = np.copy(pos)
-        self.camera.target = pos + fwd * 3
-        self.camera.update_matrices(*self.extents[2:])
+        pass

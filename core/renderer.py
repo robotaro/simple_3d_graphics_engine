@@ -6,6 +6,7 @@ from core.shader_library import ShaderLibrary
 from core.scene import Scene
 from core.scene import Camera
 from core.viewport import Viewport
+from core.utilities import utils_logging
 
 
 class Renderer:
@@ -30,24 +31,29 @@ class Renderer:
         self.create_framebuffers()
 
         # Create programs
-        self.mesh_program = shader_library.get_program(program_id="mesh_shader")
+        self.mesh_texture_program = shader_library.get_program(program_id="mesh_shader")
+        self.mesh_colors_program = shader_library.get_program(program_id="mesh_shader")
+        self.shadow_map_program = None
         self.fragment_picker_program = None
 
-
-        g = 0
+        self.logger = utils_logging.get_project_logger()
 
     def render(self, scene: Scene, camera: Camera, flags, seg_node_map=None):
 
-        # Stage: Render shadowmaps
+        # Stage: Render shadow maps
 
         # Stage: For each viewport render viewport
         #   - Render fragment map picking
         #   - Render scene
         #   - Render outline
 
+        self.logger.info("test!")
+
 
         # Initialise object on the GPU if they haven't been already
         self._update_context(scene, flags)
+
+        scene.render(camera=camera)
 
         # Render necessary shadow maps
         self.render_shadowmap()
@@ -67,25 +73,29 @@ class Renderer:
 
     def render_scene(self, scene: Scene, camera: Camera):
 
+        pass
+
     def _update_context(self, scene: Scene, flags: list):
 
-        scene.root_node.make_renderable()
+        # Setup lights here
+
+        scene.root_node.make_renderable(context=self.window.context)
 
         # Update mesh textures
-        mesh_textures = set()
-        for m in scene_meshes:
-            for p in m.primitives:
-                mesh_textures |= p.material.textures
+        #mesh_textures = set()
+        #for m in scene_meshes:
+        #    for p in m.primitives:
+        #        mesh_textures |= p.material.textures
 
         # Add new textures to context
-        for texture in mesh_textures - self._mesh_textures:
-            texture._add_to_context()
+        #for texture in mesh_textures - self._mesh_textures:
+        #    texture._add_to_context()
 
         # Remove old textures from context
-        for texture in self._mesh_textures - mesh_textures:
-            texture.delete()
+        #for texture in self._mesh_textures - mesh_textures:
+        #    texture.delete()
 
-        self._mesh_textures = mesh_textures.copy()
+        #self._mesh_textures = mesh_textures.copy()
 
         shadow_textures = set()
         for l in scene.lights:
@@ -116,6 +126,7 @@ class Renderer:
         self._shadow_textures = shadow_textures.copy()
 
     def _use_program(self, camera, **kwargs):
+
         if self.has_texture and self.show_texture:
             prog = self.texture_prog
             prog["diffuse_texture"] = 0
@@ -153,7 +164,6 @@ class Renderer:
         set_material_properties(prog, self.material)
         self.receive_shadow(prog, **kwargs)
         return prog
-
 
     # =========================================================================
     #                        Framebuffer functions

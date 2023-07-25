@@ -216,7 +216,11 @@ class Scene(object):
         """
         return np.linalg.norm(self.extents)
 
-    def render(self):
+    def render(self, camera: Camera):
+
+        # TODO:
+        # - When to upload light data?
+        # - When to upload camera data?
 
         # Stage: Get renderable Nodes
 

@@ -7,6 +7,7 @@ import glfw
 import moderngl
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
+from core.utilities.utils_logging import SingletonLogger
 
 
 class Window:
@@ -27,7 +28,8 @@ class Window:
                  "window_glfw",
                  "context",
                  "imgui_renderer",
-                 "buffer_size")
+                 "buffer_size",
+                 "logger")
     
     # ========================================================================
     #                          Initialization functions
@@ -87,6 +89,9 @@ class Window:
 
         # ImGUI variables
         self.imgui_renderer = None
+
+        # Logging variables
+        self.logger = SingletonLogger()
 
     # ========================================================================
     #                           Input State Functions

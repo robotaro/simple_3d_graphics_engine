@@ -42,10 +42,9 @@ class Node:
 
         # Common flags
         self._visible = True
-        self._selectable = True
+        self.is_renderable = False
+        self._is_selectable = True
         self._selected = False
-        self._dirty_flag = True
-        self._instanced = False
 
     def add(self, child_node: "Node"):
         child_node.parent = self
@@ -182,11 +181,12 @@ class Node:
     #                          Callback Functions
     # =========================================================================
 
-    def render(self):
+    def render(self,  **kwargs):
         pass
 
     def make_renderable(self, context: moderngl.Context):
-        pass
+        for child_node in self._children:
+            child_node.make_renderable(context=context)
 
     def callback_immediate_mode_ui(self):
         pass

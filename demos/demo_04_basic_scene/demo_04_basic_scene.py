@@ -6,7 +6,8 @@ from core.renderer import Renderer
 from core.scene import Scene
 from core.camera import Camera
 from core.mesh import Mesh
-from core.light import DirectionalLight
+from core.utilities import utils_logging
+import logging
 
 
 class BasicScene(Window):
@@ -26,7 +27,10 @@ class BasicScene(Window):
         self.camera = None
         self.mesh = None
 
+        self.logger = utils_logging.get_project_logger()
+
     def setup(self):
+        self.logger.info("setup!")
 
         self.scene = Scene(name="Main Scene")
         self.camera = Camera(name="Main Camera")
@@ -43,6 +47,7 @@ class BasicScene(Window):
         pass
 
     def render(self):
+        self.logger.info("render!")
         self.renderer.render(scene=self.scene, camera=self.camera, flags=[])
         pass
 
