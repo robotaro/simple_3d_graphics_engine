@@ -6,9 +6,11 @@ from core.camera import Camera
 
 class Viewport:
 
-    __slots__ = ["x", "y", "width", "height"]
+    __slots__ = ["camera", "x", "y", "width", "height"]
 
-    def __init__(self, x: int, y: int, width: int, height: int):
+    def __init__(self, camera: Camera, x: int, y: int, width: int, height: int):
+
+        self.camera = camera
         self.x = x
         self.y = y
         self.width = width
@@ -23,9 +25,3 @@ class Viewport:
         """
         return x >= self.x and x < (self.x + self.width) and y >= self.y and y < (self.y + self.height)
 
-
-    def render(self, camera: Camera):
-
-        # TODO: Should the viewport render the scene with the camera?
-
-        pass

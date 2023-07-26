@@ -4,7 +4,8 @@ from core.window import Window
 from core.shader_library import ShaderLibrary
 from core.renderer import Renderer
 from core.scene import Scene
-from core.camera import Camera
+from core.camera import PerspectiveCamera
+from core.viewport import Viewport
 from core.mesh import Mesh
 from core.utilities import utils_logging
 import logging
@@ -26,15 +27,21 @@ class BasicScene(Window):
         self.scene = None
         self.camera = None
         self.mesh = None
+        self.viewport = None
 
         self.logger = utils_logging.get_project_logger()
 
     def setup(self):
-        self.logger.info("setup!")
 
+        # Create basic objects required for rendering
         self.scene = Scene(name="Main Scene")
-        self.camera = Camera(name="Main Camera")
+        self.camera = PerspectiveCamera(name="Main Camera", y_fov_deg=45.0)
         self.mesh = Mesh(name="Simple Mesh 1")
+        self.viewport = Viewport(camera=self.camera,
+                                 x=0,
+                                 y=0,
+                                 width=self.window_size[0],
+                                 height=self.window_size[1])
 
         # Scene Setup
         self.scene.root_node.add(self.camera)
@@ -47,8 +54,7 @@ class BasicScene(Window):
         pass
 
     def render(self):
-        self.logger.info("render!")
-        self.renderer.render(scene=self.scene, camera=self.camera, flags=[])
+        self.renderer.render(scene=self.scene, viewports=[self.viewport])
         pass
 
 

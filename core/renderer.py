@@ -1,4 +1,5 @@
 import moderngl
+from typing import List, Tuple
 
 from core import constants
 from core.window import Window
@@ -38,7 +39,7 @@ class Renderer:
 
         self.logger = utils_logging.get_project_logger()
 
-    def render(self, scene: Scene, camera: Camera, flags, seg_node_map=None):
+    def render(self, scene: Scene, viewports: List[Viewport]):
 
         # Stage: Render shadow maps
 
@@ -47,16 +48,23 @@ class Renderer:
         #   - Render scene
         #   - Render outline
 
-        self.logger.info("test!")
-
 
         # Initialise object on the GPU if they haven't been already
-        self._update_context(scene, flags)
+        self._update_context(scene=scene)
 
-        scene.render(camera=camera)
+        self.render_shadowmap(scene=scene)
 
-        # Render necessary shadow maps
-        self.render_shadowmap()
+        for viewport in viewports:
+
+            self._fragment_map_pass(scene=scene, viewport=viewport)
+            self._forward_pass(scene=scene, viewport=viewport)
+            self._outline_pass(scene=scene, viewport=viewport)
+
+
+        # Shadowmap is rendered once per scene, not per viewport
+
+
+
 
         # Make forward pass
         retval = self._forward_pass(scene, flags, seg_node_map=seg_node_map)
@@ -71,31 +79,28 @@ class Renderer:
 
         return retval
 
-    def render_scene(self, scene: Scene, camera: Camera):
-
-        pass
-
-    def _update_context(self, scene: Scene, flags: list):
+    def _update_context(self, scene: Scene):
 
         # Setup lights here
 
         scene.root_node.make_renderable(context=self.window.context)
 
+        """
         # Update mesh textures
-        #mesh_textures = set()
-        #for m in scene_meshes:
-        #    for p in m.primitives:
-        #        mesh_textures |= p.material.textures
+        mesh_textures = set()
+        for m in scene_meshes:
+            for p in m.primitives:
+                mesh_textures |= p.material.textures
 
         # Add new textures to context
-        #for texture in mesh_textures - self._mesh_textures:
-        #    texture._add_to_context()
+        for texture in mesh_textures - self._mesh_textures:
+            texture._add_to_context()
 
         # Remove old textures from context
-        #for texture in self._mesh_textures - mesh_textures:
-        #    texture.delete()
+        for texture in self._mesh_textures - mesh_textures:
+            texture.delete()
 
-        #self._mesh_textures = mesh_textures.copy()
+        self._mesh_textures = mesh_textures.copy()
 
         shadow_textures = set()
         for l in scene.lights:
@@ -124,6 +129,7 @@ class Renderer:
             texture.delete()
 
         self._shadow_textures = shadow_textures.copy()
+        """
 
     def _use_program(self, camera, **kwargs):
 
@@ -208,16 +214,16 @@ class Renderer:
         #    self.headless_fbo = self.ctx.framebuffer(self.headless_fbo_color, self.headless_fbo_depth)
 
     # =========================================================================
-    #                      Rendering functions
+    #                         Render Pass functions
     # =========================================================================
 
-    def _forward_pass(self, scene: Scene, camera: Camera, viewport: Viewport,seg_node_map=None):
+    def _forward_pass(self, scene: Scene, viewport: Viewport):
 
         # Bind screen context to draw to it
         self.window.context.screen.use()
 
         # Set up viewport for render
-        self._configure_forward_pass_viewport(flags)
+        self.configure_forward_pass_context(context=self.window.context)
 
         # Clear it
         if bool(flags & RenderFlags.SEG):
@@ -299,10 +305,16 @@ class Renderer:
         else:
             return
 
+    def _fragment_map_pass(self, scene: Scene, viewport: Viewport):
+        pass
 
-    def render_shadowmap(self, scene: Scene, flags: int):
+    def _outline_pass(self, scene: Scene, viewport: Viewport):
+        pass
 
-        if bool(flags & constants.RENDER_FLAG_DEPTH_ONLY or flags & constants.RENDER_FLAG_SEG):
+
+    def render_shadowmap(self, scene: Scene):
+
+        """if bool(flags & constants.RENDER_FLAG_DEPTH_ONLY or flags & constants.RENDER_FLAG_SEG):
             return
 
         for ln in scene.light_nodes:
@@ -317,10 +329,19 @@ class Renderer:
                   bool(flags & RenderFlags.SHADOWS_POINT)):
                 take_pass = True
             if take_pass:
-                self.render_pass_shadow_mapping(scene, ln, flags)
-
-    def render_outline(self):
+                self.render_pass_shadow_mapping(scene, ln, flags)"""
         pass
 
-    def renderpass_outline(self):
-        pass
+    # =========================================================================
+    #                         Context configuring funcitons
+    # =========================================================================
+
+    def configure_forward_pass_context(self, context: moderngl.Context) -> None:
+        context.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)
+        context.cull_face = "back"
+        context.blend_func = (
+            moderngl.SRC_ALPHA,
+            moderngl.ONE_MINUS_SRC_ALPHA,
+            moderngl.ONE,
+            moderngl.ONE,
+        )

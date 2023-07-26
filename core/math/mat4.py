@@ -34,7 +34,7 @@ def mul_vector(tr_mat4: np.ndarray, vector3: np.array):
     return np.matmul(tr_mat4[0:3, 0:3], vector3) + tr_mat4[:3, 3]
 
 
-def perspective(fovy_deg, aspect, near, far):
+def perspective_projection(fovy_deg, aspect, near, far):
 
     """
     Calculates the 4x4 perspective matrix
