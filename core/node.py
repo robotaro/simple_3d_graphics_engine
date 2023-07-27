@@ -184,9 +184,8 @@ class Node:
     def render(self,  **kwargs):
         pass
 
-    def make_renderable(self, context: moderngl.Context):
-        for child_node in self._children:
-            child_node.make_renderable(context=context)
+    def make_renderable(self, mlg_context: moderngl.Context):
+        pass
 
     def callback_immediate_mode_ui(self):
         pass

@@ -218,9 +218,13 @@ class Scene(object):
 
     def render(self, context: moderngl.Context, camera: Camera):
 
+        # REMEMBER THIS:  Scene rendering is during the FORWARD PASS!
+
         # Stage: Get renderable Nodes
         renderable_nodes = []
         self.root_node.get_nodes_by_type(type="mesh", output_list=renderable_nodes)
+
+        # Set lights
 
         # Stage: Draw opaque objects first
         g = 0

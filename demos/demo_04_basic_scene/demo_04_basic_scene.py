@@ -6,7 +6,7 @@ from core.renderer import Renderer
 from core.scene import Scene
 from core.camera import PerspectiveCamera
 from core.viewport import Viewport
-from core.mesh import Mesh
+from core.renderables.chessboard_plane import ChessboardPlane
 from core.utilities import utils_logging
 import logging
 
@@ -26,7 +26,7 @@ class BasicScene(Window):
 
         self.scene = None
         self.camera = None
-        self.mesh = None
+        self.plane = None
         self.viewport = None
 
         self.logger = utils_logging.get_project_logger()

@@ -1,15 +1,10 @@
 import numpy as np
-import moderngl
 
 from core.node import Node
-from core.renderables.meshes import Meshes
-from core.utilities import utils
 
 
 class ChessboardPlane(Node):
     """A plane that is textured like a chessboard."""
-
-    VALID_PLANES = ("xz", "xy", "yz")
 
     def __init__(
         self,
@@ -34,9 +29,6 @@ class ChessboardPlane(Node):
         :param kwargs: Remaining kwargs.
         """
 
-        if plane not in ChessboardPlane.VALID_PLANES:
-            raise ValueError(f"[ERROR] Plane must be one of the following {ChessboardPlane.VALID_PLANES}")
-
         super(ChessboardPlane, self).__init__(icon=icon, **kwargs)
         self.side_length = side_length
         self.n_tiles = n_tiles
@@ -52,10 +44,11 @@ class ChessboardPlane(Node):
         elif plane == "xy":
             v1 = np.array([1, 0, 0], dtype=np.float32)
             v2 = np.array([0, 1, 0], dtype=np.float32)
-        else:
-            # plane == "yz"
+        elif plane == "yz":
             v1 = np.array([0, 1, 0], dtype=np.float32)
             v2 = np.array([0, 0, 1], dtype=np.float32)
+        else:
+            raise ValueError(f"[ERROR] Plane dimensions {plane} is not valid")
 
         self.vertices, self.normals, self.uvs = self._get_renderable_data(v1, v2, side_length)
         self.backface_culling = False
@@ -98,13 +91,13 @@ class ChessboardPlane(Node):
         self.set_camera_matrices(self.prog, camera, **kwargs)
         self.receive_shadow(self.prog, **kwargs)
 
-        utils.set_lights_in_program(
+        set_lights_in_program(
             self.prog,
             kwargs["lights"],
             kwargs["shadows_enabled"],
             kwargs["ambient_strength"],
         )
-        utils.set_material_properties(self.prog, self.material)
+        set_material_properties(self.prog, self.material)
 
         self.vao.render(moderngl.TRIANGLE_STRIP)
 
@@ -219,13 +212,13 @@ class Chessboard(Node):
                 face_colors.append(c)
                 fc_idxs.extend([len(face_colors) - 2, len(face_colors) - 1])
 
-        vs = np.stack(vertices)
-        vs = vs - np.mean(vertices, axis=0, keepdims=True)
-        vs[:, up] = self.height
-        fs = np.stack(faces)
-        cs = np.stack(face_colors)
+        vertices = np.stack(vertices)
+        vertices = vertices - np.mean(vertices, axis=0, keepdims=True)
+        vertices[:, up] = self.height
+        faces = np.stack(faces)
+        face_colors = np.stack(face_colors)
 
-        return vs, fs, cs, c1_idxs, c2_idxs
+        return vertices, faces, face_colors, c1_idxs, c2_idxs
 
     def _update_colors(self):
         self.fcs_tiled[self.c1_idxs] = self.c1

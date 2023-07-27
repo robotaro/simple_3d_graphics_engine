@@ -83,7 +83,7 @@ class Renderer:
 
         # Setup lights here
 
-        scene.root_node.make_renderable(context=self.window.context)
+        scene.root_node.make_renderable(mlg_context=self.window.context)
 
         """
         # Update mesh textures

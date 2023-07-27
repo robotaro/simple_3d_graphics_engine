@@ -38,6 +38,9 @@ class Mesh(Node):
         self.vbo_uvs = None
         self.vao = None
 
+        # Custom programs - for special features
+        self.custom_program = None
+
         # Flags
         self._vbo_dirty_flag = True
         self._instanced = False
