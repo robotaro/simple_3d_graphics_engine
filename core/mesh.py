@@ -106,7 +106,8 @@ class Mesh(Node):
             self._vbo_dirty_flag = False
 
         if self.vao:
-            self.vao.render(moderngl.TRIANGLES)
+            prog = self._use_program(kwargs["camera"], **kwargs)
+            self.vao.render(prog, moderngl.TRIANGLES, instances=self.n_instances)
 
     def _upload_buffers(self):
 
@@ -141,6 +142,46 @@ class Mesh(Node):
             self.vbo_instance_transforms.write(
                 np.transpose(self.current_instance_transforms.astype("f4"), (0, 2, 1)).tobytes()
             )
+
+    def _use_program(self, camera, **kwargs):
+
+        if self.has_texture and self.show_texture:
+            prog = self.texture_prog
+            prog["diffuse_texture"] = 0
+            self.texture.use(0)
+        else:
+            if self.face_colors is None:
+                if self.flat_shading:
+                    prog = self.flat_prog
+                else:
+                    prog = self.smooth_prog
+            else:
+                if self.flat_shading:
+                    prog = self.flat_face_prog
+                else:
+                    prog = self.smooth_face_prog
+                self.face_colors_texture.use(0)
+                prog["face_colors"] = 0
+            prog["norm_coloring"].value = self.norm_coloring
+
+        prog["use_uniform_color"] = self._use_uniform_color
+        prog["uniform_color"] = self.material.color
+        prog["draw_edges"].value = 1.0 if self.draw_edges else 0.0
+        prog["win_size"].value = kwargs["window_size"]
+
+        prog["clip_control"].value = tuple(self.clip_control)
+        prog["clip_value"].value = tuple(self.clip_value)
+
+        self.set_camera_matrices(prog, camera, **kwargs)
+        set_lights_in_program(
+            prog,
+            kwargs["lights"],
+            kwargs["shadows_enabled"],
+            kwargs["ambient_strength"],
+        )
+        set_material_properties(prog, self.material)
+        self.receive_shadow(prog, **kwargs)
+        return prog
 
 
     # =========================================================================

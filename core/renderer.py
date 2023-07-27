@@ -14,7 +14,7 @@ class Renderer:
 
     # TODO: Use slots!
 
-    def __init__(self, window: Window, shader_library: ShaderLibrary, ):
+    def __init__(self, window: Window, shader_library: ShaderLibrary):
 
         self.window = window
         self.shader_library = shader_library
@@ -222,10 +222,20 @@ class Renderer:
         # Bind screen context to draw to it
         self.window.context.screen.use()
 
+        # TODO: maybe move this to inside the scene?
+        # Clear context (you need to use the use() first to bind it!)
+        self.window.context.clear(
+            red=scene.bg_color[0],
+            green=scene.bg_color[1],
+            blue=scene.bg_color[2],
+            alpha=0.0,
+            depth=1.0,
+            viewport=viewport.get_tuple())
+
         # Set up viewport for render
         self.configure_forward_pass_context(context=self.window.context)
 
-        # Clear it
+        # Clear contexts
         if bool(flags & RenderFlags.SEG):
             glClearColor(0.0, 0.0, 0.0, 1.0)
             if seg_node_map is None:

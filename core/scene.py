@@ -1,4 +1,4 @@
-
+import moderngl
 import numpy as np
 import trimesh
 
@@ -216,15 +216,15 @@ class Scene(object):
         """
         return np.linalg.norm(self.extents)
 
-    def render(self, camera: Camera):
-
-        # TODO:
-        # - When to upload light data?
-        # - When to upload camera data?
+    def render(self, context: moderngl.Context, camera: Camera):
 
         # Stage: Get renderable Nodes
+        renderable_nodes = []
+        self.root_node.get_nodes_by_type(type="mesh", output_list=renderable_nodes)
 
         # Stage: Draw opaque objects first
+        g = 0
+
 
         # Stage: Draw transparent objects back to front
 

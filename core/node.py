@@ -137,9 +137,9 @@ class Node:
     @matrix.setter
     def matrix(self, value):
         value = np.asanyarray(value)
-        if value.shape != (4,4):
+        if value.shape != (4, 4):
             raise ValueError('Matrix must be a 4x4 numpy ndarray')
-        if not np.allclose(value[3,:], np.array([0.0, 0.0, 0.0, 1.0])):
+        if not np.allclose(value[3, :], np.array([0.0, 0.0, 0.0, 1.0])):
             raise ValueError('Bottom row of matrix must be [0,0,0,1]')
         self.rotation = node_math.matrix2quaternion(value)
         self.scale = node_math.matrix2scale(value)

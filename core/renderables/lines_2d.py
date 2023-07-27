@@ -38,7 +38,7 @@ class Lines2D(Node):
 
         # Define a default material in case there is None.
         if isinstance(color, tuple) or len(color.shape) == 1:
-            kwargs["material"] = kwargs.get("material", Material(color=color, ambient=0.2))
+            kwargs["material"] = kwargs.get("material", Material(color_rgb=color, ambient=0.2))
             self.line_colors = kwargs["material"].color
         else:
             assert (
