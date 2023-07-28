@@ -7,6 +7,8 @@ from core.math import node_math
 
 class Node:
 
+    # TODO: Add slots here
+
     _type = "node"
 
     def __init__(self,
@@ -40,15 +42,81 @@ class Node:
         else:
             self.matrix = matrix
 
+        # Rendering variables
+        self._vbo_vertices = None
+        self._vbo_normals = None
+        self._vbo_colors = None
+        self._vbo_indices = None
+        self._vao = None
+        self._prog = None
+        self._num_instances = 1
+
         # Common flags
         self._visible = True
-        self.is_renderable = False
-        self._is_selectable = True
+        self._renderable = False
+        self._selectable = True
         self._selected = False
 
     def add(self, child_node: "Node"):
         child_node.parent = self
         self._children.append(child_node)
+
+    # =========================================================================
+    #                         Utility functions
+    # =========================================================================
+
+    def get_nodes_by_type(self, type: str, output_list: list):
+
+        if self._type == type:
+            output_list.append(self)
+
+        for child in self._children:
+            child.get_nodes_by_type(type=type)
+
+    @staticmethod
+    def once(func):
+        def _decorator(self, *args, **kwargs):
+            if self._renderable:
+                return
+            else:
+                func(self, *args, **kwargs)
+                self._renderable = True
+
+        return _decorator
+
+    # =========================================================================
+    #                          Callback Functions
+    # =========================================================================
+
+    def make_renderable(self, mlg_context: moderngl.Context, all_programs: dict, **kwargs):
+        #print(f"[{self._type}] make_renderable")
+        for child in self._children:
+            child.make_renderable(mlg_context=mlg_context, all_programs=all_programs, **kwargs)
+
+    def render(self, **kwargs):
+        #print(f"[{self._type}] render")
+
+        if self._renderable and self._visible:
+            self.upload_buffers()
+            self.upload_uniform()
+            self._vao.render(self._prog, moderngl.TRIANGLES)
+            #self._vao.render(self._prog, moderngl.TRIANGLES, instances=self._num_instances)
+
+        for child in self._children:
+            child.render(**kwargs)
+
+    def upload_buffers(self):
+        pass
+
+    def upload_uniform(self):
+        pass
+
+    def callback_immediate_mode_ui(self):
+        pass
+
+    # =========================================================================
+    #                          Getters and Setters
+    # =========================================================================
 
     @property
     def name(self):
@@ -66,7 +134,7 @@ class Node:
     def parent(self):
         """str : The user-defined name of this object.
         """
-        return self.parent
+        return self._parent
 
     @parent.setter
     def parent(self, value):
@@ -130,8 +198,7 @@ class Node:
             self._transform = node_math.tqs2matrix(
                 translation=self.translation,
                 quaternion=self.rotation,
-                scale=self.scale
-            )
+                scale=self.scale)
         return self._transform.copy()
 
     @matrix.setter
@@ -155,43 +222,7 @@ class Node:
         self._visible = value
 
     # =========================================================================
-    #                         Utility functions
-    # =========================================================================
-
-    def get_nodes_by_type(self, type: str, output_list: list):
-
-        if self._type == type:
-            output_list.append(self)
-
-        for child in self._children:
-            child.get_nodes_by_type(type=type)
-
-    @staticmethod
-    def once(func):
-        def _decorator(self, *args, **kwargs):
-            if self.is_renderable:
-                return
-            else:
-                func(self, *args, **kwargs)
-                self.is_renderable = True
-
-        return _decorator
-
-    # =========================================================================
-    #                          Callback Functions
-    # =========================================================================
-
-    def render(self,  **kwargs):
-        pass
-
-    def make_renderable(self, mlg_context: moderngl.Context):
-        pass
-
-    def callback_immediate_mode_ui(self):
-        pass
-
-    # =========================================================================
-#                                Debug Functions
+    #                               Debug Functions
     # =========================================================================
 
     def print_hierarchy(self, level=0):
@@ -204,4 +235,6 @@ class Node:
 
         for child in self._children:
             child.print_hierarchy(level=(level + 1))
+
+
 

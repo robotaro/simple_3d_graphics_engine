@@ -197,7 +197,7 @@ def create_cone_from_to(v1, v2, radius=1.0, sectors=None):
     return {"vertices": vs, "normals": ns, "faces": fs}
 
 
-def rotate_cylinder_to(target, vs, ns):
+def rotate_cylinder_to(target: np.ndarray, vs: np.ndarray, ns: np.ndarray):
     """
     Rotate vertices and normals such that the main axis of the cylinder aligns with `target`.
     :param target: A np array of shape (N, 3) specifying the target direction for each cylinder given in `vs`.
@@ -220,3 +220,64 @@ def rotate_cylinder_to(target, vs, ns):
     vs = np.matmul(rot[:, np.newaxis], vs[..., np.newaxis]).squeeze(-1)
     ns = np.matmul(rot[:, np.newaxis], ns[..., np.newaxis]).squeeze(-1)
     return vs, ns
+
+
+def create_chessboard(side_length: float, num_tiles: int):
+
+    vertices = []
+    faces = []
+    face_colors = []
+    color_1_indices = []  # Store indices into face_colors containing color 1.
+    color_2_indices = []  # Store indices into face_colors containing color 2.
+    tile_size = side_length / num_tiles
+    dim1 = "xyz".index(self.plane[0])
+    dim2 = "xyz".index(self.plane[1])
+    up = "xyz".index("xyz".replace(self.plane[0], "").replace(self.plane[1], ""))
+
+    for row in range(num_tiles):
+        for col in range(num_tiles):
+            v0 = np.zeros([3])
+            v0[dim1] = row * tile_size
+            v0[dim2] = col * tile_size
+
+            v1 = np.zeros([3])
+            v1[dim1] = (row + 1) * tile_size
+            v1[dim2] = col * tile_size
+
+            v2 = np.zeros([3])
+            v2[dim1] = (row + 1) * tile_size
+            v2[dim2] = (col + 1) * tile_size
+
+            v3 = np.zeros([3])
+            v3[dim1] = row * tile_size
+            v3[dim2] = (col + 1) * tile_size
+
+            vertices.extend([v0, v1, v2, v3])
+
+            # Need counter-clock-wise ordering
+            faces.append([len(vertices) - 4, len(vertices) - 1, len(vertices) - 3])
+            faces.append([len(vertices) - 3, len(vertices) - 1, len(vertices) - 2])
+
+            if row % 2 == 0 and col % 2 == 0:
+                col = self.c1
+                fc_idxs = color_1_indices
+            elif row % 2 == 0 and col % 2 != 0:
+                col = self.c2
+                fc_idxs = color_2_indices
+            elif row % 2 != 0 and col % 2 != 0:
+                col = self.c1
+                fc_idxs = color_1_indices
+            else:
+                col = self.c2
+                fc_idxs = color_2_indices
+            face_colors.append(col)
+            face_colors.append(col)
+            fc_idxs.extend([len(face_colors) - 2, len(face_colors) - 1])
+
+    vertices = np.stack(vertices)
+    vertices = vertices - np.mean(vertices, axis=0, keepdims=True)
+    vertices[:, up] = self.height
+    faces = np.stack(faces)
+    face_colors = np.stack(face_colors)
+
+    return vertices, faces, face_colors, color_1_indices, color_2_indices

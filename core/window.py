@@ -39,14 +39,16 @@ class Window:
                  window_size=constants.WINDOW_DEFAULT_SIZE,
                  window_title=constants.WINDOW_DEFAULT_TITLE,
                  vertical_sync=False,
-                 enable_imgui=True):
+                 imgui_enabled=True):
+
+        #TODO: Figure out if I can remove imgui_enabled with out adding extra logic internally
 
         # ModernGL variables
         self.window_size = window_size
         self.buffer_size = window_size  # REally?
         self.window_title = window_title
         self.vertical_sync = vertical_sync
-        self.enable_imgui = enable_imgui
+        self.enable_imgui = imgui_enabled
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()

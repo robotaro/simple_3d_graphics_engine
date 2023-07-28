@@ -32,8 +32,6 @@ class Renderer:
         self.create_framebuffers()
 
         # Create programs
-        self.mesh_texture_program = shader_library.get_program(program_id="mesh_shader")
-        self.mesh_colors_program = shader_library.get_program(program_id="mesh_shader")
         self.shadow_map_program = None
         self.fragment_picker_program = None
 
@@ -41,13 +39,15 @@ class Renderer:
 
     def render(self, scene: Scene, viewports: List[Viewport]):
 
+        # TODO: Add a substage that checks if a node has a program already defined, and not,
+        #       assing a program to it based on its type, otherwise, leave the default program
+
         # Stage: Render shadow maps
 
         # Stage: For each viewport render viewport
         #   - Render fragment map picking
         #   - Render scene
         #   - Render outline
-
 
         # Initialise object on the GPU if they haven't been already
         self._update_context(scene=scene)
@@ -61,33 +61,17 @@ class Renderer:
             self._outline_pass(scene=scene, viewport=viewport)
 
 
-        # Shadowmap is rendered once per scene, not per viewport
-
-
-
-
-        # Make forward pass
-        retval = self._forward_pass(scene, flags, seg_node_map=seg_node_map)
-
-        # If necessary, make normals pass
-        if flags & (constants.RENDER_FLAG_VERTEX_NORMALS | constants.RENDER_FLAG_FACE_NORMALS):
-            self._normals_pass(scene, flags)
-
-        # Update camera settings for retrieving depth buffers
-        self._latest_znear = camera.z_near
-        self._latest_zfar = camera.z_far
-
-        return retval
-
     def _update_context(self, scene: Scene):
 
+        #print("[Renderer] _update_context")
+
         # Setup lights here
+        scene.root_node.make_renderable(mlg_context=self.window.context,
+                                        all_programs=self.shader_library.programs)
 
-        scene.root_node.make_renderable(mlg_context=self.window.context)
 
-        """
         # Update mesh textures
-        mesh_textures = set()
+        """mesh_textures = set()
         for m in scene_meshes:
             for p in m.primitives:
                 mesh_textures |= p.material.textures
@@ -128,8 +112,8 @@ class Renderer:
         for texture in self._shadow_textures - shadow_textures:
             texture.delete()
 
-        self._shadow_textures = shadow_textures.copy()
-        """
+        self._shadow_textures = shadow_textures.copy()"""
+
 
     def _use_program(self, camera, **kwargs):
 
@@ -219,6 +203,8 @@ class Renderer:
 
     def _forward_pass(self, scene: Scene, viewport: Viewport):
 
+        #print("[Renderer] _forward_pass")
+
         # Bind screen context to draw to it
         self.window.context.screen.use()
 
@@ -235,8 +221,13 @@ class Renderer:
         # Set up viewport for render
         self.configure_forward_pass_context(context=self.window.context)
 
+        scene.root_node.make_renderable(mlg_context=self.window.context,
+                                        all_programs=self.shader_library.programs)
+
+        scene.root_node.render(viewport=viewport)
+
         # Clear contexts
-        if bool(flags & RenderFlags.SEG):
+        """if bool(flags & RenderFlags.SEG):
             glClearColor(0.0, 0.0, 0.0, 1.0)
             if seg_node_map is None:
                 seg_node_map = {}
@@ -313,16 +304,20 @@ class Renderer:
         if flags & RenderFlags.OFFSCREEN:
             return self._read_main_framebuffer(scene, flags)
         else:
-            return
+            return"""
 
     def _fragment_map_pass(self, scene: Scene, viewport: Viewport):
+        print("[Renderer] _fragment_map_pass")
         pass
 
     def _outline_pass(self, scene: Scene, viewport: Viewport):
+        print("[Renderer] _outline_pass")
         pass
 
 
     def render_shadowmap(self, scene: Scene):
+
+        print("[Renderer] render_shadowmap")
 
         """if bool(flags & constants.RENDER_FLAG_DEPTH_ONLY or flags & constants.RENDER_FLAG_SEG):
             return
@@ -347,6 +342,7 @@ class Renderer:
     # =========================================================================
 
     def configure_forward_pass_context(self, context: moderngl.Context) -> None:
+        print("[Renderer] configure_forward_pass_context")
         context.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)
         context.cull_face = "back"
         context.blend_func = (

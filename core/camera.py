@@ -21,7 +21,7 @@ class Camera(Node):
     def z_near(self):
         """float : The distance to the near clipping plane.
         """
-        return self._znear
+        return self._z_near
 
     @z_near.setter
     def z_near(self, value):
@@ -34,14 +34,14 @@ class Camera(Node):
     def z_far(self):
         """float : The distance to the far clipping plane.
         """
-        return self.zfar
+        return self._z_far
 
     @z_far.setter
-    def zfar(self, value):
+    def z_far(self, value):
         value = float(value)
-        if value <= 0 or value <= self.znear:
+        if value <= 0 or value <= self._z_near:
             raise ValueError('zfar must be >0 and >znear')
-        self.zfar = value
+        self._z_far = value
 
     def get_projection_matrix(self, width=None, height=None):
         """Return the OpenGL projection matrix for this camera.
@@ -139,22 +139,22 @@ class PerspectiveCamera(Camera):
         a = aspect_ratio
         y_fov_rad = self.y_fov_deg * np.pi / 180.0
         t = np.tan(y_fov_rad / 2.0)
-        n = self.znear
-        f = self.zfar
+        n = self.z_near
+        f = self.z_far
 
-        P = np.zeros((4,4))
-        P[0][0] = 1.0 / (a * t)
-        P[1][1] = 1.0 / t
-        P[3][2] = -1.0
+        projection_matrix = np.zeros((4, 4), dtype=np.float32)
+        projection_matrix[0][0] = 1.0 / (a * t)
+        projection_matrix[1][1] = 1.0 / t
+        projection_matrix[3][2] = -1.0
 
         if f is None:
-            P[2][2] = -1.0
-            P[2][3] = -2.0 * n
+            projection_matrix[2][2] = -1.0
+            projection_matrix[2][3] = -2.0 * n
         else:
-            P[2][2] = (f + n) / (n - f)
-            P[2][3] = (2 * f * n) / (n - f)
+            projection_matrix[2][2] = (f + n) / (n - f)
+            projection_matrix[2][3] = (2 * f * n) / (n - f)
 
-        return P
+        return projection_matrix
 
 
 class OrthographicCamera(Camera):

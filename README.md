@@ -20,6 +20,18 @@ https://github.com/ubuntunux/PyEngine3D
 
 ## Python 3D graphics sources
 https://github.com/eth-ait/aitviewer
+https://github.com/mmatl/pyrender
+https://github.com/pygfx/pygfx
+https://github.com/3b1b/manim
+https://github.com/eliemichel/Python3dViewer
+
+
+## Insights on current engine inner workings
+- WHen node's translation/rotation/scale is changed via
+the setter, it sets the translation to None, and if None
+when requested via a getter, it recalculates it just in time.
+This is a flexible solution, but not a very efficient one.
+
 
 ## Widget TODOs
 

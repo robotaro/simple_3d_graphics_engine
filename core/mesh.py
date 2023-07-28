@@ -39,12 +39,12 @@ class Mesh(Node):
         self.vao = None
 
         # Custom programs - for special features
-        self.custom_program = None
+        self.program_id = None  # String
 
         # Flags
         self._vbo_dirty_flag = True
         self._instanced = False
-        self.is_renderable = True
+        self._renderable = True
 
     @property
     def centroid(self):
@@ -105,14 +105,14 @@ class Mesh(Node):
     def render(self, **kwargs):
 
         if self._vbo_dirty_flag:
-            self._upload_buffers()
+            self.upload_buffers()
             self._vbo_dirty_flag = False
 
         if self.vao:
-            prog = self._use_program(kwargs["camera"], **kwargs)
+            self.upload_uniforms(kwargs["camera"], **kwargs)
             self.vao.render(prog, moderngl.TRIANGLES, instances=self.n_instances)
 
-    def _upload_buffers(self):
+    def upload_buffers(self):
 
         # Write positions.
         self.vbo_vertices.write(self.current_vertices.astype("f4").tobytes())
@@ -146,7 +146,7 @@ class Mesh(Node):
                 np.transpose(self.current_instance_transforms.astype("f4"), (0, 2, 1)).tobytes()
             )
 
-    def _use_program(self, camera, **kwargs):
+    def upload_uniforms(self, camera, **kwargs):
 
         if self.has_texture and self.show_texture:
             prog = self.texture_prog
@@ -176,51 +176,26 @@ class Mesh(Node):
         prog["clip_value"].value = tuple(self.clip_value)
 
         self.set_camera_matrices(prog, camera, **kwargs)
-        set_lights_in_program(
+        self.set_lights_in_program(
             prog,
             kwargs["lights"],
             kwargs["shadows_enabled"],
             kwargs["ambient_strength"],
         )
-        set_material_properties(prog, self.material)
+        self.set_material_properties(prog, self.material)
         self.receive_shadow(prog, **kwargs)
         return prog
 
+    def set_material_properties(self, prog, material):
+        prog["diffuse_coeff"].value = material.diffuse
+        prog["ambient_coeff"].value = material.ambient
 
-    # =========================================================================
-    #                           Mesh Generation
-    # =========================================================================
-
-    @staticmethod
-    def from_points(points, colors=None, normals=None,
-                    is_visible=True, poses=None):
-        """Create a Mesh from a set of points.
-
-        Parameters
-        ----------
-        points : (n,3) float
-            The point positions.
-        colors : (n,3) or (n,4) float, optional
-            RGB or RGBA colors for each point.
-        normals : (n,3) float, optionals
-            The normal vectors for each point.
-        is_visible : bool
-            If False, the points will not be rendered.
-        poses : (x,4,4)
-            Array of 4x4 transformation matrices for instancing this object.
-
-        Returns
-        -------
-        mesh : :class:`Mesh`
-            The created mesh.
-        """
-        primitive = Primitive(
-            positions=points,
-            normals=normals,
-            color_0=colors,
-            mode=GLTF.POINTS,
-            poses=poses
-        )
-        mesh = Mesh(primitives=[primitive], is_visible=is_visible)
-        return mesh
+    def set_lights_in_program(self, prog, lights, shadows_enabled, ambient_strength):
+        """Set program lighting from scene lights"""
+        for i, light in enumerate(lights):
+            prog[f"dirLights[{i}].direction"].value = tuple(light.direction)
+            prog[f"dirLights[{i}].color"].value = light.light_color
+            prog[f"dirLights[{i}].strength"].value = light.strength if light.enabled else 0.0
+            prog[f"dirLights[{i}].shadow_enabled"].value = shadows_enabled and light.shadow_enabled
+        prog["ambient_strength"] = ambient_strength
 
