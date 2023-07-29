@@ -69,7 +69,7 @@ class ChessboardPlane(Node):
     # noinspection PyAttributeOutsideInit
     @Node.once
     def make_renderable(self, mlg_context: moderngl.Context, all_programs: dict, **kwargs):
-        print(f"[{self._type}] make_renderable")
+        #print(f"[{self._type}] make_renderable")
         self.prog = all_programs[self._type]["program"]
         self.vbo_vertices = mlg_context.buffer(self.vertices.astype("f4").tobytes())
         self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
@@ -86,7 +86,7 @@ class ChessboardPlane(Node):
         super().make_renderable(mlg_context=mlg_context, all_programs=all_programs)
 
     def render(self, **kwargs):
-        print(f"[{self._type}] render")
+        #print(f"[{self._type}] render")
 
         """self.prog["color_1"].value = (self.c1[0], self.c1[1], self.c1[2], self.c1[3])
         self.prog["color_2"].value = (self.c2[0], self.c2[1], self.c2[2], self.c2[3])

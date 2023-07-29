@@ -5,6 +5,7 @@ import moderngl
 from core.material import Material
 
 from core.node import Node
+from core.shader_library import ShaderLibrary
 
 
 class Mesh(Node):
@@ -17,14 +18,13 @@ class Mesh(Node):
                  uvs=None,
                  faces=None,
                  material=None,
+                 program_name="mesh",
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Actual data stored here
         self.vertices = None    # nd.array (N, 3) <float32>
         self.normals = None     # nd.array (N, 3) <float32>
-        self.faces = None       # nd.array (N, 3) <uint32>
-        self.uvs = None         # nd.array (N, 2) <float32>
 
         # Materials
         self.alpha = 1.0
@@ -33,35 +33,17 @@ class Mesh(Node):
         # VBOs and VAO
         self.vbo_vertices = None
         self.vbo_normals = None
-        self.vbo_colors = None
-        self.vbo_indices = None
-        self.vbo_uvs = None
         self.vao = None
 
         # Custom programs - for special features
-        self.program_id = None  # String
+        self.program_name = program_name
+        self.program = None
 
         # Flags
         self._vbo_dirty_flag = True
         self._instanced = False
         self._renderable = True
-
-    @property
-    def centroid(self):
-        """(3,) float : The centroid of the mesh's axis-aligned bounding box
-        (AABB).
-        """
-        return np.mean(self.bounds, axis=0)
-
-    @property
-    def extents(self):
-        """(3,) float : The lengths of the axes of the mesh's AABB.
-        """
-        return np.diff(self.bounds, axis=0).reshape(-1)
-
-    @property
-    def is_transparent(self):
-        return False
+        self._flat_shading = False
 
     def release(self):
         if self.vbo_vertices:
@@ -69,15 +51,6 @@ class Mesh(Node):
 
         if self.vbo_normals:
             self.vbo_normals.release()
-
-        if self.vbo_colors:
-            self.vbo_colors.release()
-
-        if self.vbo_indices:
-            self.vbo_indices.release()
-
-        if self.vbo_uvs:
-            self.vbo_uvs.release()
 
         if self.vao:
             self.vao.release()
@@ -88,41 +61,49 @@ class Mesh(Node):
     # =========================================================================
 
     @Node.once
-    def make_renderable(self, ctx: moderngl.Context, program: moderngl.Program):
+    def make_renderable(self, mlg_context: moderngl.Context, shader_library: ShaderLibrary):
 
-        self.vbo_vertices = ctx.buffer(self.vertices.astype("f4").tobytes())
-        self.vbo_indices = ctx.buffer(self.faces.astype("i4").tobytes())
+        print(f"[{self._type} | {self.name}] make_renderable")
 
-        self.vao = ctx.vertex_array(
-            program,
-            [
-                (self.vbo_vertices, "3f4", "in_position"),
-                (self.vbo_uvs, "3f4", "in_normals"),
-                (self.vbo_uvs, "2f4", "in_uvs"),
-            ],
-        )
+        # TODO: - Check if I need to upload data here or leave it to uploade buffers
+        #       - Check if I need to set these to dynamic
+
+        vbo_list = []
+
+        if self.vertices is not None:
+            self.vbo_vertices = mlg_context.buffer(self.vertices.astype("f4").tobytes())
+            vbo_list.append((self.vbo_vertices, "3f", "in_vert"))
+
+        if self.normals is not None:
+            self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
+            vbo_list.append((self.vbo_normals, "3f", "in_normal"))
+
+        self.program = shader_library.get_program(self.program_name)
+        self.vao = mlg_context.vertex_array(self.program, vbo_list)
+
+        # TODO: Add instance-based code
 
     def render(self, **kwargs):
 
         if self._vbo_dirty_flag:
-            self.upload_buffers()
+            self.update_buffers()
             self._vbo_dirty_flag = False
 
-        if self.vao:
-            self.upload_uniforms(kwargs["camera"], **kwargs)
-            self.vao.render(prog, moderngl.TRIANGLES, instances=self.n_instances)
+        if self.vao is not None:
+            self.update_uniforms(**kwargs)
+            self.vao.render(moderngl.TRIANGLES)
 
-    def upload_buffers(self):
+    def update_buffers(self):
+
+        print(f"[{self._type} | {self.name}] update_buffers")
 
         # Write positions.
-        self.vbo_vertices.write(self.current_vertices.astype("f4").tobytes())
+        self.vbo_vertices.write(self.vertices.astype("f4").tobytes())
 
         # Write normals.
-        if not self.flat_shading:
-            vertex_normals = self.vertex_normals_at(self.current_frame_id)
-            self.vbo_normals.write(vertex_normals.astype("f4").tobytes())
+        self.vbo_normals.write(self.normals.astype("f4").tobytes())
 
-        if self.face_colors is None:
+        """if self.face_colors is None:
             # Write vertex colors.
             self.vbo_colors.write(self.current_vertex_colors.astype("f4").tobytes())
         else:
@@ -144,11 +125,31 @@ class Mesh(Node):
         if self.instance_transforms is not None:
             self.vbo_instance_transforms.write(
                 np.transpose(self.current_instance_transforms.astype("f4"), (0, 2, 1)).tobytes()
-            )
+            )"""
 
-    def upload_uniforms(self, camera, **kwargs):
+    def update_uniforms(self,  **kwargs):
 
-        if self.has_texture and self.show_texture:
+        if self.program is None:
+            return
+
+        print(f"[{self._type} | {self.name}] update_uniforms")
+
+        # Set camera uniforms
+        camera = kwargs["viewport"].camera
+        width = kwargs["viewport"].width
+        height = kwargs["viewport"].height
+
+        proj_matrix_bytes = camera.get_projection_matrix(width=width, height=height).T.astype('f4').tobytes()
+        self.program["uPerspectiveMatrix"].write(proj_matrix_bytes)
+        view_matrix_bytes = camera.transform.T.astype('f4').tobytes()
+        self.program["uViewMatrix"].write(view_matrix_bytes)
+
+        # Set material
+        #if self.material is not None:
+        #    self.program["diffuse_coeff"].value = self.material.diffuse
+        #    self.program["ambient_coeff"].value = self.material.ambient
+
+        """if self.has_texture and self.show_texture:
             prog = self.texture_prog
             prog["diffuse_texture"] = 0
             self.texture.use(0)
@@ -184,11 +185,7 @@ class Mesh(Node):
         )
         self.set_material_properties(prog, self.material)
         self.receive_shadow(prog, **kwargs)
-        return prog
-
-    def set_material_properties(self, prog, material):
-        prog["diffuse_coeff"].value = material.diffuse
-        prog["ambient_coeff"].value = material.ambient
+        return prog"""
 
     def set_lights_in_program(self, prog, lights, shadows_enabled, ambient_strength):
         """Set program lighting from scene lights"""
@@ -199,3 +196,23 @@ class Mesh(Node):
             prog[f"dirLights[{i}].shadow_enabled"].value = shadows_enabled and light.shadow_enabled
         prog["ambient_strength"] = ambient_strength
 
+    # =========================================================================
+    #                         Getters and Setters
+    # =========================================================================
+
+    @property
+    def centroid(self):
+        """(3,) float : The centroid of the mesh's axis-aligned bounding box
+        (AABB).
+        """
+        return np.mean(self.bounds, axis=0)
+
+    @property
+    def extents(self):
+        """(3,) float : The lengths of the axes of the mesh's AABB.
+        """
+        return np.diff(self.bounds, axis=0).reshape(-1)
+
+    @property
+    def is_transparent(self):
+        return False

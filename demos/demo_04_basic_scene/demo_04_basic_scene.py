@@ -9,6 +9,7 @@ from core.scene import Scene
 from core.camera import PerspectiveCamera
 from core.viewport import Viewport
 from core.mesh import Mesh
+from core.material import Material
 from core.utilities import utils_logging
 from core.geometry_3d.mesh_loader import MeshLoader
 
@@ -29,6 +30,7 @@ class BasicScene(Window):
         self.scene = None
         self.camera = None
         self.mesh = None
+        self.material = None
         self.viewport = None
 
         self.logger = utils_logging.get_project_logger()
@@ -39,11 +41,12 @@ class BasicScene(Window):
 
         # Create basic objects required for rendering
         self.scene = Scene(name="Main Scene")
-        self.camera = PerspectiveCamera(name="Main Camera", y_fov_deg=45.0, translation=(0, 0, -5))
-        self.mesh = Mesh(name="Plane")
-        self.viewport = Viewport(camera=self.camera,
-                                 x=0,
-                                 y=0,
+        self.camera = PerspectiveCamera(name="Main Camera",
+                                        y_fov_deg=45.0,
+                                        translation=(0, 0, 5))
+        self.material = Material()
+        self.mesh = Mesh(name="Dragon", program_name="simple_mesh")
+        self.viewport = Viewport(camera=self.camera, x=0, y=0,
                                  width=self.window_size[0],
                                  height=self.window_size[1])
 

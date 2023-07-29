@@ -29,6 +29,14 @@ class Material:
         self._alpha = alpha
 
     @property
+    def diffuse(self):
+        return self._diffuse
+
+    @property
+    def ambient(self):
+        return self._ambient
+
+    @property
     def color(self):
         return self._color
 

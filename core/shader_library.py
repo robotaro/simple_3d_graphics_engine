@@ -42,8 +42,8 @@ class ShaderLibrary:
 
         self.compile_programs()
 
-    def get_program(self, program_id: str):
-        return self.programs.get(program_id, None)
+    def get_program(self, program_id: str) -> moderngl.Program:
+        return self.programs.get(program_id, None)["program"]
 
     def load_shaders(self) -> None:
 

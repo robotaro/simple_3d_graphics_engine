@@ -50,7 +50,8 @@ class Renderer:
         #   - Render outline
 
         # Initialise object on the GPU if they haven't been already
-        self._update_context(scene=scene)
+        scene.root_node.make_renderable(mlg_context=self.window.context,
+                                        shader_library=self.shader_library)
 
         self.render_shadowmap(scene=scene)
 
@@ -60,14 +61,12 @@ class Renderer:
             self._forward_pass(scene=scene, viewport=viewport)
             self._outline_pass(scene=scene, viewport=viewport)
 
-
     def _update_context(self, scene: Scene):
 
         #print("[Renderer] _update_context")
 
         # Setup lights here
-        scene.root_node.make_renderable(mlg_context=self.window.context,
-                                        all_programs=self.shader_library.programs)
+
 
 
         # Update mesh textures
@@ -114,7 +113,6 @@ class Renderer:
 
         self._shadow_textures = shadow_textures.copy()"""
 
-
     def _use_program(self, camera, **kwargs):
 
         if self.has_texture and self.show_texture:
@@ -145,15 +143,25 @@ class Renderer:
         prog["clip_value"].value = tuple(self.clip_value)
 
         self.set_camera_matrices(prog, camera, **kwargs)
+
+        # Set Lights
         set_lights_in_program(
             prog,
             kwargs["lights"],
             kwargs["shadows_enabled"],
             kwargs["ambient_strength"],
         )
+
+        # Set material
         set_material_properties(prog, self.material)
         self.receive_shadow(prog, **kwargs)
         return prog
+
+    def set_camera_matrices(self, prog, camera, **kwargs):
+        """Set the model view projection matrix in the given program."""
+        # Transpose because np is row-major but OpenGL expects column-major.
+        prog["model_matrix"].write(self.model_matrix.T.astype("f4").tobytes())
+        prog["view_projection_matrix"].write(camera.get_view_projection_matrix().T.astype("f4").tobytes())
 
     # =========================================================================
     #                        Framebuffer functions
@@ -222,7 +230,7 @@ class Renderer:
         self.configure_forward_pass_context(context=self.window.context)
 
         scene.root_node.make_renderable(mlg_context=self.window.context,
-                                        all_programs=self.shader_library.programs)
+                                        shader_library=self.shader_library)
 
         scene.root_node.render(viewport=viewport)
 
@@ -307,17 +315,17 @@ class Renderer:
             return"""
 
     def _fragment_map_pass(self, scene: Scene, viewport: Viewport):
-        print("[Renderer] _fragment_map_pass")
+        #print("[Renderer] _fragment_map_pass")
         pass
 
     def _outline_pass(self, scene: Scene, viewport: Viewport):
-        print("[Renderer] _outline_pass")
+        #print("[Renderer] _outline_pass")
         pass
 
 
     def render_shadowmap(self, scene: Scene):
 
-        print("[Renderer] render_shadowmap")
+        #print("[Renderer] render_shadowmap")
 
         """if bool(flags & constants.RENDER_FLAG_DEPTH_ONLY or flags & constants.RENDER_FLAG_SEG):
             return
@@ -342,7 +350,7 @@ class Renderer:
     # =========================================================================
 
     def configure_forward_pass_context(self, context: moderngl.Context) -> None:
-        print("[Renderer] configure_forward_pass_context")
+        #print("[Renderer] configure_forward_pass_context")
         context.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)
         context.cull_face = "back"
         context.blend_func = (

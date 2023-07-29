@@ -3,6 +3,7 @@ import moderngl
 
 from core.settings import SETTINGS
 from core.math import node_math
+from core.shader_library import ShaderLibrary
 
 
 class Node:
@@ -53,7 +54,7 @@ class Node:
 
         # Common flags
         self._visible = True
-        self._renderable = False
+        self._ready_to_render = False
         self._selectable = True
         self._selected = False
 
@@ -76,11 +77,11 @@ class Node:
     @staticmethod
     def once(func):
         def _decorator(self, *args, **kwargs):
-            if self._renderable:
+            if self._ready_to_render:
                 return
             else:
                 func(self, *args, **kwargs)
-                self._renderable = True
+                self._ready_to_render = True
 
         return _decorator
 
@@ -88,24 +89,18 @@ class Node:
     #                          Callback Functions
     # =========================================================================
 
-    def make_renderable(self, mlg_context: moderngl.Context, all_programs: dict, **kwargs):
-        #print(f"[{self._type}] make_renderable")
+    def make_renderable(self, mlg_context: moderngl.Context, shader_library: ShaderLibrary, **kwargs):
+        #print(f"[{self._type} | {self.name}] make_renderable")
         for child in self._children:
-            child.make_renderable(mlg_context=mlg_context, all_programs=all_programs, **kwargs)
+            child.make_renderable(mlg_context=mlg_context, shader_library=shader_library, **kwargs)
 
     def render(self, **kwargs):
         #print(f"[{self._type}] render")
 
-        if self._renderable and self._visible:
-            self.upload_buffers()
-            self.upload_uniform()
-            self._vao.render(self._prog, moderngl.TRIANGLES)
-            #self._vao.render(self._prog, moderngl.TRIANGLES, instances=self._num_instances)
-
         for child in self._children:
             child.render(**kwargs)
 
-    def upload_buffers(self):
+    def update_buffers(self):
         pass
 
     def upload_uniform(self):
@@ -187,7 +182,7 @@ class Node:
         self._transform = None
 
     @property
-    def matrix(self):
+    def transform(self):
         """(4,4) float : The homogenous transform matrix for this node.
 
         Note that this matrix's elements are not settable,
@@ -201,8 +196,8 @@ class Node:
                 scale=self.scale)
         return self._transform.copy()
 
-    @matrix.setter
-    def matrix(self, value):
+    @transform.setter
+    def transform(self, value):
         value = np.asanyarray(value)
         if value.shape != (4, 4):
             raise ValueError('Matrix must be a 4x4 numpy ndarray')

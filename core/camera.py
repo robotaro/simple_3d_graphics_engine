@@ -58,26 +58,6 @@ class Camera(Node):
 
 class PerspectiveCamera(Camera):
 
-    """A perspective camera for perspective projection.
-
-    Parameters
-    ----------
-    y_fov_deg : float
-        The floating-point vertical field of view in radians.
-    znear : float
-        The floating-point distance to the near clipping plane.
-        If not specified, defaults to 0.05.
-    zfar : float, optional
-        The floating-point distance to the far clipping plane.
-        ``zfar`` must be greater than ``znear``.
-        If None, the camera uses an infinite projection matrix.
-    aspect_ratio : float, optional
-        The floating-point aspect ratio of the field of view.
-        If not specified, the camera uses the viewport's aspect ratio.
-    name : str, optional
-        The user-defined name of this object.
-    """
-
     def __init__(self,
                  y_fov_deg,
                  z_near=constants.CAMERA_Z_NEAR,
@@ -106,20 +86,6 @@ class PerspectiveCamera(Camera):
             raise ValueError('Field of view must be positive')
         self._yfov = value
 
-    @property
-    def aspect_ratio(self):
-        """float : The ratio of the width to the height of the field of view.
-        """
-        return self._aspectRatio
-
-    @aspect_ratio.setter
-    def aspect_ratio(self, value):
-        if value is not None:
-            value = float(value)
-            if value <= 0.0:
-                raise ValueError('Aspect ratio must be positive')
-        self._aspectRatio = value
-
     def get_projection_matrix(self, width=None, height=None):
         """Return the OpenGL projection matrix for this camera.
 
@@ -130,11 +96,8 @@ class PerspectiveCamera(Camera):
         height : int
             Height of the current viewport, in pixels.
         """
-        aspect_ratio = self.aspect_ratio
-        if aspect_ratio is None:
-            if width is None or height is None:
-                raise ValueError('Aspect ratio of camera must be defined')
-            aspect_ratio = float(width) / float(height)
+
+        aspect_ratio = float(width) / float(height)
 
         a = aspect_ratio
         y_fov_rad = self.y_fov_deg * np.pi / 180.0
