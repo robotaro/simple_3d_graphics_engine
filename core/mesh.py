@@ -25,14 +25,16 @@ class Mesh(Node):
         # Actual data stored here
         self.vertices = None    # nd.array (N, 3) <float32>
         self.normals = None     # nd.array (N, 3) <float32>
+        self.faces = None
 
         # Materials
         self.alpha = 1.0
         self.material = material
 
-        # VBOs and VAO
+        # Buffer Objects
         self.vbo_vertices = None
         self.vbo_normals = None
+        self.ibo_faces = None  # Triangular faces
         self.vao = None
 
         # Custom programs - for special features
@@ -78,8 +80,14 @@ class Mesh(Node):
             self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
             vbo_list.append((self.vbo_normals, "3f", "in_normal"))
 
+
         self.program = shader_library.get_program(self.program_name)
-        self.vao = mlg_context.vertex_array(self.program, vbo_list)
+
+        if self.faces is None:
+            self.vao = mlg_context.vertex_array(self.program, vbo_list)
+        else:
+            self.ibo_faces = mlg_context.buffer(self.faces.astype("i4").tobytes())
+            self.vao = mlg_context.vertex_array(self.program, vbo_list, self.ibo_faces)
 
         # TODO: Add instance-based code
 
@@ -132,7 +140,7 @@ class Mesh(Node):
         if self.program is None:
             return
 
-        print(f"[{self._type} | {self.name}] update_uniforms")
+        #print(f"[{self._type} | {self.name}] update_uniforms")
 
         # Set camera uniforms
         camera = kwargs["viewport"].camera
@@ -143,6 +151,9 @@ class Mesh(Node):
         self.program["uPerspectiveMatrix"].write(proj_matrix_bytes)
         view_matrix_bytes = camera.transform.T.astype('f4').tobytes()
         self.program["uViewMatrix"].write(view_matrix_bytes)
+
+
+        g = 0
 
         # Set material
         #if self.material is not None:
