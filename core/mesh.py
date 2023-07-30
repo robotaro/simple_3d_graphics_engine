@@ -102,6 +102,31 @@ class Mesh(Node):
         self.update_uniforms(**kwargs)
         self.vao.render(moderngl.TRIANGLES)
 
+    def render_fragment_picking(self, **kwargs):
+
+        # Transpose because np is row-major but OpenGL expects column-major.
+        prog = self.fragmap_program
+        self.set_camera_matrices(prog, camera)
+
+        # Render with the specified object uid, if None use the node uid instead.
+        prog["obj_id"] = uid or self.uid
+
+        if self.backface_culling or self.backface_fragmap:
+            ctx.enable(moderngl.CULL_FACE)
+        else:
+            ctx.disable(moderngl.CULL_FACE)
+
+        # If backface_fragmap is enabled for this node only render backfaces
+        if self.backface_fragmap:
+            ctx.cull_face = "front"
+
+        self.render_positions(prog)
+
+        # Restore cull face to back
+        if self.backface_fragmap:
+            ctx.cull_face = "back"
+        pass
+
     def update_buffers(self):
 
         print(f"[{self._type} | {self.name}] update_buffers")

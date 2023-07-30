@@ -1,3 +1,7 @@
 simple_mesh:
   vertex_shader: "demo_shaders/simple_mesh.glsl"
   fragment_shader: "demo_shaders/simple_mesh.glsl"
+
+mesh:
+  vertex_shader: "default_mesh.glsl"
+  fragment_shader: "default_mesh.glsl"

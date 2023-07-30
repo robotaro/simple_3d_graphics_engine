@@ -43,6 +43,52 @@ class Scene(object):
         # Transform tree
         self._path_cache = {}
 
+    # =========================================================================
+    #                           Rendering Functions
+    # =========================================================================
+
+    def render(self, context: moderngl.Context, camera: Camera):
+
+        # REMEMBER THIS:  Scene rendering is during the FORWARD PASS!
+
+        # Stage: Get renderable Nodes
+        renderable_nodes = []
+        self.root_node.get_nodes_by_type(type="mesh", output_list=renderable_nodes)
+
+        # Set lights
+
+        # Stage: Draw opaque objects first
+        g = 0
+
+
+        # Stage: Draw transparent objects back to front
+
+        # =====================
+        self.root_node.render_forward_pass()  # A simple placeholder recursive rendering
+
+    def clear(self):
+        """Clear out all nodes to form an empty scene.
+        """
+        self.root_node = Node()
+
+        self._name_to_nodes = {}
+        self._obj_to_nodes = {}
+        self._obj_name_to_nodes = {}
+        self._mesh_nodes = set()
+        self._point_light_nodes = set()
+        self._spot_light_nodes = set()
+        self._directional_light_nodes = set()
+        self._camera_nodes = set()
+        self._main_camera_node = None
+        self._bounds = None
+
+        # Transform tree
+        self._path_cache = {}
+
+    # =========================================================================
+    #                           Setters and Getters
+    # =========================================================================
+
     @property
     def name(self):
         """str : The user-defined name of this object.
@@ -215,41 +261,3 @@ class Scene(object):
         """(3,) float : The length of the diagonal of the scene's AABB.
         """
         return np.linalg.norm(self.extents)
-
-    def render(self, context: moderngl.Context, camera: Camera):
-
-        # REMEMBER THIS:  Scene rendering is during the FORWARD PASS!
-
-        # Stage: Get renderable Nodes
-        renderable_nodes = []
-        self.root_node.get_nodes_by_type(type="mesh", output_list=renderable_nodes)
-
-        # Set lights
-
-        # Stage: Draw opaque objects first
-        g = 0
-
-
-        # Stage: Draw transparent objects back to front
-
-        # =====================
-        self.root_node.render_forward_pass()  # A simple placeholder recursive rendering
-
-    def clear(self):
-        """Clear out all nodes to form an empty scene.
-        """
-        self.root_node = Node()
-
-        self._name_to_nodes = {}
-        self._obj_to_nodes = {}
-        self._obj_name_to_nodes = {}
-        self._mesh_nodes = set()
-        self._point_light_nodes = set()
-        self._spot_light_nodes = set()
-        self._directional_light_nodes = set()
-        self._camera_nodes = set()
-        self._main_camera_node = None
-        self._bounds = None
-
-        # Transform tree
-        self._path_cache = {}
