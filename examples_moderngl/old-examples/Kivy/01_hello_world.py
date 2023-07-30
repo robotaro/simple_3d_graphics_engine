@@ -22,7 +22,7 @@ class CustomWidget(Widget):
                 void main() {
                     gl_Position = vec4(vert, 0.0, 1.0);
                 }
-            ''')
+            '''
 
             self.frag = fragment_shader='''
                 #version 330
@@ -32,9 +32,9 @@ class CustomWidget(Widget):
                 void main() {
                     color = vec4(0.30, 0.50, 1.00, 1.0);
                 }
-            ''')
+            '''
 
-            self.prog = self.ctx.program(self.vert, self.frag])
+            self.prog = self.ctx.program(self.vert, self.frag)
 
             self.vbo = self.context.buffer(struct.pack('6f', 0.0, 0.8, -0.6, -0.8, 0.6, -0.8))
             self.vao = self.context.simple_vertex_array(self.prog, self.vbo, ['vert'])

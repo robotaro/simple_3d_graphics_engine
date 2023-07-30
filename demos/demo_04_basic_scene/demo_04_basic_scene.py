@@ -17,7 +17,7 @@ from core.geometry_3d.mesh_loader import MeshFactory
 class BasicScene(Window):
 
     DEMO_DIRECTORY = os.path.dirname(__file__)
-    PROGRAM_CONFIG_FPATH = os.path.join(DEMO_DIRECTORY, "shader_programs.yaml")
+    PROGRAM_CONFIG_FPATH = os.path.join(DEMO_DIRECTORY, "programs.yaml")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -37,8 +37,6 @@ class BasicScene(Window):
 
     def setup(self):
 
-        #print("[DEMO 04] setup")
-
         # Create basic objects required for rendering
         self.scene = Scene(name="Main Scene")
         self.camera = PerspectiveCamera(name="Main Camera",
@@ -46,7 +44,8 @@ class BasicScene(Window):
                                         translation=(0, 0, -3))
         self.material = Material()
 
-        self.viewport = Viewport(camera=self.camera, x=0, y=0,
+        self.viewport = Viewport(camera=self.camera,
+                                 x=0, y=0,
                                  width=self.window_size[0],
                                  height=self.window_size[1])
 

@@ -93,12 +93,11 @@ class Mesh(Node):
 
         # TODO: Add instance-based code
 
-    def render(self, **kwargs):
+    def render_forward_pass(self, **kwargs):
 
         if self._vbo_dirty_flag:
             self.update_buffers()
             self._vbo_dirty_flag = False
-
 
         self.update_uniforms(**kwargs)
         self.vao.render(moderngl.TRIANGLES)

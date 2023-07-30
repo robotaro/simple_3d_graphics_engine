@@ -1,6 +1,6 @@
 import struct
 
-import ModernGL
+import moderngl
 from PyQt5 import QtOpenGL, QtWidgets
 
 
@@ -13,7 +13,7 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
         super(QGLControllerWidget, self).__init__(fmt, None)
 
     def initializeGL(self):
-        self.ctx = ModernGL.create_context()
+        self.ctx = moderngl.create_context()
 
         prog = self.ctx.program(
             vertex_shader='''
@@ -22,15 +22,15 @@ class QGLControllerWidget(QtOpenGL.QGLWidget):
                 void main() {
                     gl_Position = vec4(vert, 0.0, 1.0);
                 }
-            '''),
+            ''',
             fragment_shader='''
                 #version 330
                 out vec4 color;
                 void main() {
                     color = vec4(0.3, 0.5, 1.0, 1.0);
                 }
-            '''),
-        ])
+            '''
+        )
 
         vbo = self.context.buffer(struct.pack('6f', 0.0, 0.8, -0.6, -0.8, 0.6, -0.8))
         self.vao = self.ctx.simple_vertex_array(prog, vbo, ['vert'])

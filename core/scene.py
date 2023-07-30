@@ -233,7 +233,7 @@ class Scene(object):
         # Stage: Draw transparent objects back to front
 
         # =====================
-        self.root_node.render()  # A simple placeholder recursive rendering
+        self.root_node.render_forward_pass()  # A simple placeholder recursive rendering
 
     def clear(self):
         """Clear out all nodes to form an empty scene.

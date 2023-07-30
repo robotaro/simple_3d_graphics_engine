@@ -85,7 +85,7 @@ class ChessboardPlane(Node):
         )
         super().make_renderable(mlg_context=mlg_context, all_programs=all_programs)
 
-    def render(self, **kwargs):
+    def render_forward_pass(self, **kwargs):
         #print(f"[{self._type}] render")
 
         """self.prog["color_1"].value = (self.c1[0], self.c1[1], self.c1[2], self.c1[3])
@@ -106,7 +106,7 @@ class ChessboardPlane(Node):
 
         self.vao.render(moderngl.TRIANGLE_STRIP)"""
 
-        super().render(**kwargs)
+        super().render_forward_pass(**kwargs)
 
     @property
     def bounds(self):

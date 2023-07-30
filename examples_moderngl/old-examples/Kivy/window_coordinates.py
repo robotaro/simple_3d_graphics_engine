@@ -1,6 +1,6 @@
 import struct
 
-import ModernGL
+import moderngl
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.graphics import Callback
@@ -12,7 +12,7 @@ class CustomWidget(Widget):
         super(CustomWidget, self).__init__(**kwargs)
 
         with self.canvas:
-            self.ctx = ModernGL.create_context()
+            self.ctx = moderngl.create_context()
 
             self.prog = self.ctx.program(
                 vertex_shader='''
@@ -29,7 +29,7 @@ class CustomWidget(Widget):
                         v_color = in_color;
                         gl_Position = vec4(in_vert / WindowSize * 2.0, 0.0, 1.0);
                     }
-                '''),
+                ''',
                 fragment_shader='''
                     #version 330
 
@@ -39,8 +39,8 @@ class CustomWidget(Widget):
                     void main() {
                         f_color = vec4(v_color, 1.0);
                     }
-                '''),
-            ])
+                ''',
+            )
 
             self.window_size = self.prog.uniforms['WindowSize']
 
@@ -61,7 +61,7 @@ class CustomWidget(Widget):
         self.context.clear(0.9, 0.9, 0.9)
         self.context.enable(ModernGL.BLEND)
         self.window_size.value = (self.width_pixels, self.height_pixels)
-        self.vao.render()
+        self.vao.render_forward_pass()
 
     def ask_update(self, *args):
         self.canvas.ask_update()

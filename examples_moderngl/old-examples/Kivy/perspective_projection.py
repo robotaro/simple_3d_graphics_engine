@@ -1,6 +1,6 @@
 import struct
 
-import ModernGL
+import moderngl
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.graphics import Callback
@@ -30,7 +30,7 @@ class CustomWidget(Widget):
                         v_color = in_color;
                         gl_Position = Mvp * vec4(in_vert, 1.0);
                     }
-                '''),
+                ''',
                 fragment_shader='''
                     #version 330
 
@@ -40,8 +40,8 @@ class CustomWidget(Widget):
                     void main() {
                         f_color = vec4(v_color, 1.0);
                     }
-                '''),
-            ])
+                ''',
+            )
 
             self.mvp = self.prog.uniforms['Mvp']
 

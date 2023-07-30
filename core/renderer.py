@@ -232,7 +232,7 @@ class Renderer:
         scene.root_node.make_renderable(mlg_context=self.window.context,
                                         shader_library=self.shader_library)
 
-        scene.root_node.render(viewport=viewport)
+        scene.root_node.render_forward_pass(viewport=viewport)
 
         # Clear contexts
         """if bool(flags & RenderFlags.SEG):

@@ -86,19 +86,20 @@ class Node:
         return _decorator
 
     # =========================================================================
-    #                          Callback Functions
+    #                          Rendering Functions
     # =========================================================================
 
     def make_renderable(self, mlg_context: moderngl.Context, shader_library: ShaderLibrary, **kwargs):
-        #print(f"[{self._type} | {self.name}] make_renderable")
         for child in self._children:
             child.make_renderable(mlg_context=mlg_context, shader_library=shader_library, **kwargs)
 
-    def render(self, **kwargs):
-        #print(f"[{self._type}] render")
-
+    def render_forward_pass(self, **kwargs):
         for child in self._children:
-            child.render(**kwargs)
+            child.render_forward_pass(**kwargs)
+
+    def render_fragment_picking(self, **kwargs):
+        for child in self._children:
+            child.render_fragment_picking(**kwargs)
 
     def update_buffers(self):
         pass
