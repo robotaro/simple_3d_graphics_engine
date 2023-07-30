@@ -213,9 +213,6 @@ class Window:
             self.update(delta_time=timestamp - timestamp_past)
             timestamp_past = timestamp
 
-            # TODO: Consider if the scene should do this instead
-            self.context.clear(0.0, 0.0, 0.0)
-
             # App Render
             self.render()
 

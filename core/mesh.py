@@ -15,17 +15,18 @@ class Mesh(Node):
     def __init__(self,
                  vertices=None,
                  normals=None,
-                 uvs=None,
                  faces=None,
+                 uvs=None,
                  material=None,
                  program_name="mesh",
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Actual data stored here
-        self.vertices = None    # nd.array (N, 3) <float32>
-        self.normals = None     # nd.array (N, 3) <float32>
-        self.faces = None       # nd.array (N, 3) <int32>
+        self.vertices = vertices    # nd.array (N, 3) <float32>
+        self.normals = normals     # nd.array (N, 3) <float32>
+        self.faces = faces       # nd.array (N, 3) <int32>
+        self.uvs = uvs
 
         # Materials
         self.alpha = 1.0
