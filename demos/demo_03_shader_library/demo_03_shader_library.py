@@ -43,7 +43,7 @@ class BasicScene(Window):
             ],
         )
 
-    def update(self):
+    def update(self, delta_time: float):
         pass
 
     def render(self):
@@ -61,7 +61,7 @@ def main():
         window_size=(1024, 768),
         window_title="Shader Library demo",
         vertical_sync=True,
-        enable_imgui=False
+        imgui_enabled=False
     )
 
     app.run()

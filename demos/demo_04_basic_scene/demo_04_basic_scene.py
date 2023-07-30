@@ -43,7 +43,7 @@ class BasicScene(Window):
         self.scene = Scene(name="Main Scene")
         self.camera = PerspectiveCamera(name="Main Camera",
                                         y_fov_deg=45.0,
-                                        translation=(0, 0, -2))
+                                        translation=(0, 0, -3))
         self.material = Material()
         self.mesh = Mesh(name="Dragon", program_name="simple_mesh")
         self.viewport = Viewport(camera=self.camera, x=0, y=0,
@@ -54,6 +54,7 @@ class BasicScene(Window):
         loader = MeshLoader()
         mesh_fpath = os.path.join(constants.RESOURCES_DIR, "models", "dragon.obj")
         vertices, normals, faces, uvs = loader.load_obj(fpath=mesh_fpath)
+
         self.mesh.vertices = vertices
         self.mesh.normals = normals
         self.mesh.faces = faces

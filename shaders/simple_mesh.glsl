@@ -1,6 +1,8 @@
 // Code from : https://github.com/eliemichel/Python3dViewer/tree/main/shaders
 #if defined VERTEX_SHADER
 
+
+
 #version 400
 
 in vec3 in_vert;

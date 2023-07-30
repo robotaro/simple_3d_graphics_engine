@@ -73,7 +73,7 @@ def main():
         window_size=(800, 600),
         window_title="First Window - A Simple Triangle",
         vertical_sync=True,
-        enable_imgui=False
+        imgui_enabled=False
     )
 
     app.run()

@@ -25,7 +25,7 @@ class Mesh(Node):
         # Actual data stored here
         self.vertices = None    # nd.array (N, 3) <float32>
         self.normals = None     # nd.array (N, 3) <float32>
-        self.faces = None
+        self.faces = None       # nd.array (N, 3) <int32>
 
         # Materials
         self.alpha = 1.0
@@ -54,9 +54,11 @@ class Mesh(Node):
         if self.vbo_normals:
             self.vbo_normals.release()
 
+        if self.ibo_faces:
+            self.ibo_faces.release()
+
         if self.vao:
             self.vao.release()
-
 
     # =========================================================================
     #                   Rendering and GPU upload functions
@@ -80,7 +82,6 @@ class Mesh(Node):
             self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
             vbo_list.append((self.vbo_normals, "3f", "in_normal"))
 
-
         self.program = shader_library.get_program(self.program_name)
 
         if self.faces is None:
@@ -97,9 +98,9 @@ class Mesh(Node):
             self.update_buffers()
             self._vbo_dirty_flag = False
 
-        if self.vao is not None:
-            self.update_uniforms(**kwargs)
-            self.vao.render(moderngl.TRIANGLES)
+
+        self.update_uniforms(**kwargs)
+        self.vao.render(moderngl.TRIANGLES)
 
     def update_buffers(self):
 
@@ -151,7 +152,6 @@ class Mesh(Node):
         self.program["uPerspectiveMatrix"].write(proj_matrix_bytes)
         view_matrix_bytes = camera.transform.T.astype('f4').tobytes()
         self.program["uViewMatrix"].write(view_matrix_bytes)
-
 
         g = 0
 
