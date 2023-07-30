@@ -62,7 +62,7 @@ def generate_widget_preprocessed_node_list(window_soup: BeautifulSoup) -> list:
                 first_child_id=first_child_id,
                 horizontal_align=horizontal_align,
                 vertical_align=vertical_align,
-                type=soup_node.name,
+                type=soup_node._name,
                 attributes=soup_node.attrs)
             )
         

@@ -30,7 +30,7 @@ def main():
     app = DemoImGUI(window_size=(800, 600),
                     window_title="ImGUI Demo",
                     vertical_sync=True,
-                    enable_imgui=True)
+                    imgui_enabled=True)
 
     app.run()
 

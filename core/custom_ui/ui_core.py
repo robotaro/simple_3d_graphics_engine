@@ -72,7 +72,7 @@ class UICore:
             new_widget = None
 
             if ui_constants.KEY_ATTRS_ID not in child_soup.attrs:
-                raise AttributeError(f"[ERROR] Missing widget ID on {child_soup.attrs.name} widget")
+                raise AttributeError(f"[ERROR] Missing widget ID on {child_soup.attrs._name} widget")
 
             if child_soup.name == ui_constants.KEY_ELEMENT_COLUMN:
                 new_widget = self.soup2ui_column(soup=child_soup, level=level)
@@ -155,7 +155,7 @@ class UICore:
             dimensions = f"({widget.width_pixels}, {widget.height_pixels})"
             positions = f"({widget.x}, {widget.y})"
             print(f"{spaces}> {widget._widget_type} : {widget._id} {dimensions} {positions}")
-            for child_widget in widget.children:
+            for child_widget in widget._children:
                 recursive_print(child_widget)
 
         for window in self.windows:
@@ -179,7 +179,7 @@ class UICore:
                  widget.width_pixels,
                  widget.height_pixels))
 
-            for child_widget in widget.children:
+            for child_widget in widget._children:
                 recursive_get_dimensions(widget=child_widget, widget_dimensions=widget_dimensions)
 
         fig, ax = plt.subplots(1)

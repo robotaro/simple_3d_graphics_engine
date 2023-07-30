@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
-from core.scene.scene import Scene
-from core.scene.node import Node
+from core.scene import Scene
+from core.node import Node
 from core.scene.renderables.light import Light
-from core.scene.renderables.chessboard import ChessboardPlane
+from core.renderables.chessboard import ChessboardPlane
 
 from core.utilities import utils_xml
 
@@ -34,9 +34,6 @@ class SceneLoader:
             new_scene = Scene()
 
             self.build_node_tree(parent_soup=scene_soup, parent_node=new_scene)
-
-        # DEBUG
-        new_scene.print_hierarchy()
 
     def build_node_tree(self, parent_soup: BeautifulSoup, parent_node: Node, level=0):
 

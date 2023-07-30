@@ -1,0 +1,3 @@
+simple_mesh:
+  vertex_shader: "simple_mesh.glsl"
+  fragment_shader: "simple_mesh.glsl"

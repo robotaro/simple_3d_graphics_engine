@@ -1,32 +1,28 @@
-import numpy as np
 import moderngl
+import numpy as np
 
-from core.scene.node import Node
-from core.scene.renderables.meshes import Meshes
-from core.utilities import utils
+from core.node import Node
 
 
 class ChessboardPlane(Node):
-    """A plane that is textured like a chessboard."""
 
-    VALID_PLANES = ("xz", "xy", "yz")
+    _type = "chessboard"
 
     def __init__(
         self,
-        side_length,
-        n_tiles,
+        side_length=60,
+        num_tiles=60,
         color1=(0.0, 0.0, 0.0, 1.0),
         color2=(1.0, 1.0, 1.0, 1.0),
         plane="xz",
         height=0.0,
         tiling=True,
-        icon="\u008b",
         **kwargs,
     ):
         """
         Initializer.
         :param side_length: Length of one side of the plane.
-        :param n_tiles: Number of tiles for the chessboard pattern.
+        :param num_tiles: Number of tiles for the chessboard pattern.
         :param color1: First color of the chessboard pattern.
         :param color2: Second color of the chessboard pattern.
         :param plane: In which plane the chessboard lies. Allowed are 'xz', 'xy', 'yz'.
@@ -34,12 +30,9 @@ class ChessboardPlane(Node):
         :param kwargs: Remaining kwargs.
         """
 
-        if plane not in ChessboardPlane.VALID_PLANES:
-            raise ValueError(f"[ERROR] Plane must be one of the following {ChessboardPlane.VALID_PLANES}")
-
-        super(ChessboardPlane, self).__init__(icon=icon, **kwargs)
+        super(ChessboardPlane, self).__init__(**kwargs)
         self.side_length = side_length
-        self.n_tiles = n_tiles
+        self.n_tiles = num_tiles
         self.c1 = np.array(color1)
         self.c2 = np.array(color2)
         self.plane = plane
@@ -52,10 +45,11 @@ class ChessboardPlane(Node):
         elif plane == "xy":
             v1 = np.array([1, 0, 0], dtype=np.float32)
             v2 = np.array([0, 1, 0], dtype=np.float32)
-        else:
-            # plane == "yz"
+        elif plane == "yz":
             v1 = np.array([0, 1, 0], dtype=np.float32)
             v2 = np.array([0, 0, 1], dtype=np.float32)
+        else:
+            raise ValueError(f"[ERROR] Plane dimensions {plane} is not valid")
 
         self.vertices, self.normals, self.uvs = self._get_renderable_data(v1, v2, side_length)
         self.backface_culling = False
@@ -74,13 +68,14 @@ class ChessboardPlane(Node):
 
     # noinspection PyAttributeOutsideInit
     @Node.once
-    def make_renderable(self, ctx):
-        self.prog = get_chessboard_program()
-        self.vbo_vertices = ctx.buffer(self.vertices.astype("f4").tobytes())
-        self.vbo_normals = ctx.buffer(self.normals.astype("f4").tobytes())
-        self.vbo_uvs = ctx.buffer(self.uvs.astype("f4").tobytes())
+    def make_renderable(self, mlg_context: moderngl.Context, all_programs: dict, **kwargs):
+        #print(f"[{self._type}] make_renderable")
+        self.prog = all_programs[self._type]["program"]
+        self.vbo_vertices = mlg_context.buffer(self.vertices.astype("f4").tobytes())
+        self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
+        self.vbo_uvs = mlg_context.buffer(self.uvs.astype("f4").tobytes())
 
-        self.vao = ctx.vertex_array(
+        self.vao = mlg_context.vertex_array(
             self.prog,
             [
                 (self.vbo_vertices, "3f4 /v", "in_position"),
@@ -88,9 +83,12 @@ class ChessboardPlane(Node):
                 (self.vbo_uvs, "2f4 /v", "in_uv"),
             ],
         )
+        super().make_renderable(mlg_context=mlg_context, all_programs=all_programs)
 
-    def render(self, camera, **kwargs):
-        self.prog["color_1"].value = (self.c1[0], self.c1[1], self.c1[2], self.c1[3])
+    def render(self, **kwargs):
+        #print(f"[{self._type}] render")
+
+        """self.prog["color_1"].value = (self.c1[0], self.c1[1], self.c1[2], self.c1[3])
         self.prog["color_2"].value = (self.c2[0], self.c2[1], self.c2[2], self.c2[3])
         self.prog["n_tiles"].value = self.n_tiles
         self.prog["tiling_enabled"].value = self.tiling
@@ -98,15 +96,17 @@ class ChessboardPlane(Node):
         self.set_camera_matrices(self.prog, camera, **kwargs)
         self.receive_shadow(self.prog, **kwargs)
 
-        utils.set_lights_in_program(
+        set_lights_in_program(
             self.prog,
             kwargs["lights"],
             kwargs["shadows_enabled"],
             kwargs["ambient_strength"],
         )
-        utils.set_material_properties(self.prog, self.material)
+        set_material_properties(self.prog, self.material)
 
-        self.vao.render(moderngl.TRIANGLE_STRIP)
+        self.vao.render(moderngl.TRIANGLE_STRIP)"""
+
+        super().render(**kwargs)
 
     @property
     def bounds(self):
@@ -219,13 +219,13 @@ class Chessboard(Node):
                 face_colors.append(c)
                 fc_idxs.extend([len(face_colors) - 2, len(face_colors) - 1])
 
-        vs = np.stack(vertices)
-        vs = vs - np.mean(vertices, axis=0, keepdims=True)
-        vs[:, up] = self.height
-        fs = np.stack(faces)
-        cs = np.stack(face_colors)
+        vertices = np.stack(vertices)
+        vertices = vertices - np.mean(vertices, axis=0, keepdims=True)
+        vertices[:, up] = self.height
+        faces = np.stack(faces)
+        face_colors = np.stack(face_colors)
 
-        return vs, fs, cs, c1_idxs, c2_idxs
+        return vertices, faces, face_colors, c1_idxs, c2_idxs
 
     def _update_colors(self):
         self.fcs_tiled[self.c1_idxs] = self.c1

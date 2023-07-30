@@ -38,11 +38,12 @@ class ShaderLibrary:
         self.shader_blueprints = {}
         self.programs = {}
 
-        # Compile shaders and store any compilation errors
         self.load_shaders()
 
-    def get_program(self, program_id: str):
-        return self.programs[program_id].get("program", None)
+        self.compile_programs()
+
+    def get_program(self, program_id: str) -> moderngl.Program:
+        return self.programs.get(program_id, None)["program"]
 
     def load_shaders(self) -> None:
 
@@ -61,9 +62,6 @@ class ShaderLibrary:
         # Step 3) Solve shader dependencies
         for key, shader in self.shader_blueprints.items():
             self._solve_shader_dependencies(shader_key=key)
-
-        # Step 4) Compile all programs
-        self._compile_programs()
 
     def print_compilation_results(self):
 
@@ -217,7 +215,7 @@ class ShaderLibrary:
 
         return "".join(header_lines + shader.source_code_lines)
 
-    def _compile_programs(self):
+    def compile_programs(self):
         """
         Compiles all programs defined in the YAML definition file. The programs
 
