@@ -74,6 +74,14 @@ class Node:
         for child in self._children:
             child.get_nodes_by_type(type=type)
 
+    def get_node_by_name(self, name: str) -> "Node":
+
+        if self._name == name:
+            return self
+
+        for child in self._children:
+            child.get_node_by_name(name=name)
+
     @staticmethod
     def once(func):
         def _decorator(self, *args, **kwargs):

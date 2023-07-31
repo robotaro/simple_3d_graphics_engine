@@ -8,12 +8,13 @@ in vec3 in_normal;
 out vec3 v_normal;
 out vec3 v_position;
 
-#include snippets/camera_uniforms.glsl
+uniform mat4 projection_matrix;
+uniform mat4 view_matrix;
 
 void main() {
     v_normal = in_normal;
     v_position = in_vert;
-    gl_Position = uPerspectiveMatrix * uViewMatrix * vec4(v_position, 1.0);
+    gl_Position = projection_matrix * view_matrix * vec4(v_position, 1.0);
 }
 
 #elif defined FRAGMENT_SHADER
@@ -34,22 +35,22 @@ const vec3 lightcolor1 = vec3(0.9, 0.95, 1.0);
 const vec3 ambient = vec3(1.0);
 
 void main() {
-    vec3 view_position = inverse(uViewMatrix)[3].xyz;
+    vec3 view_position = inverse(view_matrix)[3].xyz;
 
     vec4 base_color = material.base_color_factor;
 
 
     for (int i = 0; i < n_directional_lights; i++) {
         vec3 direction = directional_lights[i].direction;
-        vec3 v = normalize(cam_pos - frag_position); // Vector towards camera
-        vec3 l = normalize(-1.0 * direction);   // Vector towards light
+        vec3 camera_vector = normalize(cam_pos - frag_position); // Vector towards camera
+        vec3 light_vector = normalize(-1.0 * direction);   // Vector towards light
 
         // Compute attenuation and radiance
         float attenuation = directional_lights[i].intensity;
         vec3 radiance = attenuation * directional_lights[i].color;
 
         // Compute outbound color
-        vec3 res = compute_brdf(n, v, l, roughness, metallic,
+        vec3 res = compute_brdf(n, camera_vector, light_vector, roughness, metallic,
                                 f0, c_diff, base_color.rgb, radiance);
 
         // TODO: Compute shadow here (check pyrender)

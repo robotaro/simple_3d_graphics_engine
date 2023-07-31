@@ -29,6 +29,7 @@ class BasicScene(Window):
 
         self.scene = None
         self.camera = None
+        self.dir_light = None
         self.mesh = None
         self.material = None
         self.viewport = None
