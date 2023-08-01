@@ -8,7 +8,7 @@ in vec3 in_normal;
 out vec3 v_normal;
 out vec3 v_position;
 
-#include snippets/camera_uniforms.glsl
+#include includes/camera.glsl
 
 void main() {
     v_normal = in_normal;

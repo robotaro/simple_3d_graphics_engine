@@ -6,7 +6,6 @@ simple_mesh:
 #  vertex_shader: "default_mesh.glsl"
 #  fragment_shader: "default_mesh.glsl"
 
-
-mesh:
+mesh_with_lights:
   vertex_shader: "mesh_with_lights.glsl"
   fragment_shader: "mesh_with_lights.glsl"

@@ -43,7 +43,9 @@ class ShaderLibrary:
         self.compile_programs()
 
     def get_program(self, program_id: str) -> moderngl.Program:
-        return self.programs.get(program_id, None)["program"]
+        if program_id not in self.programs:
+            raise KeyError(f"[ERROR] Program ID '{program_id}' is not present in the program library")
+        return self.programs.get(program_id, None)
 
     def load_shaders(self) -> None:
 
@@ -238,8 +240,6 @@ class ShaderLibrary:
             fragment_source = self._blueprint2source_code(shader_type="fragment", blueprint=blueprint)
 
             # Compile the program
-            error_description = ''
-            compiled_program = None
             try:
                 compiled_program = self.context.program(
                     vertex_shader=vertex_source,
@@ -249,8 +249,10 @@ class ShaderLibrary:
                     "name": compiled_program
                 }
             except Exception as error:
-                error_description = error.args[0]
-            self.programs[key] = {"program": compiled_program, "compilation_errors": error_description}
+                # TODO: Sort out how you want this
+                raise Exception(f"[ERROR] Program '{key}' did not compile. "
+                                f"Here are the errors:\n\n[{key}]\n\n{error.args[0]}")
+            self.programs[key] = compiled_program
 
 
 

@@ -1,5 +1,8 @@
 import os
+import time
 import logging
+
+import numpy as np
 
 from core import constants
 from core.window import Window
@@ -12,6 +15,7 @@ from core.mesh import Mesh
 from core.material import Material
 from core.utilities import utils_logging
 from core.geometry_3d.mesh_loader import MeshFactory
+from core.math import mat4
 
 
 class BasicScene(Window):
@@ -53,7 +57,7 @@ class BasicScene(Window):
         # Load mesh data
         loader = MeshFactory()
         mesh_fpath = os.path.join(constants.RESOURCES_DIR, "models", "dragon.obj")
-        self.mesh = loader.from_obj(name="Dragon", program_name="simple_mesh", fpath=mesh_fpath)
+        self.mesh = loader.from_obj(name="Dragon", program_name="mesh_with_lights", fpath=mesh_fpath)
 
         # Scene Setup
         self.scene.root_node.add(self.camera)
@@ -63,8 +67,8 @@ class BasicScene(Window):
         self.scene.root_node.print_hierarchy()
 
     def update(self, delta_time: float):
-        #print("[DEMO 04] update")
-        pass
+        self.mesh.transform = mat4.compute_transform(position=(0, 0, 0),
+                                                     rotation_rad=(0, time.perf_counter(), 0))
 
     def render(self):
         #print("[DEMO 04] render")

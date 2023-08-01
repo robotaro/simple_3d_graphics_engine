@@ -32,6 +32,15 @@ struct DirectionalLight {
 uniform int num_directional_lights;
 uniform DirectionalLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
 
+vec3 compute_directional_light(DirLight dir_light, vec3 material_color, vec3 normal){
+    vec3 lightDir = -dir_light.direction;
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 light_diffuse = diffuse_coeff * diff * dir_light.color * dir_light.intensity;
+    return light_diffuse * material_color;
+}
+
+// ===============[ Unused ]==============
+
 // Gratefully adopted from https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping
 float shadow_calculation(sampler2DShadow shadow_map, vec4 frag_pos_light_space, vec3 light_dir, vec3 normal) {
     // perform perspective divide (not needed for orthographic projection)
@@ -81,10 +90,20 @@ vec3 compute_lighting(vec3 vertex, vec3 normal, vec3 base_color,  vec4 vert_ligh
     return color;
 }
 
+float compute_diffuse_shadows(vec3 vert, vec3 normal, vec4 vert_light[NR_DIR_LIGHTS]) {
+    float v = 0.0;
+    for(int i = 0; i < NR_DIR_LIGHTS; i++){
+        float shadow = dirLights[i].shadow_enabled ? shadow_calculation(shadow_maps[i], vert_light[i], -dirLights[i].direction, normal) : 0.0;
+        float diff = max(dot(normal, -dirLights[i].direction), 0.0);
+        v += diff * (1 - shadow);
+    }
+    return v;
+}
+
 // ===================================================================
 //                      Spot Light
 // ===================================================================
-
+/*
 struct SpotLight {
     vec3 color;
     float intensity;
@@ -121,3 +140,4 @@ struct PointLight {
 
 uniform PointLight point_lights[MAX_POINT_LIGHTS];
 uniform int num_point_lights;
+*/
