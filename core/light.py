@@ -33,7 +33,6 @@ class Light(Node):
         self._shadow_camera = None
         self._shadow_texture = None
 
-
     @property
     def color(self):
         """(3,) float : The light's color.
@@ -75,6 +74,8 @@ class Light(Node):
 
 
 class DirectionalLight(Light):
+
+    _type = "directional_light"
 
     def __init__(self,
                  color=None,

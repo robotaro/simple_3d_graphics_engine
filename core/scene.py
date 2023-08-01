@@ -4,12 +4,12 @@ import trimesh
 
 from core.mesh import Mesh
 from core.camera import Camera
-from core.light import Light
+from core.light import DirectionalLight
 from core.node import Node
 from core.utilities import utils_colors
 
 
-class Scene(object):
+class Scene:
 
     def __init__(self,
                  name=None,
@@ -22,13 +22,10 @@ class Scene(object):
             bg_color = utils_colors.format_color_vector(bg_color, 4)
 
         if ambient_light is None:
-            ambient_light = np.zeros(3)
+            ambient_light = np.ones(3)
 
-        self.root_node = Node(name="root_node")
-        self.bg_color = bg_color
-        self.ambient_light = ambient_light
+        # Scene core variables
         self.name = name
-
         self._name_to_nodes = {}
         self._obj_to_nodes = {}
         self._obj_name_to_nodes = {}
@@ -40,8 +37,13 @@ class Scene(object):
         self._main_camera_node = None
         self._bounds = None
 
-        # Transform tree
-        self._path_cache = {}
+        # Nodes
+        self.root_node = Node(name="root_node")
+        self.light_nodes = []
+
+        # Lighting
+        self.bg_color = bg_color
+        self.ambient_light = ambient_light
 
     # =========================================================================
     #                           Rendering Functions
@@ -50,6 +52,8 @@ class Scene(object):
     def render(self, context: moderngl.Context, camera: Camera):
 
         # REMEMBER THIS:  Scene rendering is during the FORWARD PASS!
+
+        self.light_nodes
 
         # Stage: Get renderable Nodes
         renderable_nodes = []
@@ -84,6 +88,18 @@ class Scene(object):
 
         # Transform tree
         self._path_cache = {}
+
+    # =========================================================================
+    #                         Create functions
+    # =========================================================================
+
+    def create_directional_light(self, position: tuple, direction: tuple):
+
+        # TODO: Continue from here
+        self._directional_light_nodes = DirectionalLight(position)
+
+        pass
+
 
     # =========================================================================
     #                           Setters and Getters
@@ -146,56 +162,6 @@ class Scene(object):
         """set of :class:`Node` : The nodes containing meshes.
         """
         return self._mesh_nodes
-
-    @property
-    def lights(self):
-        """set of :class:`Light` : The lights in the scene.
-        """
-        return self.point_lights | self.spot_lights | self.directional_lights
-
-    @property
-    def light_nodes(self):
-        """set of :class:`Node` : The nodes containing lights.
-        """
-        return (self.point_light_nodes | self.spot_light_nodes |
-                self.directional_light_nodes)
-
-    @property
-    def point_lights(self):
-        """set of :class:`PointLight` : The point lights in the scene.
-        """
-        return set([n.light for n in self.point_light_nodes])
-
-    @property
-    def point_light_nodes(self):
-        """set of :class:`Node` : The nodes containing point lights.
-        """
-        return self._point_light_nodes
-
-    @property
-    def spot_lights(self):
-        """set of :class:`SpotLight` : The spot lights in the scene.
-        """
-        return set([n.light for n in self.spot_light_nodes])
-
-    @property
-    def spot_light_nodes(self):
-        """set of :class:`Node` : The nodes containing spot lights.
-        """
-        return self._spot_light_nodes
-
-    @property
-    def directional_lights(self):
-        """set of :class:`DirectionalLight` : The directional lights in
-        the scene.
-        """
-        return set([n.light for n in self.directional_light_nodes])
-
-    @property
-    def directional_light_nodes(self):
-        """set of :class:`Node` : The nodes containing directional lights.
-        """
-        return self._directional_light_nodes
 
     @property
     def cameras(self):

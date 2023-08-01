@@ -175,8 +175,10 @@ class Mesh(Node):
 
         proj_matrix_bytes = camera.get_projection_matrix(width=width, height=height).T.astype('f4').tobytes()
         self.program["projection_matrix"].write(proj_matrix_bytes)
+
         view_matrix_bytes = camera.transform.T.astype('f4').tobytes()
         self.program["view_matrix"].write(view_matrix_bytes)
+
         model_matrix_bytes = self.transform.T.astype('f4').tobytes()
         self.program["model_matrix"].write(model_matrix_bytes)
 
