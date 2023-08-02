@@ -101,11 +101,15 @@ class Node:
         for child in self._children:
             child.make_renderable(mlg_context=mlg_context, shader_library=shader_library, **kwargs)
 
+    def render_shadow_pass(self, **kwargs):
+        for child in self._children:
+            child.render_shadow_pass(**kwargs)
+
     def render_forward_pass(self, **kwargs):
         for child in self._children:
             child.render_forward_pass(**kwargs)
 
-    def render_fragment_picking(self, **kwargs):
+    def render_fragment_picking_pass(self, **kwargs):
         for child in self._children:
             child.render_fragment_picking(**kwargs)
 

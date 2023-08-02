@@ -93,8 +93,10 @@ class Mesh(Node):
 
         # TODO: Add instance-based code
 
-    def render_forward_pass(self, **kwargs):
+    def render_shadow_pass(self, **kwargs):
+        pass
 
+    def render_forward_pass(self, **kwargs):
         if self._vbo_dirty_flag:
             self.update_buffers()
             self._vbo_dirty_flag = False
@@ -104,6 +106,7 @@ class Mesh(Node):
 
     def render_fragment_picking(self, **kwargs):
 
+        """
         # Transpose because np is row-major but OpenGL expects column-major.
         prog = self.fragmap_program
         self.set_camera_matrices(prog, camera)
@@ -125,6 +128,7 @@ class Mesh(Node):
         # Restore cull face to back
         if self.backface_fragmap:
             ctx.cull_face = "back"
+        """
         pass
 
     def update_buffers(self):
