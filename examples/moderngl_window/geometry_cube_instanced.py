@@ -28,7 +28,7 @@ class CubeSimpleInstanced(CameraWindow):
         self.prog = self.load_program('programs/cube_simple_instanced.glsl')
         self.prog['m_model'].write(Matrix44.identity(dtype='f4'))
 
-        # Generate per instance data represeting a grid of cubes
+        # Generate per instance data representing a grid of cubes
         N = 100
         self.instances = N * N
 

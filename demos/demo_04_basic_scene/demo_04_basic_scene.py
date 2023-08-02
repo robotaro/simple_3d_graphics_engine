@@ -71,7 +71,6 @@ class BasicScene(Window):
                                                      rotation_rad=(0, time.perf_counter(), 0))
 
     def render(self):
-        #print("[DEMO 04] render")
         self.renderer.render(scene=self.scene, viewports=[self.viewport])
 
 
