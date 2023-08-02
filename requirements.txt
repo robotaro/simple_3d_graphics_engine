@@ -20,6 +20,9 @@ pygltflib==1.15.3   # GLTF and GLB
 # Image loading
 Pillow==10.0.0
 
+# Video Loading
+av==10.0.0
+
 # Custom UI
 beautifulsoup4==4.12.2
 lxml==4.9.2

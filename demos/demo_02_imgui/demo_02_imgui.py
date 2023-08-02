@@ -7,7 +7,7 @@ class DemoImGUI(Window):
     def setup(self):
         pass
 
-    def update(self):
+    def update(self, delta_time: float):
 
         imgui.new_frame()
 

@@ -211,6 +211,8 @@ class Renderer:
 
     def _forward_pass(self, scene: Scene, viewport: Viewport):
 
+        # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
+
         #print("[Renderer] _forward_pass")
 
         # Bind screen context to draw to it
@@ -226,13 +228,10 @@ class Renderer:
             depth=1.0,
             viewport=viewport.get_tuple())
 
-        # Set up viewport for render
+        # Set blending and whatnot
         self.configure_forward_pass_context(context=self.window.context)
 
-        scene.root_node.make_renderable(mlg_context=self.window.context,
-                                        shader_library=self.shader_library)
-
-        scene.root_node.render(viewport=viewport)
+        scene.root_node.render_forward_pass(viewport=viewport)
 
         # Clear contexts
         """if bool(flags & RenderFlags.SEG):

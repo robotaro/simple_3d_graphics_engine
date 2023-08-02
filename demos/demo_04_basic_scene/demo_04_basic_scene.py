@@ -1,5 +1,8 @@
 import os
+import time
 import logging
+
+import numpy as np
 
 from core import constants
 from core.window import Window
@@ -11,13 +14,14 @@ from core.viewport import Viewport
 from core.mesh import Mesh
 from core.material import Material
 from core.utilities import utils_logging
-from core.geometry_3d.mesh_loader import MeshLoader
+from core.geometry_3d.mesh_loader import MeshFactory
+from core.math import mat4
 
 
 class BasicScene(Window):
 
     DEMO_DIRECTORY = os.path.dirname(__file__)
-    PROGRAM_CONFIG_FPATH = os.path.join(DEMO_DIRECTORY, "shader_programs.yaml")
+    PROGRAM_CONFIG_FPATH = os.path.join(DEMO_DIRECTORY, "programs.yaml")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -29,6 +33,7 @@ class BasicScene(Window):
 
         self.scene = None
         self.camera = None
+        self.dir_light = None
         self.mesh = None
         self.material = None
         self.viewport = None
@@ -37,27 +42,22 @@ class BasicScene(Window):
 
     def setup(self):
 
-        #print("[DEMO 04] setup")
-
         # Create basic objects required for rendering
         self.scene = Scene(name="Main Scene")
         self.camera = PerspectiveCamera(name="Main Camera",
                                         y_fov_deg=45.0,
-                                        translation=(0, 0, -2))
+                                        translation=(0, 0, -3))
         self.material = Material()
-        self.mesh = Mesh(name="Dragon", program_name="simple_mesh")
-        self.viewport = Viewport(camera=self.camera, x=0, y=0,
+
+        self.viewport = Viewport(camera=self.camera,
+                                 x=0, y=0,
                                  width=self.window_size[0],
                                  height=self.window_size[1])
 
         # Load mesh data
-        loader = MeshLoader()
+        loader = MeshFactory()
         mesh_fpath = os.path.join(constants.RESOURCES_DIR, "models", "dragon.obj")
-        vertices, normals, faces, uvs = loader.load_obj(fpath=mesh_fpath)
-        self.mesh.vertices = vertices
-        self.mesh.normals = normals
-        self.mesh.faces = faces
-        self.mesh.uvs = uvs
+        self.mesh = loader.from_obj(name="Dragon", program_name="mesh_with_lights", fpath=mesh_fpath)
 
         # Scene Setup
         self.scene.root_node.add(self.camera)
@@ -66,12 +66,11 @@ class BasicScene(Window):
         # DEBUG
         self.scene.root_node.print_hierarchy()
 
-    def update(self):
-        #print("[DEMO 04] update")
-        pass
+    def update(self, delta_time: float):
+        self.mesh.transform = mat4.compute_transform(position=(0, 0, 0),
+                                                     rotation_rad=(0, time.perf_counter(), 0))
 
     def render(self):
-        #print("[DEMO 04] render")
         self.renderer.render(scene=self.scene, viewports=[self.viewport])
 
 

@@ -1,4 +1,6 @@
 # Core modules
+import time
+
 import numpy as np
 from core import constants
 
@@ -22,7 +24,7 @@ class Window:
     __slots__ = ("window_size",
                  "window_title",
                  "vertical_sync",
-                 "enable_imgui",
+                 "imgui_enabled",
                  "mouse_state",
                  "keyboard_state",
                  "window_glfw",
@@ -48,7 +50,7 @@ class Window:
         self.buffer_size = window_size  # REally?
         self.window_title = window_title
         self.vertical_sync = vertical_sync
-        self.enable_imgui = imgui_enabled
+        self.imgui_enabled = imgui_enabled
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -177,7 +179,7 @@ class Window:
     def setup(self):
         pass
 
-    def update(self):
+    def update(self, delta_time: float):
         pass
 
     def render(self):
@@ -197,6 +199,9 @@ class Window:
         imgui.create_context()
         self.imgui_renderer = GlfwRenderer(self.window_glfw)
 
+        delta_time = 0
+        timestamp_past = time.perf_counter()
+
         while not glfw.window_should_close(self.window_glfw):
 
             glfw.poll_events()
@@ -204,15 +209,14 @@ class Window:
 
             self._update_inputs()
 
-            self.update()
-
-            # TODO: Consider if the scene should do this instead
-            self.context.clear(0.0, 0.0, 0.0)
+            timestamp = time.perf_counter()
+            self.update(delta_time=timestamp - timestamp_past)
+            timestamp_past = timestamp
 
             # App Render
             self.render()
 
-            if self.enable_imgui:
+            if self.imgui_enabled:
                 imgui.render()
                 self.imgui_renderer.render(imgui.get_draw_data())
 

@@ -15,17 +15,18 @@ class Mesh(Node):
     def __init__(self,
                  vertices=None,
                  normals=None,
-                 uvs=None,
                  faces=None,
+                 uvs=None,
                  material=None,
                  program_name="mesh",
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Actual data stored here
-        self.vertices = None    # nd.array (N, 3) <float32>
-        self.normals = None     # nd.array (N, 3) <float32>
-        self.faces = None
+        self.vertices = vertices    # nd.array (N, 3) <float32>
+        self.normals = normals     # nd.array (N, 3) <float32>
+        self.faces = faces       # nd.array (N, 3) <int32>
+        self.uvs = uvs
 
         # Materials
         self.alpha = 1.0
@@ -54,9 +55,11 @@ class Mesh(Node):
         if self.vbo_normals:
             self.vbo_normals.release()
 
+        if self.ibo_faces:
+            self.ibo_faces.release()
+
         if self.vao:
             self.vao.release()
-
 
     # =========================================================================
     #                   Rendering and GPU upload functions
@@ -80,7 +83,6 @@ class Mesh(Node):
             self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
             vbo_list.append((self.vbo_normals, "3f", "in_normal"))
 
-
         self.program = shader_library.get_program(self.program_name)
 
         if self.faces is None:
@@ -91,15 +93,43 @@ class Mesh(Node):
 
         # TODO: Add instance-based code
 
-    def render(self, **kwargs):
+    def render_shadow_pass(self, **kwargs):
+        pass
 
+    def render_forward_pass(self, **kwargs):
         if self._vbo_dirty_flag:
             self.update_buffers()
             self._vbo_dirty_flag = False
 
-        if self.vao is not None:
-            self.update_uniforms(**kwargs)
-            self.vao.render(moderngl.TRIANGLES)
+        self.upload_uniforms(**kwargs)
+        self.vao.render(moderngl.TRIANGLES)
+
+    def render_fragment_picking(self, **kwargs):
+
+        """
+        # Transpose because np is row-major but OpenGL expects column-major.
+        prog = self.fragmap_program
+        self.set_camera_matrices(prog, camera)
+
+        # Render with the specified object uid, if None use the node uid instead.
+        prog["obj_id"] = uid or self.uid
+
+        if self.backface_culling or self.backface_fragmap:
+            ctx.enable(moderngl.CULL_FACE)
+        else:
+            ctx.disable(moderngl.CULL_FACE)
+
+        # If backface_fragmap is enabled for this node only render backfaces
+        if self.backface_fragmap:
+            ctx.cull_face = "front"
+
+        self.render_positions(prog)
+
+        # Restore cull face to back
+        if self.backface_fragmap:
+            ctx.cull_face = "back"
+        """
+        pass
 
     def update_buffers(self):
 
@@ -135,7 +165,7 @@ class Mesh(Node):
                 np.transpose(self.current_instance_transforms.astype("f4"), (0, 2, 1)).tobytes()
             )"""
 
-    def update_uniforms(self,  **kwargs):
+    def upload_uniforms(self, **kwargs):
 
         if self.program is None:
             return
@@ -148,12 +178,13 @@ class Mesh(Node):
         height = kwargs["viewport"].height
 
         proj_matrix_bytes = camera.get_projection_matrix(width=width, height=height).T.astype('f4').tobytes()
-        self.program["uPerspectiveMatrix"].write(proj_matrix_bytes)
+        self.program["projection_matrix"].write(proj_matrix_bytes)
+
         view_matrix_bytes = camera.transform.T.astype('f4').tobytes()
-        self.program["uViewMatrix"].write(view_matrix_bytes)
+        self.program["view_matrix"].write(view_matrix_bytes)
 
-
-        g = 0
+        model_matrix_bytes = self.transform.T.astype('f4').tobytes()
+        self.program["model_matrix"].write(model_matrix_bytes)
 
         # Set material
         #if self.material is not None:
@@ -197,15 +228,6 @@ class Mesh(Node):
         self.set_material_properties(prog, self.material)
         self.receive_shadow(prog, **kwargs)
         return prog"""
-
-    def set_lights_in_program(self, prog, lights, shadows_enabled, ambient_strength):
-        """Set program lighting from scene lights"""
-        for i, light in enumerate(lights):
-            prog[f"dirLights[{i}].direction"].value = tuple(light.direction)
-            prog[f"dirLights[{i}].color"].value = light.light_color
-            prog[f"dirLights[{i}].strength"].value = light.strength if light.enabled else 0.0
-            prog[f"dirLights[{i}].shadow_enabled"].value = shadows_enabled and light.shadow_enabled
-        prog["ambient_strength"] = ambient_strength
 
     # =========================================================================
     #                         Getters and Setters

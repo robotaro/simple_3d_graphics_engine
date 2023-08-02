@@ -8,7 +8,7 @@ from core.shader_library import ShaderLibrary
 class BasicScene(Window):
 
     DEMO_DIRECTORY = os.path.dirname(__file__)
-    PROGRAM_CONFIG_FPATH = os.path.join(DEMO_DIRECTORY, "shader_programs.yaml")
+    PROGRAM_CONFIG_FPATH = os.path.join(DEMO_DIRECTORY, "programs.yaml")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -19,8 +19,6 @@ class BasicScene(Window):
         self.program = self.shader_library.get_program("demo_03")
         self.vbo = None
         self.vao = None
-
-        g = 0
 
     def setup(self):
 
@@ -43,7 +41,7 @@ class BasicScene(Window):
             ],
         )
 
-    def update(self):
+    def update(self, delta_time: float):
         pass
 
     def render(self):
@@ -61,7 +59,7 @@ def main():
         window_size=(1024, 768),
         window_title="Shader Library demo",
         vertical_sync=True,
-        enable_imgui=False
+        imgui_enabled=False
     )
 
     app.run()

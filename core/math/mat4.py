@@ -1,3 +1,4 @@
+from numba import njit
 import numpy as np
 from numba import njit
 from core.math import mat3
@@ -5,9 +6,58 @@ from functools import lru_cache
 
 DEG2RAD = np.pi / 180.0
 
-@lru_cache()
+
+def compute_transform(position: tuple, rotation_rad: tuple, scale=1.0, order='xyz'):
+
+    """
+    #TODO: This is a SLOW implementation! Hard-code it if you are only going o use one rotation,
+    #      and use Numba instead.
+
+    Returns a 3x3 rotation matrix based on the angles and the rotation order
+    :param x_rad: Angle in radians
+    :param y_rad: Angle in radians
+    :param z_rad: Angle in radians
+    :param order: string with the order of axes
+    :return: numpy ndarray (3, 3) <float32>
+    """
+
+    cx = np.cos(rotation_rad[0])
+    sx = np.sin(rotation_rad[0])
+    cy = np.cos(rotation_rad[1])
+    sy = np.sin(rotation_rad[1])
+    cz = np.cos(rotation_rad[2])
+    sz = np.sin(rotation_rad[2])
+
+    rx = np.asarray([[1, 0, 0],
+                     [0, cx, -sx],
+                     [0, sx, cx]])
+    ry = np.asarray([[cy, 0, sy],
+                     [0, 1, 0],
+                     [-sy, 0, cy]])
+    rz = np.asarray([[cz, -sz, 0],
+                     [sz, cz, 0],
+                     [0, 0, 1]])
+
+    rotation = np.eye(3, dtype=np.float32)
+
+    for axis in order.lower():
+        if axis == 'x':
+            rotation = np.matmul(rotation, rx)
+        elif axis == 'y':
+            rotation = np.matmul(rotation, ry)
+        else:
+            rotation = np.matmul(rotation, rz)
+
+    rotation *= scale
+
+    transform = np.eye(4, dtype=np.float32)
+    transform[:3, :3] = rotation
+    transform[:3, 3] = position
+
+    return transform
+
 @njit
-def compute_transform(pos: tuple, rot: tuple, scale: float):
+def compute_transform_not_so_useful(pos: tuple, rot: tuple, scale: float):
     # TODO: refactor this to simplify scale!
 
     rotation = np.eye(4)
@@ -56,7 +106,7 @@ def perspective_projection(fovy_deg, aspect, near, far):
                      [0, 0, -1, 0]], dtype=np.float32)
 
 
-def orthographic(left, right, bottom, top, near, far):
+def orthographic_projection(left: float, right: float, bottom: float, top: float, near: float, far: float):
     dx = right - left
     dy = top - bottom
     dz = far - near
