@@ -99,7 +99,7 @@ class Mesh(Node):
             self.update_buffers()
             self._vbo_dirty_flag = False
 
-        self.update_uniforms(**kwargs)
+        self.upload_uniforms(**kwargs)
         self.vao.render(moderngl.TRIANGLES)
 
     def render_fragment_picking(self, **kwargs):
@@ -161,7 +161,7 @@ class Mesh(Node):
                 np.transpose(self.current_instance_transforms.astype("f4"), (0, 2, 1)).tobytes()
             )"""
 
-    def update_uniforms(self,  **kwargs):
+    def upload_uniforms(self, **kwargs):
 
         if self.program is None:
             return
@@ -224,15 +224,6 @@ class Mesh(Node):
         self.set_material_properties(prog, self.material)
         self.receive_shadow(prog, **kwargs)
         return prog"""
-
-    def set_lights_in_program(self, prog, lights, shadows_enabled, ambient_strength):
-        """Set program lighting from scene lights"""
-        for i, light in enumerate(lights):
-            prog[f"dirLights[{i}].direction"].value = tuple(light.direction)
-            prog[f"dirLights[{i}].color"].value = light.light_color
-            prog[f"dirLights[{i}].strength"].value = light.strength if light.enabled else 0.0
-            prog[f"dirLights[{i}].shadow_enabled"].value = shadows_enabled and light.shadow_enabled
-        prog["ambient_strength"] = ambient_strength
 
     # =========================================================================
     #                         Getters and Setters

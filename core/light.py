@@ -1,4 +1,5 @@
 import numpy as np
+import moderngl
 from core.utilities import utils
 from core.node import Node
 
@@ -73,56 +74,42 @@ class Light(Node):
         pass
 
 
-class DirectionalLight(Light):
+class DirectionalLight:
 
-    _type = "directional_light"
+    __slots__ = [
+        "name",
+        "direction",
+        "intensity",
+        "color"
+    ]
 
     def __init__(self,
-                 color=None,
-                 intensity=None,
-                 name=None):
-        super(DirectionalLight, self).__init__(
-            color=color,
-            intensity=intensity,
-            name=name,
-        )
+                 name: str,
+                 color=(1.0, 1.0, 1.0),
+                 direction=(-1.0, -1.0, -1.0),
+                 intensity=1.0):
 
-    def _generate_shadow_texture(self, size=None):
-        """Generate a shadow texture for this light.
+        self.name = name
+        self.color = color
+        self.direction = np.array(direction)
+        self.direction /= np.linalg.norm(self.direction)
+        self.intensity = intensity
 
-        Parameters
-        ----------
-        size : int, optional
-            Size of texture map. Must be a positive power of two.
-        """
-        """if size is None:
-            size = SHADOW_TEX_SZ
-        self.shadow_texture = Texture(width=size, height=size,
-                                      source_channels='D', data_format=GL_FLOAT)"""
+    def upload_uniforms(self, light_index: int, program: moderngl.Program):
+
+
+        prog[f"dirLights[{i}].direction"].value = tuple(light.direction)
+        prog[f"dirLights[{i}].color"].value = light.light_color
+        prog[f"dirLights[{i}].strength"].value = light.strength if light.enabled else 0.0
+        prog[f"dirLights[{i}].shadow_enabled"].value = shadows_enabled and light.shadow_enabled
+
+
+
+    def generate_shadow_texture(self, size=None):
+
         pass
 
-    def _get_shadow_camera(self, scene_scale):
-        """Generate and return a shadow mapping camera for this light.
-
-        Parameters
-        ----------
-        scene_scale : float
-            Length of scene's bounding box diagonal.
-
-        Returns
-        -------
-        camera : :class:`.Camera`
-            The camera used to render shadowmaps for this light.
-        """
-
-        # TODO: Return the projection matrix instead?
-
-        """return OrthographicCamera(
-            znear=0.01 * scene_scale,
-            zfar=10 * scene_scale,
-            xmag=scene_scale,
-            ymag=scene_scale
-        )"""
+    def get_shadow_camera(self, scene_scale):
         pass
 
 __all__ = ['DirectionalLight']

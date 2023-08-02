@@ -67,6 +67,9 @@ class Scene:
 
         # Stage: Draw transparent objects back to front
 
+        # TODO: Group renderables per program and render them all in batches to minimise program switching
+        prog["ambient_strength"] = ambient_strength
+
         # =====================
         self.root_node.render_forward_pass()  # A simple placeholder recursive rendering
 
@@ -93,12 +96,17 @@ class Scene:
     #                         Create functions
     # =========================================================================
 
-    def create_directional_light(self, position: tuple, direction: tuple):
+    def create_directional_light(self,
+                                 name: str,
+                                 direction=(-1.0, -1.0, -1.0),
+                                 color=(1.0, 1.0, 1.0),
+                                 intensity=0.5):
 
-        # TODO: Continue from here
-        self._directional_light_nodes = DirectionalLight(position)
-
-        pass
+        self._directional_light_nodes.add(
+            DirectionalLight(name=name,
+                             color=color,
+                             intensity=intensity,
+                             direction=direction))
 
 
     # =========================================================================
