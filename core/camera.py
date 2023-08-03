@@ -2,6 +2,7 @@ import numpy as np
 
 from core import constants
 from core.node import Node
+from core.math import mat4
 
 
 class Camera(Node):
@@ -43,7 +44,10 @@ class Camera(Node):
             raise ValueError('zfar must be >0 and >znear')
         self._z_far = value
 
-    def get_projection_matrix(self, width=None, height=None):
+    def get_view_matrix(self) -> np.ndarray:
+        return np.eye(4, dtype=np.float32)
+
+    def get_projection_matrix(self, width=None, height=None) -> np.ndarray:
         """Return the OpenGL projection matrix for this camera.
 
         Parameters
@@ -53,16 +57,16 @@ class Camera(Node):
         height : int
             Height of the current viewport, in pixels.
         """
-        pass
+        return np.eye(4, dtype=np.float32)
 
 
 class PerspectiveCamera(Camera):
 
     def __init__(self,
-                 y_fov_deg,
+                 y_fov_deg: float,
+                 aspect_ratio: float,
                  z_near=constants.CAMERA_Z_NEAR,
                  z_far=constants.CAMERA_Z_FAR,
-                 aspect_ratio=None,
                  **kwargs):
         super(PerspectiveCamera, self).__init__(
             z_near=z_near,
@@ -73,20 +77,12 @@ class PerspectiveCamera(Camera):
         self.y_fov_deg = y_fov_deg
         self.aspect_ratio = aspect_ratio
 
-    @property
-    def y_fov_deg(self):
-        """float : The vertical field of view in radians.
-        """
-        return self._yfov
-
-    @y_fov_deg.setter
-    def y_fov_deg(self, value):
-        value = float(value)
-        if value <= 0.0:
-            raise ValueError('Field of view must be positive')
-        self._yfov = value
+    def get_view_matrix(self):
+        # TODO: Continue from here
+        return self.transform.inverse().T
 
     def get_projection_matrix(self, width=None, height=None):
+        # TODO: Remove this and use the mat4 version
         """Return the OpenGL projection matrix for this camera.
 
         Parameters

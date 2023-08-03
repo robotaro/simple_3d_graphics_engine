@@ -84,7 +84,37 @@ def mul_vector(tr_mat4: np.ndarray, vector3: np.array):
     return np.matmul(tr_mat4[0:3, 0:3], vector3) + tr_mat4[:3, 3]
 
 
-def perspective_projection(fovy_deg, aspect, near, far):
+def normalize(x):
+    return x / np.linalg.norm(x)
+
+
+def look_at(position: np.array, target: np.array, up: np.array):
+    """
+    Create an affine transformation that locates the camera at `position`, s.t. it looks at `target`.
+    :param position: The 3D position of the camera in world coordinates.
+    :param target: The 3D target where the camera should look at in world coordinates.
+    :param up: The vector that is considered to be up in world coordinates.
+    :return: Returns the 4-by-4 affine transform that transforms a point in world space into the camera space, i.e.
+      it returns the inverse of the camera's 6D pose matrix. Assumes right-multiplication, i.e. x' = [R|t] * x.
+    """
+
+    forward = normalize(position - target)  # forward actually points in the other direction than `target` is.
+    right = normalize(np.cross(up, forward))
+    camera_up = np.cross(forward, right)
+
+    # We directly create the inverse matrix (i.e. world2cam) because this is typically how look-at is define.
+    rot = np.eye(4)
+    rot[0, :3] = right
+    rot[1, :3] = camera_up
+    rot[2, :3] = forward
+
+    trans = np.eye(4)
+    trans[:3, 3] = -position
+
+    return rot @ trans
+
+
+def perspective_projection(fovy_rad: float, aspect: float, near: float, far: float):
 
     """
     Calculates the 4x4 perspective matrix
@@ -96,7 +126,7 @@ def perspective_projection(fovy_deg, aspect, near, far):
     :return: numpy ndarray (4, 4) <float32>
     """
 
-    s = 1.0 / np.tan(fovy_deg * DEG2RAD / 2.0)
+    s = 1.0 / np.tan(fovy_rad)
     sx, sy = s / aspect, s
     zz = (far + near) / (near - far)
     zw = 2 * far * near / (near - far)

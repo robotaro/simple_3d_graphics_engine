@@ -50,8 +50,8 @@ class Renderer:
         #   - Render outline
 
         # Initialise object on the GPU if they haven't been already
-        scene.root_node.make_renderable(mlg_context=self.window.context,
-                                        shader_library=self.shader_library)
+        scene._root_node.make_renderable(mlg_context=self.window.context,
+                                         shader_library=self.shader_library)
 
         self.render_shadowmap(scene=scene)
 
@@ -231,7 +231,7 @@ class Renderer:
         # Set blending and whatnot
         self.configure_forward_pass_context(context=self.window.context)
 
-        scene.root_node.render_forward_pass(viewport=viewport)
+        scene.render().render_forward_pass(viewport=viewport)
 
         # Clear contexts
         """if bool(flags & RenderFlags.SEG):

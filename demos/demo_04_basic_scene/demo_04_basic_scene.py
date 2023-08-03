@@ -44,8 +44,10 @@ class BasicScene(Window):
 
         # Create basic objects required for rendering
         self.scene = Scene(name="Main Scene")
+        self.scene.create_perspective_camera(name="Main Camera",
+                                             y_fov_deg=45.0)
         self.camera = PerspectiveCamera(name="Main Camera",
-                                        y_fov_deg=45.0,
+
                                         translation=(0, 0, -3))
         self.material = Material()
 
@@ -60,11 +62,11 @@ class BasicScene(Window):
         self.mesh = loader.from_obj(name="Dragon", program_name="mesh_with_lights", fpath=mesh_fpath)
 
         # Scene Setup
-        self.scene.root_node.add(self.camera)
-        self.scene.root_node.add(self.mesh)
+        self.scene._root_node.add(self.camera)
+        self.scene._root_node.add(self.mesh)
 
         # DEBUG
-        self.scene.root_node.print_hierarchy()
+        self.scene._root_node.print_hierarchy()
 
     def update(self, delta_time: float):
         self.mesh.transform = mat4.compute_transform(position=(0, 0, 0),
