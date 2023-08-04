@@ -56,7 +56,6 @@ class Renderer:
         self.render_shadowmap(scene=scene)
 
         for viewport in viewports:
-
             self._fragment_map_pass(scene=scene, viewport=viewport)
             self._forward_pass(scene=scene, viewport=viewport)
             self._outline_pass(scene=scene, viewport=viewport)
@@ -213,105 +212,32 @@ class Renderer:
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
-        #print("[Renderer] _forward_pass")
-
         # Bind screen context to draw to it
         self.window.context.screen.use()
 
         # TODO: maybe move this to inside the scene?
         # Clear context (you need to use the use() first to bind it!)
         self.window.context.clear(
-            red=scene.bg_color[0],
-            green=scene.bg_color[1],
-            blue=scene.bg_color[2],
+            red=scene._background_color[0],
+            green=scene._background_color[1],
+            blue=scene._background_color[2],
             alpha=0.0,
             depth=1.0,
             viewport=viewport.get_tuple())
 
-        # Set blending and whatnot
-        self.configure_forward_pass_context(context=self.window.context)
+        # Prepare context flags for rendering
+        self.window.context.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)
+        self.window.context.cull_face = "back"
+        self.window.context.blend_func = (
+            moderngl.SRC_ALPHA,
+            moderngl.ONE_MINUS_SRC_ALPHA,
+            moderngl.ONE,
+            moderngl.ONE)
 
-        scene.render().render_forward_pass(viewport=viewport)
-
-        # Clear contexts
-        """if bool(flags & RenderFlags.SEG):
-            glClearColor(0.0, 0.0, 0.0, 1.0)
-            if seg_node_map is None:
-                seg_node_map = {}
-        else:
-            glClearColor(*scene.bg_color)
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-
-        if not bool(flags & RenderFlags.SEG):
-            glEnable(GL_MULTISAMPLE)
-        else:
-            glDisable(GL_MULTISAMPLE)
-
-        # Set up camera matrices
-        V, P = self._get_camera_matrices(scene)
-
-        program = None
-        # Now, render each object in sorted order
-        for node in self._sorted_mesh_nodes(scene):
-            mesh = node.mesh
-
-            # Skip the mesh if it's not visible
-            if not mesh.is_visible:
-                continue
-
-            # If SEG, set color
-            if bool(flags & RenderFlags.SEG):
-                if node not in seg_node_map:
-                    continue
-                color = seg_node_map[node]
-                if not isinstance(color, (list, tuple, np.ndarray)):
-                    color = np.repeat(color, 3)
-                else:
-                    color = np.asanyarray(color)
-                color = color / 255.0
-
-            for primitive in mesh.primitives:
-
-                # First, get and bind the appropriate program
-                program = self._get_primitive_program(
-                    primitive, flags, ProgramFlags.USE_MATERIAL
-                )
-                program._bind()
-
-                # Set the camera uniforms
-                program.set_uniform('V', V)
-                program.set_uniform('P', P)
-                program.set_uniform(
-                    'cam_pos', scene.get_pose(scene.main_camera_node)[:3,3]
-                )
-                if bool(flags & RenderFlags.SEG):
-                    program.set_uniform('color', color)
-
-                # Next, bind the lighting
-                if not (flags & RenderFlags.DEPTH_ONLY or flags & RenderFlags.FLAT or
-                        flags & RenderFlags.SEG):
-                    self._bind_lighting(scene, program, node, flags)
-
-                # Finally, bind and draw the primitive
-                self._bind_and_draw_primitive(
-                    primitive=primitive,
-                    pose=scene.get_pose(node),
-                    program=program,
-                    flags=flags
-                )
-                self._reset_active_textures()
-
-        # Unbind the shader and flush the output
-        if program is not None:
-            program._unbind()
-        glFlush()
-
-        # If doing offscreen render, copy result from framebuffer and return
-        if flags & RenderFlags.OFFSCREEN:
-            return self._read_main_framebuffer(scene, flags)
-        else:
-            return"""
+        # Render scene
+        scene.render_forward_pass(context=self.window.context,
+                                  shader_library=self.shader_library,
+                                  viewport=viewport)
 
     def _fragment_map_pass(self, scene: Scene, viewport: Viewport):
         #print("[Renderer] _fragment_map_pass")
@@ -343,18 +269,3 @@ class Renderer:
             if take_pass:
                 self.render_pass_shadow_mapping(scene, ln, flags)"""
         pass
-
-    # =========================================================================
-    #                         Context configuring funcitons
-    # =========================================================================
-
-    def configure_forward_pass_context(self, context: moderngl.Context) -> None:
-        #print("[Renderer] configure_forward_pass_context")
-        context.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)
-        context.cull_face = "back"
-        context.blend_func = (
-            moderngl.SRC_ALPHA,
-            moderngl.ONE_MINUS_SRC_ALPHA,
-            moderngl.ONE,
-            moderngl.ONE,
-        )

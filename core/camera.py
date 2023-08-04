@@ -47,16 +47,7 @@ class Camera(Node):
     def get_view_matrix(self) -> np.ndarray:
         return np.eye(4, dtype=np.float32)
 
-    def get_projection_matrix(self, width=None, height=None) -> np.ndarray:
-        """Return the OpenGL projection matrix for this camera.
-
-        Parameters
-        ----------
-        width : int
-            Width of the current viewport, in pixels.
-        height : int
-            Height of the current viewport, in pixels.
-        """
+    def get_projection_matrix(self, width: int, height: int) -> np.ndarray:
         return np.eye(4, dtype=np.float32)
 
 
@@ -78,10 +69,10 @@ class PerspectiveCamera(Camera):
         self.aspect_ratio = aspect_ratio
 
     def get_view_matrix(self):
-        # TODO: Continue from here
-        return self.transform.inverse().T
 
-    def get_projection_matrix(self, width=None, height=None):
+        return self.transform
+
+    def get_projection_matrix(self, width: int, height: int):
         # TODO: Remove this and use the mat4 version
         """Return the OpenGL projection matrix for this camera.
 

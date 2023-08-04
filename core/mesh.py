@@ -18,7 +18,7 @@ class Mesh(Node):
                  faces=None,
                  uvs=None,
                  material=None,
-                 program_name="mesh",
+                 forward_pass_program_name="mesh",
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -39,8 +39,7 @@ class Mesh(Node):
         self.vao = None
 
         # Custom programs - for special features
-        self.program_name = program_name
-        self.program = None
+        self.forward_pass_program_name = forward_pass_program_name
 
         # Flags
         self._vbo_dirty_flag = True
@@ -70,7 +69,7 @@ class Mesh(Node):
 
         print(f"[{self._type} | {self.name}] make_renderable")
 
-        # TODO: - Check if I need to upload data here or leave it to uploade buffers
+        # TODO: - Check if I need to upload data here or leave it to uploaded buffers
         #       - Check if I need to set these to dynamic
 
         vbo_list = []
@@ -83,25 +82,31 @@ class Mesh(Node):
             self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
             vbo_list.append((self.vbo_normals, "3f", "in_normal"))
 
-        self.program = shader_library.get_program(self.program_name)
+        program = shader_library.get_program(self.forward_pass_program_name)
 
         if self.faces is None:
-            self.vao = mlg_context.vertex_array(self.program, vbo_list)
+            self.vao = mlg_context.vertex_array(program, vbo_list)
         else:
             self.ibo_faces = mlg_context.buffer(self.faces.astype("i4").tobytes())
-            self.vao = mlg_context.vertex_array(self.program, vbo_list, self.ibo_faces)
+            self.vao = mlg_context.vertex_array(program, vbo_list, self.ibo_faces)
 
         # TODO: Add instance-based code
 
     def render_shadow_pass(self, **kwargs):
         pass
 
-    def render_forward_pass(self, **kwargs):
+    def render_forward_pass(self, program: moderngl.Program):
+
+        # Upload buffers ONLY if necessary
         if self._vbo_dirty_flag:
-            self.update_buffers()
+            self.upload_buffers()
             self._vbo_dirty_flag = False
 
-        self.upload_uniforms(**kwargs)
+        # Upload uniforms
+        model_matrix_bytes = self.transform.T.astype('f4').tobytes()
+        program["model_matrix"].write(model_matrix_bytes)
+
+        # Render the vao at the end
         self.vao.render(moderngl.TRIANGLES)
 
     def render_fragment_picking(self, **kwargs):
@@ -131,7 +136,7 @@ class Mesh(Node):
         """
         pass
 
-    def update_buffers(self):
+    def upload_buffers(self):
 
         print(f"[{self._type} | {self.name}] update_buffers")
 
@@ -165,28 +170,13 @@ class Mesh(Node):
                 np.transpose(self.current_instance_transforms.astype("f4"), (0, 2, 1)).tobytes()
             )"""
 
-    def upload_uniforms(self, **kwargs):
+    def upload_uniforms(self, program: moderngl.Program):
 
-        if self.program is None:
-            return
+        # Camera uniforms were previously uploaded here
 
-        #print(f"[{self._type} | {self.name}] update_uniforms")
 
-        # Set camera uniforms
-        camera = kwargs["viewport"].camera
-        width = kwargs["viewport"].width
-        height = kwargs["viewport"].height
 
-        proj_matrix_bytes = camera.get_projection_matrix(width=width, height=height).T.astype('f4').tobytes()
-        self.program["projection_matrix"].write(proj_matrix_bytes)
-
-        view_matrix_bytes = camera.transform.T.astype('f4').tobytes()
-        self.program["view_matrix"].write(view_matrix_bytes)
-
-        model_matrix_bytes = self.transform.T.astype('f4').tobytes()
-        self.program["model_matrix"].write(model_matrix_bytes)
-
-        # Set material
+        # Upload material uniforms
         #if self.material is not None:
         #    self.program["diffuse_coeff"].value = self.material.diffuse
         #    self.program["ambient_coeff"].value = self.material.ambient
@@ -234,18 +224,7 @@ class Mesh(Node):
     # =========================================================================
 
     @property
-    def centroid(self):
-        """(3,) float : The centroid of the mesh's axis-aligned bounding box
-        (AABB).
-        """
-        return np.mean(self.bounds, axis=0)
-
-    @property
-    def extents(self):
-        """(3,) float : The lengths of the axes of the mesh's AABB.
-        """
-        return np.diff(self.bounds, axis=0).reshape(-1)
-
-    @property
     def is_transparent(self):
-        return False
+        if self.material is None:
+            return False
+        return self.material.is_transparent()

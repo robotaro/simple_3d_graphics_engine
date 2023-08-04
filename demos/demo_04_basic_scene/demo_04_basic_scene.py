@@ -44,11 +44,7 @@ class BasicScene(Window):
 
         # Create basic objects required for rendering
         self.scene = Scene(name="Main Scene")
-        self.scene.create_perspective_camera(name="Main Camera",
-                                             y_fov_deg=45.0)
-        self.camera = PerspectiveCamera(name="Main Camera",
-
-                                        translation=(0, 0, -3))
+        self.camera = self.scene.create_perspective_camera(name="Main Camera")
         self.material = Material()
 
         self.viewport = Viewport(camera=self.camera,

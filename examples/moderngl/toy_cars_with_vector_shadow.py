@@ -116,7 +116,7 @@ class ToyCars(Example):
             0.0, 1.0, 0.0,
             0.0, 0.0, 1.0,
         ) for car in cars))
-        self.vao.render(instances=len(cars))
+        self.vao.render_forward_pass(instances=len(cars))
 
         self.vbo.write(b''.join(struct.pack(
             '15f',
@@ -126,7 +126,7 @@ class ToyCars(Example):
             0.0, 1.0, 0.0,
             0.3, 0.6, 0.0,
         ) for car in cars))
-        self.vao.render(instances=len(cars))
+        self.vao.render_forward_pass(instances=len(cars))
 
 
 if __name__ == '__main__':

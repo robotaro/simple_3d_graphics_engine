@@ -87,7 +87,7 @@ class LoadingOBJ(Example):
         self.mvp.write((proj * lookat).astype('f4'))
 
         self.texture.use()
-        self.vao.render()
+        self.vao.render_forward_pass()
 
 
 if __name__ == '__main__':

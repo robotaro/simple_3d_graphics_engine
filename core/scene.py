@@ -3,7 +3,9 @@ import numpy as np
 import trimesh
 
 from core.mesh import Mesh
-from core.camera import PerspectiveCamera, OrthographicCamera
+from core.viewport import Viewport
+from core.shader_library import ShaderLibrary
+from core.camera import Camera, PerspectiveCamera, OrthographicCamera
 from core.light import DirectionalLight
 from core.node import Node
 from core.utilities import utils_colors
@@ -67,10 +69,11 @@ class Scene:
     def create_perspective_camera(self,
                                   name: str,
                                   position=(5, 5, 5),
-                                  look_at=(0, 0, 0),
+                                  aspect_ratio=800/600,
+                                  target=(0, 0, 0),
                                   y_pov_deg=45.0) -> PerspectiveCamera:
 
-        new_camera = PerspectiveCamera(name=name, y_fov_deg=y_pov_deg)
+        new_camera = PerspectiveCamera(name=name, y_fov_deg=y_pov_deg, position=position, aspect_ratio=aspect_ratio)
 
         self._cameras.append(new_camera)
 
@@ -80,29 +83,53 @@ class Scene:
     #                           Rendering Functions
     # =========================================================================
 
-    def render(self, context: moderngl.Context, camera: Camera):
+    def render_forward_pass(self, context: moderngl.Context, shader_library: ShaderLibrary, viewport: Viewport):
 
         # REMEMBER THIS:  Scene rendering is during the FORWARD PASS!
 
         light_nodes = []
-        self._root_node.get_nodes_by_type(type="directional_light", output_list=light_nodes)
+        self._root_node.get_nodes_by_type(_type="directional_light", output_list=light_nodes)
 
-        renderable_nodes = []
-        self._root_node.get_nodes_by_type(type="mesh", output_list=renderable_nodes)
+        meshes = []
+        self._root_node.get_nodes_by_type(_type="mesh", output_list=meshes)
 
-        # Set lights
+        # [ Stage : Forward Pass ]
+        for mesh in meshes:
 
-        # Stage: Draw opaque objects first
-        g = 0
+            # TODO: Skip mesh if invisible
 
+            program = shader_library.get_program(mesh.forward_pass_program_name)
+
+            # Set camera uniforms
+            self.upload_camera_uniforms(program=program,
+                                        camera=viewport.camera,
+                                        viewport_width=viewport.width,
+                                        viewport_height=viewport.height)
+
+            # Set light uniforms
+            #program["ambient_strength"] = self._ambient_light_color
+
+            # Se model uniforms
+            mesh.render_forward_pass(program=program)
 
         # Stage: Draw transparent objects back to front
 
         # TODO: Group renderables per program and render them all in batches to minimise program switching
-        prog["ambient_strength"] = ambient_strength
+        #
 
-        # =====================
-        self._root_node.render_forward_pass()  # A simple placeholder recursive rendering
+    def upload_camera_uniforms(self,
+                               program: moderngl.Program,
+                               camera: Camera,
+                               viewport_width: float,
+                               viewport_height: float):
+
+        proj_matrix_bytes = camera.get_projection_matrix(width=viewport_width, height=viewport_height).T.astype('f4').tobytes()
+        program["projection_matrix"].write(proj_matrix_bytes)
+
+        view_matrix_bytes = camera.get_view_matrix().T.astype('f4').tobytes()
+        program["view_matrix"].write(view_matrix_bytes)
+
+
 
     def clear(self):
         """Clear out all nodes to form an empty scene.
