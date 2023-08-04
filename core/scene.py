@@ -46,6 +46,56 @@ class Scene:
 
         # Flags
 
+    # =========================================================================
+    #                           Rendering Functions
+    # =========================================================================
+
+    def render_fragment_picking_pass(self,
+                                     context: moderngl.Context,
+                                     shader_library: ShaderLibrary,
+                                     viewport: Viewport):
+        pass
+
+    def render_forward_pass(self, context: moderngl.Context, shader_library: ShaderLibrary, viewport: Viewport):
+        # REMEMBER THIS:  Scene rendering is during the FORWARD PASS!
+
+        light_nodes = []
+        self._root_node.get_nodes_by_type(_type="directional_light", output_list=light_nodes)
+
+        meshes = []
+        self._root_node.get_nodes_by_type(_type="mesh", output_list=meshes)
+
+        # [ Stage : Forward Pass ]
+        for mesh in meshes:
+            # TODO: Skip mesh if invisible
+
+            program = shader_library.get_program(mesh.forward_pass_program_name)
+
+            # Set camera uniforms
+            self.upload_camera_uniforms(program=program,
+                                        camera=viewport.camera,
+                                        viewport_width=viewport.width,
+                                        viewport_height=viewport.height)
+
+            # Set light uniforms
+            # program["ambient_strength"] = self._ambient_light_color
+
+            # Se model uniforms
+            mesh.render_forward_pass(program=program)
+
+        # Stage: Draw transparent objects back to front
+
+    def upload_camera_uniforms(self,
+                               program: moderngl.Program,
+                               camera: Camera,
+                               viewport_width: float,
+                               viewport_height: float):
+        proj_matrix_bytes = camera.get_projection_matrix(width=viewport_width,
+                                                         height=viewport_height).T.astype('f4').tobytes()
+        program["projection_matrix"].write(proj_matrix_bytes)
+
+        view_matrix_bytes = camera.get_view_matrix().T.astype('f4').tobytes()
+        program["view_matrix"].write(view_matrix_bytes)
 
     # =========================================================================
     #                         Create functions
@@ -73,55 +123,12 @@ class Scene:
                                   target=(0, 0, 0),
                                   y_pov_deg=45.0) -> PerspectiveCamera:
 
-        new_camera = PerspectiveCamera(name=name, y_fov_deg=y_pov_deg, position=position, aspect_ratio=aspect_ratio)
+        new_camera = PerspectiveCamera(name=name,
+                                       y_fov_deg=y_pov_deg,
+                                       position=position,
+                                       aspect_ratio=aspect_ratio)
 
         self._cameras.append(new_camera)
 
         return new_camera
 
-    # =========================================================================
-    #                           Rendering Functions
-    # =========================================================================
-
-    def render_forward_pass(self, context: moderngl.Context, shader_library: ShaderLibrary, viewport: Viewport):
-
-        # REMEMBER THIS:  Scene rendering is during the FORWARD PASS!
-
-        light_nodes = []
-        self._root_node.get_nodes_by_type(_type="directional_light", output_list=light_nodes)
-
-        meshes = []
-        self._root_node.get_nodes_by_type(_type="mesh", output_list=meshes)
-
-        # [ Stage : Forward Pass ]
-        for mesh in meshes:
-
-            # TODO: Skip mesh if invisible
-
-            program = shader_library.get_program(mesh.forward_pass_program_name)
-
-            # Set camera uniforms
-            self.upload_camera_uniforms(program=program,
-                                        camera=viewport.camera,
-                                        viewport_width=viewport.width,
-                                        viewport_height=viewport.height)
-
-            # Set light uniforms
-            #program["ambient_strength"] = self._ambient_light_color
-
-            # Se model uniforms
-            mesh.render_forward_pass(program=program)
-
-        # Stage: Draw transparent objects back to front
-
-    def upload_camera_uniforms(self,
-                               program: moderngl.Program,
-                               camera: Camera,
-                               viewport_width: float,
-                               viewport_height: float):
-
-        proj_matrix_bytes = camera.get_projection_matrix(width=viewport_width, height=viewport_height).T.astype('f4').tobytes()
-        program["projection_matrix"].write(proj_matrix_bytes)
-
-        view_matrix_bytes = camera.get_view_matrix().T.astype('f4').tobytes()
-        program["view_matrix"].write(view_matrix_bytes)
