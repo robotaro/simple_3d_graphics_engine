@@ -54,7 +54,7 @@ class Points:
 
     def render(self, time):
         self.program['model_matrix'].write(matrix44.create_from_eulers((0, time / 8, 0), dtype='f4'))
-        self.vao.render_forward_pass(vertices=self.count, mode=moderngl.POINTS)
+        self.vao.render(vertices=self.count, mode=moderngl.POINTS)
 
     @property
     def count(self):

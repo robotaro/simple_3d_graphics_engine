@@ -114,9 +114,6 @@ class Scene:
 
         # Stage: Draw transparent objects back to front
 
-        # TODO: Group renderables per program and render them all in batches to minimise program switching
-        #
-
     def upload_camera_uniforms(self,
                                program: moderngl.Program,
                                camera: Camera,
@@ -128,20 +125,3 @@ class Scene:
 
         view_matrix_bytes = camera.get_view_matrix().T.astype('f4').tobytes()
         program["view_matrix"].write(view_matrix_bytes)
-
-
-
-    def clear(self):
-        """Clear out all nodes to form an empty scene.
-        """
-        self._root_node = Node()
-
-        self._name_to_nodes = {}
-        self._obj_to_nodes = {}
-        self._obj_name_to_nodes = {}
-        self._meshes = set()
-        self._point_light_nodes = set()
-        self._spot_light_nodes = set()
-        self._directional_lights = set()
-        self._cameras = set()
-        self._main_camera_node = None

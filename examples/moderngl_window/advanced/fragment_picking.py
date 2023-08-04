@@ -139,7 +139,7 @@ class FragmentPicking(moderngl_window.WindowConfig):
         self.geometry_program['projection'].write(self.projection.matrix)
         self.mesh_texture.use(location=0)  # bind texture from obj file to channel 0
         self.depth_sampler.use(location=0)
-        self.mesh.render_forward_pass(self.geometry_program)  # render mesh
+        self.mesh.render(self.geometry_program)  # render mesh
         self.depth_sampler.clear(location=0)
 
         # Activate the window as the render target

@@ -25,7 +25,7 @@ class GeometryBbox(CameraWindow):
 
         self.prog['m_proj'].write(self.camera.projection.matrix)
         self.prog['m_cam'].write(self.camera.matrix)
-        self.bbox.render_forward_pass(self.prog)
+        self.bbox.render(self.prog)
 
 
 if __name__ == '__main__':

@@ -84,7 +84,7 @@ class CrateExample(Example):
         self.mvp.write((proj * lookat).astype('f4'))
         self.light.value = camera_pos
         self.texture.use()
-        self.vao.render_forward_pass()
+        self.vao.render()
 
 
 if __name__ == '__main__':

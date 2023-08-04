@@ -44,7 +44,8 @@ class BasicScene(Window):
 
         # Create basic objects required for rendering
         self.scene = Scene(name="Main Scene")
-        self.camera = self.scene.create_perspective_camera(name="Main Camera")
+        self.camera = self.scene.create_perspective_camera(name="Main Camera",
+                                                           position=(0, 0, -2))
         self.material = Material()
 
         self.viewport = Viewport(camera=self.camera,

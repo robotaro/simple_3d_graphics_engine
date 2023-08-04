@@ -48,10 +48,10 @@ class HelloWorld2D:
         self.vbo.write(data)
         if type == 'line':
             self.ctx.line_width = 1.0
-            self.vao.render_forward_pass(moderngl.LINE_STRIP, vertices=len(data) // 24)
+            self.vao.render(moderngl.LINE_STRIP, vertices=len(data) // 24)
         if type == 'points':
             self.ctx.point_size = 3.0
-            self.vao.render_forward_pass(moderngl.POINTS, vertices=len(data) // 24)
+            self.vao.render(moderngl.POINTS, vertices=len(data) // 24)
 
 
 class PanTool:

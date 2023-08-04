@@ -103,7 +103,7 @@ class InstancedCrates(Example):
 
         self.instance_data.write(coordinates.astype('f4'))
         self.texture.use()
-        self.vao.render_forward_pass(instances=1024)
+        self.vao.render(instances=1024)
 
 
 if __name__ == '__main__':

@@ -79,7 +79,7 @@ class MugExample(Example):
 
         # mug
         self.ctx.enable_only(moderngl.DEPTH_TEST)
-        self.mug_vao.render_forward_pass()
+        self.mug_vao.render()
 
         # sticker
         self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND)
