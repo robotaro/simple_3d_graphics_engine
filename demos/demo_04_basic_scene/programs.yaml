@@ -6,6 +6,10 @@ fragment_picking:
   vertex_shader: "fragment_picking.glsl"
   fragment_shader: "fragment_picking.glsl"
 
+texture:
+  vertex_shader: "texture.glsl"
+  fragment_shader: "texture.glsl"
+
 fragment_visualizer:
   vertex_shader: "visualize.glsl"
   fragment_shader: "visualize.glsl"

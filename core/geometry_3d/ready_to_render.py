@@ -10,11 +10,12 @@ make sure to set the right GLSL variable names
 def quad_2d(context: moderngl.Context,
             program: moderngl.Program,
             vertices_glsl_name="in_vertices",
-            normals_glsl_name="in_normals",
             uvs_glsl_name="in_uvs",
             size=(1.0, 1.0),
             pos=(0.0, 0.0)) -> dict:
     """
+    A Quad designed to be used as a rendering area on the screen
+
     Rendering Method: TRIANGLES
 
     :param program: ModernGL program
@@ -39,14 +40,14 @@ def quad_2d(context: moderngl.Context,
         xpos + width / 2.0, ypos + height / 2.0, 0.0,
     ], dtype=np.float32)
 
-    normals = np.array([
+    """normals = np.array([
         0.0, 0.0, 1.0,
         0.0, 0.0, 1.0,
         0.0, 0.0, 1.0,
         0.0, 0.0, 1.0,
         0.0, 0.0, 1.0,
         0.0, 0.0, 1.0,
-    ], dtype=np.float32)
+    ], dtype=np.float32)"""
 
     uvs = np.array([
         0.0, 1.0,
@@ -59,19 +60,17 @@ def quad_2d(context: moderngl.Context,
 
     # Create VBOs
     vbo_vertices = context.buffer(vertices.astype("f4").tobytes())
-    vbo_normals = context.buffer(normals.astype("f4").tobytes())
+    #vbo_normals = context.buffer(normals.astype("f4").tobytes())
     vbo_uvs = context.buffer(uvs.astype("f4").tobytes())
 
     return {
         "program": program,
         "vbo_vertices": vbo_vertices,
-        "vbo_normals": vbo_normals,
         "vbo_uvs": vbo_uvs,
         "vao": context.vertex_array(
                 program,
                 [
                     (vbo_vertices, '3f', vertices_glsl_name),
-                    (vbo_normals, '3f', normals_glsl_name),
                     (vbo_uvs, '2f', uvs_glsl_name)
                 ],
             )
