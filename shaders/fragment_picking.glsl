@@ -1,10 +1,6 @@
-#version 400
-//
-// Picks a point from the depth buffer and returns the position in camera space, along with the object and triangle id
-// Adapted from https://github.com/moderngl/moderngl-window/blob/master/examples/resources/programs/fragment_picking/picker.glsl
-//
-
 #if defined VERTEX_SHADER
+
+#version 400
 
 uniform sampler2D position_texture;
 uniform sampler2D obj_info_texture;
@@ -31,4 +27,28 @@ void main() {
         out_instance_id = int(texelFetch(obj_info_texture, texel_pos, 0).b);
     }
 }
+
+#elif defined FRAGMENT_SHADER
+
+#version 400
+
+layout(location=0) out vec4 out_position;
+layout(location=1) out vec4 out_obj_info;
+
+in vec3 local_pos;
+in vec4 pos;
+flat in int instance_id;
+
+int tri_id = gl_PrimitiveID;
+uniform int obj_id;
+
+#include clipping.glsl
+
+void main() {
+    discard_if_clipped(local_pos);
+
+    out_obj_info = vec4(obj_id, tri_id, instance_id, 0.0);
+    out_position = pos;
+}
+
 #endif

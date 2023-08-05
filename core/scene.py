@@ -54,7 +54,39 @@ class Scene:
                                      context: moderngl.Context,
                                      shader_library: ShaderLibrary,
                                      viewport: Viewport):
-        pass
+
+        meshes = []
+        self._root_node.get_nodes_by_type(_type="mesh", output_list=meshes)
+
+        # Same fragment picking program for all meshes
+        program = shader_library.get_program("fragment_picking")
+
+        # [ Stage : Fragment Picking Pass ]
+        for mesh in meshes:
+
+            # Set camera uniforms
+            self.upload_camera_uniforms(program=program,
+                                        camera=viewport.camera,
+                                        viewport_width=viewport.width,
+                                        viewport_height=viewport.height)
+
+            # Render with the specified object uid, if None use the node uid instead.
+            program["obj_id"] = mesh.uid
+
+            if self.backface_culling or self.backface_fragmap:
+                context.enable(moderngl.CULL_FACE)
+            else:
+                context.disable(moderngl.CULL_FACE)
+
+            # If backface_fragmap is enabled for this node only render backfaces
+            if self.backface_fragmap:
+                context.cull_face = "front"
+
+            self.render_positions(prog)
+
+            # Restore cull face to back
+            if self.backface_fragmap:
+                context.cull_face = "back"
 
     def render_forward_pass(self, context: moderngl.Context, shader_library: ShaderLibrary, viewport: Viewport):
         # REMEMBER THIS:  Scene rendering is during the FORWARD PASS!

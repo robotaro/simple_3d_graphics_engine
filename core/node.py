@@ -98,19 +98,9 @@ class Node:
     # =========================================================================
 
     def make_renderable(self, mlg_context: moderngl.Context, shader_library: ShaderLibrary, **kwargs):
+        # TODO: The order should be controlled by the
         for child in self._children:
             child.make_renderable(mlg_context=mlg_context, shader_library=shader_library, **kwargs)
-
-    def render_shadow_pass(self, **kwargs):
-        pass
-
-    def render_forward_pass(self, program: moderngl.Program):
-        for child in self._children:
-            child.render_forward_pass(program=program)
-
-    def render_fragment_picking_pass(self, **kwargs):
-        for child in self._children:
-            child.render_fragment_picking(**kwargs)
 
     def upload_buffers(self):
         pass

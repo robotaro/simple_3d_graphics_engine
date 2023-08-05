@@ -2,9 +2,13 @@ simple_mesh:
   vertex_shader: "demo_shaders/simple_mesh.glsl"
   fragment_shader: "demo_shaders/simple_mesh.glsl"
 
-#mesh:
-#  vertex_shader: "default_mesh.glsl"
-#  fragment_shader: "default_mesh.glsl"
+fragment_picking:
+  vertex_shader: "fragment_picking.glsl"
+  fragment_shader: "fragment_picking.glsl"
+
+fragment_visualizer:
+  vertex_shader: "visualize.glsl"
+  fragment_shader: "visualize.glsl"
 
 mesh_with_lights:
   vertex_shader: "mesh_with_lights.glsl"

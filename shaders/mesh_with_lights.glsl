@@ -20,6 +20,8 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
+#version 400
+
 // Input Buffers
 in vec3 v_normal;
 in vec3 v_position;

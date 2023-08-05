@@ -1,4 +1,5 @@
 import moderngl
+import numpy as np
 from typing import List, Tuple
 
 from core import constants
@@ -53,9 +54,9 @@ class Renderer:
         self.render_shadowmap(scene=scene)
 
         for viewport in viewports:
-            self._fragment_map_pass(scene=scene, viewport=viewport)
-            self._forward_pass(scene=scene, viewport=viewport)
-            self._outline_pass(scene=scene, viewport=viewport)
+            self.fragment_map_pass(scene=scene, viewport=viewport)
+            self.forward_pass(scene=scene, viewport=viewport)
+            self.outline_pass(scene=scene, viewport=viewport)
 
     def set_camera_matrices(self, prog, camera, **kwargs):
         """Set the model view projection matrix in the given program."""
@@ -99,7 +100,7 @@ class Renderer:
     #                         Render Pass functions
     # =========================================================================
 
-    def _forward_pass(self, scene: Scene, viewport: Viewport):
+    def forward_pass(self, scene: Scene, viewport: Viewport):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
@@ -114,7 +115,7 @@ class Renderer:
             blue=scene._background_color[2],
             alpha=0.0,
             depth=1.0,
-            viewport=viewport.get_tuple())
+            viewport=viewport.to_tuple())
 
         # Prepare context flags for rendering
         self.window.context.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)
@@ -130,16 +131,16 @@ class Renderer:
                                   shader_library=self.shader_library,
                                   viewport=viewport)
 
-    def _fragment_map_pass(self, scene: Scene, viewport: Viewport):
+    def fragment_map_pass(self, scene: Scene, viewport: Viewport):
         self.window.context.enable_only(moderngl.DEPTH_TEST)
         self.framebuffer_offscreen_picking.use()
-        self.framebuffer_offscreen_picking.viewport = viewport
+        self.framebuffer_offscreen_picking.viewport = viewport.to_tuple()
 
         scene.render_fragment_picking_pass(context=self.window.context,
                                            shader_library=self.shader_library,
                                            viewport=viewport)
 
-    def _outline_pass(self, scene: Scene, viewport: Viewport):
+    def outline_pass(self, scene: Scene, viewport: Viewport):
         #print("[Renderer] _outline_pass")
         pass
 
@@ -165,3 +166,4 @@ class Renderer:
             if take_pass:
                 self.render_pass_shadow_mapping(scene, ln, flags)"""
         pass
+
