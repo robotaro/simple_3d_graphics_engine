@@ -9,6 +9,7 @@ from core.scene import Scene
 from core.scene import Camera
 from core.viewport import Viewport
 from core.utilities import utils_logging
+from core.geometry_3d import ready_to_render
 
 
 class Renderer:
@@ -32,6 +33,9 @@ class Renderer:
         # Create programs
         self.shadow_map_program = None
         self.fragment_picker_program = None
+
+        # Debuging variables
+        self.quad_debug = ready_to_render.quad_2d(context=window.context, program=self.shader_library["texture"])
 
         self.logger = utils_logging.get_project_logger()
 

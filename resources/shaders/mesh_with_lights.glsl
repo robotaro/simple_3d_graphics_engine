@@ -29,7 +29,6 @@ in vec3 v_position;
 // Output buffers
 out vec4 out_fragment_color;
 
-
 // Uniforms
 uniform mat4 view_matrix;
 uniform vec4 uColor = vec4(1.0, 0.5, 0.1, 1.0);

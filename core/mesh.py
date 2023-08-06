@@ -82,7 +82,7 @@ class Mesh(Node):
             self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
             vbo_list.append((self.vbo_normals, "3f", "in_normal"))
 
-        program = shader_library.get_program(self.forward_pass_program_name)
+        program = shader_library[self.forward_pass_program_name]
 
         if self.faces is None:
             self.vao = mlg_context.vertex_array(program, vbo_list)

@@ -42,7 +42,7 @@ class ShaderLibrary:
 
         self.compile_programs()
 
-    def get_program(self, program_id: str) -> moderngl.Program:
+    def __getitem__(self, program_id: str):
         if program_id not in self.programs:
             raise KeyError(f"[ERROR] Program ID '{program_id}' is not present in the program library")
         return self.programs.get(program_id, None)
@@ -245,15 +245,13 @@ class ShaderLibrary:
                     vertex_shader=vertex_source,
                     geometry_shader=geometry_source,
                     fragment_shader=fragment_source)
-                self.programs[key] = {
-                    "name": compiled_program
-                }
+
             except Exception as error:
                 # TODO: Sort out how you want this
                 raise Exception(f"[ERROR] Program '{key}' did not compile. "
                                 f"Here are the errors:\n\n[{key}]\n\n{error.args[0]}")
-            self.programs[key] = compiled_program
 
+            self.programs[key] = compiled_program
 
 
 

@@ -2,7 +2,7 @@
 
 #if defined VERTEX_SHADER
 
-in vec3 in_vertices;
+in vec3 in_position;
 in vec2 in_texcoord_0;
 out vec2 uv0;
 

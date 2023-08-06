@@ -59,7 +59,7 @@ class Scene:
         self._root_node.get_nodes_by_type(_type="mesh", output_list=meshes)
 
         # Same fragment picking program for all meshes
-        program = shader_library.get_program("fragment_picking")
+        program = shader_library["fragment_picking"]
 
         # [ Stage : Fragment Picking Pass ]
         for mesh in meshes:
@@ -71,22 +71,22 @@ class Scene:
                                         viewport_height=viewport.height)
 
             # Render with the specified object uid, if None use the node uid instead.
-            program["obj_id"] = mesh.uid
+            program["object_id"] = mesh.uid
 
-            if self.backface_culling or self.backface_fragmap:
-                context.enable(moderngl.CULL_FACE)
-            else:
-                context.disable(moderngl.CULL_FACE)
+            #if self.backface_culling or self.backface_fragmap:
+            context.enable(moderngl.CULL_FACE)
+            #else:
+            #    context.disable(moderngl.CULL_FACE)
 
             # If backface_fragmap is enabled for this node only render backfaces
-            if self.backface_fragmap:
-                context.cull_face = "front"
+            #if self.backface_fragmap:
+            #    context.cull_face = "front"
 
-            self.render_positions(prog)
+            mesh.render_forward_pass(program)
 
             # Restore cull face to back
-            if self.backface_fragmap:
-                context.cull_face = "back"
+            #if self.backface_fragmap:
+            #    context.cull_face = "back"
 
     def render_forward_pass(self, context: moderngl.Context, shader_library: ShaderLibrary, viewport: Viewport):
         # REMEMBER THIS:  Scene rendering is during the FORWARD PASS!
@@ -101,7 +101,7 @@ class Scene:
         for mesh in meshes:
             # TODO: Skip mesh if invisible
 
-            program = shader_library.get_program(mesh.forward_pass_program_name)
+            program = shader_library[mesh.forward_pass_program_name]
 
             # Set camera uniforms
             self.upload_camera_uniforms(program=program,
