@@ -64,6 +64,11 @@ class BasicScene(Window):
 
         # DEBUG
         self.scene._root_node.print_hierarchy()
+        self.renderer.load_texture_from_file(texture_fpath=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\demos\demo_04_basic_scene\ball.png",
+                                             texture_id="ball",
+                                             datatype="u8")
+
+        self.renderer.initialize()
 
     def update(self, delta_time: float):
         self.mesh.transform = mat4.compute_transform(position=(0, 0, 0),

@@ -1,6 +1,8 @@
 import moderngl
+from PIL import Image
 import numpy as np
 from typing import List, Tuple
+from array import array
 
 from core import constants
 from core.window import Window
@@ -25,8 +27,6 @@ class Renderer:
         self.textures = {}
         self.samplers = {}
         self.quads = {}
-
-        self.initialize()
 
         # Create Framebuffers
         self.texture_offscreen_picking_depth = None
@@ -75,23 +75,79 @@ class Renderer:
             compare_func='',
         )
 
+        # Shaders
+        self.shader_library["texture"]["texture0"].value = 0
+        self.shader_library["mesh_offscreen"]["texture0"].value = 0
+
         # Quads
         self.quads["normals"] = ready_to_render.quad_2d(context=self.window.context,
-                                                        size=(0.25, 0.25), position=(0.75, 0.875),
+                                                        size=(0.25, 0.25),
+                                                        position=(0.75, 0.875),
                                                         program=self.shader_library["texture"])
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.window.context,
-                                                      program=self.shader_library["texture"])
+                                                           program=self.shader_library["texture"])
 
-        # Set Texture binding locations (sticks with the program?)
-        self.shader_library["texture"]["texture0"].value = 0
-        self.shader_library["mesh_offcreen"]["texture0"].value = 0
+
+        # DEBUG
+        self.program = self.window.context.program(
+            vertex_shader="""
+                            #version 330
+
+                            in vec2 in_position;
+                            in vec2 in_uv;
+                            out vec2 uv;
+
+                            void main() {
+                                gl_Position = vec4(in_position, 0.0, 1.0);
+                                uv = in_uv;
+                            }
+                        """,
+            fragment_shader="""
+                            #version 330
+
+                            uniform sampler2D image;
+                            in vec2 uv;
+                            out vec4 out_color;
+
+                            void main() {
+                                // Get the Red, green, blue values from the image
+                                float red = texture(image, uv).r;
+                                // Offset green and blue
+                                float green = texture(image, uv+(1.0/20.0)).g;
+                                float blue = texture(image, uv+(2.0/20.0)).b;
+                                float alpha = texture(image, uv).a;
+
+                                out_color = vec4(red, green, blue, alpha);
+                            }
+                        """,
+        )
+
+        self.vertices = self.window.context.buffer(
+            array(
+                'f',
+                [
+                    # Triangle strip creating a fullscreen quad
+                    # x, y, u, v
+                    -1, 1, 0, 1,  # upper left
+                    -1, -1, 0, 0,  # lower left
+                    1, 1, 1, 1,  # upper right
+                    1, -1, 1, 0,  # lower right
+                ]
+            )
+        )
+        self.quad = self.window.context.vertex_array(
+            self.program,
+            [
+                (self.vertices, '2f 2f', 'in_position', 'in_uv'),
+            ]
+        )
 
     def create_framebuffers(self):
 
         # Release framebuffers if they already exist.
-        def safe_release(b):
-            if b is not None:
-                b.release()
+        def safe_release(buffer):
+            if buffer is not None:
+                buffer.release()
 
         safe_release(self.texture_offscreen_picking_depth)
         safe_release(self.texture_offscreen_picking_viewpos)
@@ -113,6 +169,16 @@ class Renderer:
         # Outline rendering
         self.outline_texture = self.window.context.texture(self.window.buffer_size, 1, dtype="f4")
         self.outline_framebuffer = self.window.context.framebuffer(color_attachments=[self.outline_texture])
+
+    def load_texture_from_file(self, texture_fpath: str, texture_id: str, datatype="f4"):
+        if texture_id in self.textures:
+            raise KeyError(f"[ERROR] Texture ID '{texture_id}' already exists")
+
+        image = Image.open(texture_fpath)
+        image_data = np.array(image)
+        self.textures[texture_id] = self.window.context.texture(size=image.size,
+                                                                components=image_data.shape[-1],
+                                                                data=image_data.tobytes())
 
     # =========================================================================
     #                         Render functions
@@ -138,37 +204,56 @@ class Renderer:
 
         for viewport in viewports:
 
-            #self.offscreen_pass(scene=scene, viewport=viewport)
+            self.demo_pass(viewport=viewport)
+
+            #self.offscreen_and_onscreen_pass(scene=scene, viewport=viewport)
 
             #self.fragment_map_pass(scene=scene, viewport=viewport)
-            self.forward_pass(scene=scene, viewport=viewport)
+            #self.forward_pass(scene=scene, viewport=viewport)
             #self.outline_pass(scene=scene, viewport=viewport)
 
-    def offscreen_pass(self, scene: Scene, viewport: Viewport):
+    def demo_pass(self, viewport: Viewport):
+
+        if "ball" not in self.textures:
+            return
+
+        self.window.context.screen.use()
+
+        self.textures["ball"].use(0)
+        #self.quad.render(mode=moderngl.TRIANGLE_STRIP)
+        self.quads["fullscreen"]["vao"].render(mode=moderngl.TRIANGLES)
+
+    def offscreen_and_onscreen_pass(self, scene: Scene, viewport: Viewport):
+
+        self.window.context.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
+
+        # =================[ Offscreen Rendering ]=====================
         self.framebuffers["offscreen"].clear()
         self.framebuffers["offscreen"].use()
 
-        # self.quads["fullscreen"]
+        mesh_program = self.shader_library["mesh_offscreen"]
 
-        self.upload_camera_uniforms(program=self.shader_library["mesh_offscreen"], viewport=viewport)
-        self.geometry_program['projection'].write(self.projection.matrix)
-        self.mesh_texture.use(location=0)  # bind texture from obj file to channel 0
-        self.depth_sampler.use(location=0)
-        self.mesh.render(self.geometry_program)  # render mesh
-        self.depth_sampler.clear(location=0)
+        self.upload_camera_uniforms(program=mesh_program, viewport=viewport)
 
+        self.samplers["depth_sampler"].use(location=0)
         meshes = scene.get_nodes_by_type(node_type="mesh")
+        for mesh in meshes:
 
-        #for mesh in meshes:
+            if mesh._vbo_dirty_flag:
+                mesh.upload_buffers()
+                mesh._vbo_dirty_flag = False
 
+            # Upload uniforms
+            mesh_program["model_matrix"].write(mesh.transform.T.astype('f4').tobytes())
+            mesh.vao.render()
 
-        # Activate the window as the render target
-        self.ctx.screen.use()
-        self.ctx.disable(moderngl.DEPTH_TEST)
+        self.samplers["depth_sampler"].clear(location=0)
 
-        # Render offscreen diffuse layer to screen
-        self.offscreen_diffuse.use(location=0)
-        self.quad_fs.render(self.texture_program)
+        self.window.context.screen.use()
+        self.window.context.disable(moderngl.DEPTH_TEST)
+
+        self.textures["offscreen_color"].use(location=0)
+        self.quads["fullscreen"]["vao"].render()
 
     def forward_pass(self, scene: Scene, viewport: Viewport):
 
@@ -197,11 +282,8 @@ class Renderer:
             moderngl.ONE)
 
         # Render scene
-        light_nodes = []
-        scene._root_node.get_nodes_by_type(node_type="directional_light", output_list=light_nodes)
-
-        meshes = []
-        scene._root_node.get_nodes_by_type(node_type="mesh", output_list=meshes)
+        light_nodes = scene.get_nodes_by_type(node_type="directional_light")
+        meshes = scene.get_nodes_by_type(node_type="mesh")
 
         # [ Stage : Forward Pass ]
         for mesh in meshes:
@@ -221,8 +303,7 @@ class Renderer:
                 mesh._vbo_dirty_flag = False
 
             # Upload uniforms
-            model_matrix_bytes = mesh.transform.T.astype('f4').tobytes()
-            program["model_matrix"].write(model_matrix_bytes)
+            program["model_matrix"].write(mesh.transform.T.astype('f4').tobytes())
 
             # Render the vao at the end
             mesh.vao.render(moderngl.TRIANGLES)

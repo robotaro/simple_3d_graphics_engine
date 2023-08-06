@@ -9,8 +9,8 @@ make sure to set the right GLSL variable names
 
 def quad_2d(context: moderngl.Context,
             program: moderngl.Program,
-            vertices_glsl_name="in_vertices",
-            uvs_glsl_name="in_uvs",
+            vertices_glsl_name="in_position",
+            uvs_glsl_name="in_uv",
             size=(1.0, 1.0),
             position=(0.0, 0.0)) -> dict:
     """

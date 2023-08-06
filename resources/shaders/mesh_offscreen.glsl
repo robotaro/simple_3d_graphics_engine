@@ -27,6 +27,7 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
+// These locations are the indices of the textures that are listed when the framebuffer is created
 layout(location=0) out vec4 out_color;
 layout(location=1) out vec4 out_normal;
 layout(location=2) out vec4 out_position;
@@ -35,7 +36,7 @@ in vec3 position;
 in vec3 normal;
 in vec2 uv;
 
-uniform sampler2D texture0;  // Bind this to "location = 0" in python!
+uniform sampler2D texture0;
 
 void main() {
     out_color = texture(texture0, uv);
