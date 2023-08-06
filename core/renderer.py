@@ -87,61 +87,6 @@ class Renderer:
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.window.context,
                                                            shader_library=self.shader_library)
 
-
-        # DEBUG
-        self.program = self.window.context.program(
-            vertex_shader="""
-                            #version 330
-
-                            in vec2 in_position;
-                            in vec2 in_uv;
-                            out vec2 uv;
-
-                            void main() {
-                                gl_Position = vec4(in_position, 0.0, 1.0);
-                                uv = in_uv;
-                            }
-                        """,
-            fragment_shader="""
-                            #version 330
-
-                            uniform sampler2D image;
-                            in vec2 uv;
-                            out vec4 out_color;
-
-                            void main() {
-                                // Get the Red, green, blue values from the image
-                                float red = texture(image, uv).r;
-                                // Offset green and blue
-                                float green = texture(image, uv+(1.0/20.0)).g;
-                                float blue = texture(image, uv+(2.0/20.0)).b;
-                                float alpha = texture(image, uv).a;
-
-                                out_color = vec4(red, green, blue, alpha);
-                            }
-                        """,
-        )
-
-        self.vertices = self.window.context.buffer(
-            array(
-                'f',
-                [
-                    # Triangle strip creating a fullscreen quad
-                    # x, y, u, v
-                    -1, 1, 0, 1,  # upper left
-                    -1, -1, 0, 0,  # lower left
-                    1, 1, 1, 1,  # upper right
-                    1, -1, 1, 0,  # lower right
-                ]
-            )
-        )
-        self.quad = self.window.context.vertex_array(
-            self.program,
-            [
-                (self.vertices, '2f 2f', 'in_position', 'in_uv'),
-            ]
-        )
-
     def create_framebuffers(self):
 
         # Release framebuffers if they already exist.
@@ -204,12 +149,12 @@ class Renderer:
 
         for viewport in viewports:
 
-            self.demo_pass(viewport=viewport)
+            #self.demo_pass(viewport=viewport)
 
             #self.offscreen_and_onscreen_pass(scene=scene, viewport=viewport)
 
             #self.fragment_map_pass(scene=scene, viewport=viewport)
-            #self.forward_pass(scene=scene, viewport=viewport)
+            self.forward_pass(scene=scene, viewport=viewport)
             #self.outline_pass(scene=scene, viewport=viewport)
 
     def demo_pass(self, viewport: Viewport):
@@ -218,9 +163,7 @@ class Renderer:
             return
 
         self.window.context.screen.use()
-
         self.textures["ball"].use(0)
-        #self.quad.render(mode=moderngl.TRIANGLE_STRIP)
         self.quads["fullscreen"]["vao"].render(mode=moderngl.TRIANGLES)
 
     def offscreen_and_onscreen_pass(self, scene: Scene, viewport: Viewport):
@@ -252,7 +195,7 @@ class Renderer:
         self.window.context.screen.use()
         self.window.context.disable(moderngl.DEPTH_TEST)
 
-        self.textures["offscreen_color"].use(location=0)
+        self.textures["offscreen_diffuse"].use(location=0)
         self.quads["fullscreen"]["vao"].render()
 
     def forward_pass(self, scene: Scene, viewport: Viewport):
@@ -260,7 +203,7 @@ class Renderer:
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
         # Bind screen context to draw to it
-        self.window.context.screen.use()
+        #self.window.context.screen.use()
 
         # TODO: maybe move this to inside the scene?
         # Clear context (you need to use the use() first to bind it!)
@@ -280,6 +223,8 @@ class Renderer:
             moderngl.ONE_MINUS_SRC_ALPHA,
             moderngl.ONE,
             moderngl.ONE)
+        self.framebuffers["offscreen"].clear()
+        self.framebuffers["offscreen"].use()
 
         # Render scene
         light_nodes = scene.get_nodes_by_type(node_type="directional_light")
@@ -307,6 +252,11 @@ class Renderer:
 
             # Render the vao at the end
             mesh.vao.render(moderngl.TRIANGLES)
+
+        # DEBUG
+        self.window.context.screen.use()
+        self.textures["offscreen_diffuse"].use(0)
+        self.quads["fullscreen"]["vao"].render(mode=moderngl.TRIANGLES)
 
         # Stage: Draw transparent objects back to front
 

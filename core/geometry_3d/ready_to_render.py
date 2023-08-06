@@ -15,7 +15,12 @@ def quad_2d(context: moderngl.Context,
             size=(1.0, 1.0),
             position=(0.0, 0.0)) -> dict:
     """
-    A Quad designed to be used as a rendering area on the screen
+    A Quad designed to be used as a rendering area on the screen.
+
+    The center of the screen is (0, 0), the upper right corner is (1, 1) and the
+    lower left corner is (-1, -1).
+
+    TODO: Consider changing these coordinates to pixels if useful
 
     Rendering Method: TRIANGLES
 
@@ -33,22 +38,13 @@ def quad_2d(context: moderngl.Context,
 
     # fmt: off
     vertices = np.array([
-        xpos - width / 2.0, ypos + height / 2.0, 0.0,
-        xpos - width / 2.0, ypos - height / 2.0, 0.0,
-        xpos + width / 2.0, ypos - height / 2.0, 0.0,
-        xpos - width / 2.0, ypos + height / 2.0, 0.0,
-        xpos + width / 2.0, ypos - height / 2.0, 0.0,
-        xpos + width / 2.0, ypos + height / 2.0, 0.0,
+        xpos, ypos + height, 0.0,
+        xpos, ypos, 0.0,
+        xpos + width, ypos, 0.0,
+        xpos, ypos + height, 0.0,
+        xpos + width, ypos, 0.0,
+        xpos + width, ypos + height, 0.0,
     ], dtype=np.float32)
-
-    """normals = np.array([
-        0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0,
-    ], dtype=np.float32)"""
 
     uvs = np.array([
         0.0, 1.0,
@@ -61,7 +57,6 @@ def quad_2d(context: moderngl.Context,
 
     # Create VBOs
     vbo_vertices = context.buffer(vertices.astype("f4").tobytes())
-    #vbo_normals = context.buffer(normals.astype("f4").tobytes())
     vbo_uvs = context.buffer(uvs.astype("f4").tobytes())
 
     return {
