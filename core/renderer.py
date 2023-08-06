@@ -50,7 +50,7 @@ class Renderer:
         self.fragment_picker_program = None
 
         # Debugging variables
-        self.quad_debug = ready_to_render.quad_2d(context=window.context, program=self.shader_library["texture"])
+        self.quad_debug = ready_to_render.quad_2d(context=window.context, shader_library=self.shader_library)
 
         self.logger = utils_logging.get_project_logger()
 
@@ -83,9 +83,9 @@ class Renderer:
         self.quads["normals"] = ready_to_render.quad_2d(context=self.window.context,
                                                         size=(0.25, 0.25),
                                                         position=(0.75, 0.875),
-                                                        program=self.shader_library["texture"])
+                                                        shader_library=self.shader_library)
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.window.context,
-                                                           program=self.shader_library["texture"])
+                                                           shader_library=self.shader_library)
 
 
         # DEBUG

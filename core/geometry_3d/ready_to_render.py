@@ -1,5 +1,6 @@
 import moderngl
 import numpy as np
+from core.shader_library import ShaderLibrary
 
 """
 These meshes are designed to be created with the taget program you have in mind, so
@@ -8,7 +9,7 @@ make sure to set the right GLSL variable names
 
 
 def quad_2d(context: moderngl.Context,
-            program: moderngl.Program,
+            shader_library: ShaderLibrary,
             vertices_glsl_name="in_position",
             uvs_glsl_name="in_uv",
             size=(1.0, 1.0),
@@ -67,7 +68,7 @@ def quad_2d(context: moderngl.Context,
         "vbo_vertices": vbo_vertices,
         "vbo_uvs": vbo_uvs,
         "vao": context.vertex_array(
-                program,
+                shader_library["texture"],
                 [
                     (vbo_vertices, '3f', vertices_glsl_name),
                     (vbo_uvs, '2f', uvs_glsl_name)
