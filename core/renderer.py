@@ -25,7 +25,8 @@ class Renderer:
         self.textures = {}
         self.samplers = {}
         self.quads = {}
-        self.initialise_debug()
+
+        self.initialize()
 
         # Create Framebuffers
         self.texture_offscreen_picking_depth = None
@@ -53,16 +54,18 @@ class Renderer:
 
         self.logger = utils_logging.get_project_logger()
 
-    def initialise_debug(self):
+    def initialize(self):
 
         self.textures["offscreen_diffuse"] = self.window.context.texture(self.window.buffer_size, 4)
         self.textures["offscreen_normals"] = self.window.context.texture(self.window.buffer_size, 4, dtype='f2')
+        self.textures["offscreen_viewpos"] = self.window.context.texture(self.window.buffer_size, 4, dtype='f4')
         self.textures["offscreen_depth"] = self.window.context.depth_texture(self.window.buffer_size)
 
         self.framebuffers["offscreen"] = self.window.context.framebuffer(
             color_attachments=[
                 self.textures["offscreen_diffuse"],
                 self.textures["offscreen_normals"],
+                self.textures["offscreen_viewpos"],
             ],
             depth_attachment=self.textures["offscreen_depth"],
         )
@@ -72,11 +75,16 @@ class Renderer:
             compare_func='',
         )
 
+        # Quads
         self.quads["normals"] = ready_to_render.quad_2d(context=self.window.context,
                                                         size=(0.25, 0.25), position=(0.75, 0.875),
                                                         program=self.shader_library["texture"])
-        self.quads["depth"] = ready_to_render.quad_2d(context=self.window.context,
+        self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.window.context,
                                                       program=self.shader_library["texture"])
+
+        # Set Texture binding locations (sticks with the program?)
+        self.shader_library["texture"]["texture0"].value = 0
+        self.shader_library["mesh_offcreen"]["texture0"].value = 0
 
     def create_framebuffers(self):
 
@@ -130,11 +138,37 @@ class Renderer:
 
         for viewport in viewports:
 
-            self.offscreen_pass(scene=scene, viewport=viewport)
+            #self.offscreen_pass(scene=scene, viewport=viewport)
 
-            self.fragment_map_pass(scene=scene, viewport=viewport)
+            #self.fragment_map_pass(scene=scene, viewport=viewport)
             self.forward_pass(scene=scene, viewport=viewport)
-            self.outline_pass(scene=scene, viewport=viewport)
+            #self.outline_pass(scene=scene, viewport=viewport)
+
+    def offscreen_pass(self, scene: Scene, viewport: Viewport):
+        self.framebuffers["offscreen"].clear()
+        self.framebuffers["offscreen"].use()
+
+        # self.quads["fullscreen"]
+
+        self.upload_camera_uniforms(program=self.shader_library["mesh_offscreen"], viewport=viewport)
+        self.geometry_program['projection'].write(self.projection.matrix)
+        self.mesh_texture.use(location=0)  # bind texture from obj file to channel 0
+        self.depth_sampler.use(location=0)
+        self.mesh.render(self.geometry_program)  # render mesh
+        self.depth_sampler.clear(location=0)
+
+        meshes = scene.get_nodes_by_type(node_type="mesh")
+
+        #for mesh in meshes:
+
+
+        # Activate the window as the render target
+        self.ctx.screen.use()
+        self.ctx.disable(moderngl.DEPTH_TEST)
+
+        # Render offscreen diffuse layer to screen
+        self.offscreen_diffuse.use(location=0)
+        self.quad_fs.render(self.texture_program)
 
     def forward_pass(self, scene: Scene, viewport: Viewport):
 
@@ -164,10 +198,10 @@ class Renderer:
 
         # Render scene
         light_nodes = []
-        scene._root_node.get_nodes_by_type(_type="directional_light", output_list=light_nodes)
+        scene._root_node.get_nodes_by_type(node_type="directional_light", output_list=light_nodes)
 
         meshes = []
-        scene._root_node.get_nodes_by_type(_type="mesh", output_list=meshes)
+        scene._root_node.get_nodes_by_type(node_type="mesh", output_list=meshes)
 
         # [ Stage : Forward Pass ]
         for mesh in meshes:
@@ -181,8 +215,17 @@ class Renderer:
             # Set light uniforms
             # program["ambient_strength"] = self._ambient_light_color
 
-            # Se model uniforms
-            mesh.render_forward_pass(program=program)
+            # Upload buffers ONLY if necessary
+            if mesh._vbo_dirty_flag:
+                mesh.upload_buffers()
+                mesh._vbo_dirty_flag = False
+
+            # Upload uniforms
+            model_matrix_bytes = mesh.transform.T.astype('f4').tobytes()
+            program["model_matrix"].write(model_matrix_bytes)
+
+            # Render the vao at the end
+            mesh.vao.render(moderngl.TRIANGLES)
 
         # Stage: Draw transparent objects back to front
 
@@ -192,7 +235,7 @@ class Renderer:
         self.framebuffer_offscreen_picking.viewport = viewport.to_tuple()
 
         meshes = []
-        scene._root_node.get_nodes_by_type(_type="mesh", output_list=meshes)
+        scene._root_node.get_nodes_by_type(node_type="mesh", output_list=meshes)
 
         # Same fragment picking program for all meshes
         program = self.shader_library["fragment_picking"]
@@ -213,8 +256,6 @@ class Renderer:
             # If backface_fragmap is enabled for this node only render backfaces
             # if self.backface_fragmap:
             #    context.cull_face = "front"
-
-            mesh.render_forward_pass(program)
 
             # Restore cull face to back
             # if self.backface_fragmap:
@@ -246,10 +287,6 @@ class Renderer:
             if take_pass:
                 self.render_pass_shadow_mapping(scene, ln, flags)"""
         pass
-
-    def offscreen_pass(self, scene: Scene, viewport: Viewport):
-        self.framebuffers["offscreen"].clear()
-        self.framebuffers["offscreen"].use()
 
 
     @staticmethod

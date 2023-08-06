@@ -66,13 +66,13 @@ class Node:
     #                         Utility functions
     # =========================================================================
 
-    def get_nodes_by_type(self, _type: str, output_list: list) -> None:
+    def get_nodes_by_type(self, node_type: str, output_list: list) -> None:
 
-        if self._type == _type:
+        if self._type == node_type:
             output_list.append(self)
 
         for child in self._children:
-            child.get_nodes_by_type(_type=_type, output_list=output_list)
+            child.get_nodes_by_type(node_type=node_type, output_list=output_list)
 
     def get_node_by_name(self, name: str) -> "Node":
 

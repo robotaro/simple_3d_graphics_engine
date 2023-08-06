@@ -44,6 +44,15 @@ class Scene:
         # Flags
 
     # =========================================================================
+    #                         Setters and getters
+    # =========================================================================
+
+    def get_nodes_by_type(self, node_type: str) -> list:
+        meshes = []
+        self._root_node.get_nodes_by_type(node_type=node_type, output_list=meshes)
+        return meshes
+
+    # =========================================================================
     #                         Create functions
     # =========================================================================
 

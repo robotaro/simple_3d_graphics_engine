@@ -10,9 +10,9 @@ texture:
   vertex_shader: "texture.glsl"
   fragment_shader: "texture.glsl"
 
-fragment_visualizer:
-  vertex_shader: "visualize.glsl"
-  fragment_shader: "visualize.glsl"
+mesh_offcreen:
+  vertex_shader: "mesh_offscreen.glsl"
+  fragment_shader: "mesh_offscreen.glsl"
 
 mesh_with_lights:
   vertex_shader: "mesh_with_lights.glsl"

@@ -92,50 +92,6 @@ class Mesh(Node):
 
         # TODO: Add instance-based code
 
-    def render_shadow_pass(self, **kwargs):
-        pass
-
-    def render_forward_pass(self, program: moderngl.Program):
-
-        # Upload buffers ONLY if necessary
-        if self._vbo_dirty_flag:
-            self.upload_buffers()
-            self._vbo_dirty_flag = False
-
-        # Upload uniforms
-        model_matrix_bytes = self.transform.T.astype('f4').tobytes()
-        program["model_matrix"].write(model_matrix_bytes)
-
-        # Render the vao at the end
-        self.vao.render(moderngl.TRIANGLES)
-
-    def render_fragment_picking(self, **kwargs):
-
-        """
-        # Transpose because np is row-major but OpenGL expects column-major.
-        prog = self.fragmap_program
-        self.set_camera_matrices(prog, camera)
-
-        # Render with the specified object uid, if None use the node uid instead.
-        prog["obj_id"] = uid or self.uid
-
-        if self.backface_culling or self.backface_fragmap:
-            ctx.enable(moderngl.CULL_FACE)
-        else:
-            ctx.disable(moderngl.CULL_FACE)
-
-        # If backface_fragmap is enabled for this node only render backfaces
-        if self.backface_fragmap:
-            ctx.cull_face = "front"
-
-        self.render_positions(prog)
-
-        # Restore cull face to back
-        if self.backface_fragmap:
-            ctx.cull_face = "back"
-        """
-        pass
-
     def upload_buffers(self):
 
         print(f"[{self._type} | {self.name}] update_buffers")
