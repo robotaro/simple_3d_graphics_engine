@@ -12,7 +12,7 @@ def quad_2d(context: moderngl.Context,
             vertices_glsl_name="in_vertices",
             uvs_glsl_name="in_uvs",
             size=(1.0, 1.0),
-            pos=(0.0, 0.0)) -> dict:
+            position=(0.0, 0.0)) -> dict:
     """
     A Quad designed to be used as a rendering area on the screen
 
@@ -24,11 +24,11 @@ def quad_2d(context: moderngl.Context,
     :param normals_glsl_name: str, reference inside the GLSL program for the normals
     :param uvs_glsl_name: str, reference inside the GLSL program for the uvs
     :param size: tuple, (width, height)
-    :param pos: tuple (x, y)
+    :param position: tuple (x, y)
     :return: Dictionary with VBOs and VAO ready to render
     """
     width, height = size
-    xpos, ypos = pos
+    xpos, ypos = position
 
     # fmt: off
     vertices = np.array([
@@ -64,7 +64,6 @@ def quad_2d(context: moderngl.Context,
     vbo_uvs = context.buffer(uvs.astype("f4").tobytes())
 
     return {
-        "program": program,
         "vbo_vertices": vbo_vertices,
         "vbo_uvs": vbo_uvs,
         "vao": context.vertex_array(

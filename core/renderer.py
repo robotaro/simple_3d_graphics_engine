@@ -21,56 +21,62 @@ class Renderer:
         self.window = window
         self.shader_library = shader_library
 
+        self.framebuffers = {}
+        self.textures = {}
+        self.samplers = {}
+        self.quads = {}
+        self.initialise_debug()
+
         # Create Framebuffers
         self.texture_offscreen_picking_depth = None
         self.texture_offscreen_picking_viewpos = None
         self.texture_offscreen_picking_tri_id = None
         self.framebuffer_offscreen_picking = None
+
         self.outline_texture = None
         self.outline_framebuffer = None
+
+        # Debug offscreen rendering
+        self.offscreen_framebuffer = None
+        self.offscreen_diffuse = None
+        self.offscreen_normals = None
+        self.offscreen_depth = None
+
         self.create_framebuffers()
 
         # Create programs
         self.shadow_map_program = None
         self.fragment_picker_program = None
 
-        # Debuging variables
+        # Debugging variables
         self.quad_debug = ready_to_render.quad_2d(context=window.context, program=self.shader_library["texture"])
 
         self.logger = utils_logging.get_project_logger()
 
-    def render(self, scene: Scene, viewports: List[Viewport]):
+    def initialise_debug(self):
 
-        # TODO: Add a substage that checks if a node has a program already defined, and not,
-        #       assing a program to it based on its type, otherwise, leave the default program
+        self.textures["offscreen_diffuse"] = self.window.context.texture(self.window.buffer_size, 4)
+        self.textures["offscreen_normals"] = self.window.context.texture(self.window.buffer_size, 4, dtype='f2')
+        self.textures["offscreen_depth"] = self.window.context.depth_texture(self.window.buffer_size)
 
-        # Stage: Render shadow maps
+        self.framebuffers["offscreen"] = self.window.context.framebuffer(
+            color_attachments=[
+                self.textures["offscreen_diffuse"],
+                self.textures["offscreen_normals"],
+            ],
+            depth_attachment=self.textures["offscreen_depth"],
+        )
 
-        # Stage: For each viewport render viewport
-        #   - Render fragment map picking
-        #   - Render scene
-        #   - Render outline
+        self.samplers["depth_sampler"] = self.window.context.sampler(
+            filter=(moderngl.LINEAR, moderngl.LINEAR),
+            compare_func='',
+        )
 
-        # Initialise object on the GPU if they haven't been already
-        scene._root_node.make_renderable(mlg_context=self.window.context,
-                                         shader_library=self.shader_library)
-
-        self.render_shadowmap(scene=scene)
-
-        for viewport in viewports:
-            self.fragment_map_pass(scene=scene, viewport=viewport)
-            self.forward_pass(scene=scene, viewport=viewport)
-            self.outline_pass(scene=scene, viewport=viewport)
-
-    def set_camera_matrices(self, prog, camera, **kwargs):
-        """Set the model view projection matrix in the given program."""
-        # Transpose because np is row-major but OpenGL expects column-major.
-        prog["model_matrix"].write(self.model_matrix.T.astype("f4").tobytes())
-        prog["view_projection_matrix"].write(camera.get_view_projection_matrix().T.astype("f4").tobytes())
-
-    # =========================================================================
-    #                        Framebuffer functions
-    # =========================================================================
+        self.quads["normals"] = ready_to_render.quad_2d(context=self.window.context,
+                                                        size=(0.25, 0.25), position=(0.75, 0.875),
+                                                        program=self.shader_library["texture"])
+        self.quads["depth"] = ready_to_render.quad_2d(context=self.window.context,
+                                                      program=self.shader_library["texture"])
 
     def create_framebuffers(self):
 
@@ -101,8 +107,34 @@ class Renderer:
         self.outline_framebuffer = self.window.context.framebuffer(color_attachments=[self.outline_texture])
 
     # =========================================================================
-    #                         Render Pass functions
+    #                         Render functions
     # =========================================================================
+
+    def render(self, scene: Scene, viewports: List[Viewport]):
+
+        # TODO: Add a substage that checks if a node has a program already defined, and not,
+        #       assing a program to it based on its type, otherwise, leave the default program
+
+        # Stage: Render shadow maps
+
+        # Stage: For each viewport render viewport
+        #   - Render fragment map picking
+        #   - Render scene
+        #   - Render outline
+
+        # Initialise object on the GPU if they haven't been already
+        scene._root_node.make_renderable(mlg_context=self.window.context,
+                                         shader_library=self.shader_library)
+
+        self.render_shadowmap(scene=scene)
+
+        for viewport in viewports:
+
+            self.offscreen_pass(scene=scene, viewport=viewport)
+
+            self.fragment_map_pass(scene=scene, viewport=viewport)
+            self.forward_pass(scene=scene, viewport=viewport)
+            self.outline_pass(scene=scene, viewport=viewport)
 
     def forward_pass(self, scene: Scene, viewport: Viewport):
 
@@ -214,6 +246,11 @@ class Renderer:
             if take_pass:
                 self.render_pass_shadow_mapping(scene, ln, flags)"""
         pass
+
+    def offscreen_pass(self, scene: Scene, viewport: Viewport):
+        self.framebuffers["offscreen"].clear()
+        self.framebuffers["offscreen"].use()
+
 
     @staticmethod
     def upload_camera_uniforms(program: moderngl.Program,

@@ -2,9 +2,6 @@ import moderngl
 import numpy as np
 import trimesh
 
-from core.mesh import Mesh
-from core.viewport import Viewport
-from core.shader_library import ShaderLibrary
 from core.camera import Camera, PerspectiveCamera, OrthographicCamera
 from core.light import DirectionalLight
 from core.node import Node
