@@ -131,18 +131,62 @@ class Renderer:
             moderngl.ONE)
 
         # Render scene
-        scene.render_forward_pass(context=self.window.context,
-                                  shader_library=self.shader_library,
-                                  viewport=viewport)
+        light_nodes = []
+        scene._root_node.get_nodes_by_type(_type="directional_light", output_list=light_nodes)
+
+        meshes = []
+        scene._root_node.get_nodes_by_type(_type="mesh", output_list=meshes)
+
+        # [ Stage : Forward Pass ]
+        for mesh in meshes:
+            # TODO: Skip mesh if invisible
+
+            program = self.shader_library[mesh.forward_pass_program_name]
+
+            # Set camera uniforms
+            self.upload_camera_uniforms(program=program, viewport=viewport)
+
+            # Set light uniforms
+            # program["ambient_strength"] = self._ambient_light_color
+
+            # Se model uniforms
+            mesh.render_forward_pass(program=program)
+
+        # Stage: Draw transparent objects back to front
 
     def fragment_map_pass(self, scene: Scene, viewport: Viewport):
         self.window.context.enable_only(moderngl.DEPTH_TEST)
         self.framebuffer_offscreen_picking.use()
         self.framebuffer_offscreen_picking.viewport = viewport.to_tuple()
 
-        scene.render_fragment_picking_pass(context=self.window.context,
-                                           shader_library=self.shader_library,
-                                           viewport=viewport)
+        meshes = []
+        scene._root_node.get_nodes_by_type(_type="mesh", output_list=meshes)
+
+        # Same fragment picking program for all meshes
+        program = self.shader_library["fragment_picking"]
+
+        # [ Stage : Fragment Picking Pass ]
+        for mesh in meshes:
+            # Set camera uniforms
+            self.upload_camera_uniforms(program=program, viewport=viewport)
+
+            # Render with the specified object uid, if None use the node uid instead.
+            program["object_id"] = mesh.uid
+
+            # if self.backface_culling or self.backface_fragmap:
+            self.window.context.enable(moderngl.CULL_FACE)
+            # else:
+            #    context.disable(moderngl.CULL_FACE)
+
+            # If backface_fragmap is enabled for this node only render backfaces
+            # if self.backface_fragmap:
+            #    context.cull_face = "front"
+
+            mesh.render_forward_pass(program)
+
+            # Restore cull face to back
+            # if self.backface_fragmap:
+            #    context.cull_face = "back"
 
     def outline_pass(self, scene: Scene, viewport: Viewport):
         #print("[Renderer] _outline_pass")
@@ -170,4 +214,15 @@ class Renderer:
             if take_pass:
                 self.render_pass_shadow_mapping(scene, ln, flags)"""
         pass
+
+    @staticmethod
+    def upload_camera_uniforms(program: moderngl.Program,
+                               viewport: Viewport):
+        proj_matrix_bytes = viewport.camera.get_projection_matrix(
+            width=viewport.width,
+            height=viewport.height).T.astype('f4').tobytes()
+        program["projection_matrix"].write(proj_matrix_bytes)
+
+        view_matrix_bytes = viewport.camera.get_view_matrix().T.astype('f4').tobytes()
+        program["view_matrix"].write(view_matrix_bytes)
 

@@ -93,12 +93,13 @@ class ShaderLibrary:
             # GLSL Source code
             code_lines = file.readlines()
 
-            # Get version
-            version_details = [(index, line) for index, line in enumerate(code_lines)
+            # Get version - The final version will be the lowest version found!
+            line_number_and_version_list = [(index, line) for index, line in enumerate(code_lines)
                                if line.strip().startswith("#version")]
-            version = 0
-            if len(version_details) > 0:
-                version = int(version_details[0][1].replace("#version", "").strip())
+
+            recovered_versions = set([int(line[1].replace("#version", "").strip())
+                                  for line in line_number_and_version_list])
+            version = min(recovered_versions) if len(recovered_versions) > 0 else 0
 
             # Remove the line with the "#version"
             code_lines = [line for line in code_lines if not line.strip().startswith("#version")]
