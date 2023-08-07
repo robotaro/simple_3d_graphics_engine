@@ -148,6 +148,9 @@ class ShaderLibrary:
 
     def _blueprint2source_code(self, blueprint: dict, shader_type: str) -> Union[str, None]:
 
+        if not isinstance(blueprint, dict):
+            raise TypeError(f"[ERROR] Shade blueprint needs to be dictionary")
+
         extra_definitions = blueprint.get("extra_definitions", {})
 
         source = None
@@ -234,6 +237,10 @@ class ShaderLibrary:
             yaml_dict = {}
 
         for key, blueprint in yaml_dict.items():
+
+            if blueprint is None:
+                print(f"[WARNING] Entry '{key}' is invalid or incomplete")
+                continue
 
             # Generate source code for all individual shaders that will make the final program
             vertex_source = self._blueprint2source_code(shader_type="vertex", blueprint=blueprint)

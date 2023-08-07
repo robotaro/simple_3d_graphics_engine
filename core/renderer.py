@@ -203,7 +203,7 @@ class Renderer:
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
         # Bind screen context to draw to it
-        #self.window.context.screen.use()
+        self.window.context.screen.use()
 
         # TODO: maybe move this to inside the scene?
         # Clear context (you need to use the use() first to bind it!)
@@ -223,8 +223,6 @@ class Renderer:
             moderngl.ONE_MINUS_SRC_ALPHA,
             moderngl.ONE,
             moderngl.ONE)
-        self.framebuffers["offscreen"].clear()
-        self.framebuffers["offscreen"].use()
 
         # Render scene
         light_nodes = scene.get_nodes_by_type(node_type="directional_light")
@@ -232,7 +230,9 @@ class Renderer:
 
         # [ Stage : Forward Pass ]
         for mesh in meshes:
-            # TODO: Skip mesh if invisible
+
+            if not mesh.visible:
+                continue
 
             program = self.shader_library[mesh.forward_pass_program_name]
 
@@ -254,9 +254,6 @@ class Renderer:
             mesh.vao.render(moderngl.TRIANGLES)
 
         # DEBUG
-        self.window.context.screen.use()
-        self.textures["offscreen_diffuse"].use(0)
-        self.quads["fullscreen"]["vao"].render(mode=moderngl.TRIANGLES)
 
         # Stage: Draw transparent objects back to front
 

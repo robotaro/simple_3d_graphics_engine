@@ -36,7 +36,7 @@ class Mesh(Node):
         self.vbo_vertices = None
         self.vbo_normals = None
         self.ibo_faces = None  # Triangular faces
-        self.vao = None
+        self.vaos = {}
 
         # Custom programs - for special features
         self.forward_pass_program_name = forward_pass_program_name
@@ -45,9 +45,14 @@ class Mesh(Node):
         self._vbo_dirty_flag = True
         self._instanced = False
         self._renderable = True
+        self.visible = True
         self._flat_shading = False
 
     def release(self):
+
+        for name, vao in self.vaos.items():
+            vao.release()
+
         if self.vbo_vertices:
             self.vbo_vertices.release()
 
@@ -56,13 +61,6 @@ class Mesh(Node):
 
         if self.ibo_faces:
             self.ibo_faces.release()
-
-        if self.vao:
-            self.vao.release()
-
-    # =========================================================================
-    #                   Rendering and GPU upload functions
-    # =========================================================================
 
     @Node.once
     def make_renderable(self, mlg_context: moderngl.Context, shader_library: ShaderLibrary):
@@ -74,6 +72,7 @@ class Mesh(Node):
 
         vbo_list = []
 
+        # Create VBOs
         if self.vertices is not None:
             self.vbo_vertices = mlg_context.buffer(self.vertices.astype("f4").tobytes())
             vbo_list.append((self.vbo_vertices, "3f", "in_vert"))
@@ -81,6 +80,7 @@ class Mesh(Node):
         if self.normals is not None:
             self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
             vbo_list.append((self.vbo_normals, "3f", "in_normal"))
+
 
         program = shader_library[self.forward_pass_program_name]
 
@@ -102,31 +102,10 @@ class Mesh(Node):
         # Write normals.
         self.vbo_normals.write(self.normals.astype("f4").tobytes())
 
-        """if self.face_colors is None:
-            # Write vertex colors.
-            self.vbo_colors.write(self.current_vertex_colors.astype("f4").tobytes())
-        else:
-            # Write face colors.
+    def upload_uniforms(self, render_pass_name: str):
 
-            # Compute shape of 2D texture.
-            shape = (min(self.faces.shape[0], 8192), (self.faces.shape[0] + 8191) // 8192)
-
-            # Write texture left justifying the buffer to fill the last row of the texture.
-            self.face_colors_texture.write(
-                self.current_face_colors.astype("f4").tobytes().ljust(shape[0] * shape[1] * 16)
-            )
-
-        # Write uvs.
-        if self.has_texture:
-            self.vbo_uvs.write(self.uv_coords.astype("f4").tobytes())
-
-        # Write instance transforms.
-        if self.instance_transforms is not None:
-            self.vbo_instance_transforms.write(
-                np.transpose(self.current_instance_transforms.astype("f4"), (0, 2, 1)).tobytes()
-            )"""
-
-    def upload_uniforms(self, program: moderngl.Program):
+        # Get program for this render pass
+        program = self.vaos[render_pass_name].program
 
         # Camera uniforms were previously uploaded here
 
@@ -174,6 +153,8 @@ class Mesh(Node):
         self.set_material_properties(prog, self.material)
         self.receive_shadow(prog, **kwargs)
         return prog"""
+
+
 
     # =========================================================================
     #                         Getters and Setters
