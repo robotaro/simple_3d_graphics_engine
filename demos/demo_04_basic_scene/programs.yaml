@@ -17,5 +17,3 @@ mesh_offscreen:
 mesh_with_lights:
   vertex_shader: "mesh_with_lights.glsl"
   fragment_shader: "mesh_with_lights.glsl"
-
-forward_pass:

@@ -81,7 +81,6 @@ class Mesh(Node):
             self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
             vbo_list.append((self.vbo_normals, "3f", "in_normal"))
 
-
         program = shader_library[self.forward_pass_program_name]
 
         if self.faces is None:
@@ -89,6 +88,8 @@ class Mesh(Node):
         else:
             self.ibo_faces = mlg_context.buffer(self.faces.astype("i4").tobytes())
             self.vao = mlg_context.vertex_array(program, vbo_list, self.ibo_faces)
+
+            g = 0
 
         # TODO: Add instance-based code
 
@@ -108,7 +109,7 @@ class Mesh(Node):
         program = self.vaos[render_pass_name].program
 
         # Camera uniforms were previously uploaded here
-
+        program["model_matrix"].write(self.transform.T.astype('f4').tobytes())
 
 
         # Upload material uniforms
