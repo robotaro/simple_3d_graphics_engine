@@ -4,7 +4,7 @@ import os
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 RESOURCES_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources")
 SHADERS_DIRECTORY = os.path.join(RESOURCES_DIR, "shaders")
-SHADER_PROGRAMS_YAML_FPATH = os.path.join(os.path.dirname(__file__), "config", "shader_programs.yaml")
+SHADER_PROGRAMS_YAML_FPATH = os.path.join(os.path.dirname(__file__), "config", "programs.yaml")
 
 # Default OpenGL constants
 OPENGL_MAJOR_VERSION = 4

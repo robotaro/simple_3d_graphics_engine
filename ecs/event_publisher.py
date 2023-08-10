@@ -1,5 +1,5 @@
 from ecs import constants
-from systems.system import System
+from ecs.systems.system import System
 
 
 class EventPublisher:

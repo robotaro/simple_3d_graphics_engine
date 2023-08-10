@@ -3,13 +3,16 @@ import glfw
 import moderngl
 import numpy as np
 
-from core import constants
+from ecs import constants
 
 from ecs.systems.system import System
 from core.window import Window
 
 from ecs.systems.system import System
 from ecs.event_publisher import EventPublisher
+from ecs.entity_manager import EntityManager
+
+from core.utilities import utils_logging
 
 
 class Editor:
@@ -18,7 +21,8 @@ class Editor:
     Main Editor class that holds all the logic
     """
 
-    __slots__ = ("window_size",
+    __slots__ = ("logger",
+                 "window_size",
                  "window_title",
                  "vertical_sync",
                  "mouse_state",
@@ -29,6 +33,7 @@ class Editor:
                  "transform_components",
                  "camera_components",
                  "systems",
+                 "entity_manager",
                  "event_publisher")
 
     def __init__(self,
@@ -36,6 +41,7 @@ class Editor:
                  window_title="New Editor",
                  vertical_sync=False):
 
+        self.logger = utils_logging.get_project_logger()
         self.window_size = window_size
         self.buffer_size = window_size
         self.window_title = window_title
@@ -45,6 +51,7 @@ class Editor:
         self.transform_components = {}
         self.camera_components = {}
         self.systems = {}
+        self.entity_manager = EntityManager()
         self.event_publisher = EventPublisher()
 
         # Input variables
@@ -113,32 +120,46 @@ class Editor:
 
     def _glfw_callback_keyboard(self, glfw_window, key, scancode, action, mods):
         if action == glfw.PRESS:
+            self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_PRESS,
+                                         event_data=(key, scancode, mods))
             self.keyboard_state[key] = constants.KEY_STATE_DOWN
         if action == glfw.RELEASE:
+            self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_RELEASE,
+                                         event_data=(key, scancode, mods))
             self.keyboard_state[key] = constants.KEY_STATE_UP
 
     def _glfw_callback_mouse_button(self, glfw_window, button, action, mods):
         for button in constants.MOUSE_BUTTONS:
             # NOTE: Button numbers already match the GLFW numbers in the constants
             if action == glfw.PRESS:
+                self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_PRESS,
+                                             event_data=(button, mods))
                 self.mouse_state[button] = constants.BUTTON_PRESSED
             if action == glfw.RELEASE:
+                self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_RELEASE,
+                                             event_data=(button, mods))
                 self.mouse_state[button] = constants.BUTTON_RELEASED
 
     def _glfw_callback_mouse_move(self, glfw_window, x, y):
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_MOVE, event_data=(x, y))
         self.mouse_state[constants.MOUSE_POSITION] = (x, y)
 
     def _glfw_callback_mouse_scroll(self, glfw_window, x_offset, y_offset):
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_SCROLL, event_data=(x_offset, y_offset))
         self.mouse_state[constants.MOUSE_SCROLL_POSITION] += y_offset
 
     def _glfw_callback_window_resize(self, glfw_window, width, height):
+        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_RESIZE, event_data=(width, height))
         self.window_size = (width, height)
 
     def _glfw_callback_framebuffer_size(self, glfw_window, width, height):
+        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_RESIZE,
+                                     event_data=(width, height))
         self.buffer_size = (width, height)
 
     def _glfw_callback_drop_files(self, glfw_window, file_list):
-        pass
+        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_DROP_FILES,
+                                     event_data=tuple(file_list))
 
     # ========================================================================
     #                         Per Frame Update Functions
@@ -174,15 +195,17 @@ class Editor:
         for event_type in subscribed_events:
             self.event_publisher.subscribe(
                 event_type=event_type,
-                listener=system
-            )
-
+                listener=system)
 
     def run(self):
 
         # Initialise systems
         for system_name, system in self.systems.items():
-            if not system.initialize():
+            if not system.initialise(
+                logger=self.logger,
+                context=self.context,
+                buffer_size=self.buffer_size
+            ):
                 raise Exception(f"[ERROR] System {system_name} failed to initialise")
 
         # Update systems - Main Loop
@@ -195,7 +218,8 @@ class Editor:
             elapsed_time = timestamp_past - timestamp
             for system_name, system in self.systems.items():
                 system.update(elapsed_time=elapsed_time,
-                              context=self.window_glfw.context,
+                              entity_manager=self.entity_manager,
+                              context=self.context,
                               event=None)
             timestamp_past = timestamp
 

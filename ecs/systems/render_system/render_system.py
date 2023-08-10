@@ -1,9 +1,13 @@
+import moderngl
+from PIL import Image
+import numpy as np
+from typing import List
+
 from ecs.systems.system import System
 from ecs.systems.render_system.shader_library import ShaderLibrary
+from ecs.systems.render_system.scene import Scene
 from ecs.entity_manager import EntityManager
 from core.geometry_3d import ready_to_render
-
-import moderngl
 
 
 class RenderSystem(System):
@@ -35,8 +39,6 @@ class RenderSystem(System):
         self.offscreen_normals = None
         self.offscreen_depth = None
 
-        self.create_framebuffers()
-
         # Create programs
         self.shadow_map_program = None
         self.fragment_picker_program = None
@@ -44,29 +46,28 @@ class RenderSystem(System):
         # Debugging variables
         self.quad_debug = None
 
-
     # =========================================================================
     #                         System Core functions
     # =========================================================================
 
     def initialise(self, **kwargs):
 
-        if "context" not in kwargs:
-            raise KeyError(f"[ERROR] Render System needs 'context' during the initialisation phase")
-
         # Get data from arguments
         self.logger = kwargs["logger"]
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
         self.shader_library = ShaderLibrary(context=self.ctx)
+        if not self.shader_library.initialise():
+            return False
 
+        self.create_framebuffers()
 
         self.textures["offscreen_diffuse"] = self.ctx.texture(self.buffer_size, 4)
         self.textures["offscreen_normals"] = self.ctx.texture(self.buffer_size, 4, dtype='f2')
         self.textures["offscreen_viewpos"] = self.ctx.texture(self.buffer_size, 4, dtype='f4')
         self.textures["offscreen_depth"] = self.ctx.depth_texture(self.buffer_size)
 
-        self.framebuffers["offscreen"] = self.window.context.framebuffer(
+        self.framebuffers["offscreen"] = self.ctx.framebuffer(
             color_attachments=[
                 self.textures["offscreen_diffuse"],
                 self.textures["offscreen_normals"],
@@ -75,7 +76,7 @@ class RenderSystem(System):
             depth_attachment=self.textures["offscreen_depth"],
         )
 
-        self.samplers["depth_sampler"] = self.window.context.sampler(
+        self.samplers["depth_sampler"] = self.ctx.sampler(
             filter=(moderngl.LINEAR, moderngl.LINEAR),
             compare_func='',
         )
@@ -154,7 +155,7 @@ class RenderSystem(System):
     # =========================================================================
     #                         Render functions
     # =========================================================================
-
+    """
     def render(self, scene: Scene, viewports: List[Viewport]):
 
         # TODO: Add a substage that checks if a node has a program already defined, and not,
@@ -322,7 +323,7 @@ class RenderSystem(System):
 
         # print("[Renderer] render_shadowmap")
 
-        """if bool(flags & constants.RENDER_FLAG_DEPTH_ONLY or flags & constants.RENDER_FLAG_SEG):
+        if bool(flags & constants.RENDER_FLAG_DEPTH_ONLY or flags & constants.RENDER_FLAG_SEG):
             return
 
         for ln in scene.light_nodes:
@@ -337,7 +338,7 @@ class RenderSystem(System):
                   bool(flags & RenderFlags.SHADOWS_POINT)):
                 take_pass = True
             if take_pass:
-                self.render_pass_shadow_mapping(scene, ln, flags)"""
+                self.render_pass_shadow_mapping(scene, ln, flags)
         pass
 
     @staticmethod
@@ -350,4 +351,4 @@ class RenderSystem(System):
 
         view_matrix_bytes = viewport.camera.get_view_matrix().T.astype('f4').tobytes()
         program["view_matrix"].write(view_matrix_bytes)
-
+"""

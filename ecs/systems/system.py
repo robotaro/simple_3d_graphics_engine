@@ -6,8 +6,8 @@ from ecs.entity_manager import EntityManager
 
 class System:
 
-    def __init__(self, logger: logging.Logger):
-        self.logger = logger
+    def __init__(self):
+        self.logger = None
 
     def initialise(self, **kwargs) -> bool:
         return True
