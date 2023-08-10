@@ -1,7 +1,11 @@
 import numpy as np
 
+from ecs.components.component import Component
 
-class Transform:
+
+class Transform(Component):
+
+    _type = "transform"
 
     def __init__(self):
         self.world_matrix = np.eye(4, dtype=np.float32)

@@ -24,6 +24,7 @@ EVENT_LOAD_FILE = 1                 #args: (filepath) <str>
 # =============================================================================
 
 # Camera
+CAMERA_FOV_DEG = 45
 CAMERA_Z_NEAR = 0.01
 CAMERA_Z_FAR = 1000.0
 CAMERA_ZOOM_SPEED = 0.05

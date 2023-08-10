@@ -89,8 +89,6 @@ class Mesh(Node):
             self.ibo_faces = mlg_context.buffer(self.faces.astype("i4").tobytes())
             self.vao = mlg_context.vertex_array(program, vbo_list, self.ibo_faces)
 
-            g = 0
-
         # TODO: Add instance-based code
 
     def upload_buffers(self):

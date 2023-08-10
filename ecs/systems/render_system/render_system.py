@@ -102,6 +102,22 @@ class RenderSystem(System):
                context: moderngl.Context,
                event=None):
 
+        # Initialise object on the GPU if they haven't been already
+
+        scene._root_node.make_renderable(mlg_context=self.ctx,
+                                         shader_library=self.shader_library)
+
+        self.render_shadowmap(scene=scene)
+
+        for viewport in viewports:
+            # self.demo_pass(viewport=viewport)
+
+            # self.offscreen_and_onscreen_pass(scene=scene, viewport=viewport)
+
+            # self.fragment_map_pass(scene=scene, viewport=viewport)
+            self.forward_pass(scene=scene, viewport=viewport)
+            # self.outline_pass(scene=scene, viewport=viewport)
+
         pass
 
     def on_event(self, event_type: int, event_data: tuple):
@@ -111,6 +127,10 @@ class RenderSystem(System):
 
         # Release textures
         for texture_name, texture_obj in self.textures.items():
+            texture_obj.release()
+
+        # Release Framebuffers
+        for frabuffer_name, texture_obj in self.textures.items():
             texture_obj.release()
 
     # =========================================================================
@@ -158,33 +178,6 @@ class RenderSystem(System):
     # =========================================================================
     #                         Render functions
     # =========================================================================
-    """
-    def render(self, scene: Scene, viewports: List[Viewport]):
-
-        # TODO: Add a substage that checks if a node has a program already defined, and not,
-        #       assing a program to it based on its type, otherwise, leave the default program
-
-        # Stage: Render shadow maps
-
-        # Stage: For each viewport render viewport
-        #   - Render fragment map picking
-        #   - Render scene
-        #   - Render outline
-
-        # Initialise object on the GPU if they haven't been already
-        scene._root_node.make_renderable(mlg_context=self.ctx,
-                                         shader_library=self.shader_library)
-
-        self.render_shadowmap(scene=scene)
-
-        for viewport in viewports:
-            # self.demo_pass(viewport=viewport)
-
-            # self.offscreen_and_onscreen_pass(scene=scene, viewport=viewport)
-
-            # self.fragment_map_pass(scene=scene, viewport=viewport)
-            self.forward_pass(scene=scene, viewport=viewport)
-            # self.outline_pass(scene=scene, viewport=viewport)
 
     def demo_pass(self, viewport: Viewport):
 
@@ -354,4 +347,4 @@ class RenderSystem(System):
 
         view_matrix_bytes = viewport.camera.get_view_matrix().T.astype('f4').tobytes()
         program["view_matrix"].write(view_matrix_bytes)
-"""
+

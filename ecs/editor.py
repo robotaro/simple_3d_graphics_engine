@@ -50,8 +50,6 @@ class Editor:
         self.vertical_sync = vertical_sync
 
         # Core Variables
-        self.transform_components = {}
-        self.camera_components = {}
         self.systems = {}
         self.entity_manager = EntityManager()
         self.event_publisher = EventPublisher()

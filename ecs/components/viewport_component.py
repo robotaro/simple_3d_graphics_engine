@@ -1,6 +1,8 @@
+from ecs.components.component import Component
 
 
-class Viewport:
+class Viewport(Component):
+    _type = "mesh"
 
     __slots__ = ["camera", "x", "y", "width", "height"]
 
