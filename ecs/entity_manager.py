@@ -1,8 +1,12 @@
+from typing import Union
+
+
 class Entity:
 
-    def __init__(self, name: str):
+    def __init__(self, uid: Union[int, str], name=""):
+        self.uid = uid
         self.name = name
-        self.components = dict()
+        self.components = {}
 
 
 class EntityManager:

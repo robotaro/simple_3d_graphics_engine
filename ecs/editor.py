@@ -9,6 +9,7 @@ from ecs.systems.system import System
 from core.window import Window
 
 from ecs.systems.system import System
+from ecs.event_publisher import EventPublisher
 
 
 class Editor:
@@ -27,7 +28,8 @@ class Editor:
                  "buffer_size",
                  "transform_components",
                  "camera_components",
-                 "systems")
+                 "systems",
+                 "event_publisher")
 
     def __init__(self,
                  window_size=(1024, 768),
@@ -38,6 +40,12 @@ class Editor:
         self.buffer_size = window_size
         self.window_title = window_title
         self.vertical_sync = vertical_sync
+
+        # Core Variables
+        self.transform_components = {}
+        self.camera_components = {}
+        self.systems = {}
+        self.event_publisher = EventPublisher()
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -78,10 +86,6 @@ class Editor:
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
 
-        # Components
-        self.transform_components = {}
-        self.camera_components = {}
-        self.systems = dict()
 
     # ========================================================================
     #                           Input State Functions
@@ -162,11 +166,17 @@ class Editor:
         """
         pass
 
-    def register_system(self, name: str, system: System):
+    def register_system(self, name: str, system: System, subscribed_events: list):
         if name in self.systems:
             raise KeyError(f"[ERROR] System named 'name' already exists")
 
         self.systems[name] = system
+        for event_type in subscribed_events:
+            self.event_publisher.subscribe(
+                event_type=event_type,
+                listener=system
+            )
+
 
     def run(self):
 
@@ -175,7 +185,7 @@ class Editor:
             if not system.initialize():
                 raise Exception(f"[ERROR] System {system_name} failed to initialise")
 
-        # Main Loop
+        # Update systems - Main Loop
         timestamp_past = time.perf_counter()
         while not glfw.window_should_close(self.window_glfw):
 

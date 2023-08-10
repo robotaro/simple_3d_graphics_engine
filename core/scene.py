@@ -41,8 +41,6 @@ class Scene:
         self._background_color = background_color
         self._ambient_light_color = ambient_light_color
 
-        # Flags
-
     # =========================================================================
     #                         Setters and getters
     # =========================================================================
