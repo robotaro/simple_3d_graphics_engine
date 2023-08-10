@@ -104,11 +104,14 @@ class RenderSystem(System):
 
         pass
 
+    def on_event(self, event_type: int, event_data: tuple):
+        pass
+
     def shutdown(self):
 
         # Release textures
-        for texture in self.textures:
-            texture.release()
+        for texture_name, texture_obj in self.textures.items():
+            texture_obj.release()
 
     # =========================================================================
     #                         Other Functions

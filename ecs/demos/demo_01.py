@@ -6,6 +6,7 @@ import numpy as np
 
 from ecs import constants
 from ecs.editor import Editor
+from ecs.systems.imgui_system.imgui_system import IMGUISystem
 from ecs.systems.render_system.render_system import RenderSystem
 
 
@@ -17,13 +18,18 @@ def main():
         vertical_sync=True
     )
 
-    render_system = RenderSystem()
+    editor.register_system(name="imgui_system",
+                           system=IMGUISystem(),
+                           subscribed_events=[
+                               constants.EVENT_MOUSE_SCROLL,
+                           ])
 
     editor.register_system(name="render_system",
-                           system=render_system,
+                           system=RenderSystem(),
                            subscribed_events=[
-                               constants.EVENT_MOUSE_MOVE
                            ])
+
+
     editor.run()
 
 

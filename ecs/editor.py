@@ -1,7 +1,9 @@
 import time
+import timeit
 import glfw
 import moderngl
 import numpy as np
+from typing import List
 
 from ecs import constants
 
@@ -129,16 +131,17 @@ class Editor:
             self.keyboard_state[key] = constants.KEY_STATE_UP
 
     def _glfw_callback_mouse_button(self, glfw_window, button, action, mods):
-        for button in constants.MOUSE_BUTTONS:
-            # NOTE: Button numbers already match the GLFW numbers in the constants
-            if action == glfw.PRESS:
-                self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_PRESS,
-                                             event_data=(button, mods))
-                self.mouse_state[button] = constants.BUTTON_PRESSED
-            if action == glfw.RELEASE:
-                self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_RELEASE,
-                                             event_data=(button, mods))
-                self.mouse_state[button] = constants.BUTTON_RELEASED
+
+        # NOTE: Button numbers already match the GLFW numbers in the constants
+        if action == glfw.PRESS:
+            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_PRESS,
+                                         event_data=(button, mods))
+            self.mouse_state[button] = constants.BUTTON_PRESSED
+
+        if action == glfw.RELEASE:
+            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_RELEASE,
+                                         event_data=(button, mods))
+            self.mouse_state[button] = constants.BUTTON_RELEASED
 
     def _glfw_callback_mouse_move(self, glfw_window, x, y):
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_MOVE, event_data=(x, y))
@@ -187,11 +190,14 @@ class Editor:
         """
         pass
 
-    def register_system(self, name: str, system: System, subscribed_events: list):
+    def register_system(self, name: str, system: System, subscribed_events: List[int]):
         if name in self.systems:
             raise KeyError(f"[ERROR] System named 'name' already exists")
 
+        # Add new system
         self.systems[name] = system
+
+        # Subscribe system to specific topics
         for event_type in subscribed_events:
             self.event_publisher.subscribe(
                 event_type=event_type,
@@ -204,6 +210,7 @@ class Editor:
             if not system.initialise(
                 logger=self.logger,
                 context=self.context,
+                window_glfw=self.window_glfw,
                 buffer_size=self.buffer_size
             ):
                 raise Exception(f"[ERROR] System {system_name} failed to initialise")
@@ -214,16 +221,27 @@ class Editor:
 
             glfw.poll_events()
 
+            # Measure time
             timestamp = time.perf_counter()
             elapsed_time = timestamp_past - timestamp
+            timestamp_past = timestamp
+
+            # Update All systems
             for system_name, system in self.systems.items():
                 system.update(elapsed_time=elapsed_time,
                               entity_manager=self.entity_manager,
-                              context=self.context,
-                              event=None)
-            timestamp_past = timestamp
+                              context=self.context)
 
             glfw.swap_buffers(self.window_glfw)
+
+            # DEBUG - Remove this!
+            self.context.clear(
+                red=0,
+                green=0,
+                blue=0,
+                alpha=0.0,
+                depth=1.0,
+                viewport=self.buffer_size)
 
         # Shutdown systems
         for system_name, system in self.systems.items():

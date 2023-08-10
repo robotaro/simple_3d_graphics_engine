@@ -22,6 +22,12 @@ EVENT_LOAD_FILE = 1                 #args: (filepath) <str>
 # =============================================================================
 #                              GLFW Types
 # =============================================================================
+
+# Camera
+CAMERA_Z_NEAR = 0.01
+CAMERA_Z_FAR = 1000.0
+CAMERA_ZOOM_SPEED = 0.05
+
 # Mouse Input
 MOUSE_LEFT = 0
 MOUSE_RIGHT = 1

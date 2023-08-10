@@ -1,4 +1,3 @@
-import logging
 import moderngl
 
 from ecs.entity_manager import EntityManager
