@@ -5,7 +5,7 @@ from typing import List
 
 from ecs.systems.system import System
 from ecs.systems.render_system.shader_library import ShaderLibrary
-from ecs.entity_manager import EntityManager
+from ecs.component_pool import ComponentPool
 from core.geometry_3d import ready_to_render
 
 
@@ -100,7 +100,7 @@ class RenderSystem(System):
 
     def update(self,
                elapsed_time: float,
-               entity_manager: EntityManager,
+               entity_manager: ComponentPool,
                context: moderngl.Context,
                event=None):
 

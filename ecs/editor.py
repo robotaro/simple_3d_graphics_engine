@@ -12,7 +12,7 @@ from core.window import Window
 
 from ecs.systems.system import System
 from ecs.event_publisher import EventPublisher
-from ecs.entity_manager import EntityManager
+from ecs.component_pool import ComponentPool
 
 from core.utilities import utils_logging
 
@@ -51,7 +51,7 @@ class Editor:
 
         # Core Variables
         self.systems = {}
-        self.entity_manager = EntityManager()
+        self.entity_manager = ComponentPool()
         self.event_publisher = EventPublisher()
 
         # Input variables

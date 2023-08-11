@@ -9,6 +9,8 @@ from ecs.editor import Editor
 from ecs.systems.imgui_system.imgui_system import IMGUISystem
 from ecs.systems.render_system.render_system import RenderSystem
 
+from ecs.component_pool import ComponentPool
+
 
 def main():
 
@@ -17,6 +19,9 @@ def main():
         window_title="Basic Scene Demo",
         vertical_sync=True
     )
+
+    pool = ComponentPool()
+    pool.create_entity()
 
     editor.register_system(name="imgui_system",
                            system=IMGUISystem(),

@@ -18,9 +18,5 @@ def test_look_at():
     result = mat4.look_at(position=np.array((47.697, -8.147, 24.498), dtype=np.float32),
                           target=np.array((0.0, 0.0, 8.0), dtype=np.float32),
                           up=np.array((0.0, 1.0, 0.0), dtype=np.float32))
-    print(target)
-    print(result)
 
     np.testing.assert_almost_equal(target.T, result)
-
-    pass

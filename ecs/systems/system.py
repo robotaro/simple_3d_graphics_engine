@@ -1,6 +1,6 @@
 import moderngl
 
-from ecs.entity_manager import EntityManager
+from ecs.component_pool import ComponentPool
 
 
 class System:
@@ -13,7 +13,7 @@ class System:
 
     def update(self,
                elapsed_time: float,
-               entity_manager: EntityManager,
+               entity_manager: ComponentPool,
                context: moderngl.Context):
         pass
 

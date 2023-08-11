@@ -4,7 +4,7 @@ from imgui.integrations.glfw import GlfwRenderer
 
 from ecs import constants
 from ecs.systems.system import System
-from ecs.entity_manager import EntityManager
+from ecs.component_pool import ComponentPool
 
 
 class IMGUISystem(System):
@@ -24,7 +24,7 @@ class IMGUISystem(System):
 
     def update(self,
                elapsed_time: float,
-               entity_manager: EntityManager,
+               entity_manager: ComponentPool,
                context: moderngl.Context):
 
         self.imgui_renderer.process_inputs()

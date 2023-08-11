@@ -51,3 +51,13 @@ KEY_STATE_UP = 1
 KEY_LEFT_CTRL = 29
 KEY_LEFT_SHIFT = 42
 KEY_LEFT_ALT = 56
+
+# =============================================================================
+#                              Component Pool
+# =============================================================================
+
+COMPONENT_TYPE_TRANSFORM = 0
+COMPONENT_TYPE_MESH = 1
+COMPONENT_TYPE_PERSPECTIVE_CAMERA = 2
+COMPONENT_TYPE_RENDERABLE = 3
+COMPONENT_TYPE_MATERIAL = 4
