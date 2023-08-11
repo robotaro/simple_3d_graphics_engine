@@ -22,7 +22,6 @@ class Renderable(Component):
 
         self.vao_forward_pass = ctx.vertex_array("forward_pass", vbo_list)
 
-    @Node.once
     def make_renderable(self, mlg_context: moderngl.Context, shader_library: ShaderLibrary):
 
         print(f"[{self._type} | {self.name}] make_renderable")

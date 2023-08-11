@@ -5,7 +5,6 @@ from typing import List
 
 from ecs.systems.system import System
 from ecs.systems.render_system.shader_library import ShaderLibrary
-from ecs.systems.render_system.scene import Scene
 from ecs.entity_manager import EntityManager
 from core.geometry_3d import ready_to_render
 
@@ -19,15 +18,18 @@ class RenderSystem(System):
         self.shader_library = None
         self.buffer_size = None
 
+        # Internal components (different from normal components)
         self.framebuffers = {}
         self.textures = {}
         self.samplers = {}
         self.quads = {}
 
-        # Create Framebuffers
+        # Textures
         self.texture_offscreen_picking_depth = None
         self.texture_offscreen_picking_viewpos = None
         self.texture_offscreen_picking_tri_id = None
+
+        # Framebuffers
         self.framebuffer_offscreen_picking = None
 
         self.outline_texture = None
@@ -104,7 +106,7 @@ class RenderSystem(System):
 
         # Initialise object on the GPU if they haven't been already
 
-        scene._root_node.make_renderable(mlg_context=self.ctx,
+        """scene._root_node.make_renderable(mlg_context=self.ctx,
                                          shader_library=self.shader_library)
 
         self.render_shadowmap(scene=scene)
@@ -116,7 +118,7 @@ class RenderSystem(System):
 
             # self.fragment_map_pass(scene=scene, viewport=viewport)
             self.forward_pass(scene=scene, viewport=viewport)
-            # self.outline_pass(scene=scene, viewport=viewport)
+            # self.outline_pass(scene=scene, viewport=viewport)"""
 
         pass
 
@@ -130,8 +132,8 @@ class RenderSystem(System):
             texture_obj.release()
 
         # Release Framebuffers
-        for frabuffer_name, texture_obj in self.textures.items():
-            texture_obj.release()
+        for frabuffer_name, framebuffer_obj in self.framebuffers.items():
+            framebuffer_obj.release()
 
     # =========================================================================
     #                         Other Functions
@@ -179,7 +181,7 @@ class RenderSystem(System):
     #                         Render functions
     # =========================================================================
 
-    def demo_pass(self, viewport: Viewport):
+    """def demo_pass(self, viewport: Viewport):
 
         if "ball" not in self.textures:
             return
@@ -346,5 +348,5 @@ class RenderSystem(System):
         program["projection_matrix"].write(proj_matrix_bytes)
 
         view_matrix_bytes = viewport.camera.get_view_matrix().T.astype('f4').tobytes()
-        program["view_matrix"].write(view_matrix_bytes)
+        program["view_matrix"].write(view_matrix_bytes)"""
 

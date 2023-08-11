@@ -29,8 +29,6 @@ def main():
                            subscribed_events=[
                            ])
 
-
-
     editor.run()
 
 
