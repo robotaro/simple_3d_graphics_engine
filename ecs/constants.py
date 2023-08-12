@@ -57,8 +57,8 @@ KEY_LEFT_ALT = 56
 # =============================================================================
 
 RENDER_SYSTEM_PROGRAM_FORWARD_PASS = "forward_pass"
-RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS = "forward_pass"
-RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS = "forward_pass"
+RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS = "fragment_picking_pass"
+RENDER_SYSTEM_PROGRAM_OUTLINE_PASS = "outline_pass"
 
 # =============================================================================
 #                              Component Pool

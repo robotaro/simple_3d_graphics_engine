@@ -27,7 +27,7 @@ class ShaderLibrary:
     def __init__(self,
                  context: moderngl.Context,
                  shader_directory=constants.SHADERS_DIRECTORY,
-                 shader_programs_config_fpath=constants.SHADER_PROGRAMS_YAML_FPATH):
+                 shader_programs_config_fpath=""):
 
         # Input variables
         self.context = context
@@ -38,17 +38,14 @@ class ShaderLibrary:
         self.shader_blueprints = {}
         self.programs = {}
 
+        # Initialise in the constructor, for simplicity
+        self.load_shaders()
+        self.compile_programs()
+
     def __getitem__(self, program_id: str):
         if program_id not in self.programs:
             raise KeyError(f"[ERROR] Program ID '{program_id}' is not present in the program library")
         return self.programs.get(program_id, None)
-
-    def initialise(self) -> bool:
-
-        self.load_shaders()
-        self.compile_programs()
-
-        return True
 
     def load_shaders(self) -> None:
 
@@ -231,6 +228,13 @@ class ShaderLibrary:
         :return: list, List of dictionaries containing the shader
                  program that failed and its respective description
         """
+
+        # If no YAML file has been specified, look for one in the shader directory
+        if len(self.shader_programs_config_fpath) == 0:
+            yaml_filenames = [filename for filename in os.listdir(self.shader_directory) if filename.endswith(".yaml")]
+            if len(yaml_filenames) == 0:
+                raise FileNotFoundError(f"[ERROR] No YAML shader program file definition found")
+            self.shader_programs_config_fpath = os.path.join(self.shader_directory, yaml_filenames[0])
 
         yaml_dict = None
         with open(self.shader_programs_config_fpath, 'r') as file:

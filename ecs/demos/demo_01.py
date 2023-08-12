@@ -33,7 +33,7 @@ def main():
 
     entity_uid = editor.component_pool.create_entity()
     editor.component_pool.add_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM)
-    editor.component_pool.add_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_MESH)
+    mesh = editor.component_pool.add_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_MESH)
     editor.component_pool.add_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_RENDERABLE)
 
     editor.run()

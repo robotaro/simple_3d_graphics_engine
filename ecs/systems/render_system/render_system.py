@@ -61,8 +61,6 @@ class RenderSystem(System):
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
         self.shader_library = ShaderLibrary(context=self.ctx)
-        if not self.shader_library.initialise():
-            return False
 
         self.create_framebuffers()
 

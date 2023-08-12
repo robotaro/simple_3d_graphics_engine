@@ -9,6 +9,7 @@ class Renderable(Component):
 
     def __init__(self):
 
+        self.render_layer = 0
         self.vao_fragment_picking_pass = None
         self.vao_forward_pass = None
         self.vao_outline_pass = None
