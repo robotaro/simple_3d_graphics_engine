@@ -91,15 +91,7 @@ class Mesh(Node):
 
         # TODO: Add instance-based code
 
-    def upload_buffers(self):
 
-        print(f"[{self._type} | {self.name}] update_buffers")
-
-        # Write positions.
-        self.vbo_vertices.write(self.vertices.astype("f4").tobytes())
-
-        # Write normals.
-        self.vbo_normals.write(self.normals.astype("f4").tobytes())
 
     def upload_uniforms(self, render_pass_name: str):
 
@@ -108,7 +100,6 @@ class Mesh(Node):
 
         # Camera uniforms were previously uploaded here
         program["model_matrix"].write(self.transform.T.astype('f4').tobytes())
-
 
         # Upload material uniforms
         #if self.material is not None:

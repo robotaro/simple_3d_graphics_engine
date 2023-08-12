@@ -3,6 +3,7 @@ from PIL import Image
 import numpy as np
 from typing import List
 
+from ecs import constants
 from ecs.systems.system import System
 from ecs.systems.render_system.shader_library import ShaderLibrary
 from ecs.component_pool import ComponentPool
@@ -22,6 +23,7 @@ class RenderSystem(System):
         self.framebuffers = {}
         self.textures = {}
         self.samplers = {}
+        self.vbo_groups = {}
         self.quads = {}
 
         # Textures
@@ -100,14 +102,20 @@ class RenderSystem(System):
 
     def update(self,
                elapsed_time: float,
-               entity_manager: ComponentPool,
+               component_pool: ComponentPool,
                context: moderngl.Context,
                event=None):
 
         # Initialise object on the GPU if they haven't been already
 
-        """scene._root_node.make_renderable(mlg_context=self.ctx,
-                                         shader_library=self.shader_library)
+        for entity_uid, renderable in component_pool.renderable_components.items():
+
+            mesh = component_pool.mesh_components[entity_uid]
+            mesh.initialise_on_gpu(ctx=self.ctx)
+            renderable.initialise_on_gpu(ctx=self.ctx,
+                                         shader_library=self.shader_library,
+                                         vbo_tuple_list=mesh.get_vbo_tuple_list(),
+                                         ibo_faces=mesh.ibo_faces)
 
         self.render_shadowmap(scene=scene)
 
@@ -118,7 +126,7 @@ class RenderSystem(System):
 
             # self.fragment_map_pass(scene=scene, viewport=viewport)
             self.forward_pass(scene=scene, viewport=viewport)
-            # self.outline_pass(scene=scene, viewport=viewport)"""
+            # self.outline_pass(scene=scene, viewport=viewport)
 
         pass
 

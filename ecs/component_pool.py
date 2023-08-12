@@ -4,6 +4,7 @@ from ecs import constants
 from ecs.components.component import Component
 from ecs.components.transform_component import Transform
 from ecs.components.mesh_component import Mesh
+from ecs.components.material_component import Material
 from ecs.components.renderable_component import Renderable
 from ecs.components.perspective_camera_component import PerspectiveCamera
 
@@ -22,7 +23,8 @@ class ComponentPool:
         constants.COMPONENT_TYPE_TRANSFORM: Transform,
         constants.COMPONENT_TYPE_MESH: Mesh,
         constants.COMPONENT_TYPE_RENDERABLE: Renderable,
-        constants.COMPONENT_TYPE_PERSPECTIVE_CAMERA: PerspectiveCamera
+        constants.COMPONENT_TYPE_PERSPECTIVE_CAMERA: PerspectiveCamera,
+        constants.COMPONENT_TYPE_MATERIAL: Material
     }
 
     def __init__(self):
@@ -37,12 +39,14 @@ class ComponentPool:
         self.perspective_camera_components = {}
         self.mesh_components = {}
         self.renderable_components = {}
+        self.material_components = {}
 
         self.component_storage_map = {
             constants.COMPONENT_TYPE_TRANSFORM: self.transform_components,
             constants.COMPONENT_TYPE_MESH: self.mesh_components,
             constants.COMPONENT_TYPE_RENDERABLE: self.renderable_components,
-            constants.COMPONENT_TYPE_PERSPECTIVE_CAMERA: self.perspective_camera_components
+            constants.COMPONENT_TYPE_PERSPECTIVE_CAMERA: self.perspective_camera_components,
+            constants.COMPONENT_TYPE_MATERIAL: self.material_components
         }
 
     def create_entity(self, name="") -> int:

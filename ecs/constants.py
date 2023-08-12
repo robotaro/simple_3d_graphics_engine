@@ -53,6 +53,14 @@ KEY_LEFT_SHIFT = 42
 KEY_LEFT_ALT = 56
 
 # =============================================================================
+#                                Render System
+# =============================================================================
+
+RENDER_SYSTEM_PROGRAM_FORWARD_PASS = "forward_pass"
+RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS = "forward_pass"
+RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS = "forward_pass"
+
+# =============================================================================
 #                              Component Pool
 # =============================================================================
 

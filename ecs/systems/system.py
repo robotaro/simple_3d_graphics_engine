@@ -13,7 +13,7 @@ class System:
 
     def update(self,
                elapsed_time: float,
-               entity_manager: ComponentPool,
+               component_pool: ComponentPool,
                context: moderngl.Context):
         pass
 

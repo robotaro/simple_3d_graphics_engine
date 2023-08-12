@@ -1,5 +1,6 @@
 import moderngl
 
+from ecs import constants
 from ecs.components.component import Component
 from ecs.systems.render_system.shader_library import ShaderLibrary
 
@@ -7,43 +8,40 @@ from ecs.systems.render_system.shader_library import ShaderLibrary
 class Renderable(Component):
 
     def __init__(self):
-        self.mode = None  # TODO: Add modes to the material rendering
-        self.diffuse_color = (0.5, 0.5, 0.5)
-        self.ambient = 0.5
-        self.specular = 0.5
 
-        # VAOs
         self.vao_fragment_picking_pass = None
         self.vao_forward_pass = None
         self.vao_outline_pass = None
 
-    def create_vaos(self, ctx: moderngl.Context, shader_library: ShaderLibrary, vbo_list: list):
-        # This is effecivelly the "make_renderable"
+        self._gpu_initialised = False
 
-        self.vao_forward_pass = ctx.vertex_array("forward_pass", vbo_list)
+    def initialise_on_gpu(self,
+                          ctx: moderngl.Context,
+                          shader_library: ShaderLibrary,
+                          vbo_tuple_list: list,
+                          ibo_faces=None):
 
-    def make_renderable(self, mlg_context: moderngl.Context, shader_library: ShaderLibrary):
+        # TODO: Think of a better place  to put this utility function
+        def create_vao(ibo_faces: moderngl.Buffer):
+            if ibo_faces is None:
+                return ctx.vertex_array(program, vbo_tuple_list)
+            else:
+                return ctx.vertex_array(program, vbo_tuple_list, ibo_faces)
 
-        print(f"[{self._type} | {self.name}] make_renderable")
+        if self._gpu_initialised:
+            return
 
-        # TODO: - Check if I need to upload data here or leave it to uploaded buffers
-        #       - Check if I need to set these to dynamic
+        program = shader_library[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS]
+        self.vao_forward_pass = create_vao(ibo_faces=ibo_faces)
 
-        vbo_list = []
+        self._gpu_initialised = True
 
-        # Create VBOs
-        if self.vertices is not None:
-            self.vbo_vertices = mlg_context.buffer(self.vertices.astype("f4").tobytes())
-            vbo_list.append((self.vbo_vertices, "3f", "in_vert"))
+    def release(self):
+        if self.vao_fragment_picking_pass:
+            self.vao_fragment_picking_pass.release()
 
-        if self.normals is not None:
-            self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
-            vbo_list.append((self.vbo_normals, "3f", "in_normal"))
+        if self.vao_forward_pass:
+            self.vao_forward_pass.release()
 
-        program = shader_library[self.forward_pass_program_name]
-
-        if self.faces is None:
-            self.vao = mlg_context.vertex_array(program, vbo_list)
-        else:
-            self.ibo_faces = mlg_context.buffer(self.faces.astype("i4").tobytes())
-            self.vao = mlg_context.vertex_array(program, vbo_list, self.ibo_faces)
+        if self.vao_outline_pass:
+            self.vao_outline_pass.release()

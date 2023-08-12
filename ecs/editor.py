@@ -35,7 +35,7 @@ class Editor:
                  "transform_components",
                  "camera_components",
                  "systems",
-                 "entity_manager",
+                 "component_pool",
                  "event_publisher")
 
     def __init__(self,
@@ -51,7 +51,7 @@ class Editor:
 
         # Core Variables
         self.systems = {}
-        self.entity_manager = ComponentPool()
+        self.component_pool = ComponentPool()
         self.event_publisher = EventPublisher()
 
         # Input variables
@@ -92,7 +92,6 @@ class Editor:
 
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
-
 
     # ========================================================================
     #                           Input State Functions
@@ -227,7 +226,7 @@ class Editor:
             # Update All systems
             for system_name, system in self.systems.items():
                 system.update(elapsed_time=elapsed_time,
-                              entity_manager=self.entity_manager,
+                              component_pool=self.component_pool,
                               context=self.context)
 
             glfw.swap_buffers(self.window_glfw)
