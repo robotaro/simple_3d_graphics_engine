@@ -112,10 +112,10 @@ class RenderSystem(System):
             mesh.initialise_on_gpu(ctx=self.ctx)
             renderable.initialise_on_gpu(ctx=self.ctx,
                                          shader_library=self.shader_library,
-                                         vbo_tuple_list=mesh.get_vbo_tuple_list(),
+                                         vbo_tuple_list=mesh.get_vbo_declaration_list(),
                                          ibo_faces=mesh.ibo_faces)
 
-        self.render_shadowmap(scene=scene)
+
 
         for viewport in viewports:
             # self.demo_pass(viewport=viewport)

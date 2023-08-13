@@ -14,7 +14,7 @@ EVENT_MOUSE_SCROLL = 7              # args: (offset_x, offset_y) <float, float>
 
 EVENT_WINDOW_RESIZE = 8                 # args: (width, height) <int, int>
 EVENT_WINDOW_FRAMEBUFFER_RESIZE = 9     # args: (width, height) <int, int>
-EVENT_WINDOW_DROP_FILES = 10             # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a list
+EVENT_WINDOW_DROP_FILES = 10            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a list
 
 
 EVENT_LOAD_FILE = 1                 #args: (filepath) <str>
@@ -45,7 +45,7 @@ BUTTON_RELEASED = 2
 BUTTON_UP = 3
 
 # Keyboard
-KEYBOARD_SIZE = 512  # Number of keys
+KEYBOARD_SIZE = 512
 KEY_STATE_DOWN = 0
 KEY_STATE_UP = 1
 KEY_LEFT_CTRL = 29
@@ -60,6 +60,12 @@ RENDER_SYSTEM_PROGRAM_FORWARD_PASS = "forward_pass"
 RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS = "fragment_picking_pass"
 RENDER_SYSTEM_PROGRAM_OUTLINE_PASS = "outline_pass"
 
+# Uniform variables
+SHADER_UNIFORM_INPUT_VERTICES = "in_vert"
+SHADER_UNIFORM_INPUT_NORMALS = "in_normals"
+SHADER_UNIFORM_INPUT_COLORS = "in_colors"
+SHADER_UNIFORM_INPUT_UVS = "in_uvs"
+
 # =============================================================================
 #                              Component Pool
 # =============================================================================
@@ -69,3 +75,16 @@ COMPONENT_TYPE_MESH = 1
 COMPONENT_TYPE_PERSPECTIVE_CAMERA = 2
 COMPONENT_TYPE_RENDERABLE = 3
 COMPONENT_TYPE_MATERIAL = 4
+
+# Mesh Component Arguments
+COMPONENT_ARG_MESH_SHAPE = "shape"
+COMPONENT_ARG_MESH_FPATH = "fpath"
+
+MESH_SHAPE_CUBE = "cube"
+MESH_SHAPE_SPHERE = "sphere"
+MESH_SHAPE_CYLINDER = "cylinder"
+MESH_SHAPE_FROM_OBJ = "obj"  # TODO: Kinda of a hack. You need to add argument "fpath"
+
+# =============================================================================
+#                              Component Pool
+# =============================================================================

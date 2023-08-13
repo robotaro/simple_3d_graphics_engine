@@ -222,6 +222,11 @@ def rotate_cylinder_to(target: np.ndarray, vs: np.ndarray, ns: np.ndarray):
     return vs, ns
 
 
+def sort_triangles_by_index(vertices, indices):
+    data = [vertices[ind] for triangle in indices for ind in triangle]
+    return np.array(data, dtype='f4')
+
+
 def create_chessboard(side_length: float, num_tiles: int):
 
     vertices = []

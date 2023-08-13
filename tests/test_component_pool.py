@@ -3,8 +3,8 @@ import numpy as np
 
 from ecs import constants
 from ecs.component_pool import ComponentPool
-from ecs.components.transform_component import Transform
-from ecs.components.mesh_component import Mesh
+from ecs.components.transform import Transform
+from ecs.components.mesh import Mesh
 
 
 def test_constructor():

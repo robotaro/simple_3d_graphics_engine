@@ -1,15 +1,7 @@
-import os
-import time
-import logging
-
-import numpy as np
-
 from ecs import constants
 from ecs.editor import Editor
 from ecs.systems.imgui_system.imgui_system import IMGUISystem
 from ecs.systems.render_system.render_system import RenderSystem
-
-from ecs.component_pool import ComponentPool
 
 
 def main():
@@ -32,9 +24,15 @@ def main():
                            ])
 
     entity_uid = editor.component_pool.create_entity()
-    editor.component_pool.add_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM)
-    mesh = editor.component_pool.add_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_MESH)
-    editor.component_pool.add_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_RENDERABLE)
+    editor.component_pool.add_component(entity_uid=entity_uid,
+                                        component_type=constants.COMPONENT_TYPE_TRANSFORM)
+
+    mesh = editor.component_pool.add_component(entity_uid=entity_uid,
+                                               component_type=constants.COMPONENT_TYPE_MESH,
+                                               shape=constants.MESH_SHAPE_FROM_OBJ,
+                                               fpath=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj")
+    editor.component_pool.add_component(entity_uid=entity_uid,
+                                        component_type=constants.COMPONENT_TYPE_RENDERABLE)
 
     editor.run()
 

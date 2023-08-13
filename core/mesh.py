@@ -91,8 +91,6 @@ class Mesh(Node):
 
         # TODO: Add instance-based code
 
-
-
     def upload_uniforms(self, render_pass_name: str):
 
         # Get program for this render pass

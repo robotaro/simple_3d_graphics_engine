@@ -7,13 +7,14 @@ from ecs.systems.render_system.shader_library import ShaderLibrary
 
 class Renderable(Component):
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(*args, **kwargs)
 
         self.render_layer = 0
         self.vao_fragment_picking_pass = None
         self.vao_forward_pass = None
         self.vao_outline_pass = None
-
         self._gpu_initialised = False
 
     def initialise_on_gpu(self,

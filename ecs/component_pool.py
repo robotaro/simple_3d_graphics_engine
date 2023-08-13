@@ -2,19 +2,19 @@ from typing import Union
 
 from ecs import constants
 from ecs.components.component import Component
-from ecs.components.transform_component import Transform
-from ecs.components.mesh_component import Mesh
-from ecs.components.material_component import Material
-from ecs.components.renderable_component import Renderable
-from ecs.components.perspective_camera_component import PerspectiveCamera
+from ecs.components.transform import Transform
+from ecs.components.mesh import Mesh
+from ecs.components.material import Material
+from ecs.components.renderable import Renderable
+from ecs.components.perspective_camera import PerspectiveCamera
 
 
 class Entity:
 
     def __init__(self, name=""):
         self.name = name
-        self.parent = None
-        self.children = []
+        self.sub_components = []
+        self.is_subcomponent = False
 
 
 class ComponentPool:
@@ -55,7 +55,7 @@ class ComponentPool:
         self.entity_uid_counter += 1
         return uid
 
-    def add_component(self, entity_uid: int, component_type: str):
+    def add_component(self, entity_uid: int, component_type: str, **kwargs):
         component_pool = self.component_storage_map.get(component_type, None)
 
         # Safety
@@ -64,10 +64,13 @@ class ComponentPool:
         if entity_uid in component_pool:
             raise TypeError(f"[ERROR] Component type '{component_type}' already exists in component pool")
 
-        component_pool[entity_uid] = ComponentPool.COMPONENT_TYPE_MAP[component_type]()
+        component_pool[entity_uid] = ComponentPool.COMPONENT_TYPE_MAP[component_type](**kwargs)
         return component_pool[entity_uid]
 
     def remove_component(self, entity_uid: int, component_type: str):
+
+        if self.entities[entity_uid].is_subcomponent:
+            raise Exception("[ERROR] Tried to remove sub-component directly")
         component_pool = self.component_storage_map.get(component_type, None)
 
         # Safety
