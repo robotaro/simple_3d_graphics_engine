@@ -23,15 +23,25 @@ def main():
                            subscribed_events=[
                            ])
 
-    entity_uid = editor.component_pool.create_entity()
-    editor.component_pool.add_component(entity_uid=entity_uid,
+    mesh_uid = editor.component_pool.create_entity()
+    editor.component_pool.add_component(entity_uid=mesh_uid,
                                         component_type=constants.COMPONENT_TYPE_TRANSFORM)
 
-    mesh = editor.component_pool.add_component(entity_uid=entity_uid,
+    camera_uid = editor.component_pool.create_entity()
+    camera = editor.component_pool.add_component(
+        entity_uid=camera_uid,
+        component_type=constants.COMPONENT_TYPE_CAMERA,
+        viewport=(0, 0, 1024, 768))
+    transform = editor.component_pool.add_component(
+        entity_uid=camera_uid,
+        component_type=constants.COMPONENT_TYPE_TRANSFORM,
+        position=(0, 0, -2))
+
+    mesh = editor.component_pool.add_component(entity_uid=mesh_uid,
                                                component_type=constants.COMPONENT_TYPE_MESH,
                                                shape=constants.MESH_SHAPE_FROM_OBJ,
                                                fpath=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj")
-    editor.component_pool.add_component(entity_uid=entity_uid,
+    editor.component_pool.add_component(entity_uid=mesh_uid,
                                         component_type=constants.COMPONENT_TYPE_RENDERABLE)
 
     editor.run()

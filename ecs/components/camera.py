@@ -1,31 +1,33 @@
 import numpy as np
+import moderngl
 
 from ecs import constants
 from ecs.components.component import Component
 
 
-class PerspectiveCamera(Component):
+class Camera(Component):
 
     _type = "perspective_camera"
 
-    def __init__(self,**kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, **kwargs):
+        super().__init__()
 
         self.z_near = constants.CAMERA_Z_NEAR
         self.z_far = constants.CAMERA_Z_FAR
         self.y_fov_deg = constants.CAMERA_FOV_DEG
 
-    def get_projection_matrix(self, width: int, height: int):
-        # TODO: Remove this and use the mat4 version
-        """Return the OpenGL projection matrix for this camera.
+        if "viewport" not in kwargs:
+            raise Exception(f"[ERROR] Camera needs a viewport argument")
+        self.viewport = kwargs["viewport"]
 
-        Parameters
-        ----------
-        width : int
-            Width of the current viewport, in pixels.
-        height : int
-            Height of the current viewport, in pixels.
-        """
+    def upload_uniforms(self, program: moderngl.Program):
+        proj_matrix_bytes = self.get_projection_matrix(
+            width=self.viewport.width,
+            height=self.viewport.height).T.astype('f4').tobytes()
+        program["projection_matrix"].write(proj_matrix_bytes)
+
+
+    def get_projection_matrix(self, width: int, height: int):
 
         aspect_ratio = float(width) / float(height)
 

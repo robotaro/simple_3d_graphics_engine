@@ -15,7 +15,7 @@ def test_constructor():
     assert pool.transform_components == {}
     assert pool.mesh_components == {}
     assert pool.renderable_components == {}
-    assert pool.perspective_camera_components == {}
+    assert pool.camera_components == {}
 
 
 def test_create_entity():

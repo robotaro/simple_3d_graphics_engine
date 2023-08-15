@@ -6,7 +6,7 @@ from ecs.components.transform import Transform
 from ecs.components.mesh import Mesh
 from ecs.components.material import Material
 from ecs.components.renderable import Renderable
-from ecs.components.perspective_camera import PerspectiveCamera
+from ecs.components.camera import Camera
 
 
 class Entity:
@@ -23,7 +23,7 @@ class ComponentPool:
         constants.COMPONENT_TYPE_TRANSFORM: Transform,
         constants.COMPONENT_TYPE_MESH: Mesh,
         constants.COMPONENT_TYPE_RENDERABLE: Renderable,
-        constants.COMPONENT_TYPE_PERSPECTIVE_CAMERA: PerspectiveCamera,
+        constants.COMPONENT_TYPE_CAMERA: Camera,
         constants.COMPONENT_TYPE_MATERIAL: Material
     }
 
@@ -36,7 +36,7 @@ class ComponentPool:
 
         # Components
         self.transform_components = {}
-        self.perspective_camera_components = {}
+        self.camera_components = {}
         self.mesh_components = {}
         self.renderable_components = {}
         self.material_components = {}
@@ -45,7 +45,7 @@ class ComponentPool:
             constants.COMPONENT_TYPE_TRANSFORM: self.transform_components,
             constants.COMPONENT_TYPE_MESH: self.mesh_components,
             constants.COMPONENT_TYPE_RENDERABLE: self.renderable_components,
-            constants.COMPONENT_TYPE_PERSPECTIVE_CAMERA: self.perspective_camera_components,
+            constants.COMPONENT_TYPE_CAMERA: self.camera_components,
             constants.COMPONENT_TYPE_MATERIAL: self.material_components
         }
 

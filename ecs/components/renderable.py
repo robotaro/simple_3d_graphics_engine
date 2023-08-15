@@ -7,38 +7,47 @@ from ecs.systems.render_system.shader_library import ShaderLibrary
 
 class Renderable(Component):
 
+    __slots__ = [
+        "render_layer",
+        "vao_fragment_picking_pass",
+        "vao_forward_pass",
+        "vao_outline_pass",
+        "_gpu_initialised"
+    ]
+
     def __init__(self, *args, **kwargs):
 
         super().__init__(*args, **kwargs)
 
         self.render_layer = 0
-        self.vao_fragment_picking_pass = None
-        self.vao_forward_pass = None
-        self.vao_outline_pass = None
+        self.visible = True
+        self.vaos = {}
         self._gpu_initialised = False
 
     def initialise_on_gpu(self,
                           ctx: moderngl.Context,
                           shader_library: ShaderLibrary,
                           vbo_tuple_list: list,
+                          program_name_list: list,
                           ibo_faces=None):
-
-        # TODO: Think of a better place  to put this utility function
-        def create_vao(ibo_faces: moderngl.Buffer):
-            if ibo_faces is None:
-                return ctx.vertex_array(program, vbo_tuple_list)
-            else:
-                return ctx.vertex_array(program, vbo_tuple_list, ibo_faces)
 
         if self._gpu_initialised:
             return
 
-        program = shader_library[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS]
-        self.vao_forward_pass = create_vao(ibo_faces=ibo_faces)
+        for program_name in program_name_list:
+
+            program = shader_library[program_name]
+
+            # TODO: I think one version serves both if ibo_faces is None. Default value seems ot be None as well
+            if ibo_faces is None:
+                self.vaos[program_name] = ctx.vertex_array(program, vbo_tuple_list)
+            else:
+                self.vaos[program_name] = ctx.vertex_array(program, vbo_tuple_list, ibo_faces)
 
         self._gpu_initialised = True
 
-    def release(self):
+
+def release(self):
         if self.vao_fragment_picking_pass:
             self.vao_fragment_picking_pass.release()
 

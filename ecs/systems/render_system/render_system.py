@@ -7,6 +7,7 @@ from ecs import constants
 from ecs.systems.system import System
 from ecs.systems.render_system.shader_library import ShaderLibrary
 from ecs.component_pool import ComponentPool
+from ecs.components.camera import Camera
 from core.geometry_3d import ready_to_render
 
 
@@ -111,19 +112,24 @@ class RenderSystem(System):
             mesh = component_pool.mesh_components[entity_uid]
             mesh.initialise_on_gpu(ctx=self.ctx)
             renderable.initialise_on_gpu(ctx=self.ctx,
+                                         program_name_list=[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS],
                                          shader_library=self.shader_library,
                                          vbo_tuple_list=mesh.get_vbo_declaration_list(),
                                          ibo_faces=mesh.ibo_faces)
 
+        # Renderable entitity IDs
+        renderable_entities = list(component_pool.renderable_components.keys())
+        camera_entities = list(component_pool.camera_components.keys())
 
+        for camera in camera_entities:
 
-        for viewport in viewports:
+            camera.upload
             # self.demo_pass(viewport=viewport)
 
             # self.offscreen_and_onscreen_pass(scene=scene, viewport=viewport)
 
             # self.fragment_map_pass(scene=scene, viewport=viewport)
-            self.forward_pass(scene=scene, viewport=viewport)
+            self.forward_pass(camera_component=camera, renderable_components=renderable_entities)
             # self.outline_pass(scene=scene, viewport=viewport)
 
         pass
@@ -180,8 +186,8 @@ class RenderSystem(System):
         image = Image.open(texture_fpath)
         image_data = np.array(image)
         self.textures[texture_id] = self.ctx.texture(size=image.size,
-                                                                components=image_data.shape[-1],
-                                                                data=image_data.tobytes())
+                                                     components=image_data.shape[-1],
+                                                     data=image_data.tobytes())
 
     # =========================================================================
     #                         Render functions
@@ -226,9 +232,9 @@ class RenderSystem(System):
         self.ctx.disable(moderngl.DEPTH_TEST)
 
         self.textures["offscreen_diffuse"].use(location=0)
-        self.quads["fullscreen"]["vao"].render()
+        self.quads["fullscreen"]["vao"].render()"""
 
-    def forward_pass(self, scene: Scene, viewport: Viewport):
+    def forward_pass(self, camera_component: Camera, renderable_components: list):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
@@ -238,12 +244,12 @@ class RenderSystem(System):
         # TODO: maybe move this to inside the scene?
         # Clear context (you need to use the use() first to bind it!)
         self.ctx.clear(
-            red=scene._background_color[0],
-            green=scene._background_color[1],
-            blue=scene._background_color[2],
+            red=1,
+            green=1,
+            blue=1,
             alpha=0.0,
             depth=1.0,
-            viewport=viewport.to_tuple())
+            viewport=camera_component.viewport)
 
         # Prepare context flags for rendering
         self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)
@@ -255,30 +261,32 @@ class RenderSystem(System):
             moderngl.ONE)
 
         # Render scene
-        light_nodes = scene.get_nodes_by_type(node_type="directional_light")
-        meshes = scene.get_nodes_by_type(node_type="mesh")
+        #light_nodes = scene.get_nodes_by_type(node_type="directional_light")
+        #meshes = scene.get_nodes_by_type(node_type="mesh")
 
         # [ Stage : Forward Pass ]
-        for mesh in meshes:
+        for renderable in renderable_components:
 
-            if not mesh.visible:
+            if not renderable.visible:
                 continue
 
-            program = self.shader_library[mesh.forward_pass_program_name]
-
             # Set camera uniforms
-            self.upload_camera_uniforms(program=program, viewport=viewport)
+            renderable.upload_camera_uniforms()
 
             # Set light uniforms
             # program["ambient_strength"] = self._ambient_light_color
 
             # Upload buffers ONLY if necessary
-            if mesh._vbo_dirty_flag:
-                mesh.upload_buffers()
-                mesh._vbo_dirty_flag = False
+            #if mesh._vbo_dirty_flag:
+            #    mesh.upload_buffers()
+            #    mesh._vbo_dirty_flag = False
+
+            # TODO: Continue from here, switch to uid to get the transforms
 
             # Upload uniforms
-            program["model_matrix"].write(mesh.transform.T.astype('f4').tobytes())
+            view_matrix_bytes = np.eye(4, dtype=np.float32).T.astype('f4').tobytes()
+            self.shader_library["view_matrix"].write(view_matrix_bytes)
+            self.shader_library["model_matrix"].write(mesh.transform.T.astype('f4').tobytes())
 
             # Render the vao at the end
             mesh.vao.render(moderngl.TRIANGLES)
@@ -287,6 +295,7 @@ class RenderSystem(System):
 
         # Stage: Draw transparent objects back to front
 
+    """
     def fragment_map_pass(self, scene: Scene, viewport: Viewport):
         self.ctx.enable_only(moderngl.DEPTH_TEST)
         self.framebuffer_offscreen_picking.use()
@@ -344,15 +353,4 @@ class RenderSystem(System):
             if take_pass:
                 self.render_pass_shadow_mapping(scene, ln, flags)
         pass
-
-    @staticmethod
-    def upload_camera_uniforms(program: moderngl.Program,
-                               viewport: Viewport):
-        proj_matrix_bytes = viewport.camera.get_projection_matrix(
-            width=viewport.width,
-            height=viewport.height).T.astype('f4').tobytes()
-        program["projection_matrix"].write(proj_matrix_bytes)
-
-        view_matrix_bytes = viewport.camera.get_view_matrix().T.astype('f4').tobytes()
-        program["view_matrix"].write(view_matrix_bytes)"""
-
+        """
