@@ -22,10 +22,9 @@ class Camera(Component):
 
     def upload_uniforms(self, program: moderngl.Program):
         proj_matrix_bytes = self.get_projection_matrix(
-            width=self.viewport.width,
-            height=self.viewport.height).T.astype('f4').tobytes()
+            width=self.viewport[constants.VIEWPORT_INDEX_WIDTH],
+            height=self.viewport[constants.VIEWPORT_INDEX_HEIGHT]).T.astype('f4').tobytes()
         program["projection_matrix"].write(proj_matrix_bytes)
-
 
     def get_projection_matrix(self, width: int, height: int):
 

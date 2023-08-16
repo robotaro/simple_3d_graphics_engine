@@ -117,19 +117,20 @@ class RenderSystem(System):
                                          vbo_tuple_list=mesh.get_vbo_declaration_list(),
                                          ibo_faces=mesh.ibo_faces)
 
-        # Renderable entitity IDs
-        renderable_entities = list(component_pool.renderable_components.keys())
-        camera_entities = list(component_pool.camera_components.keys())
+        # Renderable entity IDs
+        renderable_entity_uids = list(component_pool.renderable_components.keys())
+        camera_entity_uids = list(component_pool.camera_components.keys())
 
-        for camera in camera_entities:
+        for camera_uid in camera_entity_uids:
 
-            camera.upload
             # self.demo_pass(viewport=viewport)
 
             # self.offscreen_and_onscreen_pass(scene=scene, viewport=viewport)
 
             # self.fragment_map_pass(scene=scene, viewport=viewport)
-            self.forward_pass(camera_component=camera, renderable_components=renderable_entities)
+            self.forward_pass(component_pool=component_pool,
+                              camera_uid=camera_uid,
+                              renderable_uids=renderable_entity_uids)
             # self.outline_pass(scene=scene, viewport=viewport)
 
         pass
@@ -234,12 +235,15 @@ class RenderSystem(System):
         self.textures["offscreen_diffuse"].use(location=0)
         self.quads["fullscreen"]["vao"].render()"""
 
-    def forward_pass(self, camera_component: Camera, renderable_components: list):
+    def forward_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_uids: list):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
         # Bind screen context to draw to it
         self.ctx.screen.use()
+
+        camera_component = component_pool.camera_components[camera_uid]
+        camera_transform = component_pool.transform_components[camera_uid]
 
         # TODO: maybe move this to inside the scene?
         # Clear context (you need to use the use() first to bind it!)
@@ -264,14 +268,18 @@ class RenderSystem(System):
         #light_nodes = scene.get_nodes_by_type(node_type="directional_light")
         #meshes = scene.get_nodes_by_type(node_type="mesh")
 
-        # [ Stage : Forward Pass ]
-        for renderable in renderable_components:
+        program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS]
 
-            if not renderable.visible:
+        # [ Stage : Forward Pass ]
+        for renderable_uid in renderable_uids:
+
+            renderable_component = component_pool.renderable_components[renderable_uid]
+
+            if not renderable_component.visible:
                 continue
 
             # Set camera uniforms
-            renderable.upload_camera_uniforms()
+            camera_component.upload_uniforms(program=program)
 
             # Set light uniforms
             # program["ambient_strength"] = self._ambient_light_color
@@ -283,17 +291,20 @@ class RenderSystem(System):
 
             # TODO: Continue from here, switch to uid to get the transforms
 
+            renderable_transform = component_pool.transform_components[renderable_uid]
+
+            camera_transform.update()
+
             # Upload uniforms
-            view_matrix_bytes = np.eye(4, dtype=np.float32).T.astype('f4').tobytes()
-            self.shader_library["view_matrix"].write(view_matrix_bytes)
-            self.shader_library["model_matrix"].write(mesh.transform.T.astype('f4').tobytes())
+            program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
+            program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
 
             # Render the vao at the end
-            mesh.vao.render(moderngl.TRIANGLES)
+            renderable_component.vaos[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
 
-        # DEBUG
 
-        # Stage: Draw transparent objects back to front
+
+            # Stage: Draw transparent objects back to front
 
     """
     def fragment_map_pass(self, scene: Scene, viewport: Viewport):

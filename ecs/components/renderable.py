@@ -9,9 +9,8 @@ class Renderable(Component):
 
     __slots__ = [
         "render_layer",
-        "vao_fragment_picking_pass",
-        "vao_forward_pass",
-        "vao_outline_pass",
+        "vaos",
+        "visible",
         "_gpu_initialised"
     ]
 
@@ -46,13 +45,7 @@ class Renderable(Component):
 
         self._gpu_initialised = True
 
+    def release(self):
+        for _, vao in self.vaos:
+            vao.release()
 
-def release(self):
-        if self.vao_fragment_picking_pass:
-            self.vao_fragment_picking_pass.release()
-
-        if self.vao_forward_pass:
-            self.vao_forward_pass.release()
-
-        if self.vao_outline_pass:
-            self.vao_outline_pass.release()

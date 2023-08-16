@@ -16,7 +16,6 @@ EVENT_WINDOW_RESIZE = 8                 # args: (width, height) <int, int>
 EVENT_WINDOW_FRAMEBUFFER_RESIZE = 9     # args: (width, height) <int, int>
 EVENT_WINDOW_DROP_FILES = 10            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a list
 
-
 EVENT_LOAD_FILE = 1                 #args: (filepath) <str>
 
 # =============================================================================
@@ -52,6 +51,12 @@ KEY_LEFT_CTRL = 29
 KEY_LEFT_SHIFT = 42
 KEY_LEFT_ALT = 56
 
+# Viewport
+VIEWPORT_INDEX_X = 0
+VIEWPORT_INDEX_Y = 1
+VIEWPORT_INDEX_WIDTH = 2
+VIEWPORT_INDEX_HEIGHT = 3
+
 # =============================================================================
 #                                Render System
 # =============================================================================
@@ -62,7 +67,7 @@ RENDER_SYSTEM_PROGRAM_OUTLINE_PASS = "outline_pass"
 
 # Uniform variables
 SHADER_UNIFORM_INPUT_VERTICES = "in_vert"
-SHADER_UNIFORM_INPUT_NORMALS = "in_normals"
+SHADER_UNIFORM_INPUT_NORMALS = "in_normal"
 SHADER_UNIFORM_INPUT_COLORS = "in_colors"
 SHADER_UNIFORM_INPUT_UVS = "in_uvs"
 
