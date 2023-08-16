@@ -23,4 +23,4 @@ class Scene:
 
     def render(self):
         for obj in self.objects:
-            obj.render_forward_pass()
+            obj.render()

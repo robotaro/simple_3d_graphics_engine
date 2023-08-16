@@ -4,7 +4,7 @@ from core.math import quaternion
 
 
 @njit
-def look_at_direction(direction, up_vector, output_mat3):
+def look_at_direction(direction: np.array, up_vector: np.array, output_mat3: np.array):
 
     """
     Check vector multiplication reference at:
@@ -14,11 +14,12 @@ def look_at_direction(direction, up_vector, output_mat3):
     [IMPORTANT] The resulting rotation matrix will have the Z-vector POINTING AT the "direction vector"
 
     Create a rotation 3x3 matrix where the Z-axis points at the "direction" vector
-    TODO: Add edge-case where direction == up_vector
     :param direction: numpy array (3,) <np.float32>
     :param up_vector: numpy array (3,) <np.float32>
     :param output_mat3:
     """
+
+    # TODO: Add edge-case where direction == up_vector
 
     forward = direction / np.linalg.norm(direction)
     right = np.cross(up_vector, forward)

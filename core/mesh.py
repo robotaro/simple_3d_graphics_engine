@@ -18,7 +18,7 @@ class Mesh(Node):
                  faces=None,
                  uvs=None,
                  material=None,
-                 program_name="mesh",
+                 forward_pass_program_name="mesh",
                  *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -36,19 +36,23 @@ class Mesh(Node):
         self.vbo_vertices = None
         self.vbo_normals = None
         self.ibo_faces = None  # Triangular faces
-        self.vao = None
+        self.vaos = {}
 
         # Custom programs - for special features
-        self.program_name = program_name
-        self.program = None
+        self.forward_pass_program_name = forward_pass_program_name
 
         # Flags
         self._vbo_dirty_flag = True
         self._instanced = False
         self._renderable = True
+        self.visible = True
         self._flat_shading = False
 
     def release(self):
+
+        for name, vao in self.vaos.items():
+            vao.release()
+
         if self.vbo_vertices:
             self.vbo_vertices.release()
 
@@ -58,23 +62,17 @@ class Mesh(Node):
         if self.ibo_faces:
             self.ibo_faces.release()
 
-        if self.vao:
-            self.vao.release()
-
-    # =========================================================================
-    #                   Rendering and GPU upload functions
-    # =========================================================================
-
     @Node.once
     def make_renderable(self, mlg_context: moderngl.Context, shader_library: ShaderLibrary):
 
         print(f"[{self._type} | {self.name}] make_renderable")
 
-        # TODO: - Check if I need to upload data here or leave it to uploade buffers
+        # TODO: - Check if I need to upload data here or leave it to uploaded buffers
         #       - Check if I need to set these to dynamic
 
         vbo_list = []
 
+        # Create VBOs
         if self.vertices is not None:
             self.vbo_vertices = mlg_context.buffer(self.vertices.astype("f4").tobytes())
             vbo_list.append((self.vbo_vertices, "3f", "in_vert"))
@@ -83,110 +81,25 @@ class Mesh(Node):
             self.vbo_normals = mlg_context.buffer(self.normals.astype("f4").tobytes())
             vbo_list.append((self.vbo_normals, "3f", "in_normal"))
 
-        self.program = shader_library.get_program(self.program_name)
+        program = shader_library[self.forward_pass_program_name]
 
         if self.faces is None:
-            self.vao = mlg_context.vertex_array(self.program, vbo_list)
+            self.vao = mlg_context.vertex_array(program, vbo_list)
         else:
             self.ibo_faces = mlg_context.buffer(self.faces.astype("i4").tobytes())
-            self.vao = mlg_context.vertex_array(self.program, vbo_list, self.ibo_faces)
+            self.vao = mlg_context.vertex_array(program, vbo_list, self.ibo_faces)
 
         # TODO: Add instance-based code
 
-    def render_shadow_pass(self, **kwargs):
-        pass
+    def upload_uniforms(self, render_pass_name: str):
 
-    def render_forward_pass(self, **kwargs):
-        if self._vbo_dirty_flag:
-            self.update_buffers()
-            self._vbo_dirty_flag = False
+        # Get program for this render pass
+        program = self.vaos[render_pass_name].program
 
-        self.upload_uniforms(**kwargs)
-        self.vao.render(moderngl.TRIANGLES)
+        # Camera uniforms were previously uploaded here
+        program["model_matrix"].write(self.transform.T.astype('f4').tobytes())
 
-    def render_fragment_picking(self, **kwargs):
-
-        """
-        # Transpose because np is row-major but OpenGL expects column-major.
-        prog = self.fragmap_program
-        self.set_camera_matrices(prog, camera)
-
-        # Render with the specified object uid, if None use the node uid instead.
-        prog["obj_id"] = uid or self.uid
-
-        if self.backface_culling or self.backface_fragmap:
-            ctx.enable(moderngl.CULL_FACE)
-        else:
-            ctx.disable(moderngl.CULL_FACE)
-
-        # If backface_fragmap is enabled for this node only render backfaces
-        if self.backface_fragmap:
-            ctx.cull_face = "front"
-
-        self.render_positions(prog)
-
-        # Restore cull face to back
-        if self.backface_fragmap:
-            ctx.cull_face = "back"
-        """
-        pass
-
-    def update_buffers(self):
-
-        print(f"[{self._type} | {self.name}] update_buffers")
-
-        # Write positions.
-        self.vbo_vertices.write(self.vertices.astype("f4").tobytes())
-
-        # Write normals.
-        self.vbo_normals.write(self.normals.astype("f4").tobytes())
-
-        """if self.face_colors is None:
-            # Write vertex colors.
-            self.vbo_colors.write(self.current_vertex_colors.astype("f4").tobytes())
-        else:
-            # Write face colors.
-
-            # Compute shape of 2D texture.
-            shape = (min(self.faces.shape[0], 8192), (self.faces.shape[0] + 8191) // 8192)
-
-            # Write texture left justifying the buffer to fill the last row of the texture.
-            self.face_colors_texture.write(
-                self.current_face_colors.astype("f4").tobytes().ljust(shape[0] * shape[1] * 16)
-            )
-
-        # Write uvs.
-        if self.has_texture:
-            self.vbo_uvs.write(self.uv_coords.astype("f4").tobytes())
-
-        # Write instance transforms.
-        if self.instance_transforms is not None:
-            self.vbo_instance_transforms.write(
-                np.transpose(self.current_instance_transforms.astype("f4"), (0, 2, 1)).tobytes()
-            )"""
-
-    def upload_uniforms(self, **kwargs):
-
-        if self.program is None:
-            return
-
-        #print(f"[{self._type} | {self.name}] update_uniforms")
-
-        # Set camera uniforms
-        camera = kwargs["viewport"].camera
-        width = kwargs["viewport"].width
-        height = kwargs["viewport"].height
-
-        proj_matrix_bytes = camera.get_projection_matrix(width=width, height=height).T.astype('f4').tobytes()
-        self.program["projection_matrix"].write(proj_matrix_bytes)
-
-        view_matrix_bytes = camera.transform.T.astype('f4').tobytes()
-        self.program["view_matrix"].write(view_matrix_bytes)
-
-        model_matrix_bytes = self.transform.T.astype('f4').tobytes()
-        self.program["model_matrix"].write(model_matrix_bytes)
-
-        # Set material
+        # Upload material uniforms
         #if self.material is not None:
         #    self.program["diffuse_coeff"].value = self.material.diffuse
         #    self.program["ambient_coeff"].value = self.material.ambient
@@ -229,23 +142,14 @@ class Mesh(Node):
         self.receive_shadow(prog, **kwargs)
         return prog"""
 
+
+
     # =========================================================================
     #                         Getters and Setters
     # =========================================================================
 
     @property
-    def centroid(self):
-        """(3,) float : The centroid of the mesh's axis-aligned bounding box
-        (AABB).
-        """
-        return np.mean(self.bounds, axis=0)
-
-    @property
-    def extents(self):
-        """(3,) float : The lengths of the axes of the mesh's AABB.
-        """
-        return np.diff(self.bounds, axis=0).reshape(-1)
-
-    @property
     def is_transparent(self):
-        return False
+        if self.material is None:
+            return False
+        return self.material.is_transparent()

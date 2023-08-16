@@ -105,21 +105,21 @@ class ColorsAndTexture(Example):
         self.mvp.write((proj * lookat * rotate).astype('f4'))
 
         self.color.value = (0.67, 0.49, 0.29)
-        self.vao_ground.render_forward_pass()
+        self.vao_ground.render()
 
         self.color.value = (0.46, 0.67, 0.29)
-        self.vao_grass.render_forward_pass()
+        self.vao_grass.render()
 
         self.color.value = (1.0, 1.0, 1.0)
-        self.vao_billboard.render_forward_pass()
+        self.vao_billboard.render()
 
         self.color.value = (0.2, 0.2, 0.2)
-        self.vao_holder.render_forward_pass()
+        self.vao_holder.render()
 
         self.use_texture.value = True
         self.texture.use()
 
-        self.vao_image.render_forward_pass()
+        self.vao_image.render()
 
 
 if __name__ == '__main__':

@@ -87,7 +87,7 @@ class FragmentPicking(moderngl_window.WindowConfig):
         # Simple program just rendering texture
         self.texture_program = self.load_program('programs/fragment_picking/texture.glsl')
         self.texture_program['texture0'].value = 0
-        # Geomtry shader writing to two offscreen layers (color, normal) + depth
+        # Geometry shader writing to two offscreen layers (color, normal) + depth
         self.geometry_program = self.load_program('programs/fragment_picking/geometry.glsl')
         self.geometry_program['texture0'].value = 0  # use texture channel 0
 
