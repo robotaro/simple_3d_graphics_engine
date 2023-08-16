@@ -16,7 +16,7 @@ class Node:
                  name=None,
                  rotation=None,
                  scale=None,
-                 translation=None,
+                 position=None,
                  matrix=None):
 
         self.uid = SETTINGS.next_gui_id()
@@ -28,17 +28,17 @@ class Node:
         self._transform = None
         self._scale = None
         self._rotation = None
-        self._translation = None
+        self._position = None
 
         if matrix is None:
             if rotation is None:
                 rotation = np.array([0.0, 0.0, 0.0, 1.0])
-            if translation is None:
-                translation = np.zeros(3)
+            if position is None:
+                position = np.zeros(3)
             if scale is None:
                 scale = np.ones(3)
             self.rotation = rotation
-            self.translation = translation
+            self.translation = position
             self.scale = scale
         else:
             self.matrix = matrix
@@ -66,13 +66,13 @@ class Node:
     #                         Utility functions
     # =========================================================================
 
-    def get_nodes_by_type(self, type: str, output_list: list):
+    def get_nodes_by_type(self, node_type: str, output_list: list) -> None:
 
-        if self._type == type:
+        if self._type == node_type:
             output_list.append(self)
 
         for child in self._children:
-            child.get_nodes_by_type(type=type)
+            child.get_nodes_by_type(node_type=node_type, output_list=output_list)
 
     def get_node_by_name(self, name: str) -> "Node":
 
@@ -98,22 +98,11 @@ class Node:
     # =========================================================================
 
     def make_renderable(self, mlg_context: moderngl.Context, shader_library: ShaderLibrary, **kwargs):
+        # TODO: The order should be controlled by the
         for child in self._children:
             child.make_renderable(mlg_context=mlg_context, shader_library=shader_library, **kwargs)
 
-    def render_shadow_pass(self, **kwargs):
-        for child in self._children:
-            child.render_shadow_pass(**kwargs)
-
-    def render_forward_pass(self, **kwargs):
-        for child in self._children:
-            child.render_forward_pass(**kwargs)
-
-    def render_fragment_picking_pass(self, **kwargs):
-        for child in self._children:
-            child.render_fragment_picking(**kwargs)
-
-    def update_buffers(self):
+    def upload_buffers(self):
         pass
 
     def upload_uniform(self):
@@ -167,17 +156,17 @@ class Node:
         self._transform = None
 
     @property
-    def translation(self):
+    def position(self):
         """(3,) float : The translation for this node.
         """
-        return self._translation
+        return self._position
 
-    @translation.setter
-    def translation(self, value):
+    @position.setter
+    def position(self, value):
         value = np.asanyarray(value)
         if value.shape != (3,):
             raise ValueError('Translation must be a (3,) vector')
-        self._translation = value
+        self._position = value
         self._transform = None
 
     @property

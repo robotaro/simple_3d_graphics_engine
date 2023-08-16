@@ -42,7 +42,7 @@ class ShaderLibrary:
 
         self.compile_programs()
 
-    def get_program(self, program_id: str) -> moderngl.Program:
+    def __getitem__(self, program_id: str):
         if program_id not in self.programs:
             raise KeyError(f"[ERROR] Program ID '{program_id}' is not present in the program library")
         return self.programs.get(program_id, None)
@@ -93,12 +93,13 @@ class ShaderLibrary:
             # GLSL Source code
             code_lines = file.readlines()
 
-            # Get version
-            version_details = [(index, line) for index, line in enumerate(code_lines)
+            # Get version - The final version will be the lowest version found!
+            line_number_and_version_list = [(index, line) for index, line in enumerate(code_lines)
                                if line.strip().startswith("#version")]
-            version = 0
-            if len(version_details) > 0:
-                version = int(version_details[0][1].replace("#version", "").strip())
+
+            recovered_versions = set([int(line[1].replace("#version", "").strip())
+                                  for line in line_number_and_version_list])
+            version = min(recovered_versions) if len(recovered_versions) > 0 else 0
 
             # Remove the line with the "#version"
             code_lines = [line for line in code_lines if not line.strip().startswith("#version")]
@@ -146,6 +147,9 @@ class ShaderLibrary:
             shader.source_code_lines[a:b] = self.shader_blueprints[include_shader_key].source_code_lines
 
     def _blueprint2source_code(self, blueprint: dict, shader_type: str) -> Union[str, None]:
+
+        if not isinstance(blueprint, dict):
+            raise TypeError(f"[ERROR] Shade blueprint needs to be dictionary")
 
         extra_definitions = blueprint.get("extra_definitions", {})
 
@@ -234,6 +238,10 @@ class ShaderLibrary:
 
         for key, blueprint in yaml_dict.items():
 
+            if blueprint is None:
+                print(f"[WARNING] Entry '{key}' is invalid or incomplete")
+                continue
+
             # Generate source code for all individual shaders that will make the final program
             vertex_source = self._blueprint2source_code(shader_type="vertex", blueprint=blueprint)
             geometry_source = self._blueprint2source_code(shader_type="geometry", blueprint=blueprint)
@@ -245,15 +253,13 @@ class ShaderLibrary:
                     vertex_shader=vertex_source,
                     geometry_shader=geometry_source,
                     fragment_shader=fragment_source)
-                self.programs[key] = {
-                    "name": compiled_program
-                }
+
             except Exception as error:
                 # TODO: Sort out how you want this
                 raise Exception(f"[ERROR] Program '{key}' did not compile. "
                                 f"Here are the errors:\n\n[{key}]\n\n{error.args[0]}")
-            self.programs[key] = compiled_program
 
+            self.programs[key] = compiled_program
 
 
 

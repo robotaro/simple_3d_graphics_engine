@@ -26,7 +26,7 @@ class MeshFactory:
 
         new_mesh = Mesh(
             name=name,
-            program_name=program_name,
+            forward_pass_program_name=program_name,
             vertices=vertices,
             normals=normals,
             faces=faces,

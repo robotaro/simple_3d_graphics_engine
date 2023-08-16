@@ -25,6 +25,6 @@ class Viewport:
         """
         return x >= self.x and x < (self.x + self.width) and y >= self.y and y < (self.y + self.height)
 
-    def get_tuple(self) -> tuple:
+    def to_tuple(self) -> tuple:
         return (self.x, self.y, self.width, self.height)
 

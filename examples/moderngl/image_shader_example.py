@@ -99,7 +99,7 @@ class ImageTransformer:
             self.fbo.use()
 
         texture.use(0)
-        self.quad.render_forward_pass(mode=moderngl.TRIANGLE_STRIP)
+        self.quad.render(mode=moderngl.TRIANGLE_STRIP)
 
     def write(self, name):
         image = Image.frombytes("RGBA", self.fbo.size, self.fbo.read(components=4))

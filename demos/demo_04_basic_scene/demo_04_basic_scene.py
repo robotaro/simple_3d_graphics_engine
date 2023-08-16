@@ -44,9 +44,8 @@ class BasicScene(Window):
 
         # Create basic objects required for rendering
         self.scene = Scene(name="Main Scene")
-        self.camera = PerspectiveCamera(name="Main Camera",
-                                        y_fov_deg=45.0,
-                                        translation=(0, 0, -3))
+        self.camera = self.scene.create_perspective_camera(name="Main Camera",
+                                                           position=(0, 0, -2))
         self.material = Material()
 
         self.viewport = Viewport(camera=self.camera,
@@ -60,11 +59,16 @@ class BasicScene(Window):
         self.mesh = loader.from_obj(name="Dragon", program_name="mesh_with_lights", fpath=mesh_fpath)
 
         # Scene Setup
-        self.scene.root_node.add(self.camera)
-        self.scene.root_node.add(self.mesh)
+        self.scene._root_node.add(self.camera)
+        self.scene._root_node.add(self.mesh)
 
         # DEBUG
-        self.scene.root_node.print_hierarchy()
+        self.scene._root_node.print_hierarchy()
+        self.renderer.load_texture_from_file(texture_fpath=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\demos\demo_04_basic_scene\ball.png",
+                                             texture_id="ball",
+                                             datatype="u8")
+
+        self.renderer.initialize()
 
     def update(self, delta_time: float):
         self.mesh.transform = mat4.compute_transform(position=(0, 0, 0),
