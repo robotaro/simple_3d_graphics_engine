@@ -1,3 +1,4 @@
+import logging
 import moderngl
 
 from ecs.component_pool import ComponentPool
@@ -5,8 +6,10 @@ from ecs.component_pool import ComponentPool
 
 class System:
 
-    def __init__(self):
-        self.logger = None
+    _type = "base_system"
+
+    def __init__(self, logger: logging.Logger):
+        self.logger = logger
 
     def initialise(self, **kwargs) -> bool:
         return True

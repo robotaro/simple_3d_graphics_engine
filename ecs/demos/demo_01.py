@@ -1,6 +1,6 @@
 from ecs import constants
 from ecs.editor import Editor
-from ecs.systems.imgui_system.imgui_system import IMGUISystem
+from ecs.systems.imgui_system.imgui_system import ImguiSystem
 from ecs.systems.render_system.render_system import RenderSystem
 
 
@@ -12,16 +12,11 @@ def main():
         vertical_sync=True
     )
 
-    editor.register_system(name="imgui_system",
-                           system=IMGUISystem(),
-                           subscribed_events=[
-                               constants.EVENT_MOUSE_SCROLL,
-                           ])
+    editor.create_system(system_type="render_system",
+                         subscribed_events=[])
 
-    editor.register_system(name="render_system",
-                           system=RenderSystem(),
-                           subscribed_events=[
-                           ])
+    editor.create_system(system_type="imgui_system",
+                         subscribed_events=[constants.EVENT_MOUSE_SCROLL,])
 
     mesh_uid = editor.component_pool.create_entity()
     editor.component_pool.add_component(entity_uid=mesh_uid,

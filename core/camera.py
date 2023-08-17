@@ -209,6 +209,4 @@ class OrthographicCamera(Camera):
         return P
 
 
-
-
 __all__ = ['Camera', 'PerspectiveCamera', 'OrthographicCamera']

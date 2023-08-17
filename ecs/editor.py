@@ -10,7 +10,9 @@ from ecs import constants
 from ecs.systems.system import System
 from core.window import Window
 
-from ecs.systems.system import System
+# Systems
+from ecs.systems.render_system.render_system import RenderSystem
+from ecs.systems.imgui_system.imgui_system import ImguiSystem
 from ecs.event_publisher import EventPublisher
 from ecs.component_pool import ComponentPool
 
@@ -50,7 +52,7 @@ class Editor:
         self.vertical_sync = vertical_sync
 
         # Core Variables
-        self.systems = {}
+        self.systems = []
         self.component_pool = ComponentPool()
         self.event_publisher = EventPublisher()
 
@@ -187,30 +189,43 @@ class Editor:
         """
         pass
 
-    def register_system(self, name: str, system: System, subscribed_events: List[int]):
-        if name in self.systems:
-            raise KeyError(f"[ERROR] System named 'name' already exists")
+    def create_system(self, system_type: str, subscribed_events: List[int]) -> bool:
 
-        # Add new system
-        self.systems[name] = system
+        # TODO: Check if system type has already been created
+        new_system = None
+
+        if system_type == RenderSystem._type:
+            new_system = RenderSystem(
+                logger=self.logger,
+                context=self.context,
+                buffer_size=self.buffer_size
+            )
+
+        if system_type == ImguiSystem._type:
+            new_system = ImguiSystem(
+                logger=self.logger,
+                window_glfw=self.window_glfw
+            )
+
+        if new_system is None:
+            self.logger.error(f"Failed to create system {system_type}")
+            return False
 
         # Subscribe system to specific topics
         for event_type in subscribed_events:
             self.event_publisher.subscribe(
                 event_type=event_type,
-                listener=system)
+                listener=new_system)
+
+        # And finally add the new system to the roster
+        self.systems.append(new_system)
 
     def run(self):
 
         # Initialise systems
-        for system_name, system in self.systems.items():
-            if not system.initialise(
-                logger=self.logger,
-                context=self.context,
-                window_glfw=self.window_glfw,
-                buffer_size=self.buffer_size
-            ):
-                raise Exception(f"[ERROR] System {system_name} failed to initialise")
+        for system in self.systems:
+            if not system.initialise():
+                raise Exception(f"[ERROR] System {system._type} failed to initialise")
 
         # Update systems - Main Loop
         timestamp_past = time.perf_counter()
@@ -223,8 +238,8 @@ class Editor:
             elapsed_time = timestamp_past - timestamp
             timestamp_past = timestamp
 
-            # Update All systems
-            for system_name, system in self.systems.items():
+            # Update All systems in order
+            for system in self.systems:
                 system.update(elapsed_time=elapsed_time,
                               component_pool=self.component_pool,
                               context=self.context)
@@ -241,7 +256,7 @@ class Editor:
                 viewport=self.buffer_size)
 
         # Shutdown systems
-        for system_name, system in self.systems.items():
+        for system in self.systems:
             system.shutdown()
 
 

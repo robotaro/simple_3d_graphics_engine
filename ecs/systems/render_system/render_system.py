@@ -13,12 +13,14 @@ from core.geometry_3d import ready_to_render
 
 class RenderSystem(System):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    _type = "render_system"
 
-        self.ctx = None  # ModernGL context
-        self.shader_library = None
-        self.buffer_size = None
+    def __init__(self, **kwargs):
+        super().__init__(logger=kwargs["logger"])
+
+        self.ctx = kwargs["context"]
+        self.buffer_size = kwargs["buffer_size"]
+        self.shader_library = ShaderLibrary(context=self.ctx)
 
         # Internal components (different from normal components)
         self.framebuffers = {}
@@ -58,11 +60,6 @@ class RenderSystem(System):
     def initialise(self, **kwargs):
 
         # Get data from arguments
-        self.logger = kwargs["logger"]
-        self.ctx = kwargs["context"]
-        self.buffer_size = kwargs["buffer_size"]
-        self.shader_library = ShaderLibrary(context=self.ctx)
-
         self.create_framebuffers()
 
         self.textures["offscreen_diffuse"] = self.ctx.texture(self.buffer_size, 4)
