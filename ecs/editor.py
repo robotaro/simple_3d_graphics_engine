@@ -7,12 +7,10 @@ from typing import List
 
 from ecs import constants
 
-from ecs.systems.system import System
-from core.window import Window
-
 # Systems
 from ecs.systems.render_system.render_system import RenderSystem
 from ecs.systems.imgui_system.imgui_system import ImguiSystem
+from ecs.systems.input_control_system.input_control_system import InputControlSystem
 from ecs.event_publisher import EventPublisher
 from ecs.component_pool import ComponentPool
 
@@ -191,21 +189,22 @@ class Editor:
 
     def create_system(self, system_type: str, subscribed_events: List[int]) -> bool:
 
-        # TODO: Check if system type has already been created
         new_system = None
 
         if system_type == RenderSystem._type:
             new_system = RenderSystem(
                 logger=self.logger,
                 context=self.context,
-                buffer_size=self.buffer_size
-            )
+                buffer_size=self.buffer_size)
 
         if system_type == ImguiSystem._type:
             new_system = ImguiSystem(
                 logger=self.logger,
-                window_glfw=self.window_glfw
-            )
+                window_glfw=self.window_glfw)
+
+        if system_type == InputControlSystem._type:
+            new_system = InputControlSystem(
+                logger=self.logger)
 
         if new_system is None:
             self.logger.error(f"Failed to create system {system_type}")
@@ -246,7 +245,7 @@ class Editor:
 
             glfw.swap_buffers(self.window_glfw)
 
-            # DEBUG - Remove this!
+            # DEBUG - TODO: Remove this!
             self.context.clear(
                 red=0,
                 green=0,

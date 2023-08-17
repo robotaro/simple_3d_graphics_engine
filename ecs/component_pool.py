@@ -7,6 +7,7 @@ from ecs.components.mesh import Mesh
 from ecs.components.material import Material
 from ecs.components.renderable import Renderable
 from ecs.components.camera import Camera
+from ecs.components.input_control import InputControl
 
 
 class Entity:
@@ -24,7 +25,8 @@ class ComponentPool:
         constants.COMPONENT_TYPE_MESH: Mesh,
         constants.COMPONENT_TYPE_RENDERABLE: Renderable,
         constants.COMPONENT_TYPE_CAMERA: Camera,
-        constants.COMPONENT_TYPE_MATERIAL: Material
+        constants.COMPONENT_TYPE_MATERIAL: Material,
+        constants.COMPONENT_TYPE_INPUT_CONTROL: InputControl
     }
 
     def __init__(self):
@@ -40,13 +42,15 @@ class ComponentPool:
         self.mesh_components = {}
         self.renderable_components = {}
         self.material_components = {}
+        self.input_control_components = {}
 
         self.component_storage_map = {
             constants.COMPONENT_TYPE_TRANSFORM: self.transform_components,
             constants.COMPONENT_TYPE_MESH: self.mesh_components,
             constants.COMPONENT_TYPE_RENDERABLE: self.renderable_components,
             constants.COMPONENT_TYPE_CAMERA: self.camera_components,
-            constants.COMPONENT_TYPE_MATERIAL: self.material_components
+            constants.COMPONENT_TYPE_MATERIAL: self.material_components,
+            constants.COMPONENT_TYPE_INPUT_CONTROL: self.input_control_components,
         }
 
     def create_entity(self, name="") -> int:

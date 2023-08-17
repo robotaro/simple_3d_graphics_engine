@@ -7,7 +7,7 @@ from ecs.components.component import Component
 
 class Camera(Component):
 
-    _type = "perspective_camera"
+    _type = "camera"
 
     __slots__ = [
         "z_near",
@@ -26,15 +26,17 @@ class Camera(Component):
         self.y_fov_deg = constants.CAMERA_FOV_DEG
 
         # TODO: Figure out how to use these values
-        # Ortographic variables
+        # Orthographic variables
         self.x_mag = 1.0
         self.y_mag = 1.0
 
         if "viewport" not in kwargs:
             raise Exception(f"[ERROR] Camera needs a viewport argument")
+
         self.viewport = kwargs["viewport"]
 
     def upload_uniforms(self, program: moderngl.Program):
+
         proj_matrix_bytes = self.get_projection_matrix(
             width=self.viewport[constants.VIEWPORT_INDEX_WIDTH],
             height=self.viewport[constants.VIEWPORT_INDEX_HEIGHT]).T.astype('f4').tobytes()

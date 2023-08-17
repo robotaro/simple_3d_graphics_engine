@@ -20,13 +20,13 @@ class Transform(Component):
         self.world_matrix = np.eye(4, dtype=np.float32)
         self.local_matrix = np.eye(4, dtype=np.float32)
 
-        self.position = kwargs.get("position", np.zeros((3,), dtype=np.float32))
-        self.rotation = kwargs.get("rotation", np.zeros((3,), dtype=np.float32))
+        self.position = np.array(kwargs.get("position", (0, 0, 0)), dtype=np.float32)
+        self.rotation = np.array(kwargs.get("rotation", (0, 0, 0)), dtype=np.float32)
         self.scale = kwargs.get("scale", 1.0)
-        self._dirty_flag = True
 
     def update(self):
 
+        # TODO: Add the _dirty_flag check to avoid unecessary updates
         self.local_matrix = mat4.compute_transform(position=self.position,
                                                    rotation_rad=self.rotation,
                                                    scale=self.scale)

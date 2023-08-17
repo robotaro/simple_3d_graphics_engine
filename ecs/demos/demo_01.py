@@ -14,23 +14,33 @@ def main():
 
     editor.create_system(system_type="render_system",
                          subscribed_events=[])
-
     editor.create_system(system_type="imgui_system",
-                         subscribed_events=[constants.EVENT_MOUSE_SCROLL,])
+                         subscribed_events=[constants.EVENT_MOUSE_SCROLL])
+    editor.create_system(system_type="input_control_system",
+                         subscribed_events=[
+                             constants.EVENT_MOUSE_SCROLL,
+                             constants.EVENT_MOUSE_MOVE,
+                             constants.EVENT_KEYBOARD_PRESS,
+                             constants.EVENT_KEYBOARD_RELEASE,
+                         ])
 
     mesh_uid = editor.component_pool.create_entity()
     editor.component_pool.add_component(entity_uid=mesh_uid,
                                         component_type=constants.COMPONENT_TYPE_TRANSFORM)
 
+    # Create camera
     camera_uid = editor.component_pool.create_entity()
-    camera = editor.component_pool.add_component(
+    editor.component_pool.add_component(
         entity_uid=camera_uid,
         component_type=constants.COMPONENT_TYPE_CAMERA,
         viewport=(0, 0, 1024, 768))
-    transform = editor.component_pool.add_component(
+    editor.component_pool.add_component(
         entity_uid=camera_uid,
         component_type=constants.COMPONENT_TYPE_TRANSFORM,
         position=(0, 0, -2))
+    editor.component_pool.add_component(
+        entity_uid=camera_uid,
+        component_type=constants.COMPONENT_TYPE_INPUT_CONTROL)
 
     mesh = editor.component_pool.add_component(entity_uid=mesh_uid,
                                                component_type=constants.COMPONENT_TYPE_MESH,
