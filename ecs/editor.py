@@ -8,7 +8,7 @@ from typing import List
 from ecs import constants
 
 # Systems
-from ecs.systems.render_system.render_system import RenderSystem
+from ecs.systems.render_3d_system.render_3d_system import Render3DSystem
 from ecs.systems.imgui_system.imgui_system import ImguiSystem
 from ecs.systems.input_control_system.input_control_system import InputControlSystem
 from ecs.event_publisher import EventPublisher
@@ -191,8 +191,8 @@ class Editor:
 
         new_system = None
 
-        if system_type == RenderSystem._type:
-            new_system = RenderSystem(
+        if system_type == Render3DSystem._type:
+            new_system = Render3DSystem(
                 logger=self.logger,
                 context=self.context,
                 buffer_size=self.buffer_size)
@@ -246,13 +246,13 @@ class Editor:
             glfw.swap_buffers(self.window_glfw)
 
             # DEBUG - TODO: Remove this!
-            self.context.clear(
+            """self.context.clear(
                 red=0,
                 green=0,
                 blue=0,
                 alpha=0.0,
                 depth=1.0,
-                viewport=self.buffer_size)
+                viewport=self.buffer_size)"""
 
         # Shutdown systems
         for system in self.systems:

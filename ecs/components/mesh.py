@@ -3,7 +3,7 @@ from typing import Union
 
 from ecs import constants
 from ecs.components.component import Component
-from ecs.systems.render_system.mesh_factory import MeshFactory
+from ecs.systems.render_3d_system.mesh_factory import MeshFactory
 
 
 class Mesh(Component):

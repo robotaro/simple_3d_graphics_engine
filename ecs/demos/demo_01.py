@@ -1,8 +1,5 @@
 from ecs import constants
 from ecs.editor import Editor
-from ecs.systems.imgui_system.imgui_system import ImguiSystem
-from ecs.systems.render_system.render_system import RenderSystem
-
 
 def main():
 
@@ -12,7 +9,7 @@ def main():
         vertical_sync=True
     )
 
-    editor.create_system(system_type="render_system",
+    editor.create_system(system_type="render_3d_system",
                          subscribed_events=[])
     editor.create_system(system_type="imgui_system",
                          subscribed_events=[constants.EVENT_MOUSE_SCROLL])

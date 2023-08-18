@@ -33,8 +33,8 @@ class InputControlSystem(System):
 
         self.mouse_x_past = None
         self.mouse_y_past = None
-        self.mouse_dx = None
-        self.mouse_dy = None
+        self.mouse_dx = 0
+        self.mouse_dy = 0
 
         # Commands
         self.move_forward = False
@@ -66,6 +66,12 @@ class InputControlSystem(System):
 
             # TODO: Investigate why the directions seem to be reversed...
 
+            # Rotate
+            input_control.yaw += self.mouse_dx * input_control.mouse_sensitivity
+            input_control.pitch -= self.mouse_dy * input_control.mouse_sensitivity
+            input_control.pitch = np.clip(input_control.pitch, -np.pi * 0.49, np.pi * 0.49)
+
+            # Translate
             if self.move_forward:
                 transform.position += input_control.speed * input_control.forward
             if self.move_back:
@@ -79,13 +85,18 @@ class InputControlSystem(System):
             if self.move_down:
                 transform.position += input_control.speed * np.array((0, 1, 0), np.float32)
 
-            #input_control.update_camera_vectors()
+            # Update camera vectors
+            """input_control.forward[0] = np.cos(input_control.yaw) * np.cos(input_control.pitch)
+            input_control.forward[1] = np.sin(input_control.pitch)
+            input_control.forward[2] = np.sin(input_control.yaw) * np.cos(input_control.pitch)
 
+            input_control.forward = input_control.forward / np.linalg.norm(input_control.forward)
+            right_temp = np.cross(input_control.forward, np.array((0, 1, 0)))
+            input_control.right = right_temp / np.linalg.norm(right_temp)
+            up_temp = np.cross(input_control.right, input_control.forward)
+            input_control.up = up_temp / np.linalg.norm(up_temp)"""
 
     def on_event(self, event_type: int, event_data: tuple):
-
-        self.latest_event = event_type
-        self.latest_event_data = event_data
 
         # TODO: Add all indices to constants.py
 
@@ -93,7 +104,16 @@ class InputControlSystem(System):
             pass
 
         if event_type == constants.EVENT_MOUSE_MOVE:
-            pass
+            if self.mouse_x_past is None:
+                self.mouse_x_past = event_data[0]
+            if self.mouse_y_past is None:
+                self.mouse_y_past = event_data[1]
+
+            self.mouse_dx = event_data[0] - self.mouse_x_past
+            self.mouse_x_past = event_data[0]
+
+            self.mouse_dy = event_data[1] - self.mouse_y_past
+            self.mouse_y_past = event_data[1]
 
         if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:
             pass

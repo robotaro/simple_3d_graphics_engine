@@ -1,19 +1,17 @@
 import moderngl
 from PIL import Image
 import numpy as np
-from typing import List
 
 from ecs import constants
 from ecs.systems.system import System
-from ecs.systems.render_system.shader_library import ShaderLibrary
+from ecs.shader_library import ShaderLibrary
 from ecs.component_pool import ComponentPool
-from ecs.components.camera import Camera
 from core.geometry_3d import ready_to_render
 
 
-class RenderSystem(System):
+class Render3DSystem(System):
 
-    _type = "render_system"
+    _type = "render_3d_system"
 
     def __init__(self, **kwargs):
         super().__init__(logger=kwargs["logger"])
@@ -124,11 +122,15 @@ class RenderSystem(System):
 
             # self.offscreen_and_onscreen_pass(scene=scene, viewport=viewport)
 
-            # self.fragment_map_pass(scene=scene, viewport=viewport)
+            #self.fragment_map_pass(component_pool=component_pool,
+            #                  camera_uid=camera_uid,
+            #                  renderable_uids=renderable_entity_uids)
             self.forward_pass(component_pool=component_pool,
                               camera_uid=camera_uid,
                               renderable_uids=renderable_entity_uids)
+
             # self.outline_pass(scene=scene, viewport=viewport)
+
 
         pass
 
@@ -191,7 +193,114 @@ class RenderSystem(System):
     #                         Render functions
     # =========================================================================
 
-    """def demo_pass(self, viewport: Viewport):
+    def fragment_map_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_uids: list):
+
+        camera = component_pool.camera_components[camera_uid]
+
+        self.ctx.enable_only(moderngl.DEPTH_TEST)
+        self.framebuffer_offscreen_picking.use()
+        self.framebuffer_offscreen_picking.viewport = camera.viewport
+
+        meshes = []
+        scene._root_node.get_nodes_by_type(node_type="mesh", output_list=meshes)
+
+        # Same fragment picking program for all meshes
+        program = self.shader_library["fragment_picking"]
+
+        # [ Stage : Fragment Picking Pass ]
+        for mesh in meshes:
+
+            # Set camera uniforms
+            self.upload_camera_uniforms(program=program, viewport=viewport)
+
+            # Render with the specified object uid, if None use the node uid instead.
+            program["object_id"] = mesh.uid
+
+            # if self.backface_culling or self.backface_fragmap:
+            self.ctx.enable(moderngl.CULL_FACE)
+            # else:
+            #    context.disable(moderngl.CULL_FACE)
+
+            # If backface_fragmap is enabled for this node only render backfaces
+            # if self.backface_fragmap:
+            #    context.cull_face = "front"
+
+            # Restore cull face to back
+            # if self.backface_fragmap:
+            #    context.cull_face = "back"
+
+    def forward_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_uids: list):
+
+        # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
+
+        # Bind screen context to draw to it
+        self.ctx.screen.use()
+
+        camera_component = component_pool.camera_components[camera_uid]
+        camera_transform = component_pool.transform_components[camera_uid]
+
+        # TODO: maybe move this to inside the scene?
+        # Clear context (you need to use the use() first to bind it!)
+        self.ctx.clear(
+            red=1,
+            green=1,
+            blue=1,
+            alpha=0.0,
+            depth=1.0,
+            viewport=camera_component.viewport)
+
+        # Prepare context flags for rendering
+        self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)
+        self.ctx.cull_face = "back"
+        self.ctx.blend_func = (
+            moderngl.SRC_ALPHA,
+            moderngl.ONE_MINUS_SRC_ALPHA,
+            moderngl.ONE,
+            moderngl.ONE)
+
+        # Render scene
+        #light_nodes = scene.get_nodes_by_type(node_type="directional_light")
+        #meshes = scene.get_nodes_by_type(node_type="mesh")
+
+        program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS]
+
+        for renderable_uid in renderable_uids:
+
+            renderable_component = component_pool.renderable_components[renderable_uid]
+
+            if not renderable_component.visible:
+                continue
+
+            # Set camera uniforms
+            camera_component.upload_uniforms(program=program)
+
+            # Set light uniforms
+            # program["ambient_strength"] = self._ambient_light_color
+
+            # Upload buffers ONLY if necessary
+            #if mesh._vbo_dirty_flag:
+            #    mesh.upload_buffers()
+            #    mesh._vbo_dirty_flag = False
+
+            # TODO: Continue from here, switch to uid to get the transforms
+
+            renderable_transform = component_pool.transform_components[renderable_uid]
+
+            camera_transform.update()
+
+            # Upload uniforms
+            program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
+            program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
+
+            # Render the vao at the end
+            renderable_component.vaos[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
+
+
+
+            # Stage: Draw transparent objects back to front
+
+    """
+    def demo_pass(self, viewport: Viewport):
 
         if "ball" not in self.textures:
             return
@@ -232,109 +341,7 @@ class RenderSystem(System):
         self.textures["offscreen_diffuse"].use(location=0)
         self.quads["fullscreen"]["vao"].render()"""
 
-    def forward_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_uids: list):
-
-        # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
-
-        # Bind screen context to draw to it
-        self.ctx.screen.use()
-
-        camera_component = component_pool.camera_components[camera_uid]
-        camera_transform = component_pool.transform_components[camera_uid]
-
-        # TODO: maybe move this to inside the scene?
-        # Clear context (you need to use the use() first to bind it!)
-        self.ctx.clear(
-            red=1,
-            green=1,
-            blue=1,
-            alpha=0.0,
-            depth=1.0,
-            viewport=camera_component.viewport)
-
-        # Prepare context flags for rendering
-        self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)
-        self.ctx.cull_face = "back"
-        self.ctx.blend_func = (
-            moderngl.SRC_ALPHA,
-            moderngl.ONE_MINUS_SRC_ALPHA,
-            moderngl.ONE,
-            moderngl.ONE)
-
-        # Render scene
-        #light_nodes = scene.get_nodes_by_type(node_type="directional_light")
-        #meshes = scene.get_nodes_by_type(node_type="mesh")
-
-        program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS]
-
-        # [ Stage : Forward Pass ]
-        for renderable_uid in renderable_uids:
-
-            renderable_component = component_pool.renderable_components[renderable_uid]
-
-            if not renderable_component.visible:
-                continue
-
-            # Set camera uniforms
-            camera_component.upload_uniforms(program=program)
-
-            # Set light uniforms
-            # program["ambient_strength"] = self._ambient_light_color
-
-            # Upload buffers ONLY if necessary
-            #if mesh._vbo_dirty_flag:
-            #    mesh.upload_buffers()
-            #    mesh._vbo_dirty_flag = False
-
-            # TODO: Continue from here, switch to uid to get the transforms
-
-            renderable_transform = component_pool.transform_components[renderable_uid]
-
-            camera_transform.update()
-
-            # Upload uniforms
-            program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
-            program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
-
-            # Render the vao at the end
-            renderable_component.vaos[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
-
-
-
-            # Stage: Draw transparent objects back to front
-
     """
-    def fragment_map_pass(self, scene: Scene, viewport: Viewport):
-        self.ctx.enable_only(moderngl.DEPTH_TEST)
-        self.framebuffer_offscreen_picking.use()
-        self.framebuffer_offscreen_picking.viewport = viewport.to_tuple()
-
-        meshes = []
-        scene._root_node.get_nodes_by_type(node_type="mesh", output_list=meshes)
-
-        # Same fragment picking program for all meshes
-        program = self.shader_library["fragment_picking"]
-
-        # [ Stage : Fragment Picking Pass ]
-        for mesh in meshes:
-            # Set camera uniforms
-            self.upload_camera_uniforms(program=program, viewport=viewport)
-
-            # Render with the specified object uid, if None use the node uid instead.
-            program["object_id"] = mesh.uid
-
-            # if self.backface_culling or self.backface_fragmap:
-            self.ctx.enable(moderngl.CULL_FACE)
-            # else:
-            #    context.disable(moderngl.CULL_FACE)
-
-            # If backface_fragmap is enabled for this node only render backfaces
-            # if self.backface_fragmap:
-            #    context.cull_face = "front"
-
-            # Restore cull face to back
-            # if self.backface_fragmap:
-            #    context.cull_face = "back"
 
     def outline_pass(self, scene: Scene, viewport: Viewport):
         # print("[Renderer] _outline_pass")
