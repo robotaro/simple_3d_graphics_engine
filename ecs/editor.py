@@ -219,6 +219,10 @@ class Editor:
         # And finally add the new system to the roster
         self.systems.append(new_system)
 
+    def add_component(self, **kwargs):
+        # This function was added for convenience
+        self.component_pool.add_component(**kwargs)
+
     def run(self):
 
         # Initialise systems
@@ -244,15 +248,6 @@ class Editor:
                               context=self.context)
 
             glfw.swap_buffers(self.window_glfw)
-
-            # DEBUG - TODO: Remove this!
-            """self.context.clear(
-                red=0,
-                green=0,
-                blue=0,
-                alpha=0.0,
-                depth=1.0,
-                viewport=self.buffer_size)"""
 
         # Shutdown systems
         for system in self.systems:

@@ -2,10 +2,6 @@ simple_mesh:
   vertex_shader: "demo_shaders/simple_mesh.glsl"
   fragment_shader: "demo_shaders/simple_mesh.glsl"
 
-fragment_picking:
-  vertex_shader: "fragment_picking.glsl"
-  fragment_shader: "fragment_picking.glsl"
-
 texture:
   vertex_shader: "texture.glsl"
   fragment_shader: "texture.glsl"
@@ -17,6 +13,14 @@ mesh_offscreen:
 mesh_with_lights:
   vertex_shader: "mesh_with_lights.glsl"
   fragment_shader: "mesh_with_lights.glsl"
+
+# =================================================
+#               Render 3D passes
+# =================================================
+
+fragment_picking_pass:
+  vertex_shader: "fragment_picking.glsl"
+  fragment_shader: "fragment_picking.glsl"
 
 forward_pass:
   vertex_shader: "mesh_with_lights.glsl"

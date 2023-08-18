@@ -5,7 +5,7 @@ from ecs.components.component import Component
 from ecs.components.transform import Transform
 from ecs.components.mesh import Mesh
 from ecs.components.material import Material
-from ecs.components.renderable import Renderable
+from ecs.components.renderable_3d import Renderable
 from ecs.components.camera import Camera
 from ecs.components.input_control import InputControl
 
@@ -21,7 +21,7 @@ class Entity:
 class ComponentPool:
 
     COMPONENT_TYPE_MAP = {
-        constants.COMPONENT_TYPE_TRANSFORM: Transform,
+        constants.COMPONENT_TYPE_TRANSFORM_3D: Transform,
         constants.COMPONENT_TYPE_MESH: Mesh,
         constants.COMPONENT_TYPE_RENDERABLE: Renderable,
         constants.COMPONENT_TYPE_CAMERA: Camera,
@@ -45,7 +45,7 @@ class ComponentPool:
         self.input_control_components = {}
 
         self.component_storage_map = {
-            constants.COMPONENT_TYPE_TRANSFORM: self.transform_components,
+            constants.COMPONENT_TYPE_TRANSFORM_3D: self.transform_components,
             constants.COMPONENT_TYPE_MESH: self.mesh_components,
             constants.COMPONENT_TYPE_RENDERABLE: self.renderable_components,
             constants.COMPONENT_TYPE_CAMERA: self.camera_components,

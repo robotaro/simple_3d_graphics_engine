@@ -7,6 +7,8 @@ from ecs.shader_library import ShaderLibrary
 
 class Renderable(Component):
 
+    _type = "renderable_3d"
+
     __slots__ = [
         "render_layer",
         "vaos",

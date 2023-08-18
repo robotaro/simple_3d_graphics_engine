@@ -1,6 +1,8 @@
 import moderngl
 from PIL import Image
 import numpy as np
+from typing import Tuple
+import struct
 
 from ecs import constants
 from ecs.systems.system import System
@@ -122,9 +124,9 @@ class Render3DSystem(System):
 
             # self.offscreen_and_onscreen_pass(scene=scene, viewport=viewport)
 
-            #self.fragment_map_pass(component_pool=component_pool,
-            #                  camera_uid=camera_uid,
-            #                  renderable_uids=renderable_entity_uids)
+            self.fragment_map_pass(component_pool=component_pool,
+                                   camera_uid=camera_uid,
+                                   renderable_uids=renderable_entity_uids)
             self.forward_pass(component_pool=component_pool,
                               camera_uid=camera_uid,
                               renderable_uids=renderable_entity_uids)
@@ -135,6 +137,10 @@ class Render3DSystem(System):
         pass
 
     def on_event(self, event_type: int, event_data: tuple):
+
+        if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:
+            # Get fragment here?
+            pass
         pass
 
     def shutdown(self):
@@ -148,73 +154,32 @@ class Render3DSystem(System):
             framebuffer_obj.release()
 
     # =========================================================================
-    #                         Other Functions
-    # =========================================================================
-
-    def create_framebuffers(self):
-
-        # Release framebuffers if they already exist.
-        def safe_release(buffer):
-            if buffer is not None:
-                buffer.release()
-
-        safe_release(self.texture_offscreen_picking_depth)
-        safe_release(self.texture_offscreen_picking_viewpos)
-        safe_release(self.texture_offscreen_picking_tri_id)
-        safe_release(self.framebuffer_offscreen_picking)
-        safe_release(self.outline_texture)
-        safe_release(self.outline_framebuffer)
-
-        # Mesh mouse intersection
-        self.texture_offscreen_picking_depth = self.ctx.depth_texture(self.buffer_size)
-        self.texture_offscreen_picking_viewpos = self.ctx.texture(self.buffer_size, 4, dtype="f4")
-        self.texture_offscreen_picking_tri_id = self.ctx.texture(self.buffer_size, 4, dtype="f4")
-        self.framebuffer_offscreen_picking = self.ctx.framebuffer(
-            color_attachments=[self.texture_offscreen_picking_viewpos, self.texture_offscreen_picking_tri_id],
-            depth_attachment=self.texture_offscreen_picking_depth,
-        )
-        self.texture_offscreen_picking_tri_id.filter = (moderngl.NEAREST, moderngl.NEAREST)
-
-        # Outline rendering
-        self.outline_texture = self.ctx.texture(self.buffer_size, 1, dtype="f4")
-        self.outline_framebuffer = self.ctx.framebuffer(color_attachments=[self.outline_texture])
-
-    def load_texture_from_file(self, texture_fpath: str, texture_id: str, datatype="f4"):
-        if texture_id in self.textures:
-            raise KeyError(f"[ERROR] Texture ID '{texture_id}' already exists")
-
-        image = Image.open(texture_fpath)
-        image_data = np.array(image)
-        self.textures[texture_id] = self.ctx.texture(size=image.size,
-                                                     components=image_data.shape[-1],
-                                                     data=image_data.tobytes())
-
-    # =========================================================================
     #                         Render functions
     # =========================================================================
 
     def fragment_map_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_uids: list):
 
-        camera = component_pool.camera_components[camera_uid]
+        camera_component = component_pool.camera_components[camera_uid]
+        camera_transform = component_pool.transform_components[camera_uid]
 
         self.ctx.enable_only(moderngl.DEPTH_TEST)
         self.framebuffer_offscreen_picking.use()
-        self.framebuffer_offscreen_picking.viewport = camera.viewport
+        self.framebuffer_offscreen_picking.viewport = camera_component.viewport
 
-        meshes = []
-        scene._root_node.get_nodes_by_type(node_type="mesh", output_list=meshes)
+        program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS]
 
-        # Same fragment picking program for all meshes
-        program = self.shader_library["fragment_picking"]
+        for renderable_uid in renderable_uids:
 
-        # [ Stage : Fragment Picking Pass ]
-        for mesh in meshes:
+            renderable_component = component_pool.renderable_components[renderable_uid]
+
+            if not renderable_component.visible:
+                continue
 
             # Set camera uniforms
-            self.upload_camera_uniforms(program=program, viewport=viewport)
+            camera_component.upload_uniforms(program=program)
 
             # Render with the specified object uid, if None use the node uid instead.
-            program["object_id"] = mesh.uid
+            program["object_id"] = renderable_uid
 
             # if self.backface_culling or self.backface_fragmap:
             self.ctx.enable(moderngl.CULL_FACE)
@@ -228,6 +193,15 @@ class Render3DSystem(System):
             # Restore cull face to back
             # if self.backface_fragmap:
             #    context.cull_face = "back"
+
+            renderable_transform = component_pool.transform_components[renderable_uid]
+
+            # Upload uniforms
+            program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
+            program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
+
+            # Render the vao at the end
+            renderable_component.vaos[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
 
     def forward_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_uids: list):
 
@@ -295,9 +269,62 @@ class Render3DSystem(System):
             # Render the vao at the end
             renderable_component.vaos[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
 
-
-
             # Stage: Draw transparent objects back to front
+
+    # =========================================================================
+    #                         Other Functions
+    # =========================================================================
+
+    def create_framebuffers(self):
+
+        # Release framebuffers if they already exist.
+        def safe_release(buffer):
+            if buffer is not None:
+                buffer.release()
+
+        safe_release(self.texture_offscreen_picking_depth)
+        safe_release(self.texture_offscreen_picking_viewpos)
+        safe_release(self.texture_offscreen_picking_tri_id)
+        safe_release(self.framebuffer_offscreen_picking)
+        safe_release(self.outline_texture)
+        safe_release(self.outline_framebuffer)
+
+        # Mesh mouse intersection
+        self.texture_offscreen_picking_depth = self.ctx.depth_texture(self.buffer_size)
+        self.texture_offscreen_picking_viewpos = self.ctx.texture(self.buffer_size, 4, dtype="f4")
+        self.texture_offscreen_picking_tri_id = self.ctx.texture(self.buffer_size, 4, dtype="f4")
+        self.framebuffer_offscreen_picking = self.ctx.framebuffer(
+            color_attachments=[self.texture_offscreen_picking_viewpos, self.texture_offscreen_picking_tri_id],
+            depth_attachment=self.texture_offscreen_picking_depth,
+        )
+        self.texture_offscreen_picking_tri_id.filter = (moderngl.NEAREST, moderngl.NEAREST)
+
+        # Outline rendering
+        self.outline_texture = self.ctx.texture(self.buffer_size, 1, dtype="f4")
+        self.outline_framebuffer = self.ctx.framebuffer(color_attachments=[self.outline_texture])
+
+    def load_texture_from_file(self, texture_fpath: str, texture_id: str, datatype="f4"):
+        if texture_id in self.textures:
+            raise KeyError(f"[ERROR] Texture ID '{texture_id}' already exists")
+
+        image = Image.open(texture_fpath)
+        image_data = np.array(image)
+        self.textures[texture_id] = self.ctx.texture(size=image.size,
+                                                     components=image_data.shape[-1],
+                                                     data=image_data.tobytes())
+
+    def read_fragmap_at_pixel(self, x: int, y: int) -> Tuple[np.ndarray, int, int, int]:
+        """
+        Given an (x,y) screen coordinate, get the intersected object, triangle id, and xyz point in camera space.
+        """
+
+        # Fragment picker uses already encoded position/object/triangle in the frag_pos program textures
+        self.frag_pick_prog["texel_pos"].value = (x, y)
+        self.offscreen_p_viewpos.use(location=0)
+        self.offscreen_p_tri_id.use(location=1)
+        self.picker_vao.transform(self.frag_pick_prog, self.picker_output, vertices=1)
+        x, y, z, obj_id, tri_id, instance_id = struct.unpack("3f3i", self.picker_output.read())
+        return np.array((x, y, z)), obj_id, tri_id, instance_id
 
     """
     def demo_pass(self, viewport: Viewport):

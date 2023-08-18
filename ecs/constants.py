@@ -75,7 +75,7 @@ SHADER_UNIFORM_INPUT_UVS = "in_uvs"
 #                              Component Pool
 # =============================================================================
 
-COMPONENT_TYPE_TRANSFORM = 0
+COMPONENT_TYPE_TRANSFORM_3D = 0
 COMPONENT_TYPE_MESH = 1
 COMPONENT_TYPE_CAMERA = 2
 COMPONENT_TYPE_RENDERABLE = 3

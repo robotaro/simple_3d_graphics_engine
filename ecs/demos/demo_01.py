@@ -22,29 +22,31 @@ def main():
                          ])
 
     mesh_uid = editor.component_pool.create_entity()
-    editor.component_pool.add_component(entity_uid=mesh_uid,
-                                        component_type=constants.COMPONENT_TYPE_TRANSFORM)
+    editor.add_component(entity_uid=mesh_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
     # Create camera
     camera_uid = editor.component_pool.create_entity()
-    editor.component_pool.add_component(
+    editor.add_component(
         entity_uid=camera_uid,
         component_type=constants.COMPONENT_TYPE_CAMERA,
         viewport=(0, 0, 1024, 768))
-    editor.component_pool.add_component(
+    editor.add_component(
         entity_uid=camera_uid,
-        component_type=constants.COMPONENT_TYPE_TRANSFORM,
+        component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
         position=(0, 0, -2))
-    editor.component_pool.add_component(
+    editor.add_component(
         entity_uid=camera_uid,
         component_type=constants.COMPONENT_TYPE_INPUT_CONTROL)
 
-    mesh = editor.component_pool.add_component(entity_uid=mesh_uid,
-                                               component_type=constants.COMPONENT_TYPE_MESH,
-                                               shape=constants.MESH_SHAPE_FROM_OBJ,
-                                               fpath=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj")
-    editor.component_pool.add_component(entity_uid=mesh_uid,
-                                        component_type=constants.COMPONENT_TYPE_RENDERABLE)
+    dragon_fpath = r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj"
+    editor.add_component(
+        entity_uid=mesh_uid,
+        component_type=constants.COMPONENT_TYPE_MESH,
+        shape=constants.MESH_SHAPE_FROM_OBJ,
+        fpath=dragon_fpath)
+    editor.add_component(
+        entity_uid=mesh_uid,
+        component_type=constants.COMPONENT_TYPE_RENDERABLE)
 
     editor.run()
 
