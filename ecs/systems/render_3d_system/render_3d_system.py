@@ -29,12 +29,11 @@ class Render3DSystem(System):
         self.vbo_groups = {}
         self.quads = {}
 
-        # Textures
+        # Fragment Picking - altogether for now
+        self.fragment_picker_program = None
         self.texture_offscreen_picking_depth = None
         self.texture_offscreen_picking_viewpos = None
         self.texture_offscreen_picking_tri_id = None
-
-        # Framebuffers
         self.framebuffer_offscreen_picking = None
 
         self.outline_texture = None
@@ -48,7 +47,6 @@ class Render3DSystem(System):
 
         # Create programs
         self.shadow_map_program = None
-        self.fragment_picker_program = None
 
         # Debugging variables
         self.quad_debug = None
@@ -60,7 +58,26 @@ class Render3DSystem(System):
     def initialise(self, **kwargs):
 
         # Get data from arguments
-        self.create_framebuffers()
+        self.safe_release(self.texture_offscreen_picking_depth)
+        self.safe_release(self.texture_offscreen_picking_viewpos)
+        self.safe_release(self.texture_offscreen_picking_tri_id)
+        self.safe_release(self.framebuffer_offscreen_picking)
+        self.safe_release(self.outline_texture)
+        self.safe_release(self.outline_framebuffer)
+
+        # Mesh mouse intersection
+        self.texture_offscreen_picking_depth = self.ctx.depth_texture(self.buffer_size)
+        self.texture_offscreen_picking_viewpos = self.ctx.texture(self.buffer_size, 4, dtype="f4")
+        self.texture_offscreen_picking_tri_id = self.ctx.texture(self.buffer_size, 4, dtype="f4")
+        self.framebuffer_offscreen_picking = self.ctx.framebuffer(
+            color_attachments=[self.texture_offscreen_picking_viewpos, self.texture_offscreen_picking_tri_id],
+            depth_attachment=self.texture_offscreen_picking_depth,
+        )
+        self.texture_offscreen_picking_tri_id.filter = (moderngl.NEAREST, moderngl.NEAREST)
+
+        # Outline rendering
+        self.outline_texture = self.ctx.texture(self.buffer_size, 1, dtype="f4")
+        self.outline_framebuffer = self.ctx.framebuffer(color_attachments=[self.outline_texture])
 
         self.textures["offscreen_diffuse"] = self.ctx.texture(self.buffer_size, 4)
         self.textures["offscreen_normals"] = self.ctx.texture(self.buffer_size, 4, dtype='f2')
@@ -140,8 +157,8 @@ class Render3DSystem(System):
 
         if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:
             # Get fragment here?
-            pass
-        pass
+            point_world, obj_id, tri_id, instance_id = self.read_fragmap_at_pixel(x=event_data[0], y=event_data[1])
+            self.logger.info(obj_id)
 
     def shutdown(self):
 
@@ -275,33 +292,10 @@ class Render3DSystem(System):
     #                         Other Functions
     # =========================================================================
 
-    def create_framebuffers(self):
-
-        # Release framebuffers if they already exist.
-        def safe_release(buffer):
-            if buffer is not None:
-                buffer.release()
-
-        safe_release(self.texture_offscreen_picking_depth)
-        safe_release(self.texture_offscreen_picking_viewpos)
-        safe_release(self.texture_offscreen_picking_tri_id)
-        safe_release(self.framebuffer_offscreen_picking)
-        safe_release(self.outline_texture)
-        safe_release(self.outline_framebuffer)
-
-        # Mesh mouse intersection
-        self.texture_offscreen_picking_depth = self.ctx.depth_texture(self.buffer_size)
-        self.texture_offscreen_picking_viewpos = self.ctx.texture(self.buffer_size, 4, dtype="f4")
-        self.texture_offscreen_picking_tri_id = self.ctx.texture(self.buffer_size, 4, dtype="f4")
-        self.framebuffer_offscreen_picking = self.ctx.framebuffer(
-            color_attachments=[self.texture_offscreen_picking_viewpos, self.texture_offscreen_picking_tri_id],
-            depth_attachment=self.texture_offscreen_picking_depth,
-        )
-        self.texture_offscreen_picking_tri_id.filter = (moderngl.NEAREST, moderngl.NEAREST)
-
-        # Outline rendering
-        self.outline_texture = self.ctx.texture(self.buffer_size, 1, dtype="f4")
-        self.outline_framebuffer = self.ctx.framebuffer(color_attachments=[self.outline_texture])
+    # Release framebuffers if they already exist.
+    def safe_release(self, buffer: moderngl.Buffer):
+        if buffer is not None:
+            buffer.release()
 
     def load_texture_from_file(self, texture_fpath: str, texture_id: str, datatype="f4"):
         if texture_id in self.textures:
@@ -322,6 +316,11 @@ class Render3DSystem(System):
         self.frag_pick_prog["texel_pos"].value = (x, y)
         self.offscreen_p_viewpos.use(location=0)
         self.offscreen_p_tri_id.use(location=1)
+
+        vao.transform(
+            buffer, mode=mode, vertices=vertices, first=first, instances=instances
+        )
+
         self.picker_vao.transform(self.frag_pick_prog, self.picker_output, vertices=1)
         x, y, z, obj_id, tri_id, instance_id = struct.unpack("3f3i", self.picker_output.read())
         return np.array((x, y, z)), obj_id, tri_id, instance_id

@@ -19,8 +19,8 @@ mesh_with_lights:
 # =================================================
 
 fragment_picking_pass:
-  vertex_shader: "fragment_picking.glsl"
-  fragment_shader: "fragment_picking.glsl"
+  vertex_shader: "mesh_object_id.glsl"
+  fragment_shader: "mesh_object_id.glsl"
 
 forward_pass:
   vertex_shader: "mesh_with_lights.glsl"
