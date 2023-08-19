@@ -12,8 +12,8 @@ def quad_2d(context: moderngl.Context,
             shader_library: ShaderLibrary,
             vertices_glsl_name="in_position",
             uvs_glsl_name="in_uv",
-            size=(1.0, 1.0),
-            position=(0.0, 0.0)) -> dict:
+            size=(2.0, 2.0),
+            position=(-1.0, -1.0)) -> dict:
     """
     A Quad designed to be used as a rendering area on the screen.
 

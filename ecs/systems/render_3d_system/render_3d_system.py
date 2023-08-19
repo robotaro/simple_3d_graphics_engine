@@ -49,7 +49,7 @@ class Render3DSystem(System):
         self.shadow_map_program = None
 
         # Debugging variables
-        self.quad_debug = None
+        self.quad_fullscreen = None
 
     # =========================================================================
     #                         System Core functions
@@ -103,13 +103,11 @@ class Render3DSystem(System):
         self.shader_library["mesh_offscreen"]["texture0"].value = 0
 
         # Quads
-        self.quad_debug = ready_to_render.quad_2d(context=self.ctx, shader_library=self.shader_library)
+        self.quad_fullscreen = ready_to_render.quad_2d(context=self.ctx, shader_library=self.shader_library)
         self.quads["normals"] = ready_to_render.quad_2d(context=self.ctx,
                                                         size=(0.25, 0.25),
                                                         position=(0.75, 0.875),
                                                         shader_library=self.shader_library)
-        self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
-                                                           shader_library=self.shader_library)
 
         return True
 
@@ -139,9 +137,8 @@ class Render3DSystem(System):
         for _, transform in component_pool.transform_components.items():
             transform.update()
 
+        # Main render passes
         for camera_uid in camera_entity_uids:
-
-            # self.demo_pass(viewport=viewport)
 
             # self.offscreen_and_onscreen_pass(scene=scene, viewport=viewport)
 
@@ -154,8 +151,8 @@ class Render3DSystem(System):
 
             # self.outline_pass(scene=scene, viewport=viewport)
 
-
-        pass
+        # Final pass renders everything to a full screen quad from the offscreen textures
+        self.render_to_full_screen_quad()
 
     def on_event(self, event_type: int, event_data: tuple):
 
@@ -185,6 +182,7 @@ class Render3DSystem(System):
         camera_transform = component_pool.transform_components[camera_uid]
 
         self.ctx.enable_only(moderngl.DEPTH_TEST)
+        self.framebuffers["offscreen"].clear()
         self.framebuffer_offscreen_picking.use()
         self.framebuffer_offscreen_picking.viewport = camera_component.viewport
 
@@ -230,7 +228,8 @@ class Render3DSystem(System):
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
         # Bind screen context to draw to it
-        self.ctx.screen.use()
+        #self.ctx.screen.use()
+        self.framebuffers["offscreen"].use()
 
         camera_component = component_pool.camera_components[camera_uid]
         camera_transform = component_pool.transform_components[camera_uid]
@@ -260,6 +259,7 @@ class Render3DSystem(System):
 
         program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS]
 
+        self.samplers["depth_sampler"].use(location=0)
         for renderable_uid in renderable_uids:
 
             renderable_component = component_pool.renderable_components[renderable_uid]
@@ -292,6 +292,16 @@ class Render3DSystem(System):
             renderable_component.vaos[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
 
             # Stage: Draw transparent objects back to front
+        self.samplers["depth_sampler"].clear()
+
+    def render_to_full_screen_quad(self):
+
+        self.ctx.screen.use()
+        self.ctx.screen.clear(red=1, green=1, blue=1,)
+        self.ctx.disable(moderngl.DEPTH_TEST)
+
+        self.textures["offscreen_diffuse"].use(location=0)
+        self.quad_fullscreen['vao'].render(moderngl.TRIANGLES)
 
     # =========================================================================
     #                         Other Functions
@@ -330,17 +340,7 @@ class Render3DSystem(System):
         x, y, z, obj_id, tri_id, instance_id = struct.unpack("3f3i", self.picker_output.read())
         return np.array((x, y, z)), obj_id, tri_id, instance_id
 
-    """
-    def demo_pass(self, viewport: Viewport):
-
-        if "ball" not in self.textures:
-            return
-
-        self.ctx.screen.use()
-        self.textures["ball"].use(0)
-        self.quads["fullscreen"]["vao"].render(mode=moderngl.TRIANGLES)
-
-    def offscreen_and_onscreen_pass(self, scene: Scene, viewport: Viewport):
+    """def offscreen_and_onscreen_pass(self, scene: Scene, viewport: Viewport):
 
         self.ctx.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
 
@@ -373,7 +373,6 @@ class Render3DSystem(System):
         self.quads["fullscreen"]["vao"].render()"""
 
     """
-
     def outline_pass(self, scene: Scene, viewport: Viewport):
         # print("[Renderer] _outline_pass")
         pass
