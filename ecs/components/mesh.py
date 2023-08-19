@@ -126,7 +126,6 @@ class Mesh(Component):
         if self.ibo_faces:
             self.ibo_faces.release()
 
-
     def generate_shape(self, shape: Union[str, None] = None, **kwargs) -> None:
 
         if shape is None:

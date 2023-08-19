@@ -56,7 +56,9 @@ class BasicScene(Window):
         # Load mesh data
         loader = MeshFactory()
         mesh_fpath = os.path.join(constants.RESOURCES_DIR, "models", "dragon.obj")
-        self.mesh = loader.from_obj(name="Dragon", program_name="mesh_with_lights", fpath=mesh_fpath)
+        self.mesh = loader.from_obj(name="Dragon",
+                                    program_name=constants.,
+                                    fpath=mesh_fpath)
 
         # Scene Setup
         self.scene._root_node.add(self.camera)

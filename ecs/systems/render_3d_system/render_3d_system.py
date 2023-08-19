@@ -135,15 +135,19 @@ class Render3DSystem(System):
         renderable_entity_uids = list(component_pool.renderable_components.keys())
         camera_entity_uids = list(component_pool.camera_components.keys())
 
+        # DEBUG -HACK TODO: MOVE THIS TO THE TRANSFORM SYSTEM!!!
+        for _, transform in component_pool.transform_components.items():
+            transform.update()
+
         for camera_uid in camera_entity_uids:
 
             # self.demo_pass(viewport=viewport)
 
             # self.offscreen_and_onscreen_pass(scene=scene, viewport=viewport)
 
-            self.fragment_map_pass(component_pool=component_pool,
-                                   camera_uid=camera_uid,
-                                   renderable_uids=renderable_entity_uids)
+            #self.fragment_map_pass(component_pool=component_pool,
+            #                       camera_uid=camera_uid,
+            #                       renderable_uids=renderable_entity_uids)
             self.forward_pass(component_pool=component_pool,
                               camera_uid=camera_uid,
                               renderable_uids=renderable_entity_uids)
@@ -157,8 +161,9 @@ class Render3DSystem(System):
 
         if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:
             # Get fragment here?
-            point_world, obj_id, tri_id, instance_id = self.read_fragmap_at_pixel(x=event_data[0], y=event_data[1])
-            self.logger.info(obj_id)
+            #point_world, obj_id, tri_id, instance_id = self.read_fragmap_at_pixel(x=event_data[0], y=event_data[1])
+            #self.logger.info(obj_id)
+            pass
 
     def shutdown(self):
 
