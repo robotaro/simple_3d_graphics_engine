@@ -41,7 +41,7 @@ class Render3DSystem(System):
         self.outline_framebuffer = None
 
         # Debug offscreen rendering
-        self.fullscreen_selected_texture = 1  # Color is selected by default
+        self.fullscreen_selected_texture = 0  # Color is selected by default
         self.offscreen_framebuffer = None
         self.offscreen_diffuse = None
         self.offscreen_normals = None
@@ -89,7 +89,7 @@ class Render3DSystem(System):
         self.textures["offscreen_color"] = self.ctx.texture(size=self.buffer_size, components=4)
         self.textures["offscreen_normal"] = self.ctx.texture(size=self.buffer_size, components=3, dtype='f4')
         self.textures["offscreen_viewpos"] = self.ctx.texture(size=self.buffer_size, components=3, dtype='f4')
-        self.textures["offscreen_entity_id"] = self.ctx.texture(size=self.buffer_size, components=1, dtype='i4')
+        self.textures["offscreen_entity_id"] = self.ctx.texture(size=self.buffer_size, components=1, dtype='f4')
         self.textures["offscreen_depth"] = self.ctx.depth_texture(size=self.buffer_size)
 
         self.framebuffers["offscreen"] = self.ctx.framebuffer(
@@ -107,9 +107,11 @@ class Render3DSystem(System):
         )
 
         # Setup quads
-        self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx, program=self.shader_library["texture"])
+        self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
+                                                           program=self.shader_library["fullscreen_quad"])
         self.quads["fullscreen"]['vao'].program["color_texture"].value = 0
         self.quads["fullscreen"]['vao'].program["normal_texture"].value = 1
+        self.quads["fullscreen"]['vao'].program["entity_id_texture"].value = 2
 
         return True
 
@@ -167,9 +169,6 @@ class Render3DSystem(System):
 
             if event_data[0] == glfw.KEY_F3:
                 self.fullscreen_selected_texture = 2
-
-            if event_data[0] == glfw.KEY_F4:
-                self.fullscreen_selected_texture = 3
 
     def shutdown(self):
 
@@ -329,6 +328,7 @@ class Render3DSystem(System):
 
         self.textures["offscreen_color"].use(location=0)
         self.textures["offscreen_normal"].use(location=1)
+        self.textures["offscreen_entity_id"].use(location=2)
 
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture

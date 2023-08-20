@@ -2,7 +2,7 @@ simple_mesh:
   vertex_shader: "demo_shaders/simple_mesh.glsl"
   fragment_shader: "demo_shaders/simple_mesh.glsl"
 
-texture:
+fullscreen_quad:
   vertex_shader: "texture.glsl"
   fragment_shader: "texture.glsl"
 
