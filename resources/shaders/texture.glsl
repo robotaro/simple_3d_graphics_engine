@@ -19,6 +19,22 @@ uniform sampler2D texture0;
 out vec4 fragColor;
 
 void main() {
+
+#if defined COLOR_RGBA
     fragColor = texture(texture0, uv);
+
+#elif defined COLOR_RGB
+    fragColor = vec4(texture(texture0, uv));
+
+#elif defined COLOR_FLOAT
+    float value = texture(texture0, uv);
+    fragColor = vec4(value, value, value, 1.0);
+
+#elif defined COLOR_INT
+    fragColor = texture(texture0, uv);
+
+#else
+    fragColor = texture(texture0, uv);  // RGBA by default
+#endif
 }
 #endif

@@ -2,7 +2,6 @@
 
 #if defined VERTEX_SHADER
 
-
 //
 // Picks a point from the depth buffer and returns the position in camera space, along with the object and triangle id
 // Adapted from https://github.com/moderngl/moderngl-window/blob/master/examples/resources/programs/fragment_picking/picker.glsl
@@ -11,7 +10,6 @@
 uniform sampler2D position_texture;
 uniform sampler2D obj_info_texture;
 
-//uniform mat4 modelview;
 uniform ivec2 texel_pos;
 
 out vec3 out_position;

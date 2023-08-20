@@ -1,16 +1,18 @@
-#if defined VERTEX_SHADER
-
 #version 400
+
+#if defined VERTEX_SHADER
 
 in vec3 in_vert;
 in vec3 in_normal;
-
-out vec3 v_normal;
-out vec3 v_position;
+in float in_entity_id;
 
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
 uniform mat4 model_matrix;
+
+out vec3 v_normal;
+out vec3 v_position;
+
 
 void main() {
     v_normal = in_normal;
@@ -20,16 +22,17 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
-#version 400
+// Output buffers (Textures)
+layout(location=0) out vec4 out_fragment_color;
+layout(location=1) out vec3 out_fragment_normal;
+layout(location=2) out int out_fragment_entity_id;
 
 // Input Buffers
 in vec3 v_normal;
 in vec3 v_position;
 
-// Output buffers
-out vec4 out_fragment_color;
-
 // Uniforms
+uniform int entity_id;
 uniform mat4 view_matrix;
 uniform vec4 uColor = vec4(1.0, 0.5, 0.1, 1.0);
 uniform float uHardness = 16.0;
@@ -39,6 +42,7 @@ const vec3 lightcolor0 = vec3(1.0, 0.95, 0.9);
 const vec3 lightpos1 = vec3(-22.0, -8.0, -50.0);
 const vec3 lightcolor1 = vec3(0.9, 0.95, 1.0);
 const vec3 ambient = vec3(1.0);
+
 
 void main() {
 
@@ -68,6 +72,8 @@ void main() {
     }
 
     out_fragment_color = vec4(c * 0.5, uColor.a);
+    out_fragment_normal = n;
+    out_fragment_entity_id = entity_id;
 }
 
 #endif

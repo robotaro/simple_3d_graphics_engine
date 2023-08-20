@@ -14,25 +14,7 @@ def quad_2d(context: moderngl.Context,
             uvs_glsl_name="in_uv",
             size=(2.0, 2.0),
             position=(-1.0, -1.0)) -> dict:
-    """
-    A Quad designed to be used as a rendering area on the screen.
 
-    The center of the screen is (0, 0), the upper right corner is (1, 1) and the
-    lower left corner is (-1, -1).
-
-    TODO: Consider changing these coordinates to pixels if useful
-
-    Rendering Method: TRIANGLES
-
-    :param program: ModernGL program
-    :param context: ModernGL context
-    :param vertices_glsl_name: str, reference inside the GLSL program for the vertices
-    :param normals_glsl_name: str, reference inside the GLSL program for the normals
-    :param uvs_glsl_name: str, reference inside the GLSL program for the uvs
-    :param size: tuple, (width, height)
-    :param position: tuple (x, y)
-    :return: Dictionary with VBOs and VAO ready to render
-    """
     width, height = size
     xpos, ypos = position
 

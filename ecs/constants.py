@@ -1,3 +1,9 @@
+import os
+
+# Default Directories
+ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+RESOURCES_DIR = os.path.join(ROOT_DIR, "resources")
+SHADERS_DIRECTORY = os.path.join(RESOURCES_DIR, "shaders")
 
 # =============================================================================
 #                               Event types
@@ -61,15 +67,24 @@ VIEWPORT_INDEX_HEIGHT = 3
 #                                Render System
 # =============================================================================
 
+RENDER_3D_SYSTEM_MODE_FINAL = 0
+RENDER_3D_SYSTEM_MODE_NORMAL = 1
+RENDER_3D_SYSTEM_MODE_DEPTH = 2
+RENDER_3D_SYSTEM_MODE_ENTITY_ID = 3
+RENDER_3D_SYSTEM_MODE_INSTANCE_ID = 4
+
 RENDER_SYSTEM_PROGRAM_FORWARD_PASS = "forward_pass"
 RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS = "fragment_picking_pass"
 RENDER_SYSTEM_PROGRAM_OUTLINE_PASS = "outline_pass"
 
-# Uniform variables
-SHADER_UNIFORM_INPUT_VERTICES = "in_vert"
-SHADER_UNIFORM_INPUT_NORMALS = "in_normal"
-SHADER_UNIFORM_INPUT_COLORS = "in_colors"
-SHADER_UNIFORM_INPUT_UVS = "in_uvs"
+# Input buffer names
+SHADER_INPUT_VERTEX = "in_vert"
+SHADER_INPUT_NORMAL = "in_normal"
+SHADER_INPUT_COLOR = "in_color"
+SHADER_INPUT_UV = "in_uv"
+
+# Uniforms
+SHADER_UNIFORM_ENTITY_ID = "entity_id"
 
 # =============================================================================
 #                              Component Pool
@@ -92,5 +107,20 @@ MESH_SHAPE_CYLINDER = "cylinder"
 MESH_SHAPE_FROM_OBJ = "obj"  # TODO: Kinda of a hack. You need to add argument "fpath"
 
 # =============================================================================
-#                              Component Pool
+#                              Shader Library
 # =============================================================================
+SHADER_LIBRARY_YAML_KEY_VERTEX_SHADER = "vertex_shader"
+SHADER_LIBRARY_YAML_KEY_GEOMETRY_SHADER = "geometry_shader"
+SHADER_LIBRARY_YAML_KEY_FRAGMENT_SHADER = "fragment_shader"
+SHADER_LIBRARY_YAML_KEY_DEFINE = "define"
+SHADER_LIBRARY_DIRECTIVE_VERSION = "#version"
+SHADER_LIBRARY_DIRECTIVE_INCLUDE = "#include"
+SHADER_TYPE_VERTEX = "vertex"
+SHADER_TYPE_GEOMETRY = "geometry"
+SHADER_TYPE_FRAGMENT = "fragment"
+SHADER_LIBRARY_AVAILABLE_TYPE = [
+    SHADER_TYPE_VERTEX,
+    SHADER_TYPE_GEOMETRY,
+    SHADER_TYPE_FRAGMENT
+]
+

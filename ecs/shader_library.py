@@ -1,10 +1,11 @@
+import logging
 import os
 from typing import Union
 from dataclasses import dataclass
 import yaml
 import moderngl
 
-from core import constants
+from ecs import constants
 from core.utilities import utils_io
 
 
@@ -27,10 +28,12 @@ class ShaderLibrary:
     def __init__(self,
                  context: moderngl.Context,
                  shader_directory=constants.SHADERS_DIRECTORY,
-                 shader_programs_config_fpath=""):
+                 shader_programs_config_fpath="",
+                 logger: Union[logging.Logger, None]=None):
 
         # Input variables
         self.context = context
+        self.logger = logger if logger is not None else logging.Logger
         self.shader_programs_config_fpath = shader_programs_config_fpath
         self.shader_directory = shader_directory
 
@@ -95,7 +98,7 @@ class ShaderLibrary:
 
             # Get version - The final version will be the lowest version found!
             line_number_and_version_list = [(index, line) for index, line in enumerate(code_lines)
-                               if line.strip().startswith("#version")]
+                               if line.strip().startswith(constants.SHADER_LIBRARY_DIRECTIVE_VERSION)]
 
             recovered_versions = set([int(line[1].replace("#version", "").strip())
                                   for line in line_number_and_version_list])
@@ -205,9 +208,9 @@ class ShaderLibrary:
         :return: str, source code
         """
 
-        if shader_type not in constants.SHADER_TYPES:
+        if shader_type not in constants.SHADER_LIBRARY_AVAILABLE_TYPE:
             raise ValueError(f"[ERROR] Shader type '{shader_type}' not supported. "
-                             f"Shader type must be one of the following: {constants.SHADER_TYPES}")
+                             f"Shader type must be one of the following: {constants.SHADER_LIBRARY_AVAILABLE_TYPE}")
 
         if extra_definitions is None:
             extra_definitions = {}
@@ -250,12 +253,15 @@ class ShaderLibrary:
                 continue
 
             # Generate source code for all individual shaders that will make the final program
-            vertex_source = self._blueprint2source_code(shader_type="vertex", blueprint=blueprint)
-            geometry_source = self._blueprint2source_code(shader_type="geometry", blueprint=blueprint)
-            fragment_source = self._blueprint2source_code(shader_type="fragment", blueprint=blueprint)
+            vertex_source = self._blueprint2source_code(shader_type=constants.SHADER_TYPE_VERTEX,
+                                                        blueprint=blueprint)
+            geometry_source = self._blueprint2source_code(shader_type=constants.SHADER_TYPE_GEOMETRY,
+                                                          blueprint=blueprint)
+            fragment_source = self._blueprint2source_code(shader_type=constants.SHADER_TYPE_FRAGMENT,
+                                                          blueprint=blueprint)
 
-            # Compile the program
             try:
+                # Compile the program
                 compiled_program = self.context.program(
                     vertex_shader=vertex_source,
                     geometry_shader=geometry_source,
