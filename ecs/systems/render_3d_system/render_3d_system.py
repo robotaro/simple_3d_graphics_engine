@@ -106,7 +106,7 @@ class Render3DSystem(System):
         self.quads["fullscreen"]['vao'].program["color_texture"].value = 0
         self.quads["fullscreen"]['vao'].program["normal_texture"].value = 1
         self.quads["fullscreen"]['vao'].program["viewpos_texture"].value = 2
-        self.quads["fullscreen"]['vao'].program["entity_id_texture"].value = 3
+        self.quads["fullscreen"]['vao'].program["entity_info_texture"].value = 3
 
         return True
 
@@ -149,13 +149,9 @@ class Render3DSystem(System):
     def on_event(self, event_type: int, event_data: tuple):
 
         if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:
-            # Get fragment here?
-            #point_world, obj_id, tri_id, instance_id = self.read_fragmap_at_pixel(x=event_data[0], y=event_data[1])
-            #self.logger.info(obj_id)
             self._sample_entity_location = event_data
 
         if event_type == constants.EVENT_KEYBOARD_PRESS:
-
             if event_data[0] >= glfw.KEY_F1 and event_data[0] <= glfw.KEY_F11:
                 self.fullscreen_selected_texture = event_data[0] - glfw.KEY_F1
 
@@ -260,8 +256,9 @@ class Render3DSystem(System):
             # Stage: Draw transparent objects back to front
 
         if self._sample_entity_location is not None:
-            (x, y) = self._sample_entity_location
-            pixel_data = self.textures["offscreen_entity_id"].read()
+            #(x, y) = self._sample_entity_location
+            #pixel_data = self.textures["offscreen_entity_id"].read()
+            self.logger.debug("Add fragment picking code here!")
             self._sample_entity_location = None
 
     def render_to_screen(self) -> None:

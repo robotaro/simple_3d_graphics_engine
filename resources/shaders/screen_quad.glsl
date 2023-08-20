@@ -18,14 +18,13 @@ void main() {
 uniform sampler2D color_texture;
 uniform sampler2D normal_texture;
 uniform sampler2D viewpos_texture;
-uniform sampler2D entity_id_texture;
+uniform sampler2D entity_info_texture;
 
 in vec2 uv;
 
 uniform int selected_texture = 0;
 
 out vec4 fragColor;
-
 
 // MurmurHash3 32-bit finalizer.
 uint hash(uint h) {
@@ -55,14 +54,25 @@ void main() {
     vec3 finalColor;
 
     if (selected_texture == 0) {
+        // Color
         finalColor = texture(color_texture, uv).rgb;
     } else if (selected_texture == 1) {
+        // Normal
         finalColor = texture(normal_texture, uv).rgb;
     } else if (selected_texture == 2) {
-        finalColor = texture(viewpos_texture, uv).rgb;
+        // Viewpos
+        finalColor = texture(viewpos_texture, uv).xyz;
     } else if (selected_texture == 3) {
-
-        uint id = floatBitsToUint(texture(entity_id_texture, uv).r);
+        // Entity ID
+        uint id = floatBitsToUint(texture(entity_info_texture, uv).r);
+        finalColor = int_to_color(id);
+    } else if (selected_texture == 4) {
+        // Instance ID
+        uint id = floatBitsToUint(texture(entity_info_texture, uv).g);
+        finalColor = int_to_color(id);
+    } else if (selected_texture == 5) {
+        // Triangle ID - TODO: Not sure if I need this level of control
+        uint id = floatBitsToUint(texture(entity_info_texture, uv).b);
         finalColor = int_to_color(id);
     }
 
