@@ -58,10 +58,8 @@ void main() {
     } else if (selected_texture == 1) {
         finalColor = texture(normal_texture, uv).rgb;
     } else if (selected_texture == 2) {
-        // ivec4 entityIdValue = texture(entity_id_texture, uv);
-        // finalColor = vec3(entityIdValue) / 255.0;  // Normalize integer values to [0, 1]
         uint id = floatBitsToUint(texture(entity_id_texture, uv).r);
-        finalColor = int_to_color(id * 23);
+        finalColor = int_to_color(id);
     }
 
     fragColor = vec4(finalColor, 1.0);

@@ -62,6 +62,7 @@ class Render3DSystem(System):
     def initialise(self, **kwargs):
 
         # Get data from arguments
+        # TODO: Review if we need these
         self.safe_release(self.texture_offscreen_picking_depth)
         self.safe_release(self.texture_offscreen_picking_viewpos)
         self.safe_release(self.texture_offscreen_picking_tri_id)
@@ -87,9 +88,9 @@ class Render3DSystem(System):
         self.outline_framebuffer = self.ctx.framebuffer(color_attachments=[self.outline_texture])
 
         self.textures["offscreen_color"] = self.ctx.texture(size=self.buffer_size, components=4)
-        self.textures["offscreen_normal"] = self.ctx.texture(size=self.buffer_size, components=3, dtype='f4')
-        self.textures["offscreen_viewpos"] = self.ctx.texture(size=self.buffer_size, components=3, dtype='f4')
-        self.textures["offscreen_entity_id"] = self.ctx.texture(size=self.buffer_size, components=1, dtype='f4')
+        self.textures["offscreen_normal"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["offscreen_viewpos"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["offscreen_entity_id"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
         self.textures["offscreen_depth"] = self.ctx.depth_texture(size=self.buffer_size)
 
         self.framebuffers["offscreen"] = self.ctx.framebuffer(
@@ -108,7 +109,7 @@ class Render3DSystem(System):
 
         # Setup quads
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
-                                                           program=self.shader_library["fullscreen_quad"])
+                                                           program=self.shader_library["screen_quad"])
         self.quads["fullscreen"]['vao'].program["color_texture"].value = 0
         self.quads["fullscreen"]['vao'].program["normal_texture"].value = 1
         self.quads["fullscreen"]['vao'].program["entity_id_texture"].value = 2
@@ -196,53 +197,6 @@ class Render3DSystem(System):
     #                         Render functions
     # =========================================================================
 
-    def fragment_map_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_uids: list):
-
-        camera_component = component_pool.camera_components[camera_uid]
-        camera_transform = component_pool.transform_components[camera_uid]
-
-        self.ctx.enable_only(moderngl.DEPTH_TEST)
-        self.framebuffers["offscreen"].clear()
-        self.framebuffer_offscreen_picking.use()
-        self.framebuffer_offscreen_picking.viewport = camera_component.viewport
-
-        program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS]
-
-        for renderable_uid in renderable_uids:
-
-            renderable_component = component_pool.renderable_components[renderable_uid]
-
-            if not renderable_component.visible:
-                continue
-
-            # Set camera uniforms
-            camera_component.upload_uniforms(program=program)
-
-            # Render with the specified object uid, if None use the node uid instead.
-            program["entity_id"] = renderable_uid
-
-            # if self.backface_culling or self.backface_fragmap:
-            self.ctx.enable(moderngl.CULL_FACE)
-            # else:
-            #    context.disable(moderngl.CULL_FACE)
-
-            # If backface_fragmap is enabled for this node only render backfaces
-            # if self.backface_fragmap:
-            #    context.cull_face = "front"
-
-            # Restore cull face to back
-            # if self.backface_fragmap:
-            #    context.cull_face = "back"
-
-            renderable_transform = component_pool.transform_components[renderable_uid]
-
-            # Upload uniforms
-            program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
-            program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
-
-            # Render the vao at the end
-            renderable_component.vaos[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
-
     def forward_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_entity_uids: list):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
@@ -307,6 +261,7 @@ class Render3DSystem(System):
             camera_transform.update()
 
             # Upload uniforms
+            program["entity_id"].value = renderable_entity_uid
             program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
             program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
 

@@ -4,7 +4,6 @@
 
 in vec3 in_vert;
 in vec3 in_normal;
-in float in_entity_id;
 
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
@@ -25,7 +24,7 @@ void main() {
 // Output buffers (Textures)
 layout(location=0) out vec4 out_fragment_color;
 layout(location=1) out vec4 out_fragment_normal;
-layout(location=2) out float out_fragment_entity_id;
+layout(location=2) out vec4 out_fragment_entity_id;
 
 // Input Buffers
 in vec3 v_normal;
@@ -42,7 +41,6 @@ const vec3 lightcolor0 = vec3(1.0, 0.95, 0.9);
 const vec3 lightpos1 = vec3(-22.0, -8.0, -50.0);
 const vec3 lightcolor1 = vec3(0.9, 0.95, 1.0);
 const vec3 ambient = vec3(1.0);
-
 
 void main() {
 
@@ -73,7 +71,7 @@ void main() {
 
     out_fragment_color = vec4(c * 0.5, uColor.a);
     out_fragment_normal = vec4(n, 1.0);
-    out_fragment_entity_id = float(entity_id);
+    out_fragment_entity_id = vec4(entity_id, 0, 1, 1);
 }
 
 #endif
