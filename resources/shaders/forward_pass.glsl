@@ -24,7 +24,7 @@ void main() {
 
 // Output buffers (Textures)
 layout(location=0) out vec4 out_fragment_color;
-layout(location=1) out vec3 out_fragment_normal;
+layout(location=1) out vec4 out_fragment_normal;
 layout(location=2) out int out_fragment_entity_id;
 
 // Input Buffers
@@ -72,7 +72,7 @@ void main() {
     }
 
     out_fragment_color = vec4(c * 0.5, uColor.a);
-    out_fragment_normal = n;
+    out_fragment_normal = vec4(n, 1.0);
     out_fragment_entity_id = entity_id;
 }
 

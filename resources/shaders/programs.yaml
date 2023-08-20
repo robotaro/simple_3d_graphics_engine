@@ -6,18 +6,6 @@ texture:
   vertex_shader: "texture.glsl"
   fragment_shader: "texture.glsl"
 
-texture_rgba:
-  vertex_shader: "texture.glsl"
-  fragment_shader: "texture.glsl"
-  define:
-    - COLOR_RGBA
-
-texture_rgb:
-  vertex_shader: "texture.glsl"
-  fragment_shader: "texture.glsl"
-  define:
-    - COLOR_RGB
-
 mesh_offscreen:
   vertex_shader: "mesh_offscreen.glsl"
   fragment_shader: "mesh_offscreen.glsl"

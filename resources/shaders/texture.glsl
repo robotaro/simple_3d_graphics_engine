@@ -14,27 +14,28 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
+// Input textures
+uniform sampler2D color_texture;
+uniform sampler2D normal_texture;
+
 in vec2 uv;
-uniform sampler2D texture0;
+
+uniform int selected_texture = 0;
+
 out vec4 fragColor;
 
 void main() {
 
-#if defined COLOR_RGBA
-    fragColor = texture(texture0, uv);
+    vec3 finalColor;
 
-#elif defined COLOR_RGB
-    fragColor = vec4(texture(texture0, uv));
+    if (selected_texture == 0) {
+        // Display RGBA texture
+        finalColor = texture(color_texture, uv).rgb;
+    } else {
+        // Display RGB texture
+        finalColor = texture(normal_texture, uv).rgb;
+    }
 
-#elif defined COLOR_FLOAT
-    float value = texture(texture0, uv);
-    fragColor = vec4(value, value, value, 1.0);
-
-#elif defined COLOR_INT
-    fragColor = texture(texture0, uv);
-
-#else
-    fragColor = texture(texture0, uv);  // RGBA by default
-#endif
+    fragColor = vec4(finalColor, 1.0);
 }
 #endif

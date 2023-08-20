@@ -13,7 +13,7 @@ def main():
     editor.create_system(system_type="render_3d_system",
                          subscribed_events=[
                              constants.EVENT_MOUSE_BUTTON_PRESS,
-
+                             constants.EVENT_KEYBOARD_PRESS,
                          ])
     #editor.create_system(system_type="imgui_system",
     #                     subscribed_events=[constants.EVENT_MOUSE_SCROLL])

@@ -1,3 +1,4 @@
+import glfw
 import moderngl
 from PIL import Image
 import numpy as np
@@ -40,13 +41,16 @@ class Render3DSystem(System):
         self.outline_framebuffer = None
 
         # Debug offscreen rendering
+        self.fullscreen_selected_texture = 1  # Color is selected by default
         self.offscreen_framebuffer = None
         self.offscreen_diffuse = None
         self.offscreen_normals = None
         self.offscreen_depth = None
 
-        # Create programs
+        # Programs
         self.shadow_map_program = None
+
+
 
         # Flags
         self._sample_entity_location = None
@@ -82,11 +86,11 @@ class Render3DSystem(System):
         self.outline_texture = self.ctx.texture(self.buffer_size, 1, dtype="f4")
         self.outline_framebuffer = self.ctx.framebuffer(color_attachments=[self.outline_texture])
 
-        self.textures["offscreen_color"] = self.ctx.texture(self.buffer_size, 4)
-        self.textures["offscreen_normal"] = self.ctx.texture(self.buffer_size, 3, dtype='f4')
-        self.textures["offscreen_viewpos"] = self.ctx.texture(self.buffer_size, 3, dtype='f4')
-        self.textures["offscreen_entity_id"] = self.ctx.texture(self.buffer_size, 1, dtype='i4')
-        self.textures["offscreen_depth"] = self.ctx.depth_texture(self.buffer_size)
+        self.textures["offscreen_color"] = self.ctx.texture(size=self.buffer_size, components=4)
+        self.textures["offscreen_normal"] = self.ctx.texture(size=self.buffer_size, components=3, dtype='f4')
+        self.textures["offscreen_viewpos"] = self.ctx.texture(size=self.buffer_size, components=3, dtype='f4')
+        self.textures["offscreen_entity_id"] = self.ctx.texture(size=self.buffer_size, components=1, dtype='i4')
+        self.textures["offscreen_depth"] = self.ctx.depth_texture(size=self.buffer_size)
 
         self.framebuffers["offscreen"] = self.ctx.framebuffer(
             color_attachments=[
@@ -102,15 +106,10 @@ class Render3DSystem(System):
             compare_func='',
         )
 
-        # Shaders
-        self.shader_library["texture"]["texture0"].value = 0
-        self.shader_library["mesh_offscreen"]["texture0"].value = 0
-
-        # Quads
-        self.quads["fullscreen_rgba"] = ready_to_render.quad_2d(context=self.ctx,
-                                                                program=self.shader_library["texture_rgba"])
-        self.quads["fullscreen_rgb"] = ready_to_render.quad_2d(context=self.ctx,
-                                                               program=self.shader_library["texture_rgb"])
+        # Setup quads
+        self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx, program=self.shader_library["texture"])
+        self.quads["fullscreen"]['vao'].program["color_texture"].value = 0
+        self.quads["fullscreen"]['vao'].program["normal_texture"].value = 1
 
         return True
 
@@ -157,6 +156,20 @@ class Render3DSystem(System):
             #point_world, obj_id, tri_id, instance_id = self.read_fragmap_at_pixel(x=event_data[0], y=event_data[1])
             #self.logger.info(obj_id)
             self._sample_entity_location = event_data
+
+        if event_type == constants.EVENT_KEYBOARD_PRESS:
+
+            if event_data[0] == glfw.KEY_F1:
+                self.fullscreen_selected_texture = 0
+
+            if event_data[0] == glfw.KEY_F2:
+                self.fullscreen_selected_texture = 1
+
+            if event_data[0] == glfw.KEY_F3:
+                self.fullscreen_selected_texture = 2
+
+            if event_data[0] == glfw.KEY_F4:
+                self.fullscreen_selected_texture = 3
 
     def shutdown(self):
 
@@ -315,7 +328,11 @@ class Render3DSystem(System):
         self.ctx.disable(moderngl.DEPTH_TEST)
 
         self.textures["offscreen_color"].use(location=0)
-        self.quads["fullscreen_rgba"]['vao'].render(moderngl.TRIANGLES)
+        self.textures["offscreen_normal"].use(location=1)
+
+        quad_vao = self.quads["fullscreen"]['vao']
+        quad_vao.program["selected_texture"] = self.fullscreen_selected_texture
+        quad_vao.render(moderngl.TRIANGLES)
 
     # =========================================================================
     #                         Other Functions
