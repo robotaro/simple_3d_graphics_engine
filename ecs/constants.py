@@ -109,16 +109,19 @@ MESH_SHAPE_FROM_OBJ = "obj"  # TODO: Kinda of a hack. You need to add argument "
 # =============================================================================
 #                              Shader Library
 # =============================================================================
-SHADER_LIBRARY_YAML_KEY_VERTEX_SHADER = "vertex_shader"
-SHADER_LIBRARY_YAML_KEY_GEOMETRY_SHADER = "geometry_shader"
-SHADER_LIBRARY_YAML_KEY_FRAGMENT_SHADER = "fragment_shader"
-SHADER_LIBRARY_YAML_KEY_DEFINE = "define"
-SHADER_LIBRARY_DIRECTIVE_VERSION = "#version"
-SHADER_LIBRARY_DIRECTIVE_INCLUDE = "#include"
 SHADER_TYPE_VERTEX = "vertex"
 SHADER_TYPE_GEOMETRY = "geometry"
 SHADER_TYPE_FRAGMENT = "fragment"
-SHADER_LIBRARY_AVAILABLE_TYPE = [
+
+SHADER_LIBRARY_YAML_KEY_DEFINE = "define"  # For extra definitions
+SHADER_LIBRARY_FILE_EXTENSION = ".glsl"
+
+SHADER_LIBRARY_DIRECTIVE_VERSION = "#version"
+SHADER_LIBRARY_DIRECTIVE_DEFINE = "#define"
+SHADER_LIBRARY_DIRECTIVE_INCLUDE = "#include"
+
+
+SHADER_LIBRARY_AVAILABLE_TYPES = [
     SHADER_TYPE_VERTEX,
     SHADER_TYPE_GEOMETRY,
     SHADER_TYPE_FRAGMENT

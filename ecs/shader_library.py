@@ -28,13 +28,12 @@ class ShaderLibrary:
     def __init__(self,
                  context: moderngl.Context,
                  shader_directory=constants.SHADERS_DIRECTORY,
-                 shader_programs_config_fpath="",
+                 shader_programs_yaml_fpath="",
                  logger: Union[logging.Logger, None]=None):
 
         # Input variables
         self.context = context
         self.logger = logger if logger is not None else logging.Logger
-        self.shader_programs_config_fpath = shader_programs_config_fpath
         self.shader_directory = shader_directory
 
         # Core variables
@@ -43,7 +42,7 @@ class ShaderLibrary:
 
         # Initialise in the constructor, for simplicity
         self.load_shaders()
-        self.compile_programs()
+        self.compile_programs(yaml_fpath=shader_programs_yaml_fpath)
 
     def __getitem__(self, program_id: str):
         if program_id not in self.programs:
@@ -53,7 +52,8 @@ class ShaderLibrary:
     def load_shaders(self) -> None:
 
         # Step 1) List all .glsl files in the directory
-        relative_glsl_fpaths = utils_io.list_filepaths(directory=self.shader_directory, extension=".glsl")
+        relative_glsl_fpaths = utils_io.list_filepaths(directory=self.shader_directory,
+                                                       extension=constants.SHADER_LIBRARY_FILE_EXTENSION)
 
         # Step 2) For each glsl filepath, create a new shader entry and loa its respective code
         for relative_fpath in relative_glsl_fpaths:
@@ -68,11 +68,10 @@ class ShaderLibrary:
         for key, shader in self.shader_blueprints.items():
             self._solve_shader_dependencies(shader_key=key)
 
-    def print_compilation_results(self):
+    def print_yaml_structure(self):
 
         print("[ Compilation Results ]")
         for key, program_entry in self.programs.items():
-            errors = program_entry["compilation_errors"]
             successful = len(errors) == 0
             result = "Compiled" if successful else "Failed"
             print(f" > {key}: {result}")
@@ -154,7 +153,7 @@ class ShaderLibrary:
         if not isinstance(blueprint, dict):
             raise TypeError(f"[ERROR] Shade blueprint needs to be dictionary")
 
-        extra_definitions = blueprint.get("extra_definitions", {})
+        extra_definitions = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_DEFINE, {})
 
         source = None
         blueprint_key = f"{shader_type}_shader"
@@ -208,9 +207,9 @@ class ShaderLibrary:
         :return: str, source code
         """
 
-        if shader_type not in constants.SHADER_LIBRARY_AVAILABLE_TYPE:
+        if shader_type not in constants.SHADER_LIBRARY_AVAILABLE_TYPES:
             raise ValueError(f"[ERROR] Shader type '{shader_type}' not supported. "
-                             f"Shader type must be one of the following: {constants.SHADER_LIBRARY_AVAILABLE_TYPE}")
+                             f"Shader type must be one of the following: {constants.SHADER_LIBRARY_AVAILABLE_TYPES}")
 
         if extra_definitions is None:
             extra_definitions = {}
@@ -218,13 +217,13 @@ class ShaderLibrary:
         shader = self.shader_blueprints[shader_key]
 
         header_lines = []
-        header_lines += [f"#version {shader.version}\n"]
-        header_lines += [f"#define {shader_type.upper()}_SHADER\n"]
-        header_lines += [f"#define {key.upper()} {value}\n" for key, value in extra_definitions.items()]
+        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_VERSION} {shader.version}\n"]
+        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_DEFINE} {shader_type.upper()}_SHADER\n"]
+        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_DEFINE} {definition}\n" for definition in extra_definitions]
 
         return "".join(header_lines + shader.source_code_lines)
 
-    def compile_programs(self):
+    def compile_programs(self, yaml_fpath: str):
         """
         Compiles all programs defined in the YAML definition file. The programs
 
@@ -233,14 +232,14 @@ class ShaderLibrary:
         """
 
         # If no YAML file has been specified, look for one in the shader directory
-        if len(self.shader_programs_config_fpath) == 0:
+        if len(yaml_fpath) == 0:
             yaml_filenames = [filename for filename in os.listdir(self.shader_directory) if filename.endswith(".yaml")]
             if len(yaml_filenames) == 0:
                 raise FileNotFoundError(f"[ERROR] No YAML shader program file definition found")
-            self.shader_programs_config_fpath = os.path.join(self.shader_directory, yaml_filenames[0])
+            self.shader_programs_yaml_fpath = os.path.join(self.shader_directory, yaml_filenames[0])
 
         yaml_dict = None
-        with open(self.shader_programs_config_fpath, 'r') as file:
+        with open(self.shader_programs_yaml_fpath, 'r') as file:
             yaml_dict = yaml.safe_load(file)
 
         if yaml_dict is None:

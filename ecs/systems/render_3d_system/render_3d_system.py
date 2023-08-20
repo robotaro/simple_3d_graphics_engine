@@ -48,9 +48,6 @@ class Render3DSystem(System):
         # Create programs
         self.shadow_map_program = None
 
-        # Debugging variables
-        self.quad_fullscreen = None
-
         # Flags
         self._sample_entity_location = None
 
@@ -110,11 +107,10 @@ class Render3DSystem(System):
         self.shader_library["mesh_offscreen"]["texture0"].value = 0
 
         # Quads
-        self.quad_fullscreen = ready_to_render.quad_2d(context=self.ctx, shader_library=self.shader_library)
-        self.quads["normals"] = ready_to_render.quad_2d(context=self.ctx,
-                                                        size=(0.25, 0.25),
-                                                        position=(0.75, 0.875),
-                                                        shader_library=self.shader_library)
+        self.quads["fullscreen_rgba"] = ready_to_render.quad_2d(context=self.ctx,
+                                                                program=self.shader_library["texture_rgba"])
+        self.quads["fullscreen_rgb"] = ready_to_render.quad_2d(context=self.ctx,
+                                                               program=self.shader_library["texture_rgb"])
 
         return True
 
@@ -171,6 +167,18 @@ class Render3DSystem(System):
         # Release Framebuffers
         for frabuffer_name, framebuffer_obj in self.framebuffers.items():
             framebuffer_obj.release()
+
+        for quad_name, quad in self.quads.items():
+            if quad["vbo_vertices"] is not None:
+                quad["vbo_vertices"].release()
+
+            if quad["vbo_uvs"] is not None:
+                quad["vbo_uvs"].release()
+
+            if quad["vao"] is not None:
+                quad["vao"].release()
+
+        # TODO: Release quads textures and
 
     # =========================================================================
     #                         Render functions
@@ -300,8 +308,6 @@ class Render3DSystem(System):
             pixel_data = self.textures["offscreen_entity_id"].read()
             self._sample_entity_location = None
 
-
-
     def render_to_full_screen_quad(self):
 
         self.ctx.screen.use()
@@ -309,7 +315,7 @@ class Render3DSystem(System):
         self.ctx.disable(moderngl.DEPTH_TEST)
 
         self.textures["offscreen_color"].use(location=0)
-        self.quad_fullscreen['vao'].render(moderngl.TRIANGLES)
+        self.quads["fullscreen_rgba"]['vao'].render(moderngl.TRIANGLES)
 
     # =========================================================================
     #                         Other Functions
