@@ -11,12 +11,15 @@ uniform mat4 model_matrix;
 
 out vec3 v_normal;
 out vec3 v_position;
+out vec3 v_viewpos;
 
 
 void main() {
     v_normal = in_normal;
     v_position = in_vert;
-    gl_Position = projection_matrix * view_matrix * model_matrix * vec4(v_position, 1.0);
+    vec4 viewpos = view_matrix * model_matrix * vec4(v_position, 1.0);
+    v_viewpos = viewpos.xyz;
+    gl_Position = projection_matrix * viewpos;
 }
 
 #elif defined FRAGMENT_SHADER
@@ -24,11 +27,13 @@ void main() {
 // Output buffers (Textures)
 layout(location=0) out vec4 out_fragment_color;
 layout(location=1) out vec4 out_fragment_normal;
-layout(location=2) out vec4 out_fragment_entity_id;
+layout(location=2) out vec4 out_fragment_viewpos;
+layout(location=3) out vec4 out_fragment_entity_info;
 
 // Input Buffers
 in vec3 v_normal;
 in vec3 v_position;
+in vec3 v_viewpos;
 
 // Uniforms
 uniform int entity_id;
@@ -71,7 +76,8 @@ void main() {
 
     out_fragment_color = vec4(c * 0.5, uColor.a);
     out_fragment_normal = vec4(n, 1.0);
-    out_fragment_entity_id = vec4(entity_id, 0, 1, 1);
+    out_fragment_viewpos = vec4(v_viewpos, 1.0);
+    out_fragment_entity_info = vec4(entity_id, 0, 1, 1);
 }
 
 #endif

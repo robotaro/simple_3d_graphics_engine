@@ -17,6 +17,7 @@ void main() {
 // Input textures
 uniform sampler2D color_texture;
 uniform sampler2D normal_texture;
+uniform sampler2D viewpos_texture;
 uniform sampler2D entity_id_texture;
 
 in vec2 uv;
@@ -58,6 +59,9 @@ void main() {
     } else if (selected_texture == 1) {
         finalColor = texture(normal_texture, uv).rgb;
     } else if (selected_texture == 2) {
+        finalColor = texture(viewpos_texture, uv).rgb;
+    } else if (selected_texture == 3) {
+
         uint id = floatBitsToUint(texture(entity_id_texture, uv).r);
         finalColor = int_to_color(id);
     }

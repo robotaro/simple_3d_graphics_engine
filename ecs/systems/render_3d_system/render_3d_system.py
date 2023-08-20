@@ -74,15 +74,6 @@ class Render3DSystem(System):
         self.picker_buffer_output = self.ctx.buffer(reserve=4)  # 4 Bytes for the first read
         self.picker_program = self.shader_library["fragment_picking_pass"]
 
-        self.texture_offscreen_picking_depth = self.ctx.depth_texture(self.buffer_size)
-        self.texture_offscreen_picking_viewpos = self.ctx.texture(self.buffer_size, 4, dtype="f4")
-        self.texture_offscreen_picking_tri_id = self.ctx.texture(self.buffer_size, 4, dtype="f4")
-        self.framebuffer_offscreen_picking = self.ctx.framebuffer(
-            color_attachments=[self.texture_offscreen_picking_viewpos, self.texture_offscreen_picking_tri_id],
-            depth_attachment=self.texture_offscreen_picking_depth,
-        )
-        self.texture_offscreen_picking_tri_id.filter = (moderngl.NEAREST, moderngl.NEAREST)
-
         # Outline rendering
         self.outline_texture = self.ctx.texture(self.buffer_size, 1, dtype="f4")
         self.outline_framebuffer = self.ctx.framebuffer(color_attachments=[self.outline_texture])
@@ -90,14 +81,16 @@ class Render3DSystem(System):
         self.textures["offscreen_color"] = self.ctx.texture(size=self.buffer_size, components=4)
         self.textures["offscreen_normal"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
         self.textures["offscreen_viewpos"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures["offscreen_entity_id"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["offscreen_entity_info"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["offscreen_entity_info"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
         self.textures["offscreen_depth"] = self.ctx.depth_texture(size=self.buffer_size)
 
         self.framebuffers["offscreen"] = self.ctx.framebuffer(
             color_attachments=[
                 self.textures["offscreen_color"],
                 self.textures["offscreen_normal"],
-                self.textures["offscreen_entity_id"]
+                self.textures["offscreen_viewpos"],
+                self.textures["offscreen_entity_info"]
             ],
             depth_attachment=self.textures["offscreen_depth"],
         )
@@ -112,7 +105,8 @@ class Render3DSystem(System):
                                                            program=self.shader_library["screen_quad"])
         self.quads["fullscreen"]['vao'].program["color_texture"].value = 0
         self.quads["fullscreen"]['vao'].program["normal_texture"].value = 1
-        self.quads["fullscreen"]['vao'].program["entity_id_texture"].value = 2
+        self.quads["fullscreen"]['vao'].program["viewpos_texture"].value = 2
+        self.quads["fullscreen"]['vao'].program["entity_id_texture"].value = 3
 
         return True
 
@@ -150,7 +144,7 @@ class Render3DSystem(System):
 
 
         # Final pass renders everything to a full screen quad from the offscreen textures
-        self.render_to_full_screen_quad()
+        self.render_to_screen()
 
     def on_event(self, event_type: int, event_data: tuple):
 
@@ -162,14 +156,9 @@ class Render3DSystem(System):
 
         if event_type == constants.EVENT_KEYBOARD_PRESS:
 
-            if event_data[0] == glfw.KEY_F1:
-                self.fullscreen_selected_texture = 0
+            if event_data[0] >= glfw.KEY_F1 and event_data[0] <= glfw.KEY_F11:
+                self.fullscreen_selected_texture = event_data[0] - glfw.KEY_F1
 
-            if event_data[0] == glfw.KEY_F2:
-                self.fullscreen_selected_texture = 1
-
-            if event_data[0] == glfw.KEY_F3:
-                self.fullscreen_selected_texture = 2
 
     def shutdown(self):
 
@@ -275,15 +264,22 @@ class Render3DSystem(System):
             pixel_data = self.textures["offscreen_entity_id"].read()
             self._sample_entity_location = None
 
-    def render_to_full_screen_quad(self):
+    def render_to_screen(self) -> None:
+
+        """
+        Renders selected offscreen texture to window. By default, it is the color texture, but you can
+        change it using F1-F4 keys.
+        :return: None
+        """
 
         self.ctx.screen.use()
-        self.ctx.screen.clear(red=1, green=1, blue=1)
+        self.ctx.screen.clear(red=1, green=1, blue=1)  # TODO: Check if this line is necessary
         self.ctx.disable(moderngl.DEPTH_TEST)
 
         self.textures["offscreen_color"].use(location=0)
         self.textures["offscreen_normal"].use(location=1)
-        self.textures["offscreen_entity_id"].use(location=2)
+        self.textures["offscreen_viewpos"].use(location=2)
+        self.textures["offscreen_entity_info"].use(location=3)
 
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture
