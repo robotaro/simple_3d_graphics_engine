@@ -69,7 +69,7 @@ class ShaderLibrary:
             self._solve_shader_dependencies(shader_key=key)
 
     def print_yaml_structure(self):
-
+        # TODO: FInish this function
         print("[ Compilation Results ]")
         for key, program_entry in self.programs.items():
             successful = len(errors) == 0
@@ -260,11 +260,17 @@ class ShaderLibrary:
                                                           blueprint=blueprint)
 
             try:
+                varyings = []
+                if fragment_source is None:
+                    varyings = ["out_obj_id", "out_tri_id", "out_instance_id"]
+
                 # Compile the program
                 compiled_program = self.context.program(
                     vertex_shader=vertex_source,
                     geometry_shader=geometry_source,
-                    fragment_shader=fragment_source)
+                    fragment_shader=fragment_source,
+                    varyings=varyings
+                )
 
             except Exception as error:
                 # TODO: Sort out how you want this

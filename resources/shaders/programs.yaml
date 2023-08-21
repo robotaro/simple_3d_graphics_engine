@@ -1,11 +1,11 @@
-screen_quad:
-  vertex_shader: "screen_quad.glsl"
-  fragment_shader: "screen_quad.glsl"
-
-fragment_picking_pass:
-  vertex_shader: "mesh_object_id.glsl"
-  fragment_shader: "mesh_object_id.glsl"
 
 forward_pass:
   vertex_shader: "forward_pass.glsl"
   fragment_shader: "forward_pass.glsl"
+
+fragment_picking_pass:
+  vertex_shader: "fragment_picking.glsl"
+
+screen_quad:
+  vertex_shader: "screen_quad.glsl"
+  fragment_shader: "screen_quad.glsl"

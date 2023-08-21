@@ -30,27 +30,19 @@ class Render3DSystem(System):
         self.vbo_groups = {}
         self.quads = {}
 
+        self.fullscreen_selected_texture = 0  # Color is selected by default
+
         # Fragment Picking - altogether for now
-        self.fragment_picker_program = None
-        self.texture_offscreen_picking_depth = None
-        self.texture_offscreen_picking_viewpos = None
-        self.texture_offscreen_picking_tri_id = None
-        self.framebuffer_offscreen_picking = None
+        self.picker_buffer = None
+        self.picker_program = None
+        self.picker_output = None
+        self.picker_vao = None
 
         self.outline_texture = None
         self.outline_framebuffer = None
 
-        # Debug offscreen rendering
-        self.fullscreen_selected_texture = 0  # Color is selected by default
-        self.offscreen_framebuffer = None
-        self.offscreen_diffuse = None
-        self.offscreen_normals = None
-        self.offscreen_depth = None
-
         # Programs
         self.shadow_map_program = None
-
-
 
         # Flags
         self._sample_entity_location = None
@@ -61,18 +53,11 @@ class Render3DSystem(System):
 
     def initialise(self, **kwargs):
 
-        # Get data from arguments
-        # TODO: Review if we need these
-        self.safe_release(self.texture_offscreen_picking_depth)
-        self.safe_release(self.texture_offscreen_picking_viewpos)
-        self.safe_release(self.texture_offscreen_picking_tri_id)
-        self.safe_release(self.framebuffer_offscreen_picking)
-        self.safe_release(self.outline_texture)
-        self.safe_release(self.outline_framebuffer)
-
         # Fragment picking
-        self.picker_buffer_output = self.ctx.buffer(reserve=4)  # 4 Bytes for the first read
         self.picker_program = self.shader_library["fragment_picking_pass"]
+        self.picker_program["entity_info_texture"].value = 0  # Read from texture channel 0
+        self.picker_buffer = self.ctx.buffer(reserve=3 * 4)  # 3 ints
+        self.picker_vao = self.ctx.vertex_array(self.picker_program, [])
 
         # Outline rendering
         self.outline_texture = self.ctx.texture(self.buffer_size, 1, dtype="f4")
@@ -149,12 +134,25 @@ class Render3DSystem(System):
     def on_event(self, event_type: int, event_data: tuple):
 
         if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:
-            self._sample_entity_location = event_data
 
+            self.picker_program['texel_pos'].value = (512, 384)  # (x, y)
+            self.textures["offscreen_entity_info"].use(location=0)
+
+            self.picker_vao.transform(
+                self.picker_buffer,
+                mode=moderngl.POINTS,
+                vertices=1,
+                first=0,
+                instances=1
+            )
+
+            entity_id, instance_id, something = struct.unpack("3i", self.picker_buffer.read())
+            self.logger.info((entity_id, instance_id, something))
+
+        # Change viewmodes on the screen quad
         if event_type == constants.EVENT_KEYBOARD_PRESS:
             if event_data[0] >= glfw.KEY_F1 and event_data[0] <= glfw.KEY_F11:
                 self.fullscreen_selected_texture = event_data[0] - glfw.KEY_F1
-
 
     def shutdown(self):
 
@@ -261,6 +259,19 @@ class Render3DSystem(System):
             self.logger.debug("Add fragment picking code here!")
             self._sample_entity_location = None
 
+    def fragment_map_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_uids: list):
+
+        camera_component = component_pool.camera_components[camera_uid]
+        camera_transform = component_pool.transform_components[camera_uid]
+
+        self.ctx.enable_only(moderngl.DEPTH_TEST)
+        self.framebuffers["offscreen"].clear()
+        self.framebuffer_offscreen_picking.use()
+        self.framebuffer_offscreen_picking.viewport = camera_component.viewport
+
+        program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS]
+
+
     def render_to_screen(self) -> None:
 
         """
@@ -315,8 +326,8 @@ class Render3DSystem(System):
             buffer, mode=mode, vertices=vertices, first=first, instances=instances
         )
 
-        self.picker_vao.transform(self.frag_pick_prog, self.picker_buffer_output, vertices=1)
-        x, y, z, obj_id, tri_id, instance_id = struct.unpack("3f3i", self.picker_buffer_output.read())
+        self.picker_vao.transform(self.frag_pick_prog, self.picker_buffer, vertices=1)
+        x, y, z, obj_id, tri_id, instance_id = struct.unpack("3f3i", self.picker_buffer.read())
         return np.array((x, y, z)), obj_id, tri_id, instance_id
 
     """def offscreen_and_onscreen_pass(self, scene: Scene, viewport: Viewport):
