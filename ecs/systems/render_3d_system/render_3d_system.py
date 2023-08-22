@@ -133,9 +133,12 @@ class Render3DSystem(System):
 
     def on_event(self, event_type: int, event_data: tuple):
 
-        if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:
+        if (event_type == constants.EVENT_MOUSE_BUTTON_PRESS and
+                event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] == glfw.MOUSE_BUTTON_LEFT):
 
-            self.picker_program['texel_pos'].value = (512, 384)  # (x, y)
+            # TODO: Move this to its own function!
+            # Pass the coordinate of the pixel you want to sample to the fragment picking shader
+            self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
             self.textures["offscreen_entity_info"].use(location=0)
 
             self.picker_vao.transform(
@@ -149,10 +152,11 @@ class Render3DSystem(System):
             entity_id, instance_id, something = struct.unpack("3i", self.picker_buffer.read())
             self.logger.info((entity_id, instance_id, something))
 
-        # Change viewmodes on the screen quad
+        # FULLSCREEN VIEW MODES
         if event_type == constants.EVENT_KEYBOARD_PRESS:
-            if event_data[0] >= glfw.KEY_F1 and event_data[0] <= glfw.KEY_F11:
-                self.fullscreen_selected_texture = event_data[0] - glfw.KEY_F1
+            key_value = event_data[constants.EVENT_INDEX_KEYBOARD_KEY]
+            if glfw.KEY_F1 <= key_value <= glfw.KEY_F11:
+                self.fullscreen_selected_texture = key_value - glfw.KEY_F1
 
     def shutdown(self):
 
@@ -183,9 +187,6 @@ class Render3DSystem(System):
     def forward_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_entity_uids: list):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
-
-        # Bind screen context to draw to it
-        #self.ctx.screen.use()
         self.framebuffers["offscreen"].use()
 
         camera_component = component_pool.camera_components[camera_uid]
@@ -270,7 +271,6 @@ class Render3DSystem(System):
         self.framebuffer_offscreen_picking.viewport = camera_component.viewport
 
         program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS]
-
 
     def render_to_screen(self) -> None:
 

@@ -9,15 +9,31 @@ SHADERS_DIRECTORY = os.path.join(RESOURCES_DIR, "shaders")
 #                               Event types
 # =============================================================================
 
+# Keyboard
 EVENT_KEYBOARD_PRESS = 1            # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_RELEASE = 2          # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_REPEAT = 3           # args: (key, scancode, mods) <int, int, int>
+EVENT_INDEX_KEYBOARD_KEY = 0
+EVENT_INDEX_KEYBOARD_SCANCODE = 1
+EVENT_INDEX_KEYBOARD_MODS = 2
 
-EVENT_MOUSE_BUTTON_PRESS = 4        # args: (button, mods) <int, int>
-EVENT_MOUSE_BUTTON_RELEASE = 5      # args: (button, mods) <int, int>
+# Mouse
+EVENT_MOUSE_BUTTON_PRESS = 4        # args: (button, mods, x, y) <int, int, int, int>
+EVENT_MOUSE_BUTTON_RELEASE = 5      # args: (button, mods, x, y) <int, int, int, int>
+EVENT_INDEX_MOUSE_BUTTON_BUTTON = 0
+EVENT_INDEX_MOUSE_BUTTON_MODS = 1
+EVENT_INDEX_MOUSE_BUTTON_X = 2
+EVENT_INDEX_MOUSE_BUTTON_Y = 3
+
 EVENT_MOUSE_MOVE = 6                # args: (x, y) <float, float>
-EVENT_MOUSE_SCROLL = 7              # args: (offset_x, offset_y) <float, float>
+EVENT_INDEX_MOUSE_MOVE_X = 0
+EVENT_INDEX_MOUSE_MOVE_Y = 1
 
+EVENT_MOUSE_SCROLL = 7              # args: (offset_x, offset_y) <float, float>
+EVENT_INDEX_MOUSE_SCROLL_X = 0
+EVENT_INDEX_MOUSE_SCROLL_Y = 1
+
+# Window
 EVENT_WINDOW_RESIZE = 8                 # args: (width, height) <int, int>
 EVENT_WINDOW_FRAMEBUFFER_RESIZE = 9     # args: (width, height) <int, int>
 EVENT_WINDOW_DROP_FILES = 10            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a list
@@ -87,7 +103,6 @@ SHADER_INPUT_UV = "in_uv"
 SHADER_UNIFORM_ENTITY_ID = "entity_id"
 
 
-
 # =============================================================================
 #                              Component Pool
 # =============================================================================
@@ -116,12 +131,12 @@ SHADER_TYPE_GEOMETRY = "geometry"
 SHADER_TYPE_FRAGMENT = "fragment"
 
 SHADER_LIBRARY_YAML_KEY_DEFINE = "define"  # For extra definitions
+SHADER_LIBRARY_YAML_KEY_VARYING = "varying"  # For varying variables (those who output to VBos rather than textures)
 SHADER_LIBRARY_FILE_EXTENSION = ".glsl"
 
 SHADER_LIBRARY_DIRECTIVE_VERSION = "#version"
 SHADER_LIBRARY_DIRECTIVE_DEFINE = "#define"
 SHADER_LIBRARY_DIRECTIVE_INCLUDE = "#include"
-
 
 SHADER_LIBRARY_AVAILABLE_TYPES = [
     SHADER_TYPE_VERTEX,

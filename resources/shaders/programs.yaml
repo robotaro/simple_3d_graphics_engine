@@ -5,6 +5,8 @@ forward_pass:
 
 fragment_picking_pass:
   vertex_shader: "fragment_picking.glsl"
+  varying:
+    -
 
 screen_quad:
   vertex_shader: "screen_quad.glsl"

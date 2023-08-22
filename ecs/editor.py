@@ -129,15 +129,20 @@ class Editor:
 
     def _glfw_callback_mouse_button(self, glfw_window, button, action, mods):
 
+        mouse_pos = (-1, -1)
+        if glfw.get_window_attrib(self.window_glfw, glfw.FOCUSED):
+            mouse_pos = glfw.get_cursor_pos(self.window_glfw)
+            mouse_pos = (int(mouse_pos[0]), self.window_size[1] - int(mouse_pos[1]))
+
         # NOTE: Button numbers already match the GLFW numbers in the constants
         if action == glfw.PRESS:
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_PRESS,
-                                         event_data=(button, mods))
+                                         event_data=(button, mods, *mouse_pos))
             self.mouse_state[button] = constants.BUTTON_PRESSED
 
         if action == glfw.RELEASE:
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_RELEASE,
-                                         event_data=(button, mods))
+                                         event_data=(button, mods, *mouse_pos))
             self.mouse_state[button] = constants.BUTTON_RELEASED
 
     def _glfw_callback_mouse_move(self, glfw_window, x, y):
