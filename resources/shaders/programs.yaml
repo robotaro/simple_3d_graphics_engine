@@ -6,7 +6,13 @@ forward_pass:
 fragment_picking_pass:
   vertex_shader: "fragment_picking.glsl"
   varying:
-    -
+    - "out_obj_id"
+    - "out_tri_id"
+    - "out_instance_id"
+
+#outline_pass:
+#  vertex_shader: "outline_pass.glsl"
+#  fragment_shader: "outline_pass.glsl"
 
 screen_quad:
   vertex_shader: "screen_quad.glsl"

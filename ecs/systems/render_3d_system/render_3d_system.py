@@ -38,8 +38,12 @@ class Render3DSystem(System):
         self.picker_output = None
         self.picker_vao = None
 
+        # Outline drawing
+        self.outline_program = None
         self.outline_texture = None
         self.outline_framebuffer = None
+
+        self.selected_entity_id = -1
 
         # Programs
         self.shadow_map_program = None
@@ -60,8 +64,8 @@ class Render3DSystem(System):
         self.picker_vao = self.ctx.vertex_array(self.picker_program, [])
 
         # Outline rendering
-        self.outline_texture = self.ctx.texture(self.buffer_size, 1, dtype="f4")
-        self.outline_framebuffer = self.ctx.framebuffer(color_attachments=[self.outline_texture])
+        #self.outline_program = self.shader_library["outline_pass"]
+        #self.outline_program["outline_color"].value = 0
 
         self.textures["offscreen_color"] = self.ctx.texture(size=self.buffer_size, components=4)
         self.textures["offscreen_normal"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
@@ -149,8 +153,9 @@ class Render3DSystem(System):
                 instances=1
             )
 
-            entity_id, instance_id, something = struct.unpack("3i", self.picker_buffer.read())
-            self.logger.info((entity_id, instance_id, something))
+            self.selected_entity_id, instance_id, something = struct.unpack("3i", self.picker_buffer.read())
+
+            self.logger.info((self.selected_entity_id, instance_id, something))
 
         # FULLSCREEN VIEW MODES
         if event_type == constants.EVENT_KEYBOARD_PRESS:
@@ -245,6 +250,7 @@ class Render3DSystem(System):
             camera_transform.update()
 
             # Upload uniforms
+            program["selected_entity_id"].value = self.selected_entity_id
             program["entity_id"].value = renderable_entity_uid
             program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
             program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
@@ -260,17 +266,14 @@ class Render3DSystem(System):
             self.logger.debug("Add fragment picking code here!")
             self._sample_entity_location = None
 
-    def fragment_map_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_uids: list):
+    def outline_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_uids: list):
 
-        camera_component = component_pool.camera_components[camera_uid]
-        camera_transform = component_pool.transform_components[camera_uid]
+        # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
+        self.framebuffers["offscreen"].use()
 
-        self.ctx.enable_only(moderngl.DEPTH_TEST)
-        self.framebuffers["offscreen"].clear()
-        self.framebuffer_offscreen_picking.use()
-        self.framebuffer_offscreen_picking.viewport = camera_component.viewport
 
-        program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS]
+
+        pass
 
     def render_to_screen(self) -> None:
 
@@ -312,23 +315,6 @@ class Render3DSystem(System):
                                                      components=image_data.shape[-1],
                                                      data=image_data.tobytes())
 
-    def read_fragmap_at_pixel(self, x: int, y: int) -> Tuple[np.ndarray, int, int, int]:
-        """
-        Given an (x,y) screen coordinate, get the intersected object, triangle id, and xyz point in camera space.
-        """
-
-        # Fragment picker uses already encoded position/object/triangle in the frag_pos program textures
-        self.picker_program["texel_pos"].value = (x, y)
-        self.textures[""].use(location=0)
-        self.offscreen_p_tri_id.use(location=1)
-
-        vao.transform(
-            buffer, mode=mode, vertices=vertices, first=first, instances=instances
-        )
-
-        self.picker_vao.transform(self.frag_pick_prog, self.picker_buffer, vertices=1)
-        x, y, z, obj_id, tri_id, instance_id = struct.unpack("3f3i", self.picker_buffer.read())
-        return np.array((x, y, z)), obj_id, tri_id, instance_id
 
     """def offscreen_and_onscreen_pass(self, scene: Scene, viewport: Viewport):
 

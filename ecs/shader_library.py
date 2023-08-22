@@ -68,22 +68,11 @@ class ShaderLibrary:
         for key, shader in self.shader_blueprints.items():
             self._solve_shader_dependencies(shader_key=key)
 
-    def print_yaml_structure(self):
-        # TODO: FInish this function
-        print("[ Compilation Results ]")
-        for key, program_entry in self.programs.items():
-            successful = len(errors) == 0
-            result = "Compiled" if successful else "Failed"
-            print(f" > {key}: {result}")
-            if not successful:
-                print(errors)
-                print("\n")
-
     # =========================================================================
     #                           Internal Functions
     # =========================================================================
 
-    def _load_shader_file(self, relative_glsl_fpath: str):
+    def _load_shader_file(self, relative_glsl_fpath: str) -> ShaderBlueprint:
 
         new_blueprint = None
         absolute_glsl_fpath = os.path.join(self.shader_directory, relative_glsl_fpath)
@@ -153,7 +142,8 @@ class ShaderLibrary:
         if not isinstance(blueprint, dict):
             raise TypeError(f"[ERROR] Shade blueprint needs to be dictionary")
 
-        extra_definitions = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_DEFINE, {})
+        extra_definitions = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_DEFINE, None)
+        varying = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_VARYING, None)
 
         source = None
         blueprint_key = f"{shader_type}_shader"
@@ -164,14 +154,16 @@ class ShaderLibrary:
             source = self._generate_source_code(
                 shader_key=shader_name,
                 shader_type=shader_type,
-                extra_definitions=extra_definitions)
+                extra_definitions=extra_definitions,
+                varying=varying)
 
         return source
 
     def _generate_source_code(self,
                               shader_key: str,
                               shader_type: str,
-                              extra_definitions: Union[dict, None]=None) -> str:
+                              extra_definitions: Union[dict, None]=None,
+                              varying: Union[list, None]=None) -> str:
         """
         This function assembles all lines of code, including the extra definitions, into a single
         string to be used for shader compilation later on. The version of the shader is added to the
@@ -260,16 +252,12 @@ class ShaderLibrary:
                                                           blueprint=blueprint)
 
             try:
-                varyings = []
-                if fragment_source is None:
-                    varyings = ["out_obj_id", "out_tri_id", "out_instance_id"]
-
                 # Compile the program
                 compiled_program = self.context.program(
                     vertex_shader=vertex_source,
                     geometry_shader=geometry_source,
                     fragment_shader=fragment_source,
-                    varyings=varyings
+                    varyings=blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_VARYING, [])
                 )
 
             except Exception as error:

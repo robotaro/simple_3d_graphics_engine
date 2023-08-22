@@ -71,7 +71,7 @@ void main() {
         uint id = floatBitsToUint(texture(entity_info_texture, uv).g);
         finalColor = int_to_color(id);
     } else if (selected_texture == 5) {
-        // Triangle ID - TODO: Not sure if I need this level of control
+        // Selected Entity ID
         uint id = floatBitsToUint(texture(entity_info_texture, uv).b);
         finalColor = int_to_color(id);
     }
