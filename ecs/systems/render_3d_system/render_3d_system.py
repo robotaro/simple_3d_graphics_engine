@@ -272,16 +272,18 @@ class Render3DSystem(System):
         # IMPORTANT: It uses the current bound framebuffer!
 
         self.framebuffers["selection_fbo"].use()
+        camera_component = component_pool.camera_components[camera_uid]
+        self.ctx.clear(depth=1.0, viewport=camera_component.viewport)
 
         # TODO: Numbers between 0 and 1 are background colors, so we assume they are NULL selection
         if selected_entity_uid is None or selected_entity_uid <= 1:
             return
 
         selection_program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_SELECTED_ENTITY_PASS]
-        camera_component = component_pool.camera_components[camera_uid]
+
         camera_transform = component_pool.transform_components[camera_uid]
 
-        self.ctx.clear(depth=1.0, viewport=camera_component.viewport)
+
 
         # Prepare context flags for rendering
         #self.ctx.enable_only(moderngl.CULL_FACE)  # Removing has no effect? Why?
