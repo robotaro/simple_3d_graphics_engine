@@ -46,8 +46,6 @@ class ImguiSystem(System):
         imgui.render()
         self.imgui_renderer.render(imgui.get_draw_data())
 
-        pass
-
     def on_event(self, event_type: int, event_data: tuple):
         # TODO: Find out whether I really need "on_event" callbacks if the "self.imgui_renderer.process_inputs()" gets all mouse and keyboard inputs
         if event_type == constants.EVENT_MOUSE_SCROLL:

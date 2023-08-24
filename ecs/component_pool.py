@@ -31,7 +31,7 @@ class ComponentPool:
 
     def __init__(self):
 
-        self.entity_uid_counter = 0
+        self.entity_uid_counter = 2  # TODO: We start from 2 to make it easy to discern the background [0, 1]
 
         # For holding states!
         self.entities = {}

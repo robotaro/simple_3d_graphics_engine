@@ -63,19 +63,19 @@ class Mesh(Component):
 
         if self.vertices is not None:
             self.vbo_vertices = ctx.buffer(self.vertices.astype("f4").tobytes())
-            self.vbo_declaration_list.append((self.vbo_vertices, "3f", constants.SHADER_UNIFORM_INPUT_VERTICES))
+            self.vbo_declaration_list.append((self.vbo_vertices, "3f", constants.SHADER_INPUT_VERTEX))
 
         if self.normals is not None:
             self.vbo_normals = ctx.buffer(self.normals.astype("f4").tobytes())
-            self.vbo_declaration_list.append((self.vbo_normals, "3f", constants.SHADER_UNIFORM_INPUT_NORMALS))
+            self.vbo_declaration_list.append((self.vbo_normals, "3f", constants.SHADER_INPUT_NORMAL))
 
         if self.colors is not None:
             self.vbo_colors = ctx.buffer(self.colors.astype("f4").tobytes())
-            self.vbo_declaration_list.append((self.vbo_colors, "3f", constants.SHADER_UNIFORM_INPUT_COLORS))
+            self.vbo_declaration_list.append((self.vbo_colors, "3f", constants.SHADER_INPUT_COLOR))
 
         if self.uvs is not None:
             self.vbo_uvs = ctx.buffer(self.colors.astype("f4").tobytes())
-            self.vbo_declaration_list.append((self.vbo_uvs, "2f", constants.SHADER_UNIFORM_INPUT_UVS))
+            self.vbo_declaration_list.append((self.vbo_uvs, "2f", constants.SHADER_INPUT_UV))
 
         if self.faces is not None:
             self.ibo_faces = ctx.buffer(self.faces.astype("i4").tobytes())

@@ -1,35 +1,43 @@
-#if defined VERTEX_SHADER
-
 #version 400
+
+#if defined VERTEX_SHADER
 
 in vec3 in_vert;
 in vec3 in_normal;
-
-out vec3 v_normal;
-out vec3 v_position;
 
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
 uniform mat4 model_matrix;
 
+out vec3 v_normal;
+out vec3 v_position;
+out vec3 v_viewpos;
+
+
 void main() {
     v_normal = in_normal;
     v_position = in_vert;
-    gl_Position = projection_matrix * view_matrix * model_matrix * vec4(v_position, 1.0);
+    vec4 viewpos = view_matrix * model_matrix * vec4(v_position, 1.0);
+    v_viewpos = viewpos.xyz;
+    gl_Position = projection_matrix * viewpos;
 }
 
 #elif defined FRAGMENT_SHADER
 
-#version 400
+// Output buffers (Textures)
+layout(location=0) out vec4 out_fragment_color;
+layout(location=1) out vec4 out_fragment_normal;
+layout(location=2) out vec4 out_fragment_viewpos;
+layout(location=3) out vec4 out_fragment_entity_info;
 
 // Input Buffers
 in vec3 v_normal;
 in vec3 v_position;
-
-// Output buffers
-out vec4 out_fragment_color;
+in vec3 v_viewpos;
 
 // Uniforms
+uniform int entity_id;
+uniform int selected_entity_id;
 uniform mat4 view_matrix;
 uniform vec4 uColor = vec4(1.0, 0.5, 0.1, 1.0);
 uniform float uHardness = 16.0;
@@ -49,6 +57,8 @@ void main() {
     vec3 l, r;
     float s, spec;
 
+    int selected_mask = 0;
+
     l = normalize(lightpos0 - v_position);
     s = max(0.0, dot(n, l));
     c += uColor.rgb * s * lightcolor0;
@@ -67,7 +77,12 @@ void main() {
         c += spec * lightcolor1;
     }
 
+    selected_mask = selected_entity_id == entity_id ? 0 : 1;
+
     out_fragment_color = vec4(c * 0.5, uColor.a);
+    out_fragment_normal = vec4(n, 1.0);
+    out_fragment_viewpos = vec4(v_viewpos, 1);
+    out_fragment_entity_info = vec4(entity_id, 0, selected_mask, 1);
 }
 
 #endif

@@ -1,6 +1,7 @@
 from ecs import constants
 from ecs.editor import Editor
 
+
 def main():
 
     editor = Editor(
@@ -11,7 +12,8 @@ def main():
 
     editor.create_system(system_type="render_3d_system",
                          subscribed_events=[
-                             constants.EVENT_MOUSE_BUTTON_PRESS
+                             constants.EVENT_MOUSE_BUTTON_PRESS,
+                             constants.EVENT_KEYBOARD_PRESS,
                          ])
     #editor.create_system(system_type="imgui_system",
     #                     subscribed_events=[constants.EVENT_MOUSE_SCROLL])
@@ -22,8 +24,6 @@ def main():
                              constants.EVENT_KEYBOARD_PRESS,
                              constants.EVENT_KEYBOARD_RELEASE,
                          ])
-
-
 
     # Create camera
     camera_uid = editor.component_pool.create_entity(name="camera")
@@ -60,7 +60,7 @@ def main():
     editor.add_component(
         entity_uid=dragon_2_uid,
         component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
-        position=(-2, 0, 0))
+        position=(-1, 0, -1))
     editor.add_component(
         entity_uid=dragon_2_uid,
         component_type=constants.COMPONENT_TYPE_MESH,

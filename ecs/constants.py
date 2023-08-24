@@ -1,17 +1,39 @@
+import os
+
+# Default Directories
+ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+RESOURCES_DIR = os.path.join(ROOT_DIR, "resources")
+SHADERS_DIRECTORY = os.path.join(RESOURCES_DIR, "shaders")
 
 # =============================================================================
 #                               Event types
 # =============================================================================
 
+# Keyboard
 EVENT_KEYBOARD_PRESS = 1            # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_RELEASE = 2          # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_REPEAT = 3           # args: (key, scancode, mods) <int, int, int>
+EVENT_INDEX_KEYBOARD_KEY = 0
+EVENT_INDEX_KEYBOARD_SCANCODE = 1
+EVENT_INDEX_KEYBOARD_MODS = 2
 
-EVENT_MOUSE_BUTTON_PRESS = 4        # args: (button, mods) <int, int>
-EVENT_MOUSE_BUTTON_RELEASE = 5      # args: (button, mods) <int, int>
+# Mouse
+EVENT_MOUSE_BUTTON_PRESS = 4        # args: (button, mods, x, y) <int, int, int, int>
+EVENT_MOUSE_BUTTON_RELEASE = 5      # args: (button, mods, x, y) <int, int, int, int>
+EVENT_INDEX_MOUSE_BUTTON_BUTTON = 0
+EVENT_INDEX_MOUSE_BUTTON_MODS = 1
+EVENT_INDEX_MOUSE_BUTTON_X = 2
+EVENT_INDEX_MOUSE_BUTTON_Y = 3
+
 EVENT_MOUSE_MOVE = 6                # args: (x, y) <float, float>
-EVENT_MOUSE_SCROLL = 7              # args: (offset_x, offset_y) <float, float>
+EVENT_INDEX_MOUSE_MOVE_X = 0
+EVENT_INDEX_MOUSE_MOVE_Y = 1
 
+EVENT_MOUSE_SCROLL = 7              # args: (offset_x, offset_y) <float, float>
+EVENT_INDEX_MOUSE_SCROLL_X = 0
+EVENT_INDEX_MOUSE_SCROLL_Y = 1
+
+# Window
 EVENT_WINDOW_RESIZE = 8                 # args: (width, height) <int, int>
 EVENT_WINDOW_FRAMEBUFFER_RESIZE = 9     # args: (width, height) <int, int>
 EVENT_WINDOW_DROP_FILES = 10            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a list
@@ -61,15 +83,30 @@ VIEWPORT_INDEX_HEIGHT = 3
 #                                Render System
 # =============================================================================
 
-RENDER_SYSTEM_PROGRAM_FORWARD_PASS = "forward_pass"
-RENDER_SYSTEM_PROGRAM_FRAGMENT_PICKING_PASS = "fragment_picking_pass"
-RENDER_SYSTEM_PROGRAM_OUTLINE_PASS = "outline_pass"
+RENDER_3D_SYSTEM_MODE_FINAL = 0
+RENDER_3D_SYSTEM_MODE_NORMAL = 1
+RENDER_3D_SYSTEM_MODE_DEPTH = 2
+RENDER_3D_SYSTEM_MODE_ENTITY_ID = 3
+RENDER_3D_SYSTEM_MODE_INSTANCE_ID = 4
 
-# Uniform variables
-SHADER_UNIFORM_INPUT_VERTICES = "in_vert"
-SHADER_UNIFORM_INPUT_NORMALS = "in_normal"
-SHADER_UNIFORM_INPUT_COLORS = "in_colors"
-SHADER_UNIFORM_INPUT_UVS = "in_uvs"
+RENDER_SYSTEM_PROGRAM_FORWARD_PASS = "forward_pass"
+RENDER_SYSTEM_PROGRAM_SELECTED_ENTITY_PASS = "selected_entity_pass"
+RENDER_SYSTEM_PROGRAM_OUTLINE_PASS = "outline_pass"
+RENDER_SYSTEM_PASSES_LIST = [
+    RENDER_SYSTEM_PROGRAM_FORWARD_PASS,
+    RENDER_SYSTEM_PROGRAM_SELECTED_ENTITY_PASS
+]
+
+
+# Input buffer names
+SHADER_INPUT_VERTEX = "in_vert"
+SHADER_INPUT_NORMAL = "in_normal"
+SHADER_INPUT_COLOR = "in_color"
+SHADER_INPUT_UV = "in_uv"
+
+# Uniforms
+SHADER_UNIFORM_ENTITY_ID = "entity_id"
+
 
 # =============================================================================
 #                              Component Pool
@@ -92,5 +129,23 @@ MESH_SHAPE_CYLINDER = "cylinder"
 MESH_SHAPE_FROM_OBJ = "obj"  # TODO: Kinda of a hack. You need to add argument "fpath"
 
 # =============================================================================
-#                              Component Pool
+#                              Shader Library
 # =============================================================================
+SHADER_TYPE_VERTEX = "vertex"
+SHADER_TYPE_GEOMETRY = "geometry"
+SHADER_TYPE_FRAGMENT = "fragment"
+
+SHADER_LIBRARY_YAML_KEY_DEFINE = "define"  # For extra definitions
+SHADER_LIBRARY_YAML_KEY_VARYING = "varying"  # For varying variables (those who output to VBos rather than textures)
+SHADER_LIBRARY_FILE_EXTENSION = ".glsl"
+
+SHADER_LIBRARY_DIRECTIVE_VERSION = "#version"
+SHADER_LIBRARY_DIRECTIVE_DEFINE = "#define"
+SHADER_LIBRARY_DIRECTIVE_INCLUDE = "#include"
+
+SHADER_LIBRARY_AVAILABLE_TYPES = [
+    SHADER_TYPE_VERTEX,
+    SHADER_TYPE_GEOMETRY,
+    SHADER_TYPE_FRAGMENT
+]
+
