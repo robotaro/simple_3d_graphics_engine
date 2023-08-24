@@ -283,12 +283,6 @@ class Render3DSystem(System):
 
         camera_transform = component_pool.transform_components[camera_uid]
 
-
-
-        # Prepare context flags for rendering
-        #self.ctx.enable_only(moderngl.CULL_FACE)  # Removing has no effect? Why?
-        #self.ctx.cull_face = "back"
-
         renderable_transform = component_pool.transform_components[selected_entity_uid]
 
         camera_transform.update()

@@ -118,12 +118,10 @@ vec3 calculate_outline_color(){
         top == 1.0 ||
         top2 == 1.0 ||
         top_right == 1.0 ||
-
         left2 == 1.0 ||
         left == 1.0 ||
         right == 1.0 ||
         right2 == 1.0 ||
-
         bottom_left == 1.0 ||
         bottom == 1.0 ||
         bottom2 == 1.0 ||
