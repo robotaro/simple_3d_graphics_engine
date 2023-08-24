@@ -50,33 +50,88 @@ vec3 int_to_color(uint i) {
     return c * (1.0 / 255.0);
 }
 
+vec3 calculate_outline_color();
+
 void main() {
 
-    vec3 finalColor;
+    vec3 color_rgb;
 
     if (selected_texture == 0) {
-        // Color
-        finalColor = texture(color_texture, uv).rgb;
+
+        color_rgb = calculate_outline_color();
+        //color_rgb = texture(color_texture, uv).rgb;
+
+
+
     } else if (selected_texture == 1) {
         // Normal
-        finalColor = texture(normal_texture, uv).rgb;
+        color_rgb = texture(normal_texture, uv).rgb;
     } else if (selected_texture == 2) {
         // Viewpos
-        finalColor = texture(viewpos_texture, uv).xyz;
+        color_rgb = texture(viewpos_texture, uv).xyz;
     } else if (selected_texture == 3) {
         // Entity ID
         uint id = floatBitsToUint(texture(entity_info_texture, uv).r);
-        finalColor = int_to_color(id);
+        color_rgb = int_to_color(id);
     } else if (selected_texture == 4) {
         // Instance ID
         uint id = floatBitsToUint(texture(entity_info_texture, uv).g);
-        finalColor = int_to_color(id);
+        color_rgb = int_to_color(id);
     } else if (selected_texture == 5) {
         // Current Selection
-        finalColor = texture(selected_entity_texture, uv).rgb;
-
+        color_rgb = texture(selected_entity_texture, uv).rgb;
     }
 
-    fragColor = vec4(finalColor, 1.0);
+    fragColor = vec4(color_rgb, 1.0);
 }
+
+vec3 calculate_outline_color(){
+    // Original code from : https://stackoverflow.com/questions/53897949/opengl-object-outline
+
+    /*int thickness = 1;
+
+    if (texture(selected_entity_texture, uv).r != 0) return vec3(0.0, 0.0, 0.0);
+
+    for (int i = -thickness; i <= +thickness; i++)
+    {
+        for (int j = -thickness; j <= +thickness; j++)
+        {
+            vec2 offset_uv = uv + vec2(i, j);
+            if (texture(selected_entity_texture, offset_uv).r > 0.1) return vec3(1.0, 1.0, 1.0);
+
+        }
+    }
+
+    return vec3(0.0, 0.0, 0.0);*/
+
+    // Sample the silhouette texture
+    vec3 silhouette_color = texture(selected_entity_texture, uv).rgb;
+
+    // Check if the pixel is part of the object silhouette
+    bool is_silhouette = silhouette_color == vec3(1.0, 0.0, 0.0);
+
+    // Define the outline color
+    vec3 outline_color = vec3(1.0, 0.65, 0.0); // Orange outline color
+
+
+    // Sample the neighboring pixels
+    vec3 left_color = textureOffset(selected_entity_texture, uv, ivec2(-1, 0)).rgb;
+    vec3 right_color = textureOffset(selected_entity_texture, uv, ivec2(1, 0)).rgb;
+    vec3 top_color = textureOffset(selected_entity_texture, uv, ivec2(0, -1)).rgb;
+    vec3 bottom_color = textureOffset(selected_entity_texture, uv, ivec2(0, 1)).rgb;
+
+    // Check if any neighboring pixel is not part of the silhouette
+    bool is_edge = !is_silhouette && (
+        left_color == vec3(1.0, 0.0, 0.0) ||
+        right_color == vec3(1.0, 0.0, 0.0) ||
+        top_color == vec3(1.0, 0.0, 0.0) ||
+        bottom_color == vec3(1.0, 0.0, 0.0)
+    );
+
+    // If pixel is an edge, apply the outline color
+    // Otherwise, use the original texture color
+    return is_edge ? outline_color : texture(color_texture, uv).rgb;
+}
+
+
 #endif
