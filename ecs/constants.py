@@ -1,10 +1,25 @@
 import os
 
-# Default Directories
+# =============================================================================
+#                                Directories
+# =============================================================================
+
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 RESOURCES_DIR = os.path.join(ROOT_DIR, "resources")
+FONTS_DIR = os.path.join(RESOURCES_DIR, "fonts")
 SHADERS_DIRECTORY = os.path.join(RESOURCES_DIR, "shaders")
 
+# =============================================================================
+#                               Editor
+# =============================================================================
+
+SYSTEM_NAME_RENDER = "render_system"
+SYSTEM_NAME_IMGUI = "imgui_system"
+SYSTEM_NAME_INPUT_CONTROL = "input_control_system"
+AVAILABLE_SYSTEMS = [
+    SYSTEM_NAME_RENDER,
+    SYSTEM_NAME_IMGUI
+]
 # =============================================================================
 #                               Event types
 # =============================================================================
@@ -97,7 +112,6 @@ RENDER_SYSTEM_PASSES_LIST = [
     RENDER_SYSTEM_PROGRAM_SELECTED_ENTITY_PASS
 ]
 
-
 # Input buffer names
 SHADER_INPUT_VERTEX = "in_vert"
 SHADER_INPUT_NORMAL = "in_normal"
@@ -106,6 +120,18 @@ SHADER_INPUT_UV = "in_uv"
 
 # Uniforms
 SHADER_UNIFORM_ENTITY_ID = "entity_id"
+
+# Font
+FONT_NUM_VERTICES_PER_CHAR = 12
+FONT_CHAR_SIZE = 32  # Resolution dpi, not actual pixels
+FONT_SHEET_ROWS = 16
+FONT_SHEET_COLS = 16
+FONT_SHEET_CELL_WIDTH = 32
+FONT_SHEET_CELL_HEIGHT = 32
+FONT_NUM_GLYPHS = FONT_SHEET_ROWS * FONT_SHEET_COLS
+FONT_TEXTURE_WIDTH = FONT_SHEET_CELL_WIDTH * FONT_SHEET_COLS
+FONT_TEXTURE_HEIGHT = FONT_SHEET_CELL_HEIGHT * FONT_SHEET_ROWS
+
 
 
 # =============================================================================

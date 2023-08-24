@@ -7,6 +7,9 @@ selected_entity_pass:
   vertex_shader: "selected_entity.glsl"
   fragment_shader: "selected_entity.glsl"
 
+text_2d:
+  vertex_shader: "text_2d.glsl"
+  fragment_shader: "text_2d.glsl"
 
 fragment_picking:
   vertex_shader: "fragment_picking.glsl"
@@ -14,10 +17,6 @@ fragment_picking:
     - "out_obj_id"
     - "out_tri_id"
     - "out_instance_id"
-
-#outline_pass:
-#  vertex_shader: "outline_pass.glsl"
-#  fragment_shader: "outline_pass.glsl"
 
 screen_quad:
   vertex_shader: "screen_quad.glsl"

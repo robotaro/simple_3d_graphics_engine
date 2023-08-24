@@ -5,7 +5,7 @@ from ecs.components.component import Component
 from ecs.components.transform import Transform
 from ecs.components.mesh import Mesh
 from ecs.components.material import Material
-from ecs.components.renderable_3d import Renderable
+from ecs.components.renderable import Renderable
 from ecs.components.camera import Camera
 from ecs.components.input_control import InputControl
 

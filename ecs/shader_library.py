@@ -6,7 +6,7 @@ import yaml
 import moderngl
 
 from ecs import constants
-from core.utilities import utils_io
+from ecs.utilities import utils_io
 
 
 @dataclass

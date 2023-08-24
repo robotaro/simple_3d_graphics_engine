@@ -1,16 +1,21 @@
 from ecs import constants
 from ecs.editor import Editor
+from ecs.systems.render_system.font import Font
+
+import os
 
 
 def main():
 
     editor = Editor(
         window_size=(1024, 768),
-        window_title="Basic Scene Demo",
-        vertical_sync=True
+        window_title="Basic Scene Demo"
     )
 
-    editor.create_system(system_type="render_3d_system",
+    font = Font()
+    font.load(ttf_fpath=os.path.join(constants.FONTS_DIR, "Consolas.ttf"))
+
+    editor.create_system(system_type="render_system",
                          subscribed_events=[
                              constants.EVENT_MOUSE_BUTTON_PRESS,
                              constants.EVENT_KEYBOARD_PRESS,

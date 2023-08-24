@@ -2,7 +2,7 @@ import numpy as np
 import moderngl
 
 from core.settings import SETTINGS
-from core.math import node_math
+from ecs.math import node_math
 from core.shader_library import ShaderLibrary
 
 

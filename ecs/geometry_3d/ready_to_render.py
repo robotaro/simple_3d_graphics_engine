@@ -2,7 +2,6 @@ import moderngl
 import numpy as np
 
 from ecs import constants
-from core.shader_library import ShaderLibrary
 
 """
 These meshes are designed to be created with the taget program you have in mind, so

@@ -2,7 +2,6 @@ import numpy as np
 
 from core import constants
 from core.node import Node
-from core.math import mat4
 
 
 class Camera(Node):

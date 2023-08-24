@@ -1,6 +1,6 @@
 from numba import njit
 import numpy as np
-from core.math import quaternion
+from ecs.math import quaternion
 
 
 @njit

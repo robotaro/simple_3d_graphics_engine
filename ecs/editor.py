@@ -1,5 +1,4 @@
 import time
-import timeit
 import glfw
 import moderngl
 import numpy as np
@@ -8,13 +7,13 @@ from typing import List
 from ecs import constants
 
 # Systems
-from ecs.systems.render_3d_system.render_3d_system import Render3DSystem
+from ecs.systems.render_system.render_system import RenderSystem
 from ecs.systems.imgui_system.imgui_system import ImguiSystem
 from ecs.systems.input_control_system.input_control_system import InputControlSystem
 from ecs.event_publisher import EventPublisher
 from ecs.component_pool import ComponentPool
 
-from core.utilities import utils_logging
+from ecs.utilities import utils_logging
 
 
 class Editor:
@@ -41,7 +40,7 @@ class Editor:
     def __init__(self,
                  window_size=(1024, 768),
                  window_title="New Editor",
-                 vertical_sync=False):
+                 vertical_sync=True):
 
         self.logger = utils_logging.get_project_logger()
         self.window_size = window_size
@@ -196,8 +195,8 @@ class Editor:
 
         new_system = None
 
-        if system_type == Render3DSystem._type:
-            new_system = Render3DSystem(
+        if system_type == RenderSystem._type:
+            new_system = RenderSystem(
                 logger=self.logger,
                 context=self.context,
                 buffer_size=self.buffer_size)

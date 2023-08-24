@@ -1,8 +1,6 @@
-from numba import njit
 import numpy as np
 from numba import njit
-from core.math import mat3
-from functools import lru_cache
+from ecs.math import mat3
 
 DEG2RAD = np.pi / 180.0
 

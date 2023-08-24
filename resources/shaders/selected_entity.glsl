@@ -19,8 +19,6 @@ void main() {
 
 layout(location=0) out vec4 out_selected_entity;
 
-#include clipping.glsl
-
 void main() {
     out_selected_entity = vec4(1.0, 0.0, 0.0, 1.0);
 }

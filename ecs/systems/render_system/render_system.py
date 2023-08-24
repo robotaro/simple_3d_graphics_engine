@@ -2,19 +2,18 @@ import glfw
 import moderngl
 from PIL import Image
 import numpy as np
-from typing import Tuple, Union
 import struct
 
 from ecs import constants
 from ecs.systems.system import System
 from ecs.shader_library import ShaderLibrary
 from ecs.component_pool import ComponentPool
-from core.geometry_3d import ready_to_render
+from ecs.geometry_3d import ready_to_render
 
 
-class Render3DSystem(System):
+class RenderSystem(System):
 
-    _type = "render_3d_system"
+    _type = "render_system"
 
     def __init__(self, **kwargs):
         super().__init__(logger=kwargs["logger"])
@@ -166,7 +165,6 @@ class Render3DSystem(System):
             )
 
             self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
-            self.logger.info(self.selected_entity_id)
 
         # FULLSCREEN VIEW MODES
         if event_type == constants.EVENT_KEYBOARD_PRESS:

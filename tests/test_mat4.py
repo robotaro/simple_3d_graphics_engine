@@ -1,6 +1,6 @@
 import numpy as np
 
-from core.math import mat4
+from ecs.math import mat4
 
 # For testing
 from pyrr import Matrix44

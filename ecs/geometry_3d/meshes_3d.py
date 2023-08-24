@@ -1,9 +1,8 @@
 import numpy as np
 import trimesh
 from functools import lru_cache
-from core.utilities import utils
-from core.math import so3
-
+from ecs.utilities import utils
+from ecs.math import so3
 
 # Constants
 _CYLINDER_SECTORS = 8
