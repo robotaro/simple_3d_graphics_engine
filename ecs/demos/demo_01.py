@@ -60,7 +60,7 @@ def main():
     editor.add_component(
         entity_uid=dragon_2_uid,
         component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
-        position=(-2, 0, 0))
+        position=(-1, 0, -1))
     editor.add_component(
         entity_uid=dragon_2_uid,
         component_type=constants.COMPONENT_TYPE_MESH,

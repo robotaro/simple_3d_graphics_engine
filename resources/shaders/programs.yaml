@@ -3,7 +3,12 @@ forward_pass:
   vertex_shader: "forward_pass.glsl"
   fragment_shader: "forward_pass.glsl"
 
-fragment_picking_pass:
+selected_entity_pass:
+  vertex_shader: "selected_entity.glsl"
+  fragment_shader: "selected_entity.glsl"
+
+
+fragment_picking:
   vertex_shader: "fragment_picking.glsl"
   varying:
     - "out_obj_id"

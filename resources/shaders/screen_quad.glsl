@@ -19,6 +19,7 @@ uniform sampler2D color_texture;
 uniform sampler2D normal_texture;
 uniform sampler2D viewpos_texture;
 uniform sampler2D entity_info_texture;
+uniform sampler2D selected_entity_texture;
 
 in vec2 uv;
 
@@ -71,9 +72,9 @@ void main() {
         uint id = floatBitsToUint(texture(entity_info_texture, uv).g);
         finalColor = int_to_color(id);
     } else if (selected_texture == 5) {
-        // Selected Entity ID
-        uint id = floatBitsToUint(texture(entity_info_texture, uv).b);
-        finalColor = int_to_color(id);
+        // Current Selection
+        finalColor = texture(selected_entity_texture, uv).rgb;
+
     }
 
     fragColor = vec4(finalColor, 1.0);
