@@ -18,7 +18,7 @@ class ShaderBlueprint:
     includes: list
 
 
-class ShaderLibrary:
+class ShaderProgramLibrary:
 
     """
     This class loads assemble the final code for all shaders in a specific folder.
@@ -67,6 +67,11 @@ class ShaderLibrary:
         # Step 3) Solve shader dependencies
         for key, shader in self.shader_blueprints.items():
             self._solve_shader_dependencies(shader_key=key)
+
+    def shutdown(self):
+        # After removing the vao release stage from all other parts of the pipeline, add them here
+
+        pass
 
     # =========================================================================
     #                           Internal Functions

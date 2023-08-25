@@ -147,7 +147,6 @@ def orthographic_projection(left: float, right: float, bottom: float, top: float
                      [0, 0, 0, 1]], dtype=np.float32)
 
 
-
 # ==========[ 3rd party to be removed ]==========
 """
 def _perspective(n, f, t, b, l, r):

@@ -6,9 +6,11 @@ import struct
 
 from ecs import constants
 from ecs.systems.system import System
-from ecs.shader_library import ShaderLibrary
+from ecs.shader_program_library import ShaderProgramLibrary
+from ecs.font_library import FontLibrary
 from ecs.component_pool import ComponentPool
 from ecs.geometry_3d import ready_to_render
+from ecs.math import mat4
 
 
 class RenderSystem(System):
@@ -20,7 +22,8 @@ class RenderSystem(System):
 
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
-        self.shader_library = ShaderLibrary(context=self.ctx)
+        self.shader_program_library = ShaderProgramLibrary(context=self.ctx)
+        self.font_library = FontLibrary(context=self.ctx)
 
         # Internal components (different from normal components)
         self.framebuffers = {}
@@ -57,7 +60,7 @@ class RenderSystem(System):
     def initialise(self, **kwargs):
 
         # Fragment picking
-        self.picker_program = self.shader_library["fragment_picking"]
+        self.picker_program = self.shader_program_library["fragment_picking"]
         self.picker_program["entity_info_texture"].value = 0  # Read from texture channel 0
         self.picker_buffer = self.ctx.buffer(reserve=3 * 4)  # 3 ints
         self.picker_vao = self.ctx.vertex_array(self.picker_program, [])
@@ -101,7 +104,7 @@ class RenderSystem(System):
 
         # Setup fullscreen quad textures
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
-                                                           program=self.shader_library["screen_quad"])
+                                                           program=self.shader_program_library["screen_quad"])
         self.quads["fullscreen"]['vao'].program["color_texture"].value = 0
         self.quads["fullscreen"]['vao'].program["normal_texture"].value = 1
         self.quads["fullscreen"]['vao'].program["viewpos_texture"].value = 2
@@ -119,8 +122,8 @@ class RenderSystem(System):
             mesh = component_pool.mesh_components[entity_uid]
             mesh.initialise_on_gpu(ctx=self.ctx)
             renderable.initialise_on_gpu(ctx=self.ctx,
-                                         program_name_list=constants.RENDER_SYSTEM_PASSES_LIST,
-                                         shader_library=self.shader_library,
+                                         program_name_list=constants.SHADER_PASSES_LIST,
+                                         shader_library=self.shader_program_library,
                                          vbo_tuple_list=mesh.get_vbo_declaration_list(),
                                          ibo_faces=mesh.ibo_faces)
 
@@ -142,6 +145,8 @@ class RenderSystem(System):
             self.selected_entity_pass(component_pool=component_pool,
                                       camera_uid=camera_uid,
                                       selected_entity_uid=self.selected_entity_id)
+            self.text_2d_pass(component_pool=component_pool,
+                              text_2d_endity_uid=text_2d_entity_uids)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
         self.render_to_screen()
@@ -190,6 +195,9 @@ class RenderSystem(System):
             if quad["vao"] is not None:
                 quad["vao"].release()
 
+        self.shader_program_library.shutdown()
+
+
         # TODO: Release quads textures and
 
     # =========================================================================
@@ -223,7 +231,7 @@ class RenderSystem(System):
             moderngl.ONE,
             moderngl.ONE)
 
-        forward_pass_program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS]
+        forward_pass_program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
 
         for renderable_entity_uid in renderable_entity_uids:
 
@@ -259,7 +267,7 @@ class RenderSystem(System):
             forward_pass_program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
 
             # Render the vao at the end
-            renderable_component.vaos[constants.RENDER_SYSTEM_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
+            renderable_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
 
             # Stage: Draw transparent objects back to front
 
@@ -275,7 +283,7 @@ class RenderSystem(System):
         if selected_entity_uid is None or selected_entity_uid <= 1:
             return
 
-        selection_program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_SELECTED_ENTITY_PASS]
+        selection_program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
 
         camera_transform = component_pool.transform_components[camera_uid]
 
@@ -283,7 +291,7 @@ class RenderSystem(System):
 
         camera_transform.update()
 
-        program = self.shader_library[constants.RENDER_SYSTEM_PROGRAM_SELECTED_ENTITY_PASS]
+        program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
 
         # Upload uniforms
         camera_component.upload_uniforms(program=selection_program)
@@ -291,15 +299,30 @@ class RenderSystem(System):
         program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
 
         renderable_component = component_pool.renderable_components[selected_entity_uid]
-        renderable_component.vaos[constants.RENDER_SYSTEM_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
+        renderable_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
 
-    def text_2d_pass(self, component_pool: ComponentPool, camera_uid: int, selected_entity_uid: int):
+    def text_2d_pass(self, component_pool: ComponentPool, text_2d_endity_uid: list):
+
+        if len(text_2d_endity_uid) == 0:
+            return
 
         self.framebuffers["offscreen"].use()
 
-        camera_component = component_pool.camera_components[camera_uid]
-        camera_transform = component_pool.transform_components[camera_uid]
+        # Upload uniforms
 
+        projection_matrix = mat4.orthographic_projection(
+            left=0,
+            right=self.buffer_size[0],
+            bottom=0,
+            top=self.buffer_size[1],
+            near=1.0,
+            far=-1.0
+        )
+        program = self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]
+        program["projection_matrix"].write(projection_matrix)
+
+        for entity_uid in text_2d_endity_uid:
+            pass
 
     def render_to_screen(self) -> None:
 
@@ -341,7 +364,6 @@ class RenderSystem(System):
         self.textures[texture_id] = self.ctx.texture(size=image.size,
                                                      components=image_data.shape[-1],
                                                      data=image_data.tobytes())
-
 
     """def offscreen_and_onscreen_pass(self, scene: Scene, viewport: Viewport):
 

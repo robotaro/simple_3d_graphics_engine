@@ -1,6 +1,6 @@
 from ecs import constants
 from ecs.editor import Editor
-from ecs.systems.render_system.font import Font
+from ecs.font_library import Font
 
 import os
 
@@ -74,6 +74,14 @@ def main():
     editor.add_component(
         entity_uid=dragon_2_uid,
         component_type=constants.COMPONENT_TYPE_RENDERABLE)
+
+    # Text
+    text_uid = editor.component_pool.create_entity(name="sample_text")
+    editor.add_component(
+        entity_uid=text_uid,
+        component_type=constants.COMPONENT_TYPE_TEXT_2D
+    )
+
 
     editor.run()
 

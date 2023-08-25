@@ -1,24 +1,44 @@
 import os
 import numpy as np
 import string
+import logging
+from typing import Union
+from dataclasses import dataclass, field
 import freetype
 
 from ecs import constants
 
-
+@dataclass
 class Font:
 
-    def __init__(self):
+    texture: np.ndarray = field(default=np.ndarray((0, 0), dtype=np.float32))
+    texture: np.ndarray = field(default=np.ndarray((0, 0), dtype=np.float32))
+    texture: np.ndarray = field(default=np.ndarray((0, 0), dtype=np.float32))
+    texture: np.ndarray = field(default=np.ndarray((0, 0), dtype=np.float32))
+    texture: np.ndarray = field(default=np.ndarray((0, 0), dtype=np.float32))
+    texture: np.ndarray = field(default=np.ndarray((0, 0), dtype=np.float32))
+
+
+class FontLibrary:
+
+    def __init__(self, logger: Union[logging.Logger, None]=None):
+
+        self.fonts = {}
+        self.logger = logger if logger is not None else logging.Logger
+
+    def load(self, ttf_fpath: str) -> bool:
+
+
+        font_name = os.path.basename(ttf_fpath)
+        new_font = Font(
+            texture=
+        )
+
         self.font_texture = np.ndarray((0, 0), dtype=np.float32)
         self.font_vertices = np.ndarray((0, 0), dtype=np.float32)
         self.font_uvs = np.ndarray((0, 0), dtype=np.float32)
         self.font_y_offsets = np.ndarray((0, 0), dtype=np.float32)
         self.font_x_advances = np.ndarray((0, 0), dtype=np.float32)
-
-        # Flags
-        self._font_loaded = False
-
-    def load(self, ttf_fpath, debug=False) -> bool:
 
         glyphs = self.generate_glyphs(font_ttf_fpath=ttf_fpath)
         self.font_texture = self.generate_texture(glyths=glyphs)
@@ -27,6 +47,10 @@ class Font:
 
         self._font_loaded = True
         return True
+
+    @property
+    def __getitem__(self, item):
+        return self.fonts
 
     @staticmethod
     def generate_glyphs(font_ttf_fpath: str) -> dict:

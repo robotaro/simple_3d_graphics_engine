@@ -2,7 +2,7 @@ import moderngl
 
 from ecs import constants
 from ecs.components.component import Component
-from ecs.shader_library import ShaderLibrary
+from ecs.shader_program_library import ShaderProgramLibrary
 
 
 class Renderable(Component):
@@ -27,7 +27,7 @@ class Renderable(Component):
 
     def initialise_on_gpu(self,
                           ctx: moderngl.Context,
-                          shader_library: ShaderLibrary,
+                          shader_library: ShaderProgramLibrary,
                           vbo_tuple_list: list,
                           program_name_list: list,
                           ibo_faces=None):

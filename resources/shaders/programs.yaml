@@ -9,6 +9,7 @@ selected_entity_pass:
 
 text_2d:
   vertex_shader: "text_2d.glsl"
+  geometry_shader: "text_2d.glsl"
   fragment_shader: "text_2d.glsl"
 
 fragment_picking:

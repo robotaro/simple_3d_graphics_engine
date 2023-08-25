@@ -1,4 +1,4 @@
-#version 330
+#version 400
 
 #if defined VERTEX_SHADER
 
@@ -7,62 +7,69 @@ in vec2 in_size;
 in vec2 in_uv_position;
 in vec2 in_uv_size;
 
-uniform vec3 char_color;
-
-out uint vs_char_id;
+out vec2 gs_position;
+out vec2 gs_size;
+out vec2 gs_uv_position;
+out vec2 gs_uv_size;
 
 void main() {
-    // float ypos = int(gl_InstanceID / line_length) * char_size.y;
-    float xpos = gl_InstanceID * char_size.x;
-	gl_Position = vec4(in_position + vec3(xpos, 0.0, 0.0), 1.0);
-    vs_char_id = in_char_id;
+    gl_Position = vec4(in_position, 0.0, 1.0);
+
+    gs_position = in_position;
+    gs_size = in_size;
+    gs_uv_position = in_uv_position;
+    gs_uv_size = in_uv_size;
+
+    // Set vs_char_id here if you have a way to provide it
 }
+
 
 #elif defined GEOMETRY_SHADER
 
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
 
-uniform mat4 m_proj;
-uniform vec2 text_pos;
-uniform vec2 char_size;
+uniform mat4 projection_matrix; // Your projection matrix
 
-in uint vs_char_id[1];
-out vec2 uv;
-flat out uint gs_char_id;
+// The inputs are expected to be arrays because you could prividing
+// multiple points, like a line (2 points) and so on.
+// The POINTS rendering mode means this is a 1-element array, hence
+// the gs_position[0] :)
+
+in vec2 gs_position[];
+in vec2 gs_size[];
+in vec2 gs_uv_position[];
+in vec2 gs_uv_size[];
+
+out vec2 fUV;
 
 void main() {
-    vec3 pos = gl_in[0].gl_Position.xyz + vec3(text_pos, 0.0);
+    // Calculate the rectangle vertices based on input data
+    vec2 upperLeft = gs_position[0];
+    vec2 lowerLeft = gs_position[0] + vec2(0, -gs_size[0].y);
+    vec2 upperRight = gs_position[0] + gs_size[0];
+    vec2 lowerRight = gs_position[0] + gs_size[0] + vec2(0, -gs_size[0].y);
 
-    vec3 right = vec3(1.0, 0.0, 0.0) * char_size.x / 2.0;
-    vec3 up = vec3(0.0, 1.0, 0.0) * char_size.y / 2.0;
-
-    // upper right
-    uv = vec2(1.0, 1.0);
-    gs_char_id = vs_char_id[0];
-    gl_Position = m_proj * vec4(pos + (right + up), 1.0);
+    // Emit vertices for the rectangle
+    gl_Position = projection_matrix * vec4(upperLeft, 0.0, 1.0);
+    fUV = gs_uv_position[0];
     EmitVertex();
 
-    // upper left
-    uv = vec2(0.0, 1.0);
-    gs_char_id = vs_char_id[0];
-    gl_Position = m_proj * vec4(pos + (-right + up), 1.0);
+    gl_Position = projection_matrix * vec4(lowerLeft, 0.0, 1.0);
+    fUV = gs_uv_position[0] + vec2(0.0, gs_uv_size[0].y);
     EmitVertex();
 
-    // lower right
-    uv = vec2(1.0, 0.0);
-    gs_char_id = vs_char_id[0];
-    gl_Position = m_proj * vec4(pos + (right - up), 1.0);
+    gl_Position = projection_matrix * vec4(upperRight, 0.0, 1.0);
+    fUV = gs_uv_position[0] + vec2(gs_uv_size[0].x, 0.0);
     EmitVertex();
 
-    // lower left
-    uv = vec2(0.0, 0.0);
-    gs_char_id = vs_char_id[0];
-    gl_Position = m_proj * vec4(pos + (-right - up), 1.0);
+    gl_Position = projection_matrix * vec4(lowerRight, 0.0, 1.0);
+    fUV = gs_uv_position[0] + gs_uv_size[0];
     EmitVertex();
 
     EndPrimitive();
 }
+
 
 #elif defined FRAGMENT_SHADER
 

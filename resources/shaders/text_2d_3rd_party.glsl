@@ -73,4 +73,5 @@ void main()
 {
     fragColor = texture(font_texture, vec3(uv, gs_char_id));
 }
+
 #endif

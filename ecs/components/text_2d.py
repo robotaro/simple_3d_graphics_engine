@@ -2,7 +2,7 @@ import moderngl
 
 from ecs import constants
 from ecs.components.component import Component
-from ecs.shader_library import ShaderLibrary
+from ecs.shader_program_library import ShaderProgramLibrary
 
 
 class Text2D(Component):
@@ -11,8 +11,9 @@ class Text2D(Component):
 
     __slots__ = [
         "render_layer",
-        "vaos",
         "visible",
+        "vao",
+        "vbo",
         "_gpu_initialised"
     ]
 
@@ -28,22 +29,25 @@ class Text2D(Component):
 
     def initialise_on_gpu(self,
                           ctx: moderngl.Context,
-                          shader_library: ShaderLibrary):
+                          shader_library: ShaderProgramLibrary):
 
         if self._gpu_initialised:
             return
 
-        for program_name in program_name_list:
-
-            program = shader_library[program_name]
-
-            # TODO: I think one version serves both if ibo_faces is None. Default value seems ot be None as well
-            if ibo_faces is None:
-                self.vaos[program_name] = ctx.vertex_array(program, vbo_tuple_list)
-            else:
-                self.vaos[program_name] = ctx.vertex_array(program, vbo_tuple_list, ibo_faces)
+        self.vbo = ctx.buffer(reserve=1000)  # TODO: Check this size
+        program = shader_library[constants.SHADER_PROGRAM_TEXT_2D]
+        self.vao = ctx.vertex_array(program,
+                                    ("2f 2f 2f 2f"),
+                                    ["in_position", "in_size", "in_uv_position", "in_uv_size"])
 
         self._gpu_initialised = True
+
+    def set_text(self, text: str) -> None:
+
+        if not self._gpu_initialised:
+            return
+
+        pass
 
     def release(self):
         if self.vbo:
