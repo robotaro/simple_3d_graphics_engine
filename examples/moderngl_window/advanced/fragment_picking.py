@@ -45,7 +45,7 @@ class FragmentPicking(moderngl_window.WindowConfig):
         self.scene = self.load_scene('scenes/fragment_picking/centered.obj', cache=True)
         # Grab the raw mesh/vertexarray
         self.mesh = self.scene.root_nodes[0].mesh.vao
-        self.mesh_texture = self.scene.root_nodes[0].mesh.material.mat_texture.texture
+        self.mesh_texture = self.scene.root_nodes[0].mesh.material.mat_texture.texture_data
 
         self.projection = Projection3D(
             fov=60,

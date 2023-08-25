@@ -72,13 +72,16 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
-out vec4 fragColor;
 uniform sampler2DArray font_texture;
+
 in vec2 uv;
 flat in uint gs_char_id;
 
+out vec4 fragColor;
+
 void main()
 {
-    fragColor = texture(font_texture, vec3(uv, gs_char_id));
+    float texture_color = texture(font_texture, vec3(uv, gs_char_id)).r;
+    fragColor =  vec4(texture_color, texture_color, texture_color, 1.0);
 }
 #endif

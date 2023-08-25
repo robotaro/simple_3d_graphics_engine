@@ -74,29 +74,29 @@ class Cubes(moderngl_window.WindowConfig):
         if x < self.wnd._window.width * 0.33:
             if y < self.wnd._window.height * 0.5:
                 # Modify top left box
-                self.box_top_left.materials[0].mat_texture.texture = \
+                self.box_top_left.materials[0].mat_texture.texture_data = \
                     self._load_texture(paths[0])
             else:
                 # Modify bottom left box
-                self.box_bottom_left.materials[0].mat_texture.texture = \
+                self.box_bottom_left.materials[0].mat_texture.texture_data = \
                     self._load_texture(paths[0])
         elif x < self.wnd._window.width * 0.66:
             if y < self.wnd._window.height * 0.5:
                 # Modify top middle box
-                self.box_top_middle.materials[0].mat_texture.texture = \
+                self.box_top_middle.materials[0].mat_texture.texture_data = \
                     self._load_texture(paths[0])
             else:
                 # Modify bottom middle box
-                self.box_bottom_middle.materials[0].mat_texture.texture = \
+                self.box_bottom_middle.materials[0].mat_texture.texture_data = \
                     self._load_texture(paths[0])
         else:
             if y < self.wnd._window.height * 0.5:
                 # Modify top right box
-                self.box_top_right.materials[0].mat_texture.texture = \
+                self.box_top_right.materials[0].mat_texture.texture_data = \
                     self._load_texture(paths[0])
             else:
                 # Modify bottom right box
-                self.box_bottom_right.materials[0].mat_texture.texture = \
+                self.box_bottom_right.materials[0].mat_texture.texture_data = \
                     self._load_texture(paths[0])
         print(paths)
 

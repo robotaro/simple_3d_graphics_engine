@@ -33,7 +33,7 @@ class ImageTransformer:
         self.size = size
         self.program = None
         self.fbo = self.ctx.framebuffer(
-            color_attachments=[self.ctx.texture(self.size, 4)]
+            color_attachments=[self.ctx.texture_data(self.size, 4)]
         )
 
         # Create some default program if needed

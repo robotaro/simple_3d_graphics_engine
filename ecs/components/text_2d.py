@@ -11,6 +11,7 @@ class Text2D(Component):
     _type = "text_2d"
 
     __slots__ = [
+        "font_name",
         "render_layer",
         "visible",
         "vao",
@@ -56,7 +57,6 @@ class Text2D(Component):
         text_data = font_library.generate_text_vbo_data(font_name=self.font_name, text=self.text)
 
         self.vbo.write(text_data.tobytes())
-
 
     def set_text(self, text: str) -> None:
         self.text = text

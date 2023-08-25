@@ -14,8 +14,8 @@ class Texture:
     def get_texture(self, path):
         texture = pg.image.load(path).convert()
         texture = pg.transform.flip(texture, flip_x=False, flip_y=True)
-        texture = self.ctx.texture(size=texture.get_size(), components=3,
-                                   data=pg.image.tostring(texture, 'RGB'))
+        texture = self.ctx.texture_data(size=texture.get_size(), components=3,
+                                        data=pg.image.tostring(texture, 'RGB'))
         # mipmaps
         texture.filter = (mgl.LINEAR_MIPMAP_LINEAR, mgl.LINEAR)
         texture.build_mipmaps()

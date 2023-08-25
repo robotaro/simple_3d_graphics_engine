@@ -47,7 +47,7 @@ class Cube(BaseModel):
 
     def on_init(self):
         # texture
-        self.texture = self.app.mesh.texture.textures[self.tex_id]
+        self.texture = self.app.mesh.texture_data.textures[self.tex_id]
         self.program['u_texture_0'] = 0
         self.texture.use()
         # mvp
@@ -75,7 +75,7 @@ class Cat(BaseModel):
 
     def on_init(self):
         # texture
-        self.texture = self.app.mesh.texture.textures[self.tex_id]
+        self.texture = self.app.mesh.texture_data.textures[self.tex_id]
         self.program['u_texture_0'] = 0
         self.texture.use()
         # mvp

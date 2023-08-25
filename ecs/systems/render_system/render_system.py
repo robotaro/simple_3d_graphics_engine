@@ -320,11 +320,14 @@ class RenderSystem(System):
         program = self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]
         program["projection_matrix"].write(projection_matrix)
 
+
         # Update VBOs and render text
         for uid in text_2d_endity_uid:
             text = component_pool.text_2d_components[uid]
+            self.font_library.fonts[text.font_name].texture_vbo.use(location=0)
             text.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
             text.update_buffer(font_library=self.font_library)
+
             text.vao.render(moderngl.POINTS)
 
     def render_to_screen(self) -> None:
@@ -365,8 +368,8 @@ class RenderSystem(System):
         image = Image.open(texture_fpath)
         image_data = np.array(image)
         self.textures[texture_id] = self.ctx.texture(size=image.size,
-                                                     components=image_data.shape[-1],
-                                                     data=image_data.tobytes())
+                                                          components=image_data.shape[-1],
+                                                          data=image_data.tobytes())
 
     """def offscreen_and_onscreen_pass(self, scene: Scene, viewport: Viewport):
 

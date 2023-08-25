@@ -13,8 +13,9 @@ from ecs import constants
 class Font:
 
     name: str = field(default="unnamed_font")
-    texture: np.ndarray = field(default=np.ndarray((0, 0), dtype=np.float32))
-    parameters: np.ndarray = field(default=np.ndarray((0, 0), dtype=np.float32))
+    texture_data: np.ndarray = field(default=np.ndarray((0, 0), dtype=np.float32))
+    texture_vbo: moderngl.Buffer = field(default=None)
+    character_data: np.ndarray = field(default=np.ndarray((0, 0), dtype=np.float32))
 
 
 class FontLibrary:
@@ -52,14 +53,19 @@ class FontLibrary:
         glyphs = self.generate_glyphs(font_ttf_fpath=ttf_fpath)
         new_font = Font()
         new_font.name = os.path.basename(ttf_fpath)
-        new_font.texture = self.generate_texture(glyths=glyphs)
-        new_font.parameters = self.generate_font_parameters(glyphs=glyphs)
+        new_font.texture_data = self.generate_texture(glyths=glyphs)
+        new_font.texture_data = new_font.texture_data.astype('f4') / 255.0
+        new_font.texture_vbo = self.ctx.texture(size=new_font.texture_data.shape,
+                                                data=new_font.texture_data.tobytes(),
+                                                components=1,
+                                                dtype='f4')
+        new_font.character_data = self.generate_font_parameters(glyphs=glyphs)
         self.fonts[new_font.name] = new_font
 
         return True
 
     def generate_text_vbo_data(self, font_name: str, text: str) -> np.ndarray:
-        font_parameters = self.fonts[font_name].parameters
+        font_parameters = self.fonts[font_name].character_data
 
         # TODO: Optimise this with numba
         text_data = np.ndarray((len(text), constants.FONT_LIBRARY_NUM_PARAMETERS), dtype=np.float32)
