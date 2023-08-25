@@ -125,6 +125,7 @@ class RenderSystem(System):
                                          ibo_faces=mesh.ibo_faces)
 
         # Renderable entity IDs
+        text_2d_entity_uids = list(component_pool.renderable_components.keys())
         renderable_entity_uids = list(component_pool.renderable_components.keys())
         camera_entity_uids = list(component_pool.camera_components.keys())
 
@@ -154,16 +155,13 @@ class RenderSystem(System):
             # Pass the coordinate of the pixel you want to sample to the fragment picking shader
             self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
             self.textures["entity_info"].use(location=0)
-            #self.textures["viewpos"].use(location=0)
 
             self.picker_vao.transform(
                 self.picker_buffer,
                 mode=moderngl.POINTS,
                 vertices=1,
                 first=0,
-                instances=1
-            )
-
+                instances=1)
             self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
 
         # FULLSCREEN VIEW MODES
@@ -294,6 +292,14 @@ class RenderSystem(System):
 
         renderable_component = component_pool.renderable_components[selected_entity_uid]
         renderable_component.vaos[constants.RENDER_SYSTEM_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
+
+    def text_2d_pass(self, component_pool: ComponentPool, camera_uid: int, selected_entity_uid: int):
+
+        self.framebuffers["offscreen"].use()
+
+        camera_component = component_pool.camera_components[camera_uid]
+        camera_transform = component_pool.transform_components[camera_uid]
+
 
     def render_to_screen(self) -> None:
 

@@ -2,12 +2,10 @@
 
 #if defined VERTEX_SHADER
 
-in vec2 in_position;
-in vec2 in_size;
-in vec2 in_uv_position;
-in vec2 in_uv_size;
+in vec3 in_position;
+in uint in_char_id;
 
-uniform vec3 char_color;
+uniform vec2 char_size;
 
 out uint vs_char_id;
 

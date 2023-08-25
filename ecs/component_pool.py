@@ -8,6 +8,7 @@ from ecs.components.material import Material
 from ecs.components.renderable import Renderable
 from ecs.components.camera import Camera
 from ecs.components.input_control import InputControl
+from ecs.components.text_2d import Text2D
 
 
 class Entity:
@@ -26,7 +27,8 @@ class ComponentPool:
         constants.COMPONENT_TYPE_RENDERABLE: Renderable,
         constants.COMPONENT_TYPE_CAMERA: Camera,
         constants.COMPONENT_TYPE_MATERIAL: Material,
-        constants.COMPONENT_TYPE_INPUT_CONTROL: InputControl
+        constants.COMPONENT_TYPE_INPUT_CONTROL: InputControl,
+        constants.COMPONENT_TYPE_TEXT_2D: Text2D
     }
 
     def __init__(self):
@@ -43,6 +45,7 @@ class ComponentPool:
         self.renderable_components = {}
         self.material_components = {}
         self.input_control_components = {}
+        self.text_2d_components = {}
 
         self.component_storage_map = {
             constants.COMPONENT_TYPE_TRANSFORM_3D: self.transform_components,
@@ -51,6 +54,7 @@ class ComponentPool:
             constants.COMPONENT_TYPE_CAMERA: self.camera_components,
             constants.COMPONENT_TYPE_MATERIAL: self.material_components,
             constants.COMPONENT_TYPE_INPUT_CONTROL: self.input_control_components,
+            constants.COMPONENT_TYPE_TEXT_2D: self.text_2d_components
         }
 
     def create_entity(self, name="") -> int:
