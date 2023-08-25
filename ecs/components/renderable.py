@@ -1,8 +1,7 @@
 import moderngl
 
-from ecs import constants
 from ecs.components.component import Component
-from ecs.shader_program_library import ShaderProgramLibrary
+from ecs.systems.render_system.shader_program_library import ShaderProgramLibrary
 
 
 class Renderable(Component):

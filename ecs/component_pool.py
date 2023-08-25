@@ -63,7 +63,7 @@ class ComponentPool:
         self.entity_uid_counter += 1
         return uid
 
-    def add_component(self, entity_uid: int, component_type: str, **kwargs):
+    def add_component(self, entity_uid: int, component_type: int, **kwargs):
         component_pool = self.component_storage_map.get(component_type, None)
 
         # Safety
@@ -103,5 +103,8 @@ class ComponentPool:
             if entity_uid in storage:
                 components.append(storage[entity_uid])
         return components
+
+    def get_entities_using_component(self, component_type: int) -> list:
+        return list(self.component_storage_map[component_type].keys())
 
 

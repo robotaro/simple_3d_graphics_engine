@@ -2,7 +2,7 @@ import freetype
 import os
 import numpy as np
 import string
-import ui.ui_constants as constants
+import ecs.custom_ui.ui_constants as constants
 
 # [ DEBUG ]
 import matplotlib.pyplot as plt
@@ -20,7 +20,7 @@ class UIFont:
         # Flags
         self._font_loaded = False
 
-    def load(self, ttf_fpath, debug=False) -> bool:
+    def load(self, ttf_fpath: str) -> bool:
 
         glyphs = self.generate_glyphs(font_ttf_fpath=ttf_fpath)
         self.font_texture = self.generate_texture(glyths=glyphs)

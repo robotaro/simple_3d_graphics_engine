@@ -225,7 +225,7 @@ class Editor:
 
     def add_component(self, **kwargs):
         # This function was added for convenience
-        self.component_pool.add_component(**kwargs)
+        return self.component_pool.add_component(**kwargs)
 
     def run(self):
 

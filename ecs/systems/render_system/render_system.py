@@ -6,8 +6,8 @@ import struct
 
 from ecs import constants
 from ecs.systems.system import System
-from ecs.shader_program_library import ShaderProgramLibrary
-from ecs.font_library import FontLibrary
+from ecs.systems.render_system.shader_program_library import ShaderProgramLibrary
+from ecs.systems.render_system.font_library import FontLibrary
 from ecs.component_pool import ComponentPool
 from ecs.geometry_3d import ready_to_render
 from ecs.math import mat4
@@ -22,8 +22,8 @@ class RenderSystem(System):
 
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
-        self.shader_program_library = ShaderProgramLibrary(context=self.ctx)
-        self.font_library = FontLibrary(context=self.ctx)
+        self.shader_program_library = ShaderProgramLibrary(context=self.ctx, logger=kwargs["logger"])
+        self.font_library = FontLibrary(context=self.ctx, logger=kwargs["logger"])
 
         # Internal components (different from normal components)
         self.framebuffers = {}
@@ -128,7 +128,7 @@ class RenderSystem(System):
                                          ibo_faces=mesh.ibo_faces)
 
         # Renderable entity IDs
-        text_2d_entity_uids = list(component_pool.renderable_components.keys())
+        text_2d_entity_uids = list(component_pool.text_2d_components.keys())
         renderable_entity_uids = list(component_pool.renderable_components.keys())
         camera_entity_uids = list(component_pool.camera_components.keys())
 
@@ -309,7 +309,6 @@ class RenderSystem(System):
         self.framebuffers["offscreen"].use()
 
         # Upload uniforms
-
         projection_matrix = mat4.orthographic_projection(
             left=0,
             right=self.buffer_size[0],
@@ -321,8 +320,12 @@ class RenderSystem(System):
         program = self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]
         program["projection_matrix"].write(projection_matrix)
 
-        for entity_uid in text_2d_endity_uid:
-            pass
+        # Update VBOs and render text
+        for uid in text_2d_endity_uid:
+            text = component_pool.text_2d_components[uid]
+            text.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
+            text.update_buffer(font_library=self.font_library)
+            text.vao.render(moderngl.POINTS)
 
     def render_to_screen(self) -> None:
 

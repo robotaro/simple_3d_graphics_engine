@@ -13,14 +13,13 @@ out vec2 gs_uv_position;
 out vec2 gs_uv_size;
 
 void main() {
-    gl_Position = vec4(in_position, 0.0, 1.0);
 
     gs_position = in_position;
     gs_size = in_size;
     gs_uv_position = in_uv_position;
     gs_uv_size = in_uv_size;
 
-    // Set vs_char_id here if you have a way to provide it
+    gl_Position = vec4(in_position, 0.0, 1.0);
 }
 
 
@@ -41,7 +40,7 @@ in vec2 gs_size[];
 in vec2 gs_uv_position[];
 in vec2 gs_uv_size[];
 
-out vec2 fUV;
+out vec2 uv;
 
 void main() {
     // Calculate the rectangle vertices based on input data
@@ -52,19 +51,19 @@ void main() {
 
     // Emit vertices for the rectangle
     gl_Position = projection_matrix * vec4(upperLeft, 0.0, 1.0);
-    fUV = gs_uv_position[0];
+    uv = gs_uv_position[0];
     EmitVertex();
 
     gl_Position = projection_matrix * vec4(lowerLeft, 0.0, 1.0);
-    fUV = gs_uv_position[0] + vec2(0.0, gs_uv_size[0].y);
+    uv = gs_uv_position[0] + vec2(0.0, gs_uv_size[0].y);
     EmitVertex();
 
     gl_Position = projection_matrix * vec4(upperRight, 0.0, 1.0);
-    fUV = gs_uv_position[0] + vec2(gs_uv_size[0].x, 0.0);
+    uv = gs_uv_position[0] + vec2(gs_uv_size[0].x, 0.0);
     EmitVertex();
 
     gl_Position = projection_matrix * vec4(lowerRight, 0.0, 1.0);
-    fUV = gs_uv_position[0] + gs_uv_size[0];
+    uv = gs_uv_position[0] + gs_uv_size[0];
     EmitVertex();
 
     EndPrimitive();

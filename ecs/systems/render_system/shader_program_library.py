@@ -71,6 +71,7 @@ class ShaderProgramLibrary:
     def shutdown(self):
         # After removing the vao release stage from all other parts of the pipeline, add them here
 
+
         pass
 
     # =========================================================================
@@ -159,16 +160,14 @@ class ShaderProgramLibrary:
             source = self._generate_source_code(
                 shader_key=shader_name,
                 shader_type=shader_type,
-                extra_definitions=extra_definitions,
-                varying=varying)
+                extra_definitions=extra_definitions)
 
         return source
 
     def _generate_source_code(self,
                               shader_key: str,
                               shader_type: str,
-                              extra_definitions: Union[dict, None]=None,
-                              varying: Union[list, None]=None) -> str:
+                              extra_definitions: Union[dict, None]  = None) -> str:
         """
         This function assembles all lines of code, including the extra definitions, into a single
         string to be used for shader compilation later on. The version of the shader is added to the

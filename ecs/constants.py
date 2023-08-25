@@ -134,7 +134,6 @@ FONT_TEXTURE_WIDTH = FONT_SHEET_CELL_WIDTH * FONT_SHEET_COLS
 FONT_TEXTURE_HEIGHT = FONT_SHEET_CELL_HEIGHT * FONT_SHEET_ROWS
 
 
-
 # =============================================================================
 #                              Component Pool
 # =============================================================================
@@ -176,3 +175,21 @@ SHADER_LIBRARY_AVAILABLE_TYPES = [
     SHADER_TYPE_GEOMETRY,
     SHADER_TYPE_FRAGMENT
 ]
+
+# =============================================================================
+#                                Font Library
+# =============================================================================
+
+FONT_LIBRARY_NUM_CHARACTERS = 256
+FONT_LIBRARY_NUM_PARAMETERS = 10
+
+FONT_LIBRARY_COLUMN_INDEX_X = 0
+FONT_LIBRARY_COLUMN_INDEX_Y = 1
+FONT_LIBRARY_COLUMN_INDEX_WIDTH = 2
+FONT_LIBRARY_COLUMN_INDEX_HEIGHT = 3
+FONT_LIBRARY_COLUMN_INDEX_U_MIN = 4
+FONT_LIBRARY_COLUMN_INDEX_V_MIN = 5
+FONT_LIBRARY_COLUMN_INDEX_U_MAX = 6
+FONT_LIBRARY_COLUMN_INDEX_V_MAX = 7
+FONT_LIBRARY_COLUMN_INDEX_VERTICAL_OFFSET = 8
+FONT_LIBRARY_COLUMN_INDEX_HORIZONTAL_ADVANCE = 9

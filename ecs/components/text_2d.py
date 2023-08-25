@@ -2,7 +2,8 @@ import moderngl
 
 from ecs import constants
 from ecs.components.component import Component
-from ecs.shader_program_library import ShaderProgramLibrary
+from ecs.systems.render_system.shader_program_library import ShaderProgramLibrary
+from ecs.systems.render_system.font_library import FontLibrary
 
 
 class Text2D(Component):
@@ -14,17 +15,23 @@ class Text2D(Component):
         "visible",
         "vao",
         "vbo",
+        "text",
+        "_text_updated",
         "_gpu_initialised"
     ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
 
-        super().__init__(*args, **kwargs)
+        super().__init__()
+
+        self.font_name = kwargs["font_name"]
 
         self.render_layer = 0
         self.visible = True
         self.vao = None
         self.vbo = None
+        self.text = ""
+        self._text_updated = False
         self._gpu_initialised = False
 
     def initialise_on_gpu(self,
@@ -34,20 +41,26 @@ class Text2D(Component):
         if self._gpu_initialised:
             return
 
-        self.vbo = ctx.buffer(reserve=1000)  # TODO: Check this size
+        self.vbo = ctx.buffer(reserve=800)  # TODO: Check this size
         program = shader_library[constants.SHADER_PROGRAM_TEXT_2D]
-        self.vao = ctx.vertex_array(program,
-                                    ("2f 2f 2f 2f"),
-                                    ["in_position", "in_size", "in_uv_position", "in_uv_size"])
+
+        self.vao = ctx.vertex_array(program, self.vbo, "in_position", "in_size", "in_uv_position", "in_uv_size")
 
         self._gpu_initialised = True
 
-    def set_text(self, text: str) -> None:
+    def update_buffer(self, font_library: FontLibrary):
 
-        if not self._gpu_initialised:
+        if not self._gpu_initialised or not self._text_updated:
             return
 
-        pass
+        text_data = font_library.generate_text_vbo_data(font_name=self.font_name, text=self.text)
+
+        self.vbo.write(text_data.tobytes())
+
+
+    def set_text(self, text: str) -> None:
+        self.text = text
+        self._text_updated = True
 
     def release(self):
         if self.vbo:

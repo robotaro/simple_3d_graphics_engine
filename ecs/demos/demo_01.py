@@ -1,6 +1,6 @@
 from ecs import constants
 from ecs.editor import Editor
-from ecs.font_library import Font
+from ecs.systems.render_system.font_library import FontLibrary
 
 import os
 
@@ -12,8 +12,11 @@ def main():
         window_title="Basic Scene Demo"
     )
 
-    font = Font()
-    font.load(ttf_fpath=os.path.join(constants.FONTS_DIR, "Consolas.ttf"))
+    font_fpath = os.path.join(constants.FONTS_DIR, "Consolas.ttf")
+
+    # DEBUG
+    fontlib = FontLibrary(context=editor.context)
+    fontlib.load(ttf_fpath=font_fpath)
 
     editor.create_system(system_type="render_system",
                          subscribed_events=[
@@ -77,12 +80,12 @@ def main():
 
     # Text
     text_uid = editor.component_pool.create_entity(name="sample_text")
-    editor.add_component(
+    text = editor.add_component(
         entity_uid=text_uid,
-        component_type=constants.COMPONENT_TYPE_TEXT_2D
+        component_type=constants.COMPONENT_TYPE_TEXT_2D,
+        font_name="Consolas.ttf"
     )
-
-
+    text.set_text("orange")
     editor.run()
 
 
