@@ -47,11 +47,11 @@ class FontLibrary:
             ttf_fpaths = [os.path.join(font_directory, filename)
                           for filename in os.listdir(font_directory) if filename.endswith(".ttf")]
             for fpath in ttf_fpaths:
-                self.load(ttf_fpath=fpath)
+                self.load(ttf_fpath=fpath, font_size=40)
 
-    def load(self, ttf_fpath: str) -> bool:
+    def load(self, ttf_fpath: str, font_size=32) -> bool:
 
-        glyphs = self.generate_glyphs(font_ttf_fpath=ttf_fpath)
+        glyphs = self.generate_glyphs(font_ttf_fpath=ttf_fpath, font_size=font_size)
         new_font = Font()
         new_font.name = os.path.basename(ttf_fpath)
         new_font.texture_data = self.generate_texture(glyths=glyphs)
@@ -69,6 +69,10 @@ class FontLibrary:
         cursor_x = 0.0
         for index, char in enumerate(text):
             char_index = ord(char)
+
+            if char_index == 32:
+                cursor_x += 4  # TODO: Use different spaces for letters
+
             text_data[index, :] = font_parameters[char_index, :]
             text_data[index, constants.FONT_LIBRARY_COLUMN_INDEX_X] += cursor_x
             cursor_x += text_data[index, constants.FONT_LIBRARY_COLUMN_INDEX_HORIZONTAL_ADVANCE]
@@ -80,7 +84,7 @@ class FontLibrary:
         return text_data
 
     @staticmethod
-    def generate_glyphs(font_ttf_fpath: str) -> dict:
+    def generate_glyphs(font_ttf_fpath: str, font_size: 32) -> dict:
 
         # Check if file exists
         if not os.path.isfile(font_ttf_fpath):
@@ -88,7 +92,7 @@ class FontLibrary:
 
         # Load font and set initial size
         face = freetype.Face(font_ttf_fpath)
-        face.set_char_size(constants.FONT_CHAR_SIZE ** 2)
+        face.set_char_size(font_size ** 2)
 
         # Generate glypH look-up dictionary
         glyphs = dict()
@@ -102,12 +106,12 @@ class FontLibrary:
                 "width": int(face.glyph.bitmap.width),
                 "height": int(face.glyph.bitmap.rows),
                 "buffer": np.array(face.glyph.bitmap.buffer, dtype=np.uint8),
-                "offset_hor_bearing_x": face.glyph.metrics.horiBearingX // constants.FONT_CHAR_SIZE,
-                "offset_hor_bearing_y": face.glyph.metrics.horiBearingY // constants.FONT_CHAR_SIZE,
-                "offset_hor_advance": face.glyph.metrics.horiAdvance // constants.FONT_CHAR_SIZE,
-                "offset_ver_bearing_x": face.glyph.metrics.vertBearingX // constants.FONT_CHAR_SIZE,
-                "offset_ver_bearing_y": face.glyph.metrics.vertBearingY // constants.FONT_CHAR_SIZE,
-                "offset_ver_advance": face.glyph.metrics.vertAdvance // constants.FONT_CHAR_SIZE
+                "offset_hor_bearing_x": face.glyph.metrics.horiBearingX // font_size,
+                "offset_hor_bearing_y": face.glyph.metrics.horiBearingY // font_size,
+                "offset_hor_advance": face.glyph.metrics.horiAdvance // font_size,
+                "offset_ver_bearing_x": face.glyph.metrics.vertBearingX // font_size,
+                "offset_ver_bearing_y": face.glyph.metrics.vertBearingY // font_size,
+                "offset_ver_advance": face.glyph.metrics.vertAdvance // font_size
             }
 
         return glyphs

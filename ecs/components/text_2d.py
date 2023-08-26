@@ -12,6 +12,7 @@ class Text2D(Component):
 
     __slots__ = [
         "font_name",
+        "position",
         "render_layer",
         "visible",
         "vao",
@@ -26,7 +27,7 @@ class Text2D(Component):
         super().__init__()
 
         self.font_name = kwargs["font_name"]
-
+        self.position = (10, 10)
         self.render_layer = 0
         self.visible = True
         self.vao = None
@@ -42,7 +43,7 @@ class Text2D(Component):
         if self._gpu_initialised:
             return
 
-        self.vbo = ctx.buffer(reserve=800)  # TODO: Check this size
+        self.vbo = ctx.buffer(reserve=constants.FONT_VBO_BUFFER_RESERVE)  # TODO: Check this size
         program = shader_library[constants.SHADER_PROGRAM_TEXT_2D]
 
         self.vao = ctx.vertex_array(program, self.vbo, "in_position", "in_size", "in_uv_min", "in_uv_max")
@@ -56,7 +57,7 @@ class Text2D(Component):
 
         text_data = font_library.generate_text_vbo_data(font_name=self.font_name,
                                                         text=self.text,
-                                                        position=(100, 100))
+                                                        position=self.position)
 
         self.vbo.write(text_data[:, :8].tobytes())
 

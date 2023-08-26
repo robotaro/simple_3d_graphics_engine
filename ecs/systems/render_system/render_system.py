@@ -290,18 +290,17 @@ class RenderSystem(System):
         projection_matrix = mat4.orthographic_projection(
             left=0,
             right=self.buffer_size[0],
-            bottom=0,
-            top=self.buffer_size[1],
-            near=1,
-            far=-1
-        )
+            bottom=self.buffer_size[1],
+            top=0,
+            near=-1,
+            far=1)
 
         # Upload uniforms
         program = self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]
         program["projection_matrix"].write(projection_matrix.T.tobytes())
 
         # Update VBOs and render text
-        for uid, text_2d in component_pool.text_2d_components.items():
+        for _, text_2d in component_pool.text_2d_components.items():
 
             # State Updates
             text_2d.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
@@ -315,7 +314,7 @@ class RenderSystem(System):
 
         """
         Renders selected offscreen texture to window. By default, it is the color texture, but you can
-        change it using F1-F4 keys.
+        change it using F1-F12 keys.
         :return: None
         """
 

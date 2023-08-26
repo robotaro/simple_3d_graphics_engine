@@ -56,8 +56,8 @@ void main() {
 
     // Emit the rectangle vertices with adjusted UV coordinates
     emitVertexWithUV(position, gs_uv_min[0]);
-    emitVertexWithUV(position + vec2(gs_size[0].x, 0), vec2(gs_uv_max[0].x, gs_uv_min[0].y));
     emitVertexWithUV(position + vec2(0, gs_size[0].y), vec2(gs_uv_min[0].x, gs_uv_max[0].y));
+    emitVertexWithUV(position + vec2(gs_size[0].x, 0), vec2(gs_uv_max[0].x, gs_uv_min[0].y));
     emitVertexWithUV(position + vec2(gs_size[0].x, gs_size[0].y), vec2(gs_uv_max[0].x, gs_uv_max[0].y));
 
     EndPrimitive();
@@ -70,6 +70,8 @@ uniform sampler2D font_texture;
 
 in vec2 uv;
 
+uniform vec3 font_color = vec3(1.0, 1.0, 1.0);
+
 out vec4 fragColor;
 
 void main()
@@ -77,4 +79,5 @@ void main()
     float texture_color = texture(font_texture, uv).r;
     fragColor =  vec4(1.0, 1.0, 1.0, texture_color);
 }
+
 #endif

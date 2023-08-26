@@ -12,11 +12,11 @@ def main():
         window_title="Basic Scene Demo"
     )
 
-    font_fpath = os.path.join(constants.FONTS_DIR, "Consolas.ttf")
+    font_fpath = os.path.join(constants.FONTS_DIR, "Custom.ttf")
 
     # DEBUG
     fontlib = FontLibrary()
-    fontlib.load(ttf_fpath=font_fpath)
+    fontlib.load(ttf_fpath=font_fpath, font_size=32)
 
     editor.create_system(system_type="render_system",
                          subscribed_events=[
@@ -42,7 +42,7 @@ def main():
     editor.add_component(
         entity_uid=camera_uid,
         component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
-        position=(0, 0, -2))
+        position=(0, -1, -2))
     editor.add_component(
         entity_uid=camera_uid,
         component_type=constants.COMPONENT_TYPE_INPUT_CONTROL)
@@ -85,7 +85,7 @@ def main():
         component_type=constants.COMPONENT_TYPE_TEXT_2D,
         font_name="Consolas.ttf"
     )
-    text.set_text("orange")
+    text.set_text("Alexandre Paschoal Vicente")
     editor.run()
 
 

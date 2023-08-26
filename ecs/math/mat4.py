@@ -86,7 +86,7 @@ def normalize(x):
     return x / np.linalg.norm(x)
 
 
-def look_at(position: np.array, target: np.array, up: np.array):
+def camera_look_at(position: np.array, target: np.array, up: np.array):
     """
     Create an affine transformation that locates the camera at `position`, s.t. it looks at `target`.
     :param position: The 3D position of the camera in world coordinates.

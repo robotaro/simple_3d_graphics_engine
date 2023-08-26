@@ -68,6 +68,8 @@ class Camera(Component):
 
     def get_orthographic_matrix(self, width: int, height: int):
 
+        # TODO: Terst this
+
         xmag = self.x_mag
         ymag = self.y_mag
 

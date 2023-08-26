@@ -1,5 +1,7 @@
 import os
 
+import numpy as np
+
 # =============================================================================
 #                                Directories
 # =============================================================================
@@ -122,9 +124,10 @@ SHADER_INPUT_UV = "in_uv"
 # Uniforms
 SHADER_UNIFORM_ENTITY_ID = "entity_id"
 
-# Font
+# Font LIbrary
+FONT_VBO_BUFFER_RESERVE = 4096
 FONT_NUM_VERTICES_PER_CHAR = 12
-FONT_CHAR_SIZE = 32  # Resolution dpi, not actual pixels
+FONT_CHAR_SIZE = 48  # Resolution dpi, not actual pixels
 FONT_SHEET_ROWS = 16
 FONT_SHEET_COLS = 16
 FONT_SHEET_CELL_WIDTH = 32
@@ -154,6 +157,12 @@ MESH_SHAPE_CUBE = "cube"
 MESH_SHAPE_SPHERE = "sphere"
 MESH_SHAPE_CYLINDER = "cylinder"
 MESH_SHAPE_FROM_OBJ = "obj"  # TODO: Kinda of a hack. You need to add argument "fpath"
+
+# =============================================================================
+#                               Transforms
+# =============================================================================
+
+TRANSFORMS_UP_VECTOR = np.array((0, 1, 0), dtype=np.float32)
 
 # =============================================================================
 #                              Shader Library

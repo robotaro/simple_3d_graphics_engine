@@ -10,11 +10,11 @@ from ecs.systems.render_system.font_library import FontLibrary
 def font_this():
 
     font_lib = FontLibrary()
-    #font_lib.debug_show_texture(font_name="Custom.ttf")
+    font_lib.debug_show_texture(font_name="Custom.ttf")
     font_lib.debug_show_texture(font_name="Consolas.ttf")
-    #font_lib.debug_show_texture(font_name="ProggyClean.ttf")
+    font_lib.debug_show_texture(font_name="ProggyClean.ttf")
 
-    window_size = (800, 600)  # width, height
+    """window_size = (800, 600)  # width, height
 
     character_data = font_lib.generate_text_vbo_data(font_name="Consolas.ttf", text="Hellow there!", position=(100, 100))
 
@@ -74,6 +74,6 @@ def font_this():
 
     # Display the plot
     plt.tight_layout()
-    plt.show()
+    plt.show()"""
 
 font_this()
