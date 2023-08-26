@@ -54,9 +54,11 @@ class Text2D(Component):
         if not self._gpu_initialised or not self._text_updated:
             return
 
-        text_data = font_library.generate_text_vbo_data(font_name=self.font_name, text=self.text)
+        text_data = font_library.generate_text_vbo_data(font_name=self.font_name,
+                                                        text=self.text,
+                                                        position=(200, 200))
 
-        self.vbo.write(text_data.tobytes())
+        self.vbo.write(text_data[:, :8].tobytes())
 
     def set_text(self, text: str) -> None:
         self.text = text

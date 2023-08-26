@@ -2,21 +2,23 @@ import numpy as np
 
 from ecs.math import mat4
 
-# For testing
-from pyrr import Matrix44
 
+def test_orthographic_projection():
 
-def test_look_at():
+    # Example came from ChatGPT, so make look for a more reliable source
+    target = np.array(
+        [[ 0.1       ,  0.        ,  0.        ,  0.        ],
+         [ 0.        ,  0.2       ,  0.        ,  0.        ],
+         [ 0.        ,  0.        , -0.02020202, -1.020202  ],
+         [ 0.        ,  0.        ,  0.        ,  1.        ]])
 
+    result = mat4.orthographic_projection(
+        left=-10,
+        right=10,
+        bottom=-5,
+        top=5,
+        near=1,
+        far=100
+    )
 
-    target = Matrix44.look_at(
-        eye=(47.697, -8.147, 24.498),
-        target=(0.0, 0.0, 8.0),
-        up=(0.0, 1.0, 0.0),
-        dtype=np.float32)
-
-    result = mat4.look_at(position=np.array((47.697, -8.147, 24.498), dtype=np.float32),
-                          target=np.array((0.0, 0.0, 8.0), dtype=np.float32),
-                          up=np.array((0.0, 1.0, 0.0), dtype=np.float32))
-
-    np.testing.assert_almost_equal(target.T, result)
+    np.testing.assert_almost_equal(target, result)

@@ -15,7 +15,7 @@ def main():
     font_fpath = os.path.join(constants.FONTS_DIR, "Consolas.ttf")
 
     # DEBUG
-    fontlib = FontLibrary(context=editor.context)
+    fontlib = FontLibrary()
     fontlib.load(ttf_fpath=font_fpath)
 
     editor.create_system(system_type="render_system",

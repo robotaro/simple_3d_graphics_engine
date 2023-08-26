@@ -23,11 +23,12 @@ class RenderSystem(System):
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
         self.shader_program_library = ShaderProgramLibrary(context=self.ctx, logger=kwargs["logger"])
-        self.font_library = FontLibrary(context=self.ctx, logger=kwargs["logger"])
+        self.font_library = FontLibrary(logger=kwargs["logger"])
 
         # Internal components (different from normal components)
         self.framebuffers = {}
-        self.textures = {}
+        self.textures_offscreen_rendering = {}
+        self.textures_font = {}
         self.samplers = {}
         self.vbo_groups = {}
         self.quads = {}
@@ -69,32 +70,36 @@ class RenderSystem(System):
         #self.outline_program = self.shader_library["outline_pass"]
         #self.outline_program["outline_color"].value = 0
 
-        # Forward Pass textures
-        self.textures["color"] = self.ctx.texture(size=self.buffer_size, components=4)
-        self.textures["normal"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures["viewpos"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures["entity_info"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures["entity_info"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.textures["depth"] = self.ctx.depth_texture(size=self.buffer_size)
+        # Offscreen rendering
+        self.textures_offscreen_rendering["color"] = self.ctx.texture(size=self.buffer_size, components=4)
+        self.textures_offscreen_rendering["normal"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures_offscreen_rendering["viewpos"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures_offscreen_rendering["entity_info"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures_offscreen_rendering["entity_info"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.textures_offscreen_rendering["depth"] = self.ctx.depth_texture(size=self.buffer_size)
         self.framebuffers["offscreen"] = self.ctx.framebuffer(
             color_attachments=[
-                self.textures["color"],
-                self.textures["normal"],
-                self.textures["viewpos"],
-                self.textures["entity_info"]
+                self.textures_offscreen_rendering["color"],
+                self.textures_offscreen_rendering["normal"],
+                self.textures_offscreen_rendering["viewpos"],
+                self.textures_offscreen_rendering["entity_info"]
             ],
-            depth_attachment=self.textures["depth"],
+            depth_attachment=self.textures_offscreen_rendering["depth"],
         )
 
+        # Fonts
+        for font_name, font in self.font_library.fonts.items():
+            self.textures_font[font_name] = self.ctx.texture(size=font.texture_data.shape, components=1, dtype='f4')
+
         # Selection Pass
-        self.textures["selection"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures["selection"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.textures["selection_depth"] = self.ctx.depth_texture(size=self.buffer_size)
+        self.textures_offscreen_rendering["selection"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures_offscreen_rendering["selection"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.textures_offscreen_rendering["selection_depth"] = self.ctx.depth_texture(size=self.buffer_size)
         self.framebuffers["selection_fbo"] = self.ctx.framebuffer(
             color_attachments=[
-                self.textures["selection"],
+                self.textures_offscreen_rendering["selection"],
             ],
-            depth_attachment=self.textures["selection_depth"],
+            depth_attachment=self.textures_offscreen_rendering["selection_depth"],
         )
 
         self.samplers["depth_sampler"] = self.ctx.sampler(
@@ -145,8 +150,7 @@ class RenderSystem(System):
             self.selected_entity_pass(component_pool=component_pool,
                                       camera_uid=camera_uid,
                                       selected_entity_uid=self.selected_entity_id)
-            self.text_2d_pass(component_pool=component_pool,
-                              text_2d_endity_uid=text_2d_entity_uids)
+            self.text_2d_pass(component_pool=component_pool)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
         self.render_to_screen()
@@ -159,7 +163,7 @@ class RenderSystem(System):
             # TODO: Move this to its own function!
             # Pass the coordinate of the pixel you want to sample to the fragment picking shader
             self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
-            self.textures["entity_info"].use(location=0)
+            self.textures_offscreen_rendering["entity_info"].use(location=0)
 
             self.picker_vao.transform(
                 self.picker_buffer,
@@ -178,7 +182,7 @@ class RenderSystem(System):
     def shutdown(self):
 
         # Release textures
-        for texture_name, texture_obj in self.textures.items():
+        for texture_name, texture_obj in self.textures_offscreen_rendering.items():
             texture_obj.release()
 
         # Release Framebuffers
@@ -196,9 +200,7 @@ class RenderSystem(System):
                 quad["vao"].release()
 
         self.shader_program_library.shutdown()
-
-
-        # TODO: Release quads textures and
+        self.font_library.shutdown()
 
     # =========================================================================
     #                         Render functions
@@ -233,9 +235,7 @@ class RenderSystem(System):
 
         forward_pass_program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
 
-        for renderable_entity_uid in renderable_entity_uids:
-
-            renderable_component = component_pool.renderable_components[renderable_entity_uid]
+        for uid, renderable_component in component_pool.renderable_components.items():
 
             if not renderable_component.visible:
                 continue
@@ -244,25 +244,13 @@ class RenderSystem(System):
             camera_component.upload_uniforms(program=forward_pass_program)
 
             # Set entity ID
-            forward_pass_program[constants.SHADER_UNIFORM_ENTITY_ID] = renderable_entity_uid
-
-            # Set light uniforms
-            # program["ambient_strength"] = self._ambient_light_color
-
-            # Upload buffers ONLY if necessary
-            #if mesh._vbo_dirty_flag:
-            #    mesh.upload_buffers()
-            #    mesh._vbo_dirty_flag = False
-
-            # TODO: Continue from here, switch to uid to get the transforms
-
-            renderable_transform = component_pool.transform_components[renderable_entity_uid]
-
+            forward_pass_program[constants.SHADER_UNIFORM_ENTITY_ID] = uid
+            renderable_transform = component_pool.transform_components[uid]
             camera_transform.update()
 
             # Upload uniforms
-            forward_pass_program["selected_entity_id"].value = renderable_entity_uid
-            forward_pass_program["entity_id"].value = renderable_entity_uid
+            forward_pass_program["selected_entity_id"].value = uid
+            forward_pass_program["entity_id"].value = uid
             forward_pass_program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
             forward_pass_program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
 
@@ -301,9 +289,9 @@ class RenderSystem(System):
         renderable_component = component_pool.renderable_components[selected_entity_uid]
         renderable_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
 
-    def text_2d_pass(self, component_pool: ComponentPool, text_2d_endity_uid: list):
+    def text_2d_pass(self, component_pool: ComponentPool):
 
-        if len(text_2d_endity_uid) == 0:
+        if len(component_pool.text_2d_components) == 0:
             return
 
         self.framebuffers["offscreen"].use()
@@ -320,15 +308,14 @@ class RenderSystem(System):
         program = self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]
         program["projection_matrix"].write(projection_matrix)
 
-
         # Update VBOs and render text
-        for uid in text_2d_endity_uid:
-            text = component_pool.text_2d_components[uid]
-            self.font_library.fonts[text.font_name].texture_vbo.use(location=0)
-            text.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
-            text.update_buffer(font_library=self.font_library)
+        for uid, text_2d in component_pool.text_2d_components.items():
 
-            text.vao.render(moderngl.POINTS)
+            self.textures_font[text_2d.font_name].use(location=0)
+            text_2d.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
+            text_2d.update_buffer(font_library=self.font_library)
+
+            text_2d.vao.render(moderngl.POINTS)
 
     def render_to_screen(self) -> None:
 
@@ -342,11 +329,11 @@ class RenderSystem(System):
         self.ctx.screen.clear(red=1, green=1, blue=1)  # TODO: Check if this line is necessary
         self.ctx.disable(moderngl.DEPTH_TEST)
 
-        self.textures["color"].use(location=0)
-        self.textures["normal"].use(location=1)
-        self.textures["viewpos"].use(location=2)
-        self.textures["entity_info"].use(location=3)
-        self.textures["selection"].use(location=4)
+        self.textures_offscreen_rendering["color"].use(location=0)
+        self.textures_offscreen_rendering["normal"].use(location=1)
+        self.textures_offscreen_rendering["viewpos"].use(location=2)
+        self.textures_offscreen_rendering["entity_info"].use(location=3)
+        self.textures_offscreen_rendering["selection"].use(location=4)
 
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture
@@ -362,14 +349,14 @@ class RenderSystem(System):
             buffer.release()
 
     def load_texture_from_file(self, texture_fpath: str, texture_id: str, datatype="f4"):
-        if texture_id in self.textures:
+        if texture_id in self.textures_offscreen_rendering:
             raise KeyError(f"[ERROR] Texture ID '{texture_id}' already exists")
 
         image = Image.open(texture_fpath)
         image_data = np.array(image)
-        self.textures[texture_id] = self.ctx.texture(size=image.size,
-                                                          components=image_data.shape[-1],
-                                                          data=image_data.tobytes())
+        self.textures_offscreen_rendering[texture_id] = self.ctx.texture(size=image.size,
+                                                                         components=image_data.shape[-1],
+                                                                         data=image_data.tobytes())
 
     """def offscreen_and_onscreen_pass(self, scene: Scene, viewport: Viewport):
 
