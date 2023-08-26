@@ -1,5 +1,6 @@
 import numpy as np
 from ecs.math import mat4
+from ecs.math import mat3
 from ecs import constants
 
 from ecs.components.component import Component
@@ -31,9 +32,10 @@ class Transform(Component):
     def update(self):
 
         if self.look_at_target is not None:
-            mat4.camera_look_at(position=self.position,
-                                target=self.look_at_target,
-                                up=constants.TRANSFORMS_UP_VECTOR)
+            self.local_matrix =mat4.camera_look_at_inverse(
+                position=self.position,
+                target=self.look_at_target,
+                up=constants.TRANSFORMS_UP_VECTOR)
             return
 
         # TODO: Add the _dirty_flag check to avoid unecessary updates

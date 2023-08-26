@@ -42,7 +42,9 @@ def main():
     editor.add_component(
         entity_uid=camera_uid,
         component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
-        position=(0, -1, -2))
+        position=(0, 1, 2),
+        look_at_target=(0, 0, 0)
+    )
     editor.add_component(
         entity_uid=camera_uid,
         component_type=constants.COMPONENT_TYPE_INPUT_CONTROL)
