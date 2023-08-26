@@ -57,8 +57,8 @@ void main() {
     // Emit the rectangle vertices with adjusted UV coordinates
     emitVertexWithUV(position, gs_uv_min[0]);
     emitVertexWithUV(position + vec2(gs_size[0].x, 0), vec2(gs_uv_max[0].x, gs_uv_min[0].y));
-    emitVertexWithUV(position + vec2(gs_size[0].x, gs_size[0].y), vec2(gs_uv_max[0].x, gs_uv_max[0].y));
     emitVertexWithUV(position + vec2(0, gs_size[0].y), vec2(gs_uv_min[0].x, gs_uv_max[0].y));
+    emitVertexWithUV(position + vec2(gs_size[0].x, gs_size[0].y), vec2(gs_uv_max[0].x, gs_uv_max[0].y));
 
     EndPrimitive();
 }
@@ -66,16 +66,15 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
-uniform sampler2DArray font_texture;
+uniform sampler2D font_texture;
 
 in vec2 uv;
-flat in uint gs_char_id;
 
 out vec4 fragColor;
 
 void main()
 {
-    float texture_color = texture(font_texture, vec3(uv, gs_char_id)).r;
-    fragColor =  vec4(texture_color, texture_color, texture_color, 1.0);
+    float texture_color = texture(font_texture, uv).r;
+    fragColor =  vec4(1.0, 1.0, 1.0, texture_color);
 }
 #endif

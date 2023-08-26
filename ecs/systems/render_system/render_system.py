@@ -61,13 +61,8 @@ class RenderSystem(System):
 
         # Fragment picking
         self.picker_program = self.shader_program_library["fragment_picking"]
-        self.picker_program["entity_info_texture"].value = 0  # Read from texture channel 0
         self.picker_buffer = self.ctx.buffer(reserve=3 * 4)  # 3 ints
         self.picker_vao = self.ctx.vertex_array(self.picker_program, [])
-
-        # Outline rendering
-        #self.outline_program = self.shader_library["outline_pass"]
-        #self.outline_program["outline_color"].value = 0
 
         # Offscreen rendering
         self.textures_offscreen_rendering["color"] = self.ctx.texture(size=self.buffer_size, components=4)
@@ -87,7 +82,6 @@ class RenderSystem(System):
         )
 
         # Fonts
-        self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]["font_texture"].value = 5
         for font_name, font in self.font_library.fonts.items():
             self.textures_font[font_name] = self.ctx.texture(size=font.texture_data.shape,
                                                              data=font.texture_data.astype('f4').tobytes(),
@@ -132,7 +126,6 @@ class RenderSystem(System):
                                          ibo_faces=mesh.ibo_faces)
 
         # Renderable entity IDs
-        text_2d_entity_uids = list(component_pool.text_2d_components.keys())
         renderable_entity_uids = list(component_pool.renderable_components.keys())
         camera_entity_uids = list(component_pool.camera_components.keys())
 
@@ -310,10 +303,12 @@ class RenderSystem(System):
         # Update VBOs and render text
         for uid, text_2d in component_pool.text_2d_components.items():
 
-            self.textures_font[text_2d.font_name].use(location=6)
+            # State Updates
             text_2d.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
             text_2d.update_buffer(font_library=self.font_library)
 
+            # Rendering
+            self.textures_font[text_2d.font_name].use(location=0)
             text_2d.vao.render(moderngl.POINTS)
 
     def render_to_screen(self) -> None:
@@ -338,11 +333,6 @@ class RenderSystem(System):
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture
         quad_vao.render(moderngl.TRIANGLES)
 
-        # DEBUG
-        self.textures_font["Consolas.ttf"].use(location=0)
-        quad_vao = self.quads["texture_float"]['vao']
-        quad_vao.render(moderngl.TRIANGLES)
-
     # =========================================================================
     #                         Other Functions
     # =========================================================================
@@ -361,63 +351,3 @@ class RenderSystem(System):
         self.textures_offscreen_rendering[texture_id] = self.ctx.texture(size=image.size,
                                                                          components=image_data.shape[-1],
                                                                          data=image_data.tobytes())
-
-    """def offscreen_and_onscreen_pass(self, scene: Scene, viewport: Viewport):
-
-        self.ctx.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
-
-        # =================[ Offscreen Rendering ]=====================
-        self.framebuffers["offscreen"].clear()
-        self.framebuffers["offscreen"].use()
-
-        mesh_program = self.shader_library["mesh_offscreen"]
-
-        self.upload_camera_uniforms(program=mesh_program, viewport=viewport)
-
-        self.samplers["depth_sampler"].use(location=0)
-        meshes = scene.get_nodes_by_type(node_type="mesh")
-        for mesh in meshes:
-
-            if mesh._vbo_dirty_flag:
-                mesh.upload_buffers()
-                mesh._vbo_dirty_flag = False
-
-            # Upload uniforms
-            mesh_program["model_matrix"].write(mesh.transform.T.astype('f4').tobytes())
-            mesh.vao.render()
-
-        self.samplers["depth_sampler"].clear(location=0)
-
-        self.ctx.screen.use()
-        self.ctx.disable(moderngl.DEPTH_TEST)
-
-        self.textures["diffuse"].use(location=0)
-        self.quads["fullscreen"]["vao"].render()"""
-
-    """
-    def outline_pass(self, scene: Scene, viewport: Viewport):
-        # print("[Renderer] _outline_pass")
-        pass
-
-    def render_shadowmap(self, scene: Scene):
-
-        # print("[Renderer] render_shadowmap")
-
-        if bool(flags & constants.RENDER_FLAG_DEPTH_ONLY or flags & constants.RENDER_FLAG_SEG):
-            return
-
-        for ln in scene.light_nodes:
-            take_pass = False
-            if (isinstance(ln.light, DirectionalLight) and
-                    bool(flags & RenderFlags.SHADOWS_DIRECTIONAL)):
-                take_pass = True
-            elif (isinstance(ln.light, SpotLight) and
-                  bool(flags & RenderFlags.SHADOWS_SPOT)):
-                take_pass = True
-            elif (isinstance(ln.light, PointLight) and
-                  bool(flags & RenderFlags.SHADOWS_POINT)):
-                take_pass = True
-            if take_pass:
-                self.render_pass_shadow_mapping(scene, ln, flags)
-        pass
-        """

@@ -57,12 +57,8 @@ void main() {
     vec3 color_rgb;
 
     if (selected_texture == 0) {
-
+        // Color
         color_rgb = calculate_outline_color();
-        //color_rgb = texture(color_texture, uv).rgb;
-
-
-
     } else if (selected_texture == 1) {
         // Normal
         color_rgb = texture(normal_texture, uv).rgb;
