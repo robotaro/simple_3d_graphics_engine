@@ -257,19 +257,27 @@ class ShaderProgramLibrary:
 
             try:
                 # Compile the program
-                compiled_program = self.context.program(
+                program = self.context.program(
                     vertex_shader=vertex_source,
                     geometry_shader=geometry_source,
                     fragment_shader=fragment_source,
-                    varyings=blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_VARYING, [])
-                )
+                    varyings=blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_VARYING, []))
+
+                # Assign uniform sampler2d locations, if defined
+                uniform_samplers = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_SAMPLER_2D_LOCATION, {})
+                for sampler_name, sampler_location in uniform_samplers.items():
+
+                    if not isinstance(sampler_location, int):
+                        raise Exception("[ERROR] Uniform Sampler2D location should be of type 'int'")
+
+                    program[sampler_name].value = sampler_location
 
             except Exception as error:
                 # TODO: Sort out how you want this
                 raise Exception(f"[ERROR] Program '{key}' did not compile. "
                                 f"Here are the errors:\n\n[{key}]\n\n{error.args[0]}")
 
-            self.programs[key] = compiled_program
+            self.programs[key] = program
 
 
 

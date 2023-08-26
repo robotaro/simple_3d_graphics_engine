@@ -90,7 +90,7 @@ class RenderSystem(System):
         self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]["font_texture"].value = 5
         for font_name, font in self.font_library.fonts.items():
             self.textures_font[font_name] = self.ctx.texture(size=font.texture_data.shape,
-                                                             data=np.random.rand(512, 512).astype('f4').tobytes(),
+                                                             data=font.texture_data.astype('f4').tobytes(),
                                                              components=1,
                                                              dtype='f4')
 
@@ -108,18 +108,12 @@ class RenderSystem(System):
         # Setup fullscreen quad textures
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
                                                            program=self.shader_program_library["screen_quad"])
-        self.quads["fullscreen"]['vao'].program["color_texture"].value = 0
-        self.quads["fullscreen"]['vao'].program["normal_texture"].value = 1
-        self.quads["fullscreen"]['vao'].program["viewpos_texture"].value = 2
-        self.quads["fullscreen"]['vao'].program["entity_info_texture"].value = 3
-        self.quads["fullscreen"]['vao'].program["selected_entity_texture"].value = 4
 
         self.quads["texture_float"] = ready_to_render.quad_2d(
             context=self.ctx,
             position=(0, 0),
             size=(0.5, 0.5),
             program=self.shader_program_library["texture_1_channel"])
-        self.quads["texture_float"]['vao'].program["texture0"].value = 0
 
         return True
 

@@ -164,6 +164,7 @@ SHADER_TYPE_FRAGMENT = "fragment"
 
 SHADER_LIBRARY_YAML_KEY_DEFINE = "define"  # For extra definitions
 SHADER_LIBRARY_YAML_KEY_VARYING = "varying"  # For varying variables (those who output to VBos rather than textures)
+SHADER_LIBRARY_YAML_KEY_SAMPLER_2D_LOCATION = "sampler_2d_location"
 SHADER_LIBRARY_FILE_EXTENSION = ".glsl"
 
 SHADER_LIBRARY_DIRECTIVE_VERSION = "#version"
