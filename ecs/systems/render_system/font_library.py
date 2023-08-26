@@ -66,11 +66,16 @@ class FontLibrary:
 
         # TODO: Optimise this with numba
         text_data = np.ndarray((len(text), constants.FONT_LIBRARY_NUM_PARAMETERS), dtype=np.float32)
+        cursor_x = 0.0
         for index, char in enumerate(text):
             char_index = ord(char)
             text_data[index, :] = font_parameters[char_index, :]
-            text_data[index, constants.FONT_LIBRARY_COLUMN_INDEX_X] + position[0]
-            text_data[index, constants.FONT_LIBRARY_COLUMN_INDEX_Y] + position[1]
+            text_data[index, constants.FONT_LIBRARY_COLUMN_INDEX_X] += cursor_x
+            cursor_x += text_data[index, constants.FONT_LIBRARY_COLUMN_INDEX_HORIZONTAL_ADVANCE]
+
+        # Add position offset
+        text_data[:, constants.FONT_LIBRARY_COLUMN_INDEX_X] += position[0]
+        text_data[:, constants.FONT_LIBRARY_COLUMN_INDEX_Y] += position[1]
 
         return text_data
 
@@ -211,4 +216,5 @@ class FontLibrary:
         plt.show()
 
     def shutdown(self):
+        # Not being used for now
         pass

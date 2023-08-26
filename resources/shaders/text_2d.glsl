@@ -4,20 +4,20 @@
 
 in vec2 in_position;
 in vec2 in_size;
-in vec2 in_uv_position;
-in vec2 in_uv_size;
+in vec2 in_uv_min;
+in vec2 in_uv_max;
 
 out vec2 gs_position;
 out vec2 gs_size;
-out vec2 gs_uv_position;
-out vec2 gs_uv_size;
+out vec2 gs_uv_min;
+out vec2 gs_uv_max;
 
 void main() {
 
     gs_position = in_position;
     gs_size = in_size;
-    gs_uv_position = in_uv_position;
-    gs_uv_size = in_uv_size;
+    gs_uv_min = in_uv_min;
+    gs_uv_max = in_uv_max;
 
     gl_Position = vec4(in_position, 0.0, 1.0);
 }
@@ -37,34 +37,28 @@ uniform mat4 projection_matrix; // Your projection matrix
 
 in vec2 gs_position[];
 in vec2 gs_size[];
-in vec2 gs_uv_position[];
-in vec2 gs_uv_size[];
+in vec2 gs_uv_min[];
+in vec2 gs_uv_max[];
 
 out vec2 uv;
 
+
+void emitVertexWithUV(vec2 position, vec2 uvCoords) {
+    gl_Position = projection_matrix * vec4(position, 0.0, 1.0);
+    uv = uvCoords;
+    EmitVertex();
+}
+
 void main() {
-    // Calculate the rectangle vertices based on input data
-    vec2 upperLeft = gs_position[0];
-    vec2 lowerLeft = gs_position[0] + vec2(0, -gs_size[0].y);
-    vec2 upperRight = gs_position[0] + gs_size[0];
-    vec2 lowerRight = gs_position[0] + gs_size[0] + vec2(0, -gs_size[0].y);
 
-    // Emit vertices for the rectangle
-    gl_Position = projection_matrix * vec4(upperLeft, 0.0, 1.0);
-    uv = gs_uv_position[0];
-    EmitVertex();
+    // Calculate the rectangle vertex position
+    vec2 position = gs_position[0];
 
-    gl_Position = projection_matrix * vec4(lowerLeft, 0.0, 1.0);
-    uv = gs_uv_position[0] + vec2(0.0, gs_uv_size[0].y);
-    EmitVertex();
-
-    gl_Position = projection_matrix * vec4(upperRight, 0.0, 1.0);
-    uv = gs_uv_position[0] + vec2(gs_uv_size[0].x, 0.0);
-    EmitVertex();
-
-    gl_Position = projection_matrix * vec4(lowerRight, 0.0, 1.0);
-    uv = gs_uv_position[0] + gs_uv_size[0];
-    EmitVertex();
+    // Emit the rectangle vertices with adjusted UV coordinates
+    emitVertexWithUV(position, gs_uv_min[0]);
+    emitVertexWithUV(position + vec2(gs_size[0].x, 0), vec2(gs_uv_max[0].x, gs_uv_min[0].y));
+    emitVertexWithUV(position + vec2(gs_size[0].x, gs_size[0].y), vec2(gs_uv_max[0].x, gs_uv_max[0].y));
+    emitVertexWithUV(position + vec2(0, gs_size[0].y), vec2(gs_uv_min[0].x, gs_uv_max[0].y));
 
     EndPrimitive();
 }

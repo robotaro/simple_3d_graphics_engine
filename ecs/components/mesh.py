@@ -93,16 +93,16 @@ class Mesh(Component):
             return
 
         if self.vbo_vertices is not None:
-            self.vbo_vertices.write(self.vertices.astype("f4").tobytes())
+            self.vbo_vertices.write(self.vertices.tobytes())
 
         if self.vbo_normals is not None:
-            self.vbo_normals.write(self.normals.astype("f4").tobytes())
+            self.vbo_normals.write(self.normals.tobytes())
 
         if self.vbo_colors is not None:
-            self.vbo_colors.write(self.colors.astype("f4").tobytes())
+            self.vbo_colors.write(self.colors.tobytes())
 
         if self.vbo_uvs is not None:
-            self.vbo_uvs.write(self.normals.astype("f4").tobytes())
+            self.vbo_uvs.write(self.normals.tobytes())
 
         # TODO: Consider the case where the number of vertices changes and so the number of faces
 

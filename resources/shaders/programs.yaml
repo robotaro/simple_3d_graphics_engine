@@ -22,3 +22,7 @@ fragment_picking:
 screen_quad:
   vertex_shader: "screen_quad.glsl"
   fragment_shader: "screen_quad.glsl"
+
+texture_1_channel:
+  vertex_shader: "texture_1_channel.glsl"
+  fragment_shader: "texture_1_channel.glsl"

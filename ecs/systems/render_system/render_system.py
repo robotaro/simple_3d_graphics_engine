@@ -29,7 +29,6 @@ class RenderSystem(System):
         self.framebuffers = {}
         self.textures_offscreen_rendering = {}
         self.textures_font = {}
-        self.samplers = {}
         self.vbo_groups = {}
         self.quads = {}
 
@@ -88,8 +87,12 @@ class RenderSystem(System):
         )
 
         # Fonts
+        self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]["font_texture"].value = 5
         for font_name, font in self.font_library.fonts.items():
-            self.textures_font[font_name] = self.ctx.texture(size=font.texture_data.shape, components=1, dtype='f4')
+            self.textures_font[font_name] = self.ctx.texture(size=font.texture_data.shape,
+                                                             data=np.random.rand(512, 512).astype('f4').tobytes(),
+                                                             components=1,
+                                                             dtype='f4')
 
         # Selection Pass
         self.textures_offscreen_rendering["selection"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
@@ -102,11 +105,6 @@ class RenderSystem(System):
             depth_attachment=self.textures_offscreen_rendering["selection_depth"],
         )
 
-        self.samplers["depth_sampler"] = self.ctx.sampler(
-            filter=(moderngl.LINEAR, moderngl.LINEAR),
-            compare_func='',
-        )
-
         # Setup fullscreen quad textures
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
                                                            program=self.shader_program_library["screen_quad"])
@@ -115,6 +113,13 @@ class RenderSystem(System):
         self.quads["fullscreen"]['vao'].program["viewpos_texture"].value = 2
         self.quads["fullscreen"]['vao'].program["entity_info_texture"].value = 3
         self.quads["fullscreen"]['vao'].program["selected_entity_texture"].value = 4
+
+        self.quads["texture_float"] = ready_to_render.quad_2d(
+            context=self.ctx,
+            position=(0, 0),
+            size=(0.5, 0.5),
+            program=self.shader_program_library["texture_1_channel"])
+        self.quads["texture_float"]['vao'].program["texture0"].value = 0
 
         return True
 
@@ -272,20 +277,17 @@ class RenderSystem(System):
             return
 
         selection_program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
-
         camera_transform = component_pool.transform_components[camera_uid]
-
         renderable_transform = component_pool.transform_components[selected_entity_uid]
-
         camera_transform.update()
-
-        program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
 
         # Upload uniforms
         camera_component.upload_uniforms(program=selection_program)
-        program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
-        program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
+        program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
+        program["view_matrix"].write(camera_transform.local_matrix.T.tobytes())
+        program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
 
+        # Render
         renderable_component = component_pool.renderable_components[selected_entity_uid]
         renderable_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
 
@@ -295,23 +297,26 @@ class RenderSystem(System):
             return
 
         self.framebuffers["offscreen"].use()
+        self.ctx.disable(moderngl.DEPTH_TEST)
 
-        # Upload uniforms
+        # Upload uniforms TODO: Move this to render system
         projection_matrix = mat4.orthographic_projection(
             left=0,
             right=self.buffer_size[0],
             bottom=0,
             top=self.buffer_size[1],
-            near=1.0,
-            far=-1.0
+            near=1,
+            far=-1
         )
+
+        # Upload uniforms
         program = self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]
-        program["projection_matrix"].write(projection_matrix)
+        program["projection_matrix"].write(projection_matrix.T.tobytes())
 
         # Update VBOs and render text
         for uid, text_2d in component_pool.text_2d_components.items():
 
-            self.textures_font[text_2d.font_name].use(location=0)
+            self.textures_font[text_2d.font_name].use(location=6)
             text_2d.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
             text_2d.update_buffer(font_library=self.font_library)
 
@@ -337,6 +342,11 @@ class RenderSystem(System):
 
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture
+        quad_vao.render(moderngl.TRIANGLES)
+
+        # DEBUG
+        self.textures_font["Consolas.ttf"].use(location=0)
+        quad_vao = self.quads["texture_float"]['vao']
         quad_vao.render(moderngl.TRIANGLES)
 
     # =========================================================================

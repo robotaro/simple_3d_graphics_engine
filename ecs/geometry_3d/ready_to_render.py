@@ -17,7 +17,6 @@ def quad_2d(context: moderngl.Context,
     width, height = size
     xpos, ypos = position
 
-    # fmt: off
     vertices = np.array([
         xpos, ypos + height, 0.0,
         xpos, ypos, 0.0,

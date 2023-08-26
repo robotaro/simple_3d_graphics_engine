@@ -45,7 +45,7 @@ class Text2D(Component):
         self.vbo = ctx.buffer(reserve=800)  # TODO: Check this size
         program = shader_library[constants.SHADER_PROGRAM_TEXT_2D]
 
-        self.vao = ctx.vertex_array(program, self.vbo, "in_position", "in_size", "in_uv_position", "in_uv_size")
+        self.vao = ctx.vertex_array(program, self.vbo, "in_position", "in_size", "in_uv_min", "in_uv_max")
 
         self._gpu_initialised = True
 
@@ -56,7 +56,7 @@ class Text2D(Component):
 
         text_data = font_library.generate_text_vbo_data(font_name=self.font_name,
                                                         text=self.text,
-                                                        position=(200, 200))
+                                                        position=(100, 100))
 
         self.vbo.write(text_data[:, :8].tobytes())
 
