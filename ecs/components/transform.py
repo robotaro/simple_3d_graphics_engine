@@ -15,24 +15,28 @@ class Transform(Component):
         "local_matrix",
         "position",
         "rotation",
+        "look_at_target",
         "scale"
     ]
 
     def __init__(self, **kwargs):
+
         self.world_matrix = np.eye(4, dtype=np.float32)
         self.local_matrix = np.eye(4, dtype=np.float32)
 
         self.position = np.array(kwargs.get("position", (0, 0, 0)), dtype=np.float32)
         self.rotation = np.array(kwargs.get("rotation", (0, 0, 0)), dtype=np.float32)
+
         self.look_at_target = kwargs.get("look_at_target", None)
         if self.look_at_target is not None:
             self.look_at_target = np.array(self.look_at_target, dtype=np.float32)
+
         self.scale = kwargs.get("scale", 1.0)
 
     def update(self):
 
         if self.look_at_target is not None:
-            self.local_matrix =mat4.camera_look_at_inverse(
+            self.local_matrix =mat4.camera_look_at(
                 position=self.position,
                 target=self.look_at_target,
                 up=constants.TRANSFORMS_UP_VECTOR)

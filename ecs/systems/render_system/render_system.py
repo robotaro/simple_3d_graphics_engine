@@ -89,7 +89,9 @@ class RenderSystem(System):
                                                              dtype='f4')
 
         # Selection Pass
-        self.textures_offscreen_rendering["selection"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures_offscreen_rendering["selection"] = self.ctx.texture(size=self.buffer_size,
+                                                                          components=4,
+                                                                          dtype='f4')
         self.textures_offscreen_rendering["selection"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
         self.textures_offscreen_rendering["selection_depth"] = self.ctx.depth_texture(size=self.buffer_size)
         self.framebuffers["selection_fbo"] = self.ctx.framebuffer(
@@ -102,12 +104,6 @@ class RenderSystem(System):
         # Setup fullscreen quad textures
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
                                                            program=self.shader_program_library["screen_quad"])
-
-        self.quads["texture_float"] = ready_to_render.quad_2d(
-            context=self.ctx,
-            position=(0, 0),
-            size=(0.5, 0.5),
-            program=self.shader_program_library["texture_1_channel"])
 
         return True
 
@@ -164,6 +160,9 @@ class RenderSystem(System):
                 first=0,
                 instances=1)
             self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
+
+            # DEBUG
+            self.logger.info(self.selected_entity_id)
 
         # FULLSCREEN VIEW MODES
         if event_type == constants.EVENT_KEYBOARD_PRESS:
