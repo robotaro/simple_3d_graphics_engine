@@ -62,7 +62,7 @@ class InputControlSystem(System):
             if not input_control.active:
                 continue
 
-            transform = component_pool.transform_components[entity_uid]
+            transform = component_pool.transform_3d_components[entity_uid]
 
             # TODO: Investigate why the directions seem to be reversed...
 

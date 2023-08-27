@@ -73,6 +73,15 @@ def rotate_around_vector(vector, angle, output_mat3):
     output_mat3[2, 2] = cos + (n3 * n3 * one_cos)
 
 
+def compute_transform(position: tuple, rotation_rad: float):
+    sin = np.sin(rotation_rad)
+    cos = np.cos(rotation_rad)
+
+    return np.asarray([[cos, -sin, position[0]],
+                       [sin, cos, position[1]],
+                       [0, 0, 1]])
+
+
 def slerp_mat3(mat3_a, mat3_b, t_value):
 
     """

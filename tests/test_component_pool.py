@@ -3,7 +3,7 @@ import numpy as np
 
 from ecs import constants
 from ecs.component_pool import ComponentPool
-from ecs.components.transform import Transform
+from ecs.components.transform_3d import Transform3D
 from ecs.components.mesh import Mesh
 
 
@@ -12,7 +12,7 @@ def test_constructor():
     pool = ComponentPool()
     assert pool.entity_uid_counter == 0
     assert pool.entities == {}
-    assert pool.transform_components == {}
+    assert pool.transform_3d_components == {}
     assert pool.mesh_components == {}
     assert pool.renderable_components == {}
     assert pool.camera_components == {}
@@ -43,7 +43,7 @@ def test_add_and_remove_components():
     new_mesh = pool.add_component(entity_uid=entity_uid,
                                   component_type=constants.COMPONENT_TYPE_MESH)
 
-    assert isinstance(new_transform, Transform)
+    assert isinstance(new_transform, Transform3D)
     assert isinstance(new_mesh, Mesh)
 
     # Try to create another mesh, which should raise an exception
@@ -57,7 +57,7 @@ def test_add_and_remove_components():
 
     # Get Single Component
     result_component = pool.get_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-    target_transform = Transform()
+    target_transform = Transform3D()
     np.testing.assert_array_equal(result_component.local_matrix, target_transform.local_matrix)  # Mesh and transforms
     # TODO: Check types in more detail
 

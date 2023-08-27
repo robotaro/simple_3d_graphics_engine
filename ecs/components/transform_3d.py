@@ -6,7 +6,7 @@ from ecs import constants
 from ecs.components.component import Component
 
 
-class Transform(Component):
+class Transform3D(Component):
 
     _type = "transform"
 

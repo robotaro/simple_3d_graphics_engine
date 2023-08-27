@@ -47,8 +47,10 @@ class RenderSystem(System):
 
         self.selected_entity_id = -1
 
-        # Programs
+        # Shadow Mapping
         self.shadow_map_program = None
+        self.shadow_map_depth_texture = None
+        self.shadow_map_framebuffer = None
 
         # Flags
         self._sample_entity_location = None
@@ -101,6 +103,10 @@ class RenderSystem(System):
             depth_attachment=self.textures_offscreen_rendering["selection_depth"],
         )
 
+        # Shadowmapping
+        self.shadow_map_depth_texture = self.ctx.depth_texture(size=self.buffer_size)
+        self.shadow_map_framebuffer = self.ctx.framebuffer(depth_attachment=self.shadow_map_depth_texture)
+
         # Setup fullscreen quad textures
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
                                                            program=self.shader_program_library["screen_quad"])
@@ -121,29 +127,34 @@ class RenderSystem(System):
                                          vbo_tuple_list=mesh.get_vbo_declaration_list(),
                                          ibo_faces=mesh.ibo_faces)
 
-        # Renderable entity IDs
         renderable_entity_uids = list(component_pool.renderable_components.keys())
         camera_entity_uids = list(component_pool.camera_components.keys())
+        directional_lights_entity_uids = list(component_pool.directional_light_components.keys())
 
         # DEBUG -HACK TODO: MOVE THIS TO THE TRANSFORM SYSTEM!!!
-        for _, transform in component_pool.transform_components.items():
+        for _, transform in component_pool.transform_3d_components.items():
             transform.update()
 
         # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
 
             self.forward_pass(component_pool=component_pool,
-                              camera_uid=camera_uid,
-                              renderable_entity_uids=renderable_entity_uids)
+                              camera_uid=camera_uid)
             self.selected_entity_pass(component_pool=component_pool,
                                       camera_uid=camera_uid,
                                       selected_entity_uid=self.selected_entity_id)
-            #self.text_2d_pass(component_pool=component_pool)
+            self.shadow_mapping_pass(component_pool=component_pool,
+                                     renderable_entity_uids=renderable_entity_uids)
+            self.text_2d_pass(component_pool=component_pool)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
         self.render_to_screen()
 
     def on_event(self, event_type: int, event_data: tuple):
+
+        if event_type == constants.EVENT_WINDOW_RESIZE:
+            # TODO: Safe release all offscreen framebuffers and create new ones
+            pass
 
         if (event_type == constants.EVENT_MOUSE_BUTTON_PRESS and
                 event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] == glfw.MOUSE_BUTTON_LEFT):
@@ -160,9 +171,6 @@ class RenderSystem(System):
                 first=0,
                 instances=1)
             self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
-
-            # DEBUG
-            self.logger.info(self.selected_entity_id)
 
         # FULLSCREEN VIEW MODES
         if event_type == constants.EVENT_KEYBOARD_PRESS:
@@ -197,13 +205,13 @@ class RenderSystem(System):
     #                         Render functions
     # =========================================================================
 
-    def forward_pass(self, component_pool: ComponentPool, camera_uid: int, renderable_entity_uids: list):
+    def forward_pass(self, component_pool: ComponentPool, camera_uid: int):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
         self.framebuffers["offscreen"].use()
 
         camera_component = component_pool.camera_components[camera_uid]
-        camera_transform = component_pool.transform_components[camera_uid]
+        camera_transform = component_pool.transform_3d_components[camera_uid]
 
         # TODO: maybe move this to inside the scene?
         # Clear context (you need to use the use() first to bind it!)
@@ -226,6 +234,8 @@ class RenderSystem(System):
 
         forward_pass_program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
 
+        directional_light_components = component_pool.di
+
         for uid, renderable_component in component_pool.renderable_components.items():
 
             if not renderable_component.visible:
@@ -236,7 +246,7 @@ class RenderSystem(System):
 
             # Set entity ID
             forward_pass_program[constants.SHADER_UNIFORM_ENTITY_ID] = uid
-            renderable_transform = component_pool.transform_components[uid]
+            renderable_transform = component_pool.transform_3d_components[uid]
             camera_transform.update()
 
             # Upload uniforms
@@ -262,8 +272,8 @@ class RenderSystem(System):
             return
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
-        camera_transform = component_pool.transform_components[camera_uid]
-        renderable_transform = component_pool.transform_components[selected_entity_uid]
+        camera_transform = component_pool.transform_3d_components[camera_uid]
+        renderable_transform = component_pool.transform_3d_components[selected_entity_uid]
         camera_transform.update()
 
         # Upload uniforms
@@ -306,6 +316,12 @@ class RenderSystem(System):
             # Rendering
             self.textures_font[text_2d.font_name].use(location=0)
             text_2d.vao.render(moderngl.POINTS)
+
+    def shadow_mapping_pass(self, component_pool: ComponentPool, camera_uid: int):
+
+
+
+        pass
 
     def render_to_screen(self) -> None:
 

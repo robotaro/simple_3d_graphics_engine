@@ -2,7 +2,7 @@ from typing import Union
 
 from ecs import constants
 from ecs.components.component import Component
-from ecs.components.transform import Transform
+from ecs.components.transform_3d import Transform3D
 from ecs.components.mesh import Mesh
 from ecs.components.material import Material
 from ecs.components.renderable import Renderable
@@ -21,8 +21,8 @@ class Entity:
 
 class ComponentPool:
 
-    COMPONENT_TYPE_MAP = {
-        constants.COMPONENT_TYPE_TRANSFORM_3D: Transform,
+    COMPONENT_CLASS_MAP = {
+        constants.COMPONENT_TYPE_TRANSFORM_3D: Transform3D,
         constants.COMPONENT_TYPE_MESH: Mesh,
         constants.COMPONENT_TYPE_RENDERABLE: Renderable,
         constants.COMPONENT_TYPE_CAMERA: Camera,
@@ -39,22 +39,30 @@ class ComponentPool:
         self.entities = {}
 
         # Components
-        self.transform_components = {}
+        self.transform_3d_components = {}
+        self.transform_2d_components = {}
         self.camera_components = {}
         self.mesh_components = {}
         self.renderable_components = {}
         self.material_components = {}
         self.input_control_components = {}
         self.text_2d_components = {}
+        self.directional_light_components = {}
+        self.spot_light_components = {}
+        self.point_light_components = {}
 
         self.component_storage_map = {
-            constants.COMPONENT_TYPE_TRANSFORM_3D: self.transform_components,
+            constants.COMPONENT_TYPE_TRANSFORM_3D: self.transform_3d_components,
+            constants.COMPONENT_TYPE_TRANSFORM_2D: self.transform_2d_components,
             constants.COMPONENT_TYPE_MESH: self.mesh_components,
             constants.COMPONENT_TYPE_RENDERABLE: self.renderable_components,
             constants.COMPONENT_TYPE_CAMERA: self.camera_components,
             constants.COMPONENT_TYPE_MATERIAL: self.material_components,
             constants.COMPONENT_TYPE_INPUT_CONTROL: self.input_control_components,
-            constants.COMPONENT_TYPE_TEXT_2D: self.text_2d_components
+            constants.COMPONENT_TYPE_TEXT_2D: self.text_2d_components,
+            constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT: self.directional_light_components,
+            constants.COMPONENT_TYPE_SPOT_LIGHT: self.spot_light_components,
+            constants.COMPONENT_TYPE_POINT_LIGHT: self.point_light_components,
         }
 
     def create_entity(self, name="") -> int:
@@ -72,7 +80,7 @@ class ComponentPool:
         if entity_uid in component_pool:
             raise TypeError(f"[ERROR] Component type '{component_type}' already exists in component pool")
 
-        component_pool[entity_uid] = ComponentPool.COMPONENT_TYPE_MAP[component_type](**kwargs)
+        component_pool[entity_uid] = ComponentPool.COMPONENT_CLASS_MAP[component_type](**kwargs)
         return component_pool[entity_uid]
 
     def remove_component(self, entity_uid: int, component_type: str):

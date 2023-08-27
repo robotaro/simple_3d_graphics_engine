@@ -12,16 +12,11 @@ def main():
         window_title="Basic Scene Demo"
     )
 
-    font_fpath = os.path.join(constants.FONTS_DIR, "Custom.ttf")
-
-    # DEBUG
-    fontlib = FontLibrary()
-    fontlib.load(ttf_fpath=font_fpath, font_size=32)
-
     editor.create_system(system_type="render_system",
                          subscribed_events=[
                              constants.EVENT_MOUSE_BUTTON_PRESS,
                              constants.EVENT_KEYBOARD_PRESS,
+                             constants.EVENT_WINDOW_RESIZE,
                          ])
     #editor.create_system(system_type="imgui_system",
     #                     subscribed_events=[constants.EVENT_MOUSE_SCROLL])
