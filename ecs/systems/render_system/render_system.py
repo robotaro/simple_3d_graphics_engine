@@ -138,7 +138,7 @@ class RenderSystem(System):
             self.selected_entity_pass(component_pool=component_pool,
                                       camera_uid=camera_uid,
                                       selected_entity_uid=self.selected_entity_id)
-            self.text_2d_pass(component_pool=component_pool)
+            #self.text_2d_pass(component_pool=component_pool)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
         self.render_to_screen()
