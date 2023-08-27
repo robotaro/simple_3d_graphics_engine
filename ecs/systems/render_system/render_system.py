@@ -45,7 +45,7 @@ class RenderSystem(System):
         self.outline_texture = None
         self.outline_framebuffer = None
 
-        self.selected_entity_id = None
+        self.selected_entity_id = -1
 
         # Programs
         self.shadow_map_program = None
@@ -240,7 +240,6 @@ class RenderSystem(System):
             camera_transform.update()
 
             # Upload uniforms
-            forward_pass_program["selected_entity_id"].value = uid
             forward_pass_program["entity_id"].value = uid
             forward_pass_program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
             forward_pass_program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
@@ -262,14 +261,13 @@ class RenderSystem(System):
         if selected_entity_uid is None or selected_entity_uid <= 1:
             return
 
-        selection_program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
+        program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
         camera_transform = component_pool.transform_components[camera_uid]
         renderable_transform = component_pool.transform_components[selected_entity_uid]
         camera_transform.update()
 
         # Upload uniforms
-        camera_component.upload_uniforms(program=selection_program)
-        program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
+        camera_component.upload_uniforms(program=program)
         program["view_matrix"].write(camera_transform.local_matrix.T.tobytes())
         program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
 
