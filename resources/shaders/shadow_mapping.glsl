@@ -6,13 +6,12 @@
 
 layout (location = 2) in vec3 in_position;
 
-uniform mat4 m_proj;
-uniform mat4 m_view_light;
-uniform mat4 m_model;
+uniform mat4 projection_matrix;
+uniform mat4 view_matrix;
+uniform mat4 model_matrix;
 
 void main() {
-    mat4 mvp = m_proj * m_view_light * m_model;
-    gl_Position = mvp * vec4(in_position, 1.0);
+    gl_Position = projection_matrix * view_matrix * model_matrix * vec4(in_position, 1.0);
 }
 
 #elif defined FRAGMENT_SHADER

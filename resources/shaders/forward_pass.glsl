@@ -15,8 +15,8 @@ out vec3 v_viewpos;
 
 
 void main() {
-    v_normal = in_normal;
     v_position = in_vert;
+    v_normal = in_normal;
     vec4 viewpos = inverse(view_matrix) * model_matrix * vec4(v_position, 1.0);
     v_viewpos = viewpos.xyz;
     gl_Position = projection_matrix * viewpos;

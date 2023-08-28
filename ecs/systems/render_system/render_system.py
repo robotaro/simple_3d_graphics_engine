@@ -103,7 +103,8 @@ class RenderSystem(System):
             depth_attachment=self.textures_offscreen_rendering["selection_depth"],
         )
 
-        # Shadowmapping
+        # Shadow mapping
+        self.shadow_map_program = self.shader_program_library["shadow_mapping"]
         self.shadow_map_depth_texture = self.ctx.depth_texture(size=self.buffer_size)
         self.shadow_map_framebuffer = self.ctx.framebuffer(depth_attachment=self.shadow_map_depth_texture)
 
@@ -117,6 +118,7 @@ class RenderSystem(System):
 
         # Initialise object on the GPU if they haven't been already
 
+        # TODO: Move initialisation to only when objects are created
         for entity_uid, renderable in component_pool.renderable_components.items():
 
             mesh = component_pool.mesh_components[entity_uid]
@@ -144,7 +146,7 @@ class RenderSystem(System):
                                       camera_uid=camera_uid,
                                       selected_entity_uid=self.selected_entity_id)
             self.shadow_mapping_pass(component_pool=component_pool,
-                                     renderable_entity_uids=renderable_entity_uids)
+                                     camera_uid=camera_uid)
             self.text_2d_pass(component_pool=component_pool)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
@@ -232,27 +234,28 @@ class RenderSystem(System):
             moderngl.ONE,
             moderngl.ONE)
 
-        forward_pass_program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
+        program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
+        program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
 
-        directional_light_components = component_pool.di
+        #directional_light_components = list(component_pool.directional_light_components.keys())
+
+        camera_component = component_pool.camera_components[camera_uid]
+        camera_transform = component_pool.transform_3d_components[camera_uid]
+        camera_transform.update()
+        camera_component.upload_uniforms(program=program)
 
         for uid, renderable_component in component_pool.renderable_components.items():
 
             if not renderable_component.visible:
                 continue
 
-            # Set camera uniforms
-            camera_component.upload_uniforms(program=forward_pass_program)
-
             # Set entity ID
-            forward_pass_program[constants.SHADER_UNIFORM_ENTITY_ID] = uid
+            program[constants.SHADER_UNIFORM_ENTITY_ID] = uid
             renderable_transform = component_pool.transform_3d_components[uid]
-            camera_transform.update()
 
             # Upload uniforms
-            forward_pass_program["entity_id"].value = uid
-            forward_pass_program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
-            forward_pass_program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
+            program["entity_id"].value = uid
+            program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
 
             # Render the vao at the end
             renderable_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
@@ -319,9 +322,23 @@ class RenderSystem(System):
 
     def shadow_mapping_pass(self, component_pool: ComponentPool, camera_uid: int):
 
+        self.shadow_map_framebuffer.clear()
+        self.shadow_map_framebuffer.use()
 
+        program = self.shader_program_library[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS]
 
-        pass
+        camera_component = component_pool.camera_components[camera_uid]
+        camera_transform = component_pool.transform_3d_components[camera_uid]
+        camera_transform.update()
+        camera_component.upload_uniforms(program=program)
+
+        for uid, renderable_component in component_pool.renderable_components.items():
+
+            if not renderable_component.visible:
+                continue
+
+            renderable_transform = component_pool.transform_3d_components[uid]
+            program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
 
     def render_to_screen(self) -> None:
 
