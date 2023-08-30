@@ -158,7 +158,7 @@ COMPONENT_TYPE_POINT_LIGHT = 10
 COMPONENT_ARG_MESH_SHAPE = "shape"
 COMPONENT_ARG_MESH_FPATH = "fpath"
 
-MESH_SHAPE_CUBE = "cube"
+MESH_SHAPE_BOX = "box"
 MESH_SHAPE_SPHERE = "sphere"
 MESH_SHAPE_CYLINDER = "cylinder"
 MESH_SHAPE_FROM_OBJ = "obj"  # TODO: Kinda of a hack. You need to add argument "fpath"

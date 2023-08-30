@@ -17,6 +17,31 @@ class RenderSystem(System):
 
     _type = "render_system"
 
+    __slots__ = [
+        "ctx",
+        "buffer_size",
+        "shader_program_library",
+        "font_library",
+        "framebuffers",
+        "textures_offscreen_rendering",
+        "textures_font",
+        "vbo_groups",
+        "quads",
+        "fullscreen_selected_texture",
+        "picker_buffer",
+        "picker_program",
+        "picker_output",
+        "picker_vao",
+        "outline_program",
+        "outline_texture",
+        "outline_framebuffer",
+        "selected_entity_id",
+        "shadow_map_program",
+        "shadow_map_depth_texture",
+        "shadow_map_framebuffer",
+        "_sample_entity_location"
+    ]
+
     def __init__(self, **kwargs):
         super().__init__(logger=kwargs["logger"])
 
@@ -145,8 +170,7 @@ class RenderSystem(System):
             self.selected_entity_pass(component_pool=component_pool,
                                       camera_uid=camera_uid,
                                       selected_entity_uid=self.selected_entity_id)
-            self.shadow_mapping_pass(component_pool=component_pool,
-                                     camera_uid=camera_uid)
+            self.shadow_mapping_pass(component_pool=component_pool)
             self.text_2d_pass(component_pool=component_pool)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
@@ -320,17 +344,14 @@ class RenderSystem(System):
             self.textures_font[text_2d.font_name].use(location=0)
             text_2d.vao.render(moderngl.POINTS)
 
-    def shadow_mapping_pass(self, component_pool: ComponentPool, camera_uid: int):
+    def shadow_mapping_pass(self, component_pool: ComponentPool):
 
         self.shadow_map_framebuffer.clear()
         self.shadow_map_framebuffer.use()
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS]
 
-        camera_component = component_pool.camera_components[camera_uid]
-        camera_transform = component_pool.transform_3d_components[camera_uid]
-        camera_transform.update()
-        camera_component.upload_uniforms(program=program)
+        #directional_lights_uids = self.
 
         for uid, renderable_component in component_pool.renderable_components.items():
 

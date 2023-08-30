@@ -44,9 +44,7 @@ class Mesh(Component):
         self.ibo_faces = None
 
         # Generate external data
-        shape = kwargs.get(constants.COMPONENT_ARG_MESH_SHAPE, None)
-        fpath = kwargs.get(constants.COMPONENT_ARG_MESH_FPATH, None)
-        self.generate_shape(shape=shape, fpath=fpath)
+        self.generate_shape(**kwargs)
         self.vbo_declaration_list = []
 
         self._gpu_initialised = False
@@ -126,7 +124,10 @@ class Mesh(Component):
         if self.ibo_faces:
             self.ibo_faces.release()
 
-    def generate_shape(self, shape: Union[str, None] = None, **kwargs) -> None:
+    def generate_shape(self, **kwargs) -> None:
+
+        shape = kwargs.get(constants.COMPONENT_ARG_MESH_SHAPE, None)
+        fpath = kwargs.get(constants.COMPONENT_ARG_MESH_FPATH, None)
 
         if shape is None:
             return
@@ -134,8 +135,11 @@ class Mesh(Component):
         # To avoid warnings
         v, n, u, f = None, None, None, None
 
-        if shape == constants.MESH_SHAPE_CUBE:
-            raise NotImplemented(f"[ERROR] Shape {constants.MESH_SHAPE_CUBE} not yet implement")
+        if shape == constants.MESH_SHAPE_BOX:
+            width = kwargs.get("width", 1.0)
+            height = kwargs.get("height", 1.0)
+            depth = kwargs.get("depth", 1.0)
+            v, n, u, f = MeshFactory.create_cube(width=width, height=height, depth=depth)
 
         if shape == constants.MESH_SHAPE_SPHERE:
             raise NotImplemented(f"[ERROR] Shape {constants.MESH_SHAPE_SPHERE} not yet implement")
@@ -144,7 +148,7 @@ class Mesh(Component):
             raise NotImplemented(f"[ERROR] Shape {constants.MESH_SHAPE_CYLINDER} not yet implement")
 
         if shape == constants.MESH_SHAPE_FROM_OBJ:
-            if "fpath" not in kwargs:
+            if fpath is None:
                 raise KeyError("[ERROR] Missing argument 'fpath' in order to load OBJ file")
             v, n, u, f = MeshFactory.from_obj(fpath=kwargs["fpath"])
 

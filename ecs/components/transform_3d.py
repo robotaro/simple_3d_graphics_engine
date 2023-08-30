@@ -36,7 +36,7 @@ class Transform3D(Component):
     def update(self):
 
         if self.look_at_target is not None:
-            self.local_matrix = mat4.camera_look_at(
+            self.local_matrix = mat4.look_at(
                 position=self.position,
                 target=self.look_at_target,
                 up=constants.TRANSFORMS_UP_VECTOR)

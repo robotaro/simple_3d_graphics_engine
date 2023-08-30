@@ -7,6 +7,7 @@ in vec3 in_normal;
 
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
+uniform mat4 dir_light_view_matrix;
 uniform mat4 model_matrix;
 
 out vec3 v_normal;
@@ -42,11 +43,26 @@ uniform mat4 view_matrix;
 uniform vec4 uColor = vec4(1.0, 0.5, 0.1, 1.0);
 uniform float uHardness = 16.0;
 
+// Lights
 const vec3 lightpos0 = vec3(22.0, 16.0, 50.0);
 const vec3 lightcolor0 = vec3(1.0, 0.95, 0.9);
 const vec3 lightpos1 = vec3(-22.0, -8.0, -50.0);
 const vec3 lightcolor1 = vec3(0.9, 0.95, 1.0);
 const vec3 ambient = vec3(1.0);
+
+// New light variables
+uniform float ambient_strength;
+
+struct Light {
+    vec3 position;
+    vec3 Ia;
+    vec3 Id;
+    vec3 Is;
+};
+
+// Function pre-declaration
+vec3 add_light_and_shadow_contribution(vec3 color);
+float get_soft_shadow_x16();
 
 void main() {
 
@@ -80,5 +96,42 @@ void main() {
     out_fragment_viewpos = vec4(v_viewpos, 1);
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
+/*
 
+vec3 add_light_and_shadow_contribution(vec3 color, vec3 normal) {
+
+    vec3 Normal = normalize(normal);
+
+    // ambient light
+    vec3 ambient = light.Ia;
+
+    // diffuse light
+    vec3 lightDir = normalize(light.position - fragPos);
+    float diff = max(0, dot(lightDir, Normal));
+    vec3 diffuse = diff * light.Id;
+
+    // specular light
+    vec3 viewDir = normalize(camPos - fragPos);
+    vec3 reflectDir = reflect(-lightDir, Normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0), 32);
+    vec3 specular = spec * light.Is;
+
+    // shadow
+    float shadow = get_soft_shadow_x16();
+
+    return color * (ambient + (diffuse + specular) * shadow);
+}
+
+float get_soft_shadow_x16() {
+    float shadow;
+    float swidth = 1.0;
+    float endp = swidth * 1.5;
+    for (float y = -endp; y <= endp; y += swidth) {
+        for (float x = -endp; x <= endp; x += swidth) {
+            shadow += lookup(x, y);
+        }
+    }
+    return shadow / 16.0;
+}
+*/
 #endif

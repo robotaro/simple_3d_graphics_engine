@@ -11,8 +11,17 @@ class MeshFactory:
     def __init__(self):
         pass
 
-    def create_cube(self, width: float, height: float, depth: float) -> tuple:
-        raise NotImplemented("[ERROR] MeshFactory.create_cube() not implemented yet")
+    @staticmethod
+    def create_cube(width: float, height: float, depth: float) -> tuple:
+
+        result = trimesh.creation.box(extents=(width, height, depth))
+
+        vertices = np.array(result.vertices).astype('f4')
+        normals = np.array(result.vertex_normals).astype('f4')
+        uvs = None
+        indices = np.array(result.faces).astype('i4')
+
+        return vertices, normals, uvs, indices
 
     @staticmethod
     def from_obj(fpath: str) -> tuple:

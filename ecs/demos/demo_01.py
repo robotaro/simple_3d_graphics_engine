@@ -37,8 +37,7 @@ def main():
     editor.add_component(
         entity_uid=camera_uid,
         component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
-        position=(0, 1, 2)
-    )
+        position=(0, 0, 2))
     editor.add_component(
         entity_uid=camera_uid,
         component_type=constants.COMPONENT_TYPE_INPUT_CONTROL)
@@ -73,6 +72,24 @@ def main():
     editor.add_component(
         entity_uid=dragon_2_uid,
         component_type=constants.COMPONENT_TYPE_RENDERABLE)
+
+    floor_uid = editor.component_pool.create_entity(name="floor")
+    editor.add_component(
+        entity_uid=floor_uid,
+        component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
+        position=(0, -1, 0))
+    editor.add_component(
+        entity_uid=floor_uid,
+        component_type=constants.COMPONENT_TYPE_MESH,
+        shape=constants.MESH_SHAPE_BOX,
+        width=10.0,
+        height=0.1,
+        depth=10.0,
+    )
+    editor.add_component(
+        entity_uid=floor_uid,
+        component_type=constants.COMPONENT_TYPE_RENDERABLE)
+
 
     # Text
     text_uid = editor.component_pool.create_entity(name="sample_text")
