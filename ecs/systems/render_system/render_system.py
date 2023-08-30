@@ -279,8 +279,8 @@ class RenderSystem(System):
             program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
 
             if material is not None:
-                program["material_diffuse_color"].value = (*material.diffuse, material.alpha)
-                program["material_ambient_factor"] = material.ambient
+                program["material_diffuse_color"].write = np.array((*material.diffuse, material.alpha), dtype=np.float32).tobytes()
+                #program["material_ambient_factor"] = material.ambient
                 #program["material_specular_factor"] = material.specular
 
             # Render the vao at the end
