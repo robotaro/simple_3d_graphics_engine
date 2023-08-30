@@ -12,7 +12,7 @@ class Renderable(Component):
         "render_layer",
         "vaos",
         "visible",
-        "cast_shadow",
+        "shadow_caster",
         "_gpu_initialised"
     ]
 
@@ -25,7 +25,7 @@ class Renderable(Component):
 
         # Flags
         self.visible = True
-        self.cast_shadow = True
+        self.shadow_caster = True
         self._gpu_initialised = False
 
     def initialise_on_gpu(self,

@@ -71,6 +71,10 @@ def main():
         fpath=dragon_fpath)
     editor.add_component(
         entity_uid=dragon_2_uid,
+        color=(0, 0, 0.9),
+        component_type=constants.COMPONENT_TYPE_MATERIAL)
+    editor.add_component(
+        entity_uid=dragon_2_uid,
         component_type=constants.COMPONENT_TYPE_RENDERABLE)
 
     floor_uid = editor.component_pool.create_entity(name="floor")

@@ -154,9 +154,7 @@ class RenderSystem(System):
                                          vbo_tuple_list=mesh.get_vbo_declaration_list(),
                                          ibo_faces=mesh.ibo_faces)
 
-        renderable_entity_uids = list(component_pool.renderable_components.keys())
         camera_entity_uids = list(component_pool.camera_components.keys())
-        directional_lights_entity_uids = list(component_pool.directional_light_components.keys())
 
         # DEBUG -HACK TODO: MOVE THIS TO THE TRANSFORM SYSTEM!!!
         for _, transform in component_pool.transform_3d_components.items():
@@ -239,7 +237,6 @@ class RenderSystem(System):
         camera_component = component_pool.camera_components[camera_uid]
         camera_transform = component_pool.transform_3d_components[camera_uid]
 
-        # TODO: maybe move this to inside the scene?
         # Clear context (you need to use the use() first to bind it!)
         self.ctx.clear(
             red=1,
@@ -263,8 +260,6 @@ class RenderSystem(System):
 
         #directional_light_components = list(component_pool.directional_light_components.keys())
 
-        camera_component = component_pool.camera_components[camera_uid]
-        camera_transform = component_pool.transform_3d_components[camera_uid]
         camera_transform.update()
         camera_component.upload_uniforms(program=program)
 
@@ -277,9 +272,16 @@ class RenderSystem(System):
             program[constants.SHADER_UNIFORM_ENTITY_ID] = uid
             renderable_transform = component_pool.transform_3d_components[uid]
 
+            material = component_pool.material_components.get(uid, None)
+
             # Upload uniforms
             program["entity_id"].value = uid
-            program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
+            program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
+
+            if material is not None:
+                program["material_diffuse_color"].value = (*material.diffuse, material.alpha)
+                program["material_ambient_factor"] = material.ambient
+                #program["material_specular_factor"] = material.specular
 
             # Render the vao at the end
             renderable_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
