@@ -1,13 +1,37 @@
 <scene>
-    <light label="Back Light" position="0.0 10.0 -15.0" color="1.0, 1.0 1.0" />
-    <plane label="floor" position="0 0 0" width="100" depth="100"/>
+    <entity name="Light 1" >
+        <point_light position="0.0 10.0 -15.0" color="1.0 1.0 1.0"/>
+    </entity>
 
-    <light>
-        <position>0 1 2</position>>
-    </light>
+    <entity name="Main Camera" >
+        <camera viewport="1.0 1.0 1.0"/>
+        <transform_3d position="0 0 2"/>
+        <input_control/>
+    </entity>
 
-    <assets>
+    <entity name="Dragon 1" >
+        <mesh shape="obj" fpath="D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj"/>
+        <transform_3d/>
+        <renderable/>
+    </entity>
 
-    </assets>
+    <entity name="Dragon 2" >
+        <mesh shape="obj" fpath="D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj"/>
+        <transform_3d position="-1 0 -1"/>
+        <material diffuse="0, 0, 0.9"/>
+        <renderable/>
+    </entity>
+
+    <entity name="Floor" >
+        <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
+        <transform_3d position="0 -1 0"/>
+        <renderable/>
+    </entity>
+
+    <entity name="Sample text" >
+        <text2d font_name="Consolas.ttf"/>
+        <transform_3d position="0 -1 0"/>
+        <renderable/>
+    </entity>
 
 </scene>

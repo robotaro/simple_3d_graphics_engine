@@ -1,19 +1,21 @@
 import time
 import glfw
+from bs4 import BeautifulSoup
+
 import moderngl
 import numpy as np
 from typing import List
 
-from ecs import constants
 
 # Systems
+from ecs import constants
 from ecs.systems.render_system.render_system import RenderSystem
 from ecs.systems.imgui_system.imgui_system import ImguiSystem
 from ecs.systems.input_control_system.input_control_system import InputControlSystem
 from ecs.event_publisher import EventPublisher
 from ecs.component_pool import ComponentPool
 
-from ecs.utilities import utils_logging
+from ecs.utilities import utils_logging, utils_string
 
 
 class Editor:
@@ -256,6 +258,89 @@ class Editor:
         # Shutdown systems
         for system in self.systems:
             system.shutdown()
+
+    def load_scene(self, scene_xml_fpath: str):
+        """
+        Loads the
+        :param scene_xml_fpath:
+        :return:
+        """
+
+        # Load UI window blueprint
+        with open(scene_xml_fpath) as file:
+            root_soup = BeautifulSoup(file.read(), features="lxml")
+
+            # Find window root node - there should be only one
+            ui_soup = root_soup.find("scene")
+            if ui_soup is None:
+                raise ValueError(f"[ERROR] Could not find root 'scene' element")
+
+            for entity_soup in root_soup.find_all("entity"):
+
+                entity_name = entity_soup.attrs.get("name", "unamed_entity")
+                entity_uid = self.component_pool.create_entity(name=entity_name)
+
+                for component_soup in entity_soup.find_all():
+
+                    if component_soup.name == constants.COMPONENT_TYPE_TRANSFORM_3D:
+                        position_str = component_soup.attrs.get("position", "0 0 0")
+                        position = utils_string.string2float_list(position_str)
+
+                        editor.add_component(
+                            entity_uid=entity_uid,
+                            component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
+                            position=position)
+
+                    if component_soup.name == constants.COMPONENT_TYPE_TRANSFORM_2D:
+                        print("[NOT IMPLEMENTED] Component Transform 2D")
+                        pass
+
+                    if component_soup.name == constants.COMPONENT_TYPE_MESH:
+                        shape = component_soup.attrs.get("shape", None)
+
+                        shape = utils_string.string2float_list(viewport_str)
+                        # TODO: Continue form here
+                        editor.add_component(
+                            entity_uid=dragon_1_uid,
+                            component_type=constants.COMPONENT_TYPE_MESH,
+                            shape=constants.MESH_SHAPE_FROM_OBJ,
+                            fpath=dragon_fpath)
+
+                    if component_soup.name == constants.COMPONENT_TYPE_CAMERA:
+                        viewport_str = component_soup.attrs.get("viewport", "0, 0, 1024, 768")
+                        viewport = utils_string.string2int_list(viewport_str)
+
+                        editor.add_component(
+                            entity_uid=entity_uid,
+                            component_type=constants.COMPONENT_TYPE_CAMERA,
+                            viewport=viewport)
+
+                    if component_soup.name == constants.COMPONENT_TYPE_RENDERABLE:
+                        editor.add_component(
+                            entity_uid=entity_uid,
+                            component_type=constants.COMPONENT_TYPE_RENDERABLE)
+
+                    if component_soup.name == constants.COMPONENT_TYPE_MATERIAL:
+                        pass
+
+                    if component_soup.name == constants.COMPONENT_TYPE_INPUT_CONTROL:
+                        editor.add_component(
+                            entity_uid=entity_uid,
+                            component_type=constants.COMPONENT_TYPE_INPUT_CONTROL)
+
+                    if component_soup.name == constants.COMPONENT_TYPE_TEXT_2D:
+                        pass
+
+                    if component_soup.name == constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT:
+                        pass
+
+                    if component_soup.name == constants.COMPONENT_TYPE_SPOT_LIGHT:
+                        pass
+
+                    if component_soup.name == constants.COMPONENT_TYPE_POINT_LIGHT:
+                        pass
+
+
 
 
 if __name__ == "__main__":

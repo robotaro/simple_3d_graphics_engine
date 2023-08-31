@@ -43,7 +43,7 @@ class UICore:
             # Load font
             self.font.load(ttf_fpath=font_ttf_fpath)
 
-        # Load UI window blueprint
+        # Load Entities
         with open(blueprint_xml_fpath) as file:
             root_soup = BeautifulSoup(file.read(), features="lxml")
 

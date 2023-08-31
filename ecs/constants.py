@@ -141,6 +141,8 @@ FONT_TEXTURE_HEIGHT = FONT_SHEET_CELL_HEIGHT * FONT_SHEET_ROWS
 #                              Component Pool
 # =============================================================================
 
+COMPONENT_POOL_STARTING_ID_COUNTER = 2
+
 # Component Types
 COMPONENT_TYPE_TRANSFORM_3D = 0
 COMPONENT_TYPE_TRANSFORM_2D = 1

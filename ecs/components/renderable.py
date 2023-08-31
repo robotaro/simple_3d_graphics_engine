@@ -1,12 +1,13 @@
 import moderngl
 
+from ecs import constants
 from ecs.components.component import Component
 from ecs.systems.render_system.shader_program_library import ShaderProgramLibrary
 
 
 class Renderable(Component):
 
-    _type = "renderable"
+    _type = constants.COMPONENT_TYPE_RENDERABLE
 
     __slots__ = [
         "render_layer",
