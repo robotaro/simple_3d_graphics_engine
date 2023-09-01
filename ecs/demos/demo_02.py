@@ -30,5 +30,7 @@ def main():
 
     editor.load_scene(scene_xml_fpath=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\scenes\default_scene.xml")
 
+    editor.run()
+
 if __name__ == "__main__":
     main()

@@ -1,4 +1,6 @@
 import time
+
+import bs4
 import glfw
 from bs4 import BeautifulSoup
 
@@ -280,65 +282,118 @@ class Editor:
                 entity_name = entity_soup.attrs.get("name", "unamed_entity")
                 entity_uid = self.component_pool.create_entity(name=entity_name)
 
-                for component_soup in entity_soup.find_all():
+                self._add_entity_components(entity_uid=entity_uid, entity_soup=entity_soup)
 
-                    if component_soup.name == constants.COMPONENT_TYPE_TRANSFORM_3D:
-                        position_str = component_soup.attrs.get("position", "0 0 0")
-                        position = utils_string.string2float_list(position_str)
+    def _add_entity_components(self, entity_uid: int, entity_soup: bs4.BeautifulSoup) -> None:
+        """
+        This function uses the Beautifulsoup element provided to add all the components
+        assigned to the entity UID.
+        :param entity_uid: int,
+        :param entity_soup:
+        :return:
+        """
 
-                        editor.add_component(
-                            entity_uid=entity_uid,
-                            component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
-                            position=position)
+        for component_soup in entity_soup.find_all():
 
-                    if component_soup.name == constants.COMPONENT_TYPE_TRANSFORM_2D:
-                        print("[NOT IMPLEMENTED] Component Transform 2D")
-                        pass
+            if component_soup.name == constants.COMPONENT_NAME_TRANSFORM_3D:
+                position_str = component_soup.attrs.get("position", "0 0 0")
+                position = utils_string.string2float_list(position_str)
 
-                    if component_soup.name == constants.COMPONENT_TYPE_MESH:
-                        shape = component_soup.attrs.get("shape", None)
+                self.add_component(
+                    entity_uid=entity_uid,
+                    component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
+                    position=position)
+                continue
 
-                        shape = utils_string.string2float_list(viewport_str)
-                        # TODO: Continue form here
-                        editor.add_component(
-                            entity_uid=dragon_1_uid,
-                            component_type=constants.COMPONENT_TYPE_MESH,
-                            shape=constants.MESH_SHAPE_FROM_OBJ,
-                            fpath=dragon_fpath)
+            if component_soup.name == constants.COMPONENT_NAME_TRANSFORM_2D:
+                continue
 
-                    if component_soup.name == constants.COMPONENT_TYPE_CAMERA:
-                        viewport_str = component_soup.attrs.get("viewport", "0, 0, 1024, 768")
-                        viewport = utils_string.string2int_list(viewport_str)
+            if component_soup.name == constants.COMPONENT_NAME_MESH:
+                shape = component_soup.attrs.get("shape", None)
+                if shape is None:
+                    raise Exception("You need to specify the shape of the mesh you want to create.")
 
-                        editor.add_component(
-                            entity_uid=entity_uid,
-                            component_type=constants.COMPONENT_TYPE_CAMERA,
-                            viewport=viewport)
+                # Shape: OBJ
+                if shape == constants.MESH_SHAPE_FROM_OBJ:
+                    fpath = component_soup.attrs.get("fpath", None)
+                    if shape is None:
+                        raise Exception("You need to specify the location of the .obj file")
 
-                    if component_soup.name == constants.COMPONENT_TYPE_RENDERABLE:
-                        editor.add_component(
-                            entity_uid=entity_uid,
-                            component_type=constants.COMPONENT_TYPE_RENDERABLE)
+                    self.add_component(
+                        entity_uid=entity_uid,
+                        component_type=constants.COMPONENT_TYPE_MESH,
+                        shape=shape,
+                        fpath=fpath)
 
-                    if component_soup.name == constants.COMPONENT_TYPE_MATERIAL:
-                        pass
+                # Shape: BOX
+                if shape == constants.MESH_SHAPE_BOX:
+                    self.add_component(
+                        entity_uid=entity_uid,
+                        component_type=constants.COMPONENT_TYPE_MESH,
+                        shape=shape,
+                        width=float(component_soup.attrs.get("width", "1.0")),
+                        height=float(component_soup.attrs.get("height", "1.0")),
+                        depth=float(component_soup.attrs.get("depth", "1.0")))
 
-                    if component_soup.name == constants.COMPONENT_TYPE_INPUT_CONTROL:
-                        editor.add_component(
-                            entity_uid=entity_uid,
-                            component_type=constants.COMPONENT_TYPE_INPUT_CONTROL)
+                continue
 
-                    if component_soup.name == constants.COMPONENT_TYPE_TEXT_2D:
-                        pass
+            if component_soup.name == constants.COMPONENT_NAME_CAMERA:
+                viewport_str = component_soup.attrs.get("viewport", "0, 0, 1024, 768")
+                viewport = tuple(utils_string.string2int_list(viewport_str))
 
-                    if component_soup.name == constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT:
-                        pass
+                self.add_component(
+                    entity_uid=entity_uid,
+                    component_type=constants.COMPONENT_TYPE_CAMERA,
+                    viewport=viewport)
+                continue
 
-                    if component_soup.name == constants.COMPONENT_TYPE_SPOT_LIGHT:
-                        pass
+            if component_soup.name == constants.COMPONENT_NAME_RENDERABLE:
+                self.add_component(
+                    entity_uid=entity_uid,
+                    component_type=constants.COMPONENT_TYPE_RENDERABLE)
+                continue
 
-                    if component_soup.name == constants.COMPONENT_TYPE_POINT_LIGHT:
-                        pass
+            if component_soup.name == constants.COMPONENT_NAME_MATERIAL:
+                continue
+
+            if component_soup.name == constants.COMPONENT_NAME_INPUT_CONTROL:
+                self.add_component(
+                    entity_uid=entity_uid,
+                    component_type=constants.COMPONENT_TYPE_INPUT_CONTROL)
+                continue
+
+            if component_soup.name == constants.COMPONENT_NAME_TEXT_2D:
+                font_name = component_soup.attrs.get("font_name", None)
+                if font_name is None:
+                    raise Exception("You need to specify the font")
+
+                text_component = self.add_component(
+                    entity_uid=entity_uid,
+                    component_type=constants.COMPONENT_TYPE_TEXT_2D,
+                    font_name=font_name)
+
+                # Add text, if present
+                text = entity_soup.text.strip()
+                if len(text) > 0:
+                    text_component.set_text(text=text)
+
+                continue
+
+            if component_soup.name == constants.COMPONENT_NAME_DIRECTIONAL_LIGHT:
+                continue
+
+            if component_soup.name == constants.COMPONENT_NAME_SPOT_LIGHT:
+                continue
+
+            if component_soup.name == constants.COMPONENT_NAME_POINT_LIGHT:
+                continue
+
+            # If you got here, it means the component you selected is not supported :(
+            entity_name = entity_soup.attrs.get("name", "")
+            if len(entity_name) > 0:
+                entity_name = f" ({entity_name})"
+            self.logger.error(f"Component {component_soup.name}, declared in entity uid "
+                              f"{entity_uid}{entity_name}, is not supported.")
 
 
 

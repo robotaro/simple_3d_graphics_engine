@@ -4,7 +4,7 @@
     </entity>
 
     <entity name="Main Camera" >
-        <camera viewport="1.0 1.0 1.0"/>
+        <camera viewport="0 0 1024 768"/>
         <transform_3d position="0 0 2"/>
         <input_control/>
     </entity>
@@ -18,7 +18,7 @@
     <entity name="Dragon 2" >
         <mesh shape="obj" fpath="D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj"/>
         <transform_3d position="-1 0 -1"/>
-        <material diffuse="0, 0, 0.9"/>
+        <material diffuse="0 0 0.9"/>
         <renderable/>
     </entity>
 
@@ -29,9 +29,9 @@
     </entity>
 
     <entity name="Sample text" >
-        <text2d font_name="Consolas.ttf"/>
-        <transform_3d position="0 -1 0"/>
-        <renderable/>
+        <text_2d font_name="Consolas.ttf" >
+            This is a sample text
+        </text_2d>
     </entity>
 
 </scene>

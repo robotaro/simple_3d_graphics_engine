@@ -94,8 +94,6 @@ def main():
         entity_uid=floor_uid,
         component_type=constants.COMPONENT_TYPE_RENDERABLE)
 
-
-    # Text
     text_uid = editor.component_pool.create_entity(name="sample_text")
     text = editor.add_component(
         entity_uid=text_uid,
@@ -103,6 +101,7 @@ def main():
         font_name="Consolas.ttf"
     )
     text.set_text("Alexandre Paschoal Vicente")
+
     editor.run()
 
 
