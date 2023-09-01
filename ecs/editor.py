@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 
 import moderngl
 import numpy as np
-from typing import List
+from typing import List, Union
 
 
 # Systems
@@ -195,7 +195,7 @@ class Editor:
         """
         pass
 
-    def create_system(self, system_type: str, subscribed_events: List[int]) -> bool:
+    def create_system(self, system_type: str, subscribed_events: Union[List[int], None] = None) -> bool:
 
         new_system = None
 
@@ -219,10 +219,11 @@ class Editor:
             return False
 
         # Subscribe system to specific topics
-        for event_type in subscribed_events:
-            self.event_publisher.subscribe(
-                event_type=event_type,
-                listener=new_system)
+        if subscribed_events is not None:
+            for event_type in subscribed_events:
+                self.event_publisher.subscribe(
+                    event_type=event_type,
+                    listener=new_system)
 
         # And finally add the new system to the roster
         self.systems.append(new_system)
@@ -290,7 +291,7 @@ class Editor:
         assigned to the entity UID.
         :param entity_uid: int,
         :param entity_soup:
-        :return:
+        :return: None
         """
 
         for component_soup in entity_soup.find_all():
@@ -394,8 +395,6 @@ class Editor:
                 entity_name = f" ({entity_name})"
             self.logger.error(f"Component {component_soup.name}, declared in entity uid "
                               f"{entity_uid}{entity_name}, is not supported.")
-
-
 
 
 if __name__ == "__main__":

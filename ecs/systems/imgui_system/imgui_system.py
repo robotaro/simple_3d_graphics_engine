@@ -42,6 +42,8 @@ class ImguiSystem(System):
 
         imgui.end()
 
+        self.gui_main_menu_bar()
+
         imgui.end_frame()
         imgui.render()
         self.imgui_renderer.render(imgui.get_draw_data())
@@ -53,3 +55,40 @@ class ImguiSystem(System):
 
     def shutdown(self):
         self.imgui_renderer.shutdown()
+
+    def gui_main_menu_bar(self):
+        clicked_export = False
+        clicked_screenshot = False
+
+        with imgui.begin_main_menu_bar() as main_menu_bar:
+
+            # ========================[ File ]========================
+            if imgui.begin_menu("File", True):
+
+                # File -> Load
+                clicked, selected = imgui.menu_item("Load Scene", None, False, True)
+
+                # File -> Save
+                clicked, selected = imgui.menu_item("Save Scene", None, False, True)
+
+                imgui.separator()
+
+                # File -> Quit
+                clicked, selected = imgui.menu_item("Quit", "Cmd+Q", False, True)
+                if clicked:
+                    exit(1)
+
+                imgui.end_menu()
+
+            # ========================[ Edit ]========================
+            if imgui.begin_menu("Edit", True):
+                if imgui.begin_menu("Light modes"):
+                    _, default = imgui.menu_item("Default", None, True)
+
+                    _, diffuse = imgui.menu_item("Diffuse", None, True)
+
+                    imgui.end_menu()
+
+                clicked, selected = imgui.menu_item("Preferences", "Ctrl + Q", False, True)
+
+                imgui.end_menu()
