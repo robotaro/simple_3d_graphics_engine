@@ -15,7 +15,7 @@ class Entity:
 
     def __init__(self, name=""):
         self.name = name
-        self.sub_components = []
+        self.sub_entities = []
         self.is_subcomponent = False
 
 
@@ -107,11 +107,7 @@ class ComponentPool:
         return component_pool.get(entity_uid, None)
 
     def get_all_components(self, entity_uid: int) -> list:
-        components = []
-        for _, storage in self.component_storage_map.items():
-            if entity_uid in storage:
-                components.append(storage[entity_uid])
-        return components
+        return [storage[entity_uid] for _, storage in self.component_storage_map.items() if entity_uid in storage]
 
     def get_entities_using_component(self, component_type: int) -> list:
         return list(self.component_storage_map[component_type].keys())

@@ -12,6 +12,9 @@ class ImguiSystem(System):
     __slots__ = [
         "window_glfw",
         "imgui_renderer",
+        "selected_entity_uid",
+        "selected_entity_name",
+        "selected_entity_components",
         "pass_window_hover"
     ]
 
@@ -23,7 +26,9 @@ class ImguiSystem(System):
                          event_publisher=kwargs["event_publisher"])
         self.window_glfw = kwargs["window_glfw"]
         self.imgui_renderer = None
-
+        self.selected_entity_uid = -1
+        self.selected_entity_name = ""
+        self.selected_entity_components = []
         self.pass_window_hover = False
 
     # =========================================================================
@@ -47,6 +52,8 @@ class ImguiSystem(System):
         self.imgui_renderer.process_inputs()
         imgui.new_frame()
 
+        self.gui_main_menu_bar()
+
         # open new window context
         imgui.begin("Your first window!", True)
 
@@ -55,7 +62,7 @@ class ImguiSystem(System):
 
         imgui.end()
 
-        self.gui_main_menu_bar()
+        self.gui_entity_window()
 
         self.publish_events()
 
@@ -69,9 +76,13 @@ class ImguiSystem(System):
         #       "self.imgui_renderer.process_inputs()" gets all mouse and keyboard inputs
 
         # Component has been selected
-        if event_type == constants.EVENT_ACTION_ENTITY_SELECTED:
-            #components = self.component_pool.
-            print(f"Entity selected: {event_data[0]}")
+        self.selected_entity_components = []
+        if event_type == constants.EVENT_ACTION_ENTITY_SELECTED and event_data[0] >= constants.COMPONENT_POOL_STARTING_ID_COUNTER:
+            self.selected_entity_uid = event_data[0]
+            entity = self.component_pool.entities.get(self.selected_entity_uid, None)
+            if entity is not None:
+                self.selected_entity_name = entity.name
+            self.selected_entity_components = self.component_pool.get_all_components(entity_uid=event_data[0])
 
     def shutdown(self):
         self.imgui_renderer.shutdown()
@@ -126,4 +137,13 @@ class ImguiSystem(System):
 
     def gui_entity_window(self):
 
-        pass
+        if len(self.selected_entity_components) == 0:
+            return
+
+        # open new window context
+        imgui.begin(f"Selected Entity", True)
+
+        # draw text label inside of current window
+        imgui.text(f"Entity: {self.selected_entity_name}")
+
+        imgui.end()
