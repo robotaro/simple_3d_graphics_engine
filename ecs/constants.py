@@ -54,14 +54,13 @@ EVENT_INDEX_MOUSE_SCROLL_X = 0
 EVENT_INDEX_MOUSE_SCROLL_Y = 1
 
 # Actions
-EVENT_MOUSE_SCROLL
+EVENT_ACTION_ENTITY_SELECTED = 20
 
 # Window
-EVENT_WINDOW_RESIZE = 8                 # args: (width, height) <int, int>
-EVENT_WINDOW_FRAMEBUFFER_RESIZE = 9     # args: (width, height) <int, int>
-EVENT_WINDOW_DROP_FILES = 10            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a list
+EVENT_WINDOW_RESIZE = 30                # args: (width, height) <int, int>
+EVENT_WINDOW_FRAMEBUFFER_RESIZE = 31    # args: (width, height) <int, int>
+EVENT_WINDOW_DROP_FILES = 32            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a list
 
-EVENT_LOAD_FILE = 1                     #args: (filepath) <str>
 
 
 

@@ -18,11 +18,17 @@ class ImguiSystem(System):
     _type = "imgui_system"
 
     def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"], event_publisher=kwargs["event_publisher"])
+        super().__init__(logger=kwargs["logger"],
+                         component_pool=kwargs["component_pool"],
+                         event_publisher=kwargs["event_publisher"])
         self.window_glfw = kwargs["window_glfw"]
         self.imgui_renderer = None
 
         self.pass_window_hover = False
+
+    # =========================================================================
+    #                         System Core functions
+    # =========================================================================
 
     def initialise(self) -> bool:
 
@@ -36,7 +42,6 @@ class ImguiSystem(System):
 
     def update(self,
                elapsed_time: float,
-               component_pool: ComponentPool,
                context: moderngl.Context):
 
         self.imgui_renderer.process_inputs()
@@ -52,6 +57,30 @@ class ImguiSystem(System):
 
         self.gui_main_menu_bar()
 
+        self.publish_events()
+
+        imgui.end_frame()
+        imgui.render()
+        self.imgui_renderer.render(imgui.get_draw_data())
+
+    def on_event(self, event_type: int, event_data: tuple):
+
+        # TODO: Find out whether I really need "on_event" callbacks if the
+        #       "self.imgui_renderer.process_inputs()" gets all mouse and keyboard inputs
+
+        # Component has been selected
+        if event_type == constants.EVENT_ACTION_ENTITY_SELECTED:
+            #components = self.component_pool.
+            print(f"Entity selected: {event_data[0]}")
+
+    def shutdown(self):
+        self.imgui_renderer.shutdown()
+
+    # =========================================================================
+    #                           Custom functions
+    # =========================================================================
+
+    def publish_events(self):
         # Enable/Disable mouse buttons to other systems if it is hovering on any Imgui windows
         windows_hover = imgui.is_window_hovered(imgui.HOVERED_ANY_WINDOW)
         if windows_hover and not self.pass_window_hover:
@@ -60,21 +89,7 @@ class ImguiSystem(System):
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_ENABLED, event_data=None)
         self.pass_window_hover = windows_hover
 
-        imgui.end_frame()
-        imgui.render()
-        self.imgui_renderer.render(imgui.get_draw_data())
-
-    def on_event(self, event_type: int, event_data: tuple):
-        # TODO: Find out whether I really need "on_event" callbacks if the "self.imgui_renderer.process_inputs()" gets all mouse and keyboard inputs
-        if event_type == constants.EVENT_MOUSE_SCROLL:
-            self.imgui_renderer.scroll_callback(None, event_data[0], event_data[1])
-
-    def shutdown(self):
-        self.imgui_renderer.shutdown()
-
     def gui_main_menu_bar(self):
-        clicked_export = False
-        clicked_screenshot = False
 
         with imgui.begin_main_menu_bar() as main_menu_bar:
 
@@ -90,7 +105,7 @@ class ImguiSystem(System):
                 imgui.separator()
 
                 # File -> Quit
-                clicked, selected = imgui.menu_item("Quit", "Cmd+Q", False, True)
+                clicked, selected = imgui.menu_item("Quit", "Ctrl + Q", False, True)
                 if clicked:
                     exit(1)
 
@@ -108,3 +123,7 @@ class ImguiSystem(System):
                 clicked, selected = imgui.menu_item("Preferences", "Ctrl + Q", False, True)
 
                 imgui.end_menu()
+
+    def gui_entity_window(self):
+
+        pass

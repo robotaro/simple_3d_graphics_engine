@@ -203,6 +203,7 @@ class Editor:
         if system_type == RenderSystem._type:
             new_system = RenderSystem(
                 logger=self.logger,
+                component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
                 context=self.context,
                 buffer_size=self.buffer_size)
@@ -210,12 +211,14 @@ class Editor:
         if system_type == ImguiSystem._type:
             new_system = ImguiSystem(
                 logger=self.logger,
+                component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
                 window_glfw=self.window_glfw)
 
         if system_type == InputControlSystem._type:
             new_system = InputControlSystem(
                 logger=self.logger,
+                component_pool=self.component_pool,
                 event_publisher=self.event_publisher
             )
 
@@ -258,7 +261,6 @@ class Editor:
             # Update All systems in order
             for system in self.systems:
                 system.update(elapsed_time=elapsed_time,
-                              component_pool=self.component_pool,
                               context=self.context)
 
             glfw.swap_buffers(self.window_glfw)
@@ -400,10 +402,3 @@ class Editor:
                 entity_name = f" ({entity_name})"
             self.logger.error(f"Component {component_soup.name}, declared in entity uid "
                               f"{entity_uid}{entity_name}, is not supported.")
-
-
-if __name__ == "__main__":
-
-    editor = Editor()
-    editor.run()
-

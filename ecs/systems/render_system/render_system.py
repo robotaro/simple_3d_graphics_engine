@@ -44,7 +44,9 @@ class RenderSystem(System):
     ]
 
     def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"], event_publisher=kwargs["event_publisher"])
+        super().__init__(logger=kwargs["logger"],
+                         component_pool=kwargs["component_pool"],
+                         event_publisher=kwargs["event_publisher"])
 
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
@@ -142,14 +144,14 @@ class RenderSystem(System):
 
         return True
 
-    def update(self, elapsed_time: float, component_pool: ComponentPool, context: moderngl.Context, event=None):
+    def update(self, elapsed_time: float, context: moderngl.Context, event=None):
 
         # Initialise object on the GPU if they haven't been already
 
         # TODO: Move initialisation to only when objects are created
-        for entity_uid, renderable in component_pool.renderable_components.items():
+        for entity_uid, renderable in self.component_pool.renderable_components.items():
 
-            mesh = component_pool.mesh_components[entity_uid]
+            mesh = self.component_pool.mesh_components[entity_uid]
             mesh.initialise_on_gpu(ctx=self.ctx)
             renderable.initialise_on_gpu(ctx=self.ctx,
                                          program_name_list=constants.SHADER_PASSES_LIST,
@@ -157,22 +159,22 @@ class RenderSystem(System):
                                          vbo_tuple_list=mesh.get_vbo_declaration_list(),
                                          ibo_faces=mesh.ibo_faces)
 
-        camera_entity_uids = list(component_pool.camera_components.keys())
+        camera_entity_uids = list(self.component_pool.camera_components.keys())
 
         # DEBUG -HACK TODO: MOVE THIS TO THE TRANSFORM SYSTEM!!!
-        for _, transform in component_pool.transform_3d_components.items():
+        for _, transform in self.component_pool.transform_3d_components.items():
             transform.update()
 
         # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
 
-            self.forward_pass(component_pool=component_pool,
+            self.forward_pass(component_pool=self.component_pool,
                               camera_uid=camera_uid)
-            self.selected_entity_pass(component_pool=component_pool,
+            self.selected_entity_pass(component_pool=self.component_pool,
                                       camera_uid=camera_uid,
                                       selected_entity_uid=self.selected_entity_id)
-            self.shadow_mapping_pass(component_pool=component_pool)
-            self.text_2d_pass(component_pool=component_pool)
+            self.shadow_mapping_pass(component_pool=self.component_pool)
+            self.text_2d_pass(component_pool=self.component_pool)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
         self.render_to_screen()
@@ -184,11 +186,9 @@ class RenderSystem(System):
             pass
 
         if event_type == constants.EVENT_MOUSE_BUTTON_ENABLED:
-            print("selection enabled")
             self.entity_selection_enabled = True
 
         if event_type == constants.EVENT_MOUSE_BUTTON_DISABLED:
-            print("selection disabled")
             self.entity_selection_enabled = False
 
         if self.entity_selection_enabled:
@@ -206,7 +206,11 @@ class RenderSystem(System):
                     vertices=1,
                     first=0,
                     instances=1)
+
                 self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
+
+                self.event_publisher.publish(event_type=constants.EVENT_ACTION_ENTITY_SELECTED,
+                                             event_data=(self.selected_entity_id,))
 
         # FULLSCREEN VIEW MODES
         if event_type == constants.EVENT_KEYBOARD_PRESS:
@@ -238,7 +242,7 @@ class RenderSystem(System):
         self.font_library.shutdown()
 
     # =========================================================================
-    #                         Render functions
+    #                           Custom functions
     # =========================================================================
 
     def forward_pass(self, component_pool: ComponentPool, camera_uid: int):

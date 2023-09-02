@@ -10,14 +10,16 @@ class System:
     __slots__ = [
         "logger",
         "event_publisher",
+        "component_pool",
         "runtime"
     ]
 
     _type = "base_system"
 
-    def __init__(self, logger: logging.Logger, event_publisher):
+    def __init__(self, logger: logging.Logger, component_pool, event_publisher):
         self.logger = logger
         self.event_publisher = event_publisher
+        self.component_pool = component_pool
         self.runtime = 0.0  # Initialize the attribute
 
     def initialise(self, **kwargs) -> bool:
@@ -25,7 +27,6 @@ class System:
 
     def update(self,
                elapsed_time: float,
-               component_pool: ComponentPool,
                context: moderngl.Context):
         pass
 

@@ -29,7 +29,9 @@ class InputControlSystem(System):
     ]
 
     def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"], event_publisher=kwargs["event_publisher"])
+        super().__init__(logger=kwargs["logger"],
+                         component_pool=kwargs["component_pool"],
+                         event_publisher=kwargs["event_publisher"])
 
         self.mouse_x_past = None
         self.mouse_y_past = None
@@ -51,18 +53,15 @@ class InputControlSystem(System):
     def initialise(self, **kwargs) -> bool:
         return True
 
-    def update(self,
-               elapsed_time: float,
-               component_pool: ComponentPool,
-               context: moderngl.Context):
+    def update(self, elapsed_time: float, context: moderngl.Context):
 
-        for entity_uid in list(component_pool.input_control_components.keys()):
+        for entity_uid in list(self.component_pool.input_control_components.keys()):
 
-            input_control = component_pool.input_control_components[entity_uid]
+            input_control = self.component_pool.input_control_components[entity_uid]
             if not input_control.active:
                 continue
 
-            transform = component_pool.transform_3d_components[entity_uid]
+            transform = self.component_pool.transform_3d_components[entity_uid]
 
             # TODO: Investigate why the directions seem to be reversed...
 

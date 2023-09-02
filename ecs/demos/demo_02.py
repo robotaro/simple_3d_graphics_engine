@@ -20,7 +20,12 @@ def main():
                              constants.EVENT_KEYBOARD_PRESS,
                              constants.EVENT_WINDOW_RESIZE,
                          ])
-    editor.create_system(system_type="imgui_system")
+
+    editor.create_system(system_type="imgui_system",
+                         subscribed_events=[
+                             constants.EVENT_ACTION_ENTITY_SELECTED
+                         ])
+
     editor.create_system(system_type="input_control_system",
                          subscribed_events=[
                              constants.EVENT_MOUSE_SCROLL,
