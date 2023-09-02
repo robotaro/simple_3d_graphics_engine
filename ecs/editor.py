@@ -149,7 +149,8 @@ class Editor:
             self.mouse_state[button] = constants.BUTTON_RELEASED
 
     def _glfw_callback_mouse_move(self, glfw_window, x, y):
-        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_MOVE, event_data=(x, y))
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_MOVE,
+                                     event_data=(x, y))
         self.mouse_state[constants.MOUSE_POSITION] = (x, y)
 
     def _glfw_callback_mouse_scroll(self, glfw_window, x_offset, y_offset):
@@ -202,17 +203,21 @@ class Editor:
         if system_type == RenderSystem._type:
             new_system = RenderSystem(
                 logger=self.logger,
+                event_publisher=self.event_publisher,
                 context=self.context,
                 buffer_size=self.buffer_size)
 
         if system_type == ImguiSystem._type:
             new_system = ImguiSystem(
                 logger=self.logger,
+                event_publisher=self.event_publisher,
                 window_glfw=self.window_glfw)
 
         if system_type == InputControlSystem._type:
             new_system = InputControlSystem(
-                logger=self.logger)
+                logger=self.logger,
+                event_publisher=self.event_publisher
+            )
 
         if new_system is None:
             self.logger.error(f"Failed to create system {system_type}")

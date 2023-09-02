@@ -35,6 +35,7 @@ class RenderSystem(System):
         "outline_program",
         "outline_texture",
         "outline_framebuffer",
+        "entity_selection_enabled",
         "selected_entity_id",
         "shadow_map_program",
         "shadow_map_depth_texture",
@@ -43,7 +44,7 @@ class RenderSystem(System):
     ]
 
     def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"])
+        super().__init__(logger=kwargs["logger"], event_publisher=kwargs["event_publisher"])
 
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
@@ -70,6 +71,8 @@ class RenderSystem(System):
         self.outline_texture = None
         self.outline_framebuffer = None
 
+        # Entity selection variables
+        self.entity_selection_enabled = True
         self.selected_entity_id = -1
 
         # Shadow Mapping
@@ -180,21 +183,30 @@ class RenderSystem(System):
             # TODO: Safe release all offscreen framebuffers and create new ones
             pass
 
-        if (event_type == constants.EVENT_MOUSE_BUTTON_PRESS and
-                event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] == glfw.MOUSE_BUTTON_LEFT):
+        if event_type == constants.EVENT_MOUSE_BUTTON_ENABLED:
+            print("selection enabled")
+            self.entity_selection_enabled = True
 
-            # TODO: Move this to its own function!
-            # Pass the coordinate of the pixel you want to sample to the fragment picking shader
-            self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
-            self.textures_offscreen_rendering["entity_info"].use(location=0)
+        if event_type == constants.EVENT_MOUSE_BUTTON_DISABLED:
+            print("selection disabled")
+            self.entity_selection_enabled = False
 
-            self.picker_vao.transform(
-                self.picker_buffer,
-                mode=moderngl.POINTS,
-                vertices=1,
-                first=0,
-                instances=1)
-            self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
+        if self.entity_selection_enabled:
+            if (event_type == constants.EVENT_MOUSE_BUTTON_PRESS and
+                    event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] == glfw.MOUSE_BUTTON_LEFT):
+
+                # TODO: Move this to its own function!
+                # Pass the coordinate of the pixel you want to sample to the fragment picking shader
+                self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
+                self.textures_offscreen_rendering["entity_info"].use(location=0)
+
+                self.picker_vao.transform(
+                    self.picker_buffer,
+                    mode=moderngl.POINTS,
+                    vertices=1,
+                    first=0,
+                    instances=1)
+                self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
 
         # FULLSCREEN VIEW MODES
         if event_type == constants.EVENT_KEYBOARD_PRESS:

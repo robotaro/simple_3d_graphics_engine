@@ -9,12 +9,20 @@ from ecs.component_pool import ComponentPool
 
 class ImguiSystem(System):
 
+    __slots__ = [
+        "window_glfw",
+        "imgui_renderer",
+        "pass_window_hover"
+    ]
+
     _type = "imgui_system"
 
     def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"])
+        super().__init__(logger=kwargs["logger"], event_publisher=kwargs["event_publisher"])
         self.window_glfw = kwargs["window_glfw"]
         self.imgui_renderer = None
+
+        self.pass_window_hover = False
 
     def initialise(self) -> bool:
 
@@ -43,6 +51,14 @@ class ImguiSystem(System):
         imgui.end()
 
         self.gui_main_menu_bar()
+
+        # Enable/Disable mouse buttons to other systems if it is hovering on any Imgui windows
+        windows_hover = imgui.is_window_hovered(imgui.HOVERED_ANY_WINDOW)
+        if windows_hover and not self.pass_window_hover:
+            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_DISABLED, event_data=None)
+        if not windows_hover and self.pass_window_hover:
+            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_ENABLED, event_data=None)
+        self.pass_window_hover = windows_hover
 
         imgui.end_frame()
         imgui.render()

@@ -29,7 +29,7 @@ class InputControlSystem(System):
     ]
 
     def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"])
+        super().__init__(logger=kwargs["logger"], event_publisher=kwargs["event_publisher"])
 
         self.mouse_x_past = None
         self.mouse_y_past = None

@@ -1,4 +1,25 @@
 <scene>
+
+    <!-- ===============[ Systems ]=============== -->
+
+    <system type="render_system" >
+        <event>mouse_button_press</event>
+        <event>keyboard_press</event>
+        <event>window_resize</event>
+    </system>
+
+    <system type="imgui_system" >
+    </system>
+
+    <system type="render_system" >
+        <event>mouse_scroll</event>
+        <event>mouse_move</event>
+        <event>keyboard_press</event>
+        <event>keyboard_release</event>
+    </system>
+
+    <!-- ===============[ Entities ]=============== -->
+
     <entity name="Light 1" >
         <point_light position="0.0 10.0 -15.0" color="1.0 1.0 1.0"/>
     </entity>
