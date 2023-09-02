@@ -24,8 +24,8 @@ class Transform3D(Component):
         self.world_matrix = np.eye(4, dtype=np.float32)
         self.local_matrix = np.eye(4, dtype=np.float32)
 
-        self.position = np.array(kwargs.get("position", (0, 0, 0)), dtype=np.float32)
-        self.rotation = np.array(kwargs.get("rotation", (0, 0, 0)), dtype=np.float32)
+        self.position = tuple(kwargs.get("position", [0.0, 0.0, 0.0]))
+        self.rotation = tuple(kwargs.get("rotation", [0.0, 0.0, 0.0]))
 
         self.look_at_target = kwargs.get("look_at_target", None)
         if self.look_at_target is not None:
@@ -36,8 +36,11 @@ class Transform3D(Component):
     def update(self):
 
         if self.look_at_target is not None:
+
+            # TODO: Optimise this! Too many conversions during update!
+            #       But this is to leave position and rotation as tuples for the imgui... sigh
             self.local_matrix = mat4.look_at(
-                position=self.position,
+                position=np.array(self.position, dtype=np.float32),
                 target=self.look_at_target,
                 up=constants.TRANSFORMS_UP_VECTOR)
             return

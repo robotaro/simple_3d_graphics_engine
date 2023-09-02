@@ -24,6 +24,7 @@ class ImguiSystem(System):
         super().__init__(logger=kwargs["logger"],
                          component_pool=kwargs["component_pool"],
                          event_publisher=kwargs["event_publisher"])
+
         self.window_glfw = kwargs["window_glfw"]
         self.imgui_renderer = None
         self.selected_entity_uid = -1
@@ -50,6 +51,7 @@ class ImguiSystem(System):
                context: moderngl.Context):
 
         self.imgui_renderer.process_inputs()
+        imgui.get_io().ini_file_name = ""  # Disables creating an .ini file with the last window details
         imgui.new_frame()
 
         self.gui_main_menu_bar()
@@ -137,11 +139,18 @@ class ImguiSystem(System):
 
     def gui_entity_window(self):
 
+        # TODO: Think of a better way to go through components
         if len(self.selected_entity_components) == 0:
             return
 
         # open new window context
         imgui.begin(f"Selected Entity", True)
+
+        transform = self.component_pool.transform_3d_components.get(self.selected_entity_uid, None)
+        if transform:
+            _, transform.position = imgui.drag_float3("Position",
+                                                      *transform.position,
+                                                      constants.IMGUI_DRAG_FLOAT_PRECISION)
 
         # draw text label inside of current window
         imgui.text(f"Entity: {self.selected_entity_name}")
