@@ -71,9 +71,9 @@ uniform float material_specular_factor = 0.5;
 
 // Old Light variables
 const vec3 lightpos0 = vec3(22.0, 16.0, 50.0);
-const vec3 lightcolor0 = vec3(1.0, 0.95, 0.9);
+const vec3 lightcolor0 = vec3(1.0, 1.0, 1.0);
 const vec3 lightpos1 = vec3(-22.0, 8.0, -50.0);
-const vec3 lightcolor1 = vec3(0.9, 0.95, 1.0);
+const vec3 lightcolor1 = vec3(1.0, 1.0, 1.0);
 const vec3 ambient = vec3(1.0);
 uniform vec4 uColor = vec4(1.0, 0.5, 0.1, 1.0);
 uniform float uHardness = 16.0;

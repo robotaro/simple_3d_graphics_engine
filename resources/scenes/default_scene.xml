@@ -47,6 +47,7 @@
     <entity name="Floor" >
         <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
         <transform_3d position="0 -1 0"/>
+        <material diffuse="0.75 0.75 0.75"/>
         <renderable/>
     </entity>w
 
