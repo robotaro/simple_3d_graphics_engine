@@ -167,7 +167,6 @@ class RenderSystem(System):
 
         # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
-            print(self.selected_entity_id)
             self.forward_pass(component_pool=self.component_pool,
                               camera_uid=camera_uid)
             self.selected_entity_pass(component_pool=self.component_pool,
@@ -299,8 +298,9 @@ class RenderSystem(System):
             program["entity_id"].value = uid
             program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
 
+            # TODO: Technically, you only need to upload the material once since it doesn't change. The program will keep its variable states!
             if material is not None:
-                program["material_diffuse_color"].write = np.array((*material.diffuse, material.alpha), dtype=np.float32).tobytes()
+                program["material_diffuse_color"].write(np.array((*material.diffuse, material.alpha), dtype=np.float32).tobytes())
                 #program["material_ambient_factor"] = material.ambient
                 #program["material_specular_factor"] = material.specular
 
@@ -322,8 +322,16 @@ class RenderSystem(System):
             return
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
+
+        # Safety checks before we go any further!
+        renderable_transform = component_pool.transform_3d_components.get(selected_entity_uid, None)
+        if renderable_transform is None:
+            return
+        renderable_component = component_pool.renderable_components.get(selected_entity_uid, None)
+        if renderable_component is None:
+            return
+
         camera_transform = component_pool.transform_3d_components[camera_uid]
-        renderable_transform = component_pool.transform_3d_components[selected_entity_uid]
         camera_transform.update()
 
         # Upload uniforms
@@ -332,7 +340,7 @@ class RenderSystem(System):
         program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
 
         # Render
-        renderable_component = component_pool.renderable_components[selected_entity_uid]
+
         renderable_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
 
     def text_2d_pass(self, component_pool: ComponentPool):

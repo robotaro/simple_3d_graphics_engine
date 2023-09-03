@@ -98,7 +98,7 @@ void main() {
 
     vec3 view_position = transpose(inverse(view_matrix))[3].xyz;
     vec3 normal = normalize(v_normal);
-    vec3 c = uColor.rgb * ambient;
+    vec3 c = material_diffuse_color.rgb * ambient;
     vec3 v = normalize(view_position - v_position);
     vec3 l, r;
     float s, spec;

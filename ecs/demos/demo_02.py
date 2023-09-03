@@ -12,6 +12,14 @@ def main():
         window_title="Basic Scene Demo"
     )
 
+    editor.create_system(system_type="input_control_system",
+                         subscribed_events=[
+                             constants.EVENT_MOUSE_SCROLL,
+                             constants.EVENT_MOUSE_MOVE,
+                             constants.EVENT_KEYBOARD_PRESS,
+                             constants.EVENT_KEYBOARD_RELEASE,
+                         ])
+
     editor.create_system(system_type="render_system",
                          subscribed_events=[
                              constants.EVENT_ACTION_ENTITY_SELECTED,
@@ -27,13 +35,7 @@ def main():
                              constants.EVENT_ACTION_ENTITY_SELECTED
                          ])
 
-    editor.create_system(system_type="input_control_system",
-                         subscribed_events=[
-                             constants.EVENT_MOUSE_SCROLL,
-                             constants.EVENT_MOUSE_MOVE,
-                             constants.EVENT_KEYBOARD_PRESS,
-                             constants.EVENT_KEYBOARD_RELEASE,
-                         ])
+
 
     editor.load_scene(scene_xml_fpath=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\scenes\default_scene.xml")
 

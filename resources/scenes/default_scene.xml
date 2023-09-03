@@ -32,6 +32,7 @@
 
     <entity name="Dragon 1" >
         <mesh shape="obj" fpath="D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj"/>
+        <material diffuse="0.2 1.0 0.6"/>
         <transform_3d/>
         <renderable/>
     </entity>

@@ -123,11 +123,13 @@ class Editor:
     def _glfw_callback_keyboard(self, glfw_window, key, scancode, action, mods):
         if action == glfw.PRESS:
             self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_PRESS,
-                                         event_data=(key, scancode, mods))
+                                         event_data=(key, scancode, mods),
+                                         sender=self)
             self.keyboard_state[key] = constants.KEY_STATE_DOWN
         if action == glfw.RELEASE:
             self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_RELEASE,
-                                         event_data=(key, scancode, mods))
+                                         event_data=(key, scancode, mods),
+                                         sender=self)
             self.keyboard_state[key] = constants.KEY_STATE_UP
 
     def _glfw_callback_mouse_button(self, glfw_window, button, action, mods):
@@ -371,7 +373,12 @@ class Editor:
                 continue
 
             if component_soup.name == constants.COMPONENT_NAME_MATERIAL:
-                continue
+                diffuse_str = component_soup.attrs.get("diffuse", ".75 .75 .75")
+                diffuse = utils_string.string2float_list(diffuse_str)
+                self.add_component(
+                    entity_uid=entity_uid,
+                    component_type=constants.COMPONENT_TYPE_MATERIAL,
+                    diffuse=diffuse)
 
             if component_soup.name == constants.COMPONENT_NAME_INPUT_CONTROL:
                 self.add_component(
