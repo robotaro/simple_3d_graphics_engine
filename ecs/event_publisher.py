@@ -1,4 +1,3 @@
-from typing import Union
 from ecs import constants
 from ecs.systems.system import System
 
@@ -33,7 +32,7 @@ class EventPublisher:
         if listener in self.listeners[event_type]:
             self.listeners[event_type].remove(listener)
 
-    def publish(self, event_type, event_data: tuple, sender: System):
+    def publish(self, event_type, event_data: tuple, sender):
         """
         Publishes an event to all the listeners. Make sure to specify a sender if a subsystem is sending it
         to avoid it accidentally receiving its own message and creating a infinite loop.

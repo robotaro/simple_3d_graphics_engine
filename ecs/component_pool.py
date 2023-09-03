@@ -9,7 +9,7 @@ from ecs.components.renderable import Renderable
 from ecs.components.camera import Camera
 from ecs.components.input_control import InputControl
 from ecs.components.text_2d import Text2D
-
+from ecs.components.point_light import PointLight
 
 class Entity:
 
@@ -28,7 +28,8 @@ class ComponentPool:
         constants.COMPONENT_TYPE_CAMERA: Camera,
         constants.COMPONENT_TYPE_MATERIAL: Material,
         constants.COMPONENT_TYPE_INPUT_CONTROL: InputControl,
-        constants.COMPONENT_TYPE_TEXT_2D: Text2D
+        constants.COMPONENT_TYPE_TEXT_2D: Text2D,
+        constants.COMPONENT_TYPE_POINT_LIGHT: PointLight
     }
 
     def __init__(self):

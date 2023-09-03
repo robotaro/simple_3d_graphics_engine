@@ -283,6 +283,13 @@ class RenderSystem(System):
         camera_transform.update()
         camera_component.upload_uniforms(program=program)
 
+        # Lights
+        program["num_point_lights"].value = len(self.component_pool.point_light_components)
+        for index, (_, point_light_component) in enumerate(self.component_pool.point_light_components.items()):
+            program[f"point_lights[{index}].color"] = point_light_component.color
+            program[f"point_lights[{index}].position"] = point_light_component.position
+
+        # Renderables
         for uid, renderable_component in component_pool.renderable_components.items():
 
             if not renderable_component.visible:

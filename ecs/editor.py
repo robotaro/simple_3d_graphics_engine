@@ -410,6 +410,17 @@ class Editor:
                 continue
 
             if component_soup.name == constants.COMPONENT_NAME_POINT_LIGHT:
+                position_str = component_soup.attrs.get("position", "22.0 16.0 50.0")
+                position = utils_string.string2float_list(position_str)
+                color_str = component_soup.attrs.get("color", "1.0 1.0 1.0")
+                color = utils_string.string2float_list(color_str)
+
+                self.add_component(
+                    entity_uid=entity_uid,
+                    component_type=constants.COMPONENT_TYPE_POINT_LIGHT,
+                    position=position,
+                    color=color
+                )
                 continue
 
             # If you got here, it means the component you selected is not supported :(

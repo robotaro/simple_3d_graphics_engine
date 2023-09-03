@@ -31,9 +31,6 @@ void main() {
 struct PointLight {
     vec3 position;
     vec3 color;
-    vec3 ambient_color;
-
-    vec3 specular_color;
 };
 
 struct DirectionalLight {
@@ -83,7 +80,9 @@ uniform vec3 ambient_color = vec3(1.0, 1.0, 1.0);
 uniform float ambient_strength;
 
 uniform int num_point_lights = 0;
-uniform PointLight point_Lights[MAX_POINT_LIGHTS];
+uniform PointLight point_lights[MAX_POINT_LIGHTS];
+//uniform vec3 point_light_color[MAX_POINT_LIGHTS];
+//uniform vec3 point_light_position[MAX_POINT_LIGHTS];
 
 uniform int num_directional_lights = 0;
 uniform DirectionalLight directional_Lights[MAX_DIRECTIONAL_LIGHTS];
@@ -100,7 +99,7 @@ void main() {
     vec3 normal = normalize(v_normal);
     vec3 c = material_diffuse_color.rgb * ambient;
     vec3 v = normalize(view_position - v_position);
-    vec3 l, r;
+    vec3 l_direction, r;
     float s, spec;
 
     // DEBUG
@@ -137,25 +136,20 @@ void main() {
     out_fragment_color = vec4(ambient_color + diffuse_color + specular_color, material_diffuse_color.a);
     */
 
-    l = normalize(lightpos0 - v_position);
-    s = max(0.0, dot(normal, l));
-    c += uColor.rgb * s * lightcolor0;
-    if (s > 0) {
-        r = reflect(-l, normal);
-        spec = pow(max(0.0, dot(v, r)), uHardness);
-        c += spec * lightcolor0;
+    vec3 color_rgb = material_diffuse_color.rgb;
+
+    for (int i=0; i<num_point_lights; ++i){
+        l_direction = normalize(point_lights[i].position - v_position);
+        s = max(0.0, dot(normal, l_direction));
+        color_rgb += uColor.rgb * s * point_lights[i].color;
+        if (s > 0) {
+            r = reflect(-l_direction, normal);
+            spec = pow(max(0.0, dot(v, r)), uHardness);
+            color_rgb += spec * point_lights[i].color;
+        }
     }
 
-    l = normalize(lightpos1 - v_position);
-    s = max(0.0, dot(normal, l));
-    c += uColor.rgb * s * lightcolor1;
-    if (s > 0) {
-        r = reflect(-l, normal);
-        spec = pow(max(0.0, dot(v, r)), uHardness);
-        c += spec * lightcolor1;
-    }
-
-    out_fragment_color = vec4(c * 0.5, material_diffuse_color.a);
+    out_fragment_color = vec4(color_rgb * 0.5, material_diffuse_color.a);
     out_fragment_normal = vec4(normal, 1.0);
     out_fragment_viewpos = vec4(v_viewpos, 1);
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
