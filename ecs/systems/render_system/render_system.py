@@ -167,7 +167,7 @@ class RenderSystem(System):
 
         # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
-
+            print(self.selected_entity_id)
             self.forward_pass(component_pool=self.component_pool,
                               camera_uid=camera_uid)
             self.selected_entity_pass(component_pool=self.component_pool,
@@ -210,13 +210,18 @@ class RenderSystem(System):
                 self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
 
                 self.event_publisher.publish(event_type=constants.EVENT_ACTION_ENTITY_SELECTED,
-                                             event_data=(self.selected_entity_id,))
+                                             event_data=(self.selected_entity_id,),
+                                             sender=self)
 
-        # FULLSCREEN VIEW MODES
         if event_type == constants.EVENT_KEYBOARD_PRESS:
+            # Texture debugging modes
             key_value = event_data[constants.EVENT_INDEX_KEYBOARD_KEY]
             if glfw.KEY_F1 <= key_value <= glfw.KEY_F11:
                 self.fullscreen_selected_texture = key_value - glfw.KEY_F1
+
+        if event_type == constants.EVENT_ACTION_ENTITY_SELECTED:
+            # Other systems may change the selected entity, so this should be reflected by the render system
+            self.selected_entity_id = event_data[0]
 
     def shutdown(self):
 

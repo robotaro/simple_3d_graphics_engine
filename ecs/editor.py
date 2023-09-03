@@ -140,35 +140,44 @@ class Editor:
         # NOTE: Button numbers already match the GLFW numbers in the constants
         if action == glfw.PRESS:
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_PRESS,
-                                         event_data=(button, mods, *mouse_pos))
+                                         event_data=(button, mods, *mouse_pos),
+                                         sender=self)
             self.mouse_state[button] = constants.BUTTON_PRESSED
 
         if action == glfw.RELEASE:
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_RELEASE,
-                                         event_data=(button, mods, *mouse_pos))
+                                         event_data=(button, mods, *mouse_pos),
+                                         sender=self)
             self.mouse_state[button] = constants.BUTTON_RELEASED
 
     def _glfw_callback_mouse_move(self, glfw_window, x, y):
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_MOVE,
-                                     event_data=(x, y))
+                                     event_data=(x, y),
+                                     sender=self)
         self.mouse_state[constants.MOUSE_POSITION] = (x, y)
 
     def _glfw_callback_mouse_scroll(self, glfw_window, x_offset, y_offset):
-        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_SCROLL, event_data=(x_offset, y_offset))
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_SCROLL,
+                                     event_data=(x_offset, y_offset),
+                                     sender=self)
         self.mouse_state[constants.MOUSE_SCROLL_POSITION] += y_offset
 
     def _glfw_callback_window_resize(self, glfw_window, width, height):
-        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_RESIZE, event_data=(width, height))
+        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_RESIZE,
+                                     event_data=(width, height),
+                                     sender=self)
         self.window_size = (width, height)
 
     def _glfw_callback_framebuffer_size(self, glfw_window, width, height):
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_RESIZE,
-                                     event_data=(width, height))
+                                     event_data=(width, height),
+                                     sender=self)
         self.buffer_size = (width, height)
 
     def _glfw_callback_drop_files(self, glfw_window, file_list):
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_DROP_FILES,
-                                     event_data=tuple(file_list))
+                                     event_data=tuple(file_list),
+                                     sender=self)
 
     # ========================================================================
     #                         Per Frame Update Functions

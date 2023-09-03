@@ -87,14 +87,23 @@ class ImguiSystem(System):
         if entity is not None:
             self.selected_entity_name = entity.name
         self.selected_entity_components = self.component_pool.get_all_components(entity_uid=entity_uid)
+        self.event_publisher.publish(event_type=constants.EVENT_ACTION_ENTITY_SELECTED,
+                                     event_data=(entity_uid,),
+                                     sender=self)
 
     def publish_events(self):
         # Enable/Disable mouse buttons to other systems if it is hovering on any Imgui windows
         windows_hover = imgui.is_window_hovered(imgui.HOVERED_ANY_WINDOW)
+
         if windows_hover and not self.pass_window_hover:
-            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_DISABLED, event_data=None)
+            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_DISABLED,
+                                         event_data=None,
+                                         sender=self)
+
         if not windows_hover and self.pass_window_hover:
-            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_ENABLED, event_data=None)
+            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_ENABLED,
+                                         event_data=None,
+                                         sender=self)
         self.pass_window_hover = windows_hover
 
     def gui_main_menu_bar(self):
@@ -139,27 +148,23 @@ class ImguiSystem(System):
 
         imgui.set_window_size(400, 300)
 
-        flags = imgui.TREE_NODE_LEAF | imgui.TREE_NODE_FRAME_PADDING
+        flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP
 
-        selected_uid = None
 
         for entity_uid, entity in self.component_pool.entities.items():
 
             # Draw the selectable item
-            (opened, selected) = imgui.selectable(entity.name,
-                                                  selected=False,
-                                                  flags=imgui.SELECTABLE_ALLOW_ITEM_OVERLAP)
+            (opened, selected) = imgui.selectable(entity.name, selected=False, flags=flags)
 
             if selected:
                 self.select_entity(entity_uid=entity_uid)
-
 
         imgui.spacing()
         imgui.separator()
         imgui.spacing()
 
         # TODO: Think of a better way to go through components
-        if len(self.selected_entity_components) == 0 and selected_uid is None:
+        if len(self.selected_entity_components) == 0:
             imgui.end()
             return
 

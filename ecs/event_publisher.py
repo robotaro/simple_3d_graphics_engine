@@ -27,14 +27,13 @@ class EventPublisher:
         }
 
     def subscribe(self, event_type: int, listener: System):
-        # Add listener to list of that particular event
         self.listeners[event_type].append(listener)
 
     def unsubscribe(self, event_type, listener: System):
         if listener in self.listeners[event_type]:
             self.listeners[event_type].remove(listener)
 
-    def publish(self, event_type, event_data: tuple, sender: Union[System, None] = None):
+    def publish(self, event_type, event_data: tuple, sender: System):
         """
         Publishes an event to all the listeners. Make sure to specify a sender if a subsystem is sending it
         to avoid it accidentally receiving its own message and creating a infinite loop.

@@ -14,6 +14,7 @@ def main():
 
     editor.create_system(system_type="render_system",
                          subscribed_events=[
+                             constants.EVENT_ACTION_ENTITY_SELECTED,
                              constants.EVENT_MOUSE_BUTTON_ENABLED,
                              constants.EVENT_MOUSE_BUTTON_DISABLED,
                              constants.EVENT_MOUSE_BUTTON_PRESS,
