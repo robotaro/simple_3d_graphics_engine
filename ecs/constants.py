@@ -8,12 +8,14 @@ import numpy as np
 ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
 RESOURCES_DIR = os.path.join(ROOT_DIR, "resources")
 FONTS_DIR = os.path.join(RESOURCES_DIR, "fonts")
+IMAGES_DIR = os.path.join(RESOURCES_DIR, "images")
 SHADERS_DIRECTORY = os.path.join(RESOURCES_DIR, "shaders")
 
 # =============================================================================
 #                                Editor
 # =============================================================================
 
+DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)
 SYSTEM_NAME_RENDER = "render_system"
 SYSTEM_NAME_IMGUI = "imgui_system"
 SYSTEM_NAME_INPUT_CONTROL = "input_control_system"

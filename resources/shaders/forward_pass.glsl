@@ -98,7 +98,7 @@ void main() {
 
     vec3 color_rgb = material_diffuse_color.rgb;
 
-    for (int i=0; i<num_point_lights; ++i){
+    for (int i = 0; i < num_point_lights; ++i){
         light_direction = normalize(point_lights[i].position - v_position);
         s = max(0.0, dot(normal, light_direction));
         color_rgb += color_rgb * s * point_lights[i].color;
@@ -116,10 +116,11 @@ void main() {
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
 
-/*vec3 directionalLight(DirectionalLight dirLight, vec3 color, vec3 fragPos, vec3 normal, float shadow) {
-    vec3 lightDir = -dirLight.direction;
-    float diff = max(dot(normal, lightDir), 0.0);
-    vec3 diffuse = diffuse_coeff * diff * dirLight.color * dirLight.strength;
+/*
+vec3 directionalLight(DirectionalLight dir_light, vec3 color, vec3 fragPos, vec3 normal, float shadow) {
+    vec3 light_direction = -dir_light.direction;
+    float diff = max(dot(normal, light_direction), 0.0);
+    vec3 diffuse = diffuse_coeff * diff * dir_light.color * dir_light.strength;
     return (1.0 - shadow) * diffuse * color;
 }*/
 

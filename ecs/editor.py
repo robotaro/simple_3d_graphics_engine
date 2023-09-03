@@ -1,3 +1,4 @@
+import os.path
 import time
 
 import bs4
@@ -6,6 +7,7 @@ from bs4 import BeautifulSoup
 
 import moderngl
 import numpy as np
+from PIL import Image
 from typing import List, Union
 
 
@@ -16,7 +18,6 @@ from ecs.systems.imgui_system.imgui_system import ImguiSystem
 from ecs.systems.input_control_system.input_control_system import InputControlSystem
 from ecs.event_publisher import EventPublisher
 from ecs.component_pool import ComponentPool
-
 from ecs.utilities import utils_logging, utils_string
 
 
@@ -42,7 +43,7 @@ class Editor:
                  "event_publisher")
 
     def __init__(self,
-                 window_size=(1024, 768),
+                 window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
                  window_title="New Editor",
                  vertical_sync=True):
 
@@ -92,6 +93,12 @@ class Editor:
         glfw.set_scroll_callback(self.window_glfw, self._glfw_callback_mouse_scroll)
         glfw.set_framebuffer_size_callback(self.window_glfw, self._glfw_callback_framebuffer_size)
         glfw.set_drop_callback(self.window_glfw, self._glfw_callback_drop_files)
+
+        # Set application icon - Disabled for now
+        #icon_fpath = os.path.join(constants.IMAGES_DIR, "anime_eyes.png")
+        #icon_image = Image.open(icon_fpath)
+        #icon = Image.frombytes(icon_image.tobytes(), icon_image.size, icon_image.mode)
+        #glfw.set_window_icon(self.window_glfw, 1, [icon_image])
 
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
@@ -219,6 +226,17 @@ class Editor:
                 context=self.context,
                 buffer_size=self.buffer_size)
 
+            # Set default events to subscribe too
+            if subscribed_events is None:
+                subscribed_events = [
+                     constants.EVENT_ACTION_ENTITY_SELECTED,
+                     constants.EVENT_MOUSE_BUTTON_ENABLED,
+                     constants.EVENT_MOUSE_BUTTON_DISABLED,
+                     constants.EVENT_MOUSE_BUTTON_PRESS,
+                     constants.EVENT_KEYBOARD_PRESS,
+                     constants.EVENT_WINDOW_RESIZE,
+                 ]
+
         if system_type == ImguiSystem._type:
             new_system = ImguiSystem(
                 logger=self.logger,
@@ -226,12 +244,27 @@ class Editor:
                 event_publisher=self.event_publisher,
                 window_glfw=self.window_glfw)
 
+            # Set default events to subscribe too
+            if subscribed_events is None:
+                subscribed_events = [
+                    constants.EVENT_ACTION_ENTITY_SELECTED
+                ]
+
         if system_type == InputControlSystem._type:
             new_system = InputControlSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher
             )
+
+            # Set default events to subscribe too
+            if subscribed_events is None:
+                subscribed_events =[
+                    constants.EVENT_MOUSE_SCROLL,
+                    constants.EVENT_MOUSE_MOVE,
+                    constants.EVENT_KEYBOARD_PRESS,
+                    constants.EVENT_KEYBOARD_RELEASE,
+                ]
 
         if new_system is None:
             self.logger.error(f"Failed to create system {system_type}")
