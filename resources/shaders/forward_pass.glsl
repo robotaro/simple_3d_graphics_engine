@@ -67,10 +67,6 @@ uniform float material_ambient_factor = 0.5;
 uniform float material_specular_factor = 0.5;
 
 // Old Light variables
-const vec3 lightpos0 = vec3(22.0, 16.0, 50.0);
-const vec3 lightcolor0 = vec3(1.0, 1.0, 1.0);
-const vec3 lightpos1 = vec3(-22.0, 8.0, -50.0);
-const vec3 lightcolor1 = vec3(1.0, 1.0, 1.0);
 const vec3 ambient = vec3(1.0);
 uniform vec4 uColor = vec4(1.0, 0.5, 0.1, 1.0);
 uniform float uHardness = 16.0;
@@ -105,7 +101,7 @@ void main() {
     for (int i=0; i<num_point_lights; ++i){
         light_direction = normalize(point_lights[i].position - v_position);
         s = max(0.0, dot(normal, light_direction));
-        color_rgb += uColor.rgb * s * point_lights[i].color;
+        color_rgb += color_rgb * s * point_lights[i].color;
         if (s > 0) {
             r = reflect(-light_direction, normal);
             spec = pow(max(0.0, dot(v, r)), uHardness);
@@ -119,6 +115,14 @@ void main() {
     out_fragment_viewpos = vec4(v_viewpos, 1);
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
+
+/*vec3 directionalLight(DirectionalLight dirLight, vec3 color, vec3 fragPos, vec3 normal, float shadow) {
+    vec3 lightDir = -dirLight.direction;
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 diffuse = diffuse_coeff * diff * dirLight.color * dirLight.strength;
+    return (1.0 - shadow) * diffuse * color;
+}*/
+
 /*
 vec3 calculate_point_lights_contribution(vec3 material_diffuse, vec3 material_specular){
 
