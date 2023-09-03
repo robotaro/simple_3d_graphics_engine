@@ -83,6 +83,8 @@ void main() {
 
 vec3 calculate_outline_color(){
 
+    // TODO: Fix issue where outline roll over to the other edge of the screen
+
     // Sample the silhouette texture
     vec3 silhouette_color = texture(selected_entity_texture, uv).rgb;
 

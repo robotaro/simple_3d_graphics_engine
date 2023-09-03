@@ -13,7 +13,7 @@ from ecs.components.text_2d import Text2D
 
 class Entity:
 
-    def __init__(self, name=""):
+    def __init__(self, name="", entity_type=-1):
         self.name = name
         self.sub_entities = []
         self.is_subcomponent = False

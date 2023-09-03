@@ -44,6 +44,8 @@ class ImguiSystem(System):
         # Step 2) Only then create the GlfwRenderer. And don't make sure to disable attach_callbacks!
         self.imgui_renderer = GlfwRenderer(self.window_glfw, attach_callbacks=False)
 
+        # TODO: Load custom fonts and set other global parameters once
+
         return True
 
     def update(self,
@@ -54,16 +56,8 @@ class ImguiSystem(System):
         imgui.get_io().ini_file_name = ""  # Disables creating an .ini file with the last window details
         imgui.new_frame()
 
+        # Render menus and windows
         self.gui_main_menu_bar()
-
-        # open new window context
-        imgui.begin("Your first window!", True)
-
-        # draw text label inside of current window
-        imgui.text("Hello world!")
-
-        imgui.end()
-
         self.gui_entity_window()
 
         self.publish_events()
@@ -77,14 +71,8 @@ class ImguiSystem(System):
         # TODO: Find out whether I really need "on_event" callbacks if the
         #       "self.imgui_renderer.process_inputs()" gets all mouse and keyboard inputs
 
-        # Component has been selected
-        self.selected_entity_components = []
         if event_type == constants.EVENT_ACTION_ENTITY_SELECTED and event_data[0] >= constants.COMPONENT_POOL_STARTING_ID_COUNTER:
-            self.selected_entity_uid = event_data[0]
-            entity = self.component_pool.entities.get(self.selected_entity_uid, None)
-            if entity is not None:
-                self.selected_entity_name = entity.name
-            self.selected_entity_components = self.component_pool.get_all_components(entity_uid=event_data[0])
+            self.select_entity(entity_uid=event_data[0])
 
     def shutdown(self):
         self.imgui_renderer.shutdown()
@@ -92,6 +80,13 @@ class ImguiSystem(System):
     # =========================================================================
     #                           Custom functions
     # =========================================================================
+
+    def select_entity(self, entity_uid: int):
+        self.selected_entity_uid = entity_uid
+        entity = self.component_pool.entities.get(self.selected_entity_uid, None)
+        if entity is not None:
+            self.selected_entity_name = entity.name
+        self.selected_entity_components = self.component_pool.get_all_components(entity_uid=entity_uid)
 
     def publish_events(self):
         # Enable/Disable mouse buttons to other systems if it is hovering on any Imgui windows
@@ -139,18 +134,55 @@ class ImguiSystem(System):
 
     def gui_entity_window(self):
 
-        # TODO: Think of a better way to go through components
-        if len(self.selected_entity_components) == 0:
-            return
-
         # open new window context
         imgui.begin(f"Selected Entity", True)
 
+        imgui.set_window_size(400, 300)
+
+        flags = imgui.TREE_NODE_LEAF | imgui.TREE_NODE_FRAME_PADDING
+
+        selected_uid = None
+
+        for entity_uid, entity in self.component_pool.entities.items():
+
+            # Draw the selectable item
+            (opened, selected) = imgui.selectable(entity.name,
+                                                  selected=False,
+                                                  flags=imgui.SELECTABLE_ALLOW_ITEM_OVERLAP)
+
+            if selected:
+                self.select_entity(entity_uid=entity_uid)
+
+
+        imgui.spacing()
+        imgui.separator()
+        imgui.spacing()
+
+        # TODO: Think of a better way to go through components
+        if len(self.selected_entity_components) == 0 and selected_uid is None:
+            imgui.end()
+            return
+
+        # [ Transform 3D ]
         transform = self.component_pool.transform_3d_components.get(self.selected_entity_uid, None)
         if transform:
+            imgui.text(f"Transform")
             _, transform.position = imgui.drag_float3("Position",
                                                       *transform.position,
                                                       constants.IMGUI_DRAG_FLOAT_PRECISION)
+
+            imgui.separator()
+
+        # [ Point Light ]
+        point_light = self.component_pool.point_light_components.get(self.selected_entity_uid, None)
+        if point_light:
+            imgui.text(f"Point Light")
+            _, point_light.position = imgui.drag_float3("Position",
+                                                      *point_light.position,
+                                                      constants.IMGUI_DRAG_FLOAT_PRECISION)
+
+
+            imgui.separator()
 
         # draw text label inside of current window
         imgui.text(f"Entity: {self.selected_entity_name}")
