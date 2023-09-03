@@ -150,7 +150,6 @@ class ImguiSystem(System):
 
         flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP
 
-
         for entity_uid, entity in self.component_pool.entities.items():
 
             # Draw the selectable item

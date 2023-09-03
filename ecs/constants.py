@@ -114,6 +114,8 @@ VIEWPORT_INDEX_HEIGHT = 3
 #                                Render System
 # =============================================================================
 
+RENDER_SYSTEM_DEFAULT_UP_VECTOR = (0.0, 1.0, 0.0)
+
 RENDER_3D_SYSTEM_MODE_FINAL = 0
 RENDER_3D_SYSTEM_MODE_NORMAL = 1
 RENDER_3D_SYSTEM_MODE_DEPTH = 2

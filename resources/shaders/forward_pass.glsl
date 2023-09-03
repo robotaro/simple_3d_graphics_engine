@@ -81,8 +81,6 @@ uniform float ambient_strength;
 
 uniform int num_point_lights = 0;
 uniform PointLight point_lights[MAX_POINT_LIGHTS];
-//uniform vec3 point_light_color[MAX_POINT_LIGHTS];
-//uniform vec3 point_light_position[MAX_POINT_LIGHTS];
 
 uniform int num_directional_lights = 0;
 uniform DirectionalLight directional_Lights[MAX_DIRECTIONAL_LIGHTS];
@@ -99,96 +97,52 @@ void main() {
     vec3 normal = normalize(v_normal);
     vec3 c = material_diffuse_color.rgb * ambient;
     vec3 v = normalize(view_position - v_position);
-    vec3 l_direction, r;
+    vec3 light_direction, r;
     float s, spec;
-
-    // DEBUG
-    /*vec3 light_position = vec3(5, 5, 5);
-
-    // ====== From LearnOpengl ===
-    vec3 color = material_diffuse_color.rgb;
-
-    // ambient contribution
-    vec3 ambient_color = material_ambient_factor * color;
-
-    // diffuse
-    vec3 light_dir = normalize(light_position - v_position);
-    vec3 normal = normalize(v_position);
-    float diff = max(dot(light_dir, normal), 0.0);
-    vec3 diffuse_color = diff * color;
-
-    // specular
-    vec3 view_dir = normalize(view_position - v_position);
-    vec3 reflect_dir = reflect(-light_dir, normal);
-    float specular_factor = 0.0;
-
-    if(false)
-    {
-        vec3 halfwayDir = normalize(light_dir + view_dir);
-        specular_factor = pow(max(dot(normal, halfwayDir), 0.0), 32.0);
-    }
-    else
-    {
-        vec3 reflectDir = reflect(-light_dir, normal);
-        specular_factor = pow(max(dot(view_dir, reflectDir), 0.0), 8.0);
-    }
-    vec3 specular_color = vec3(0.3) * specular_factor; // assuming bright white light color
-    out_fragment_color = vec4(ambient_color + diffuse_color + specular_color, material_diffuse_color.a);
-    */
 
     vec3 color_rgb = material_diffuse_color.rgb;
 
     for (int i=0; i<num_point_lights; ++i){
-        l_direction = normalize(point_lights[i].position - v_position);
-        s = max(0.0, dot(normal, l_direction));
+        light_direction = normalize(point_lights[i].position - v_position);
+        s = max(0.0, dot(normal, light_direction));
         color_rgb += uColor.rgb * s * point_lights[i].color;
         if (s > 0) {
-            r = reflect(-l_direction, normal);
+            r = reflect(-light_direction, normal);
             spec = pow(max(0.0, dot(v, r)), uHardness);
             color_rgb += spec * point_lights[i].color;
         }
     }
+
 
     out_fragment_color = vec4(color_rgb * 0.5, material_diffuse_color.a);
     out_fragment_normal = vec4(normal, 1.0);
     out_fragment_viewpos = vec4(v_viewpos, 1);
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
+/*
+vec3 calculate_point_lights_contribution(vec3 material_diffuse, vec3 material_specular){
 
-vec3 calculate_point_lights_contribution(){
+    // ambient
+    vec3 ambient = light.ambient * texture(material.diffuse, TexCoords).rgb;
 
-    vec3 light_value;
-    /*
-    vec3 Normal = normalize(normal);
+    // diffuse
+    vec3 norm = normalize(Normal);
 
-    // ambient light
-    vec3 ambient = light.Ia;
+    // vec3 lightDir = normalize(light.position - FragPos);
+    vec3 lightDir = normalize(-light.direction);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = light.diffuse * diff * material_diffuse;
 
-    // diffuse light
-    vec3 lightDir = normalize(light.position - fragPos);
-    float diff = max(0, dot(lightDir, Normal));
-    vec3 diffuse = diff * light.Id;
+    // specular
+    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float specular = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    vec3 specular_color = light.specular * specular * material_specular;
 
-    // specular light
-    vec3 viewDir = normalize(camPos - fragPos);
-    vec3 reflectDir = reflect(-lightDir, Normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0), 32);
-    vec3 specular = spec * light.Is;
+    vec3 result = ambient + diffuse + specular_color;
+    return result;
+}*/
 
-    // shadow
-    //float shadow = getSoftShadowX16();
-    float shadow = 1.0;
-
-    return color * (ambient + (diffuse + specular) * shadow);
-    */
-    return light_value;
-
-}
-
-vec3 calculate_directional_lights_contribution(){
-    vec3 light_value;
-    return light_value;
-}
 
 /*
 

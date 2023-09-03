@@ -379,6 +379,7 @@ class Editor:
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_MATERIAL,
                     diffuse=diffuse)
+                continue
 
             if component_soup.name == constants.COMPONENT_NAME_INPUT_CONTROL:
                 self.add_component(
@@ -404,9 +405,21 @@ class Editor:
                 continue
 
             if component_soup.name == constants.COMPONENT_NAME_DIRECTIONAL_LIGHT:
+                direction_str = component_soup.attrs.get("direction", "0.0 -1.0 0.0")
+                direction = utils_string.string2float_list(direction_str)
+                color_str = component_soup.attrs.get("color", "1.0 1.0 1.0")
+                color = utils_string.string2float_list(color_str)
+
+                self.add_component(
+                    entity_uid=entity_uid,
+                    component_type=constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT,
+                    direction=direction,
+                    color=color)
+
                 continue
 
             if component_soup.name == constants.COMPONENT_NAME_SPOT_LIGHT:
+                raise Exception("Spot light component not yet implemented")
                 continue
 
             if component_soup.name == constants.COMPONENT_NAME_POINT_LIGHT:
@@ -427,5 +440,5 @@ class Editor:
             entity_name = entity_soup.attrs.get("name", "")
             if len(entity_name) > 0:
                 entity_name = f" ({entity_name})"
-            self.logger.error(f"Component {component_soup.name}, declared in entity uid "
-                              f"{entity_uid}{entity_name}, is not supported.")
+                self.logger.error(f"Component {component_soup.name}, declared in entity uid "
+                                  f"{entity_uid}{entity_name}, is not supported.")

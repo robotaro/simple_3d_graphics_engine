@@ -1,5 +1,6 @@
 import numpy as np
 
+from ecs import constants
 from ecs.components.component import Component
 from ecs.math import mat4
 
@@ -16,4 +17,4 @@ class DirectionalLight(Component):
         return mat4.look_at_direction(
             position=self.position,
             direction=self.direction,
-            up=np.array((0, 1, 0), dtype=np.float32))
+            up=np.array(constants.RENDER_SYSTEM_DEFAULT_UP_VECTOR, dtype=np.float32))

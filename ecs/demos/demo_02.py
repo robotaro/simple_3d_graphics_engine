@@ -8,7 +8,7 @@ import os
 def main():
 
     editor = Editor(
-        window_size=(1024, 768),
+        window_size=(1600, 900),
         window_title="Basic Scene Demo"
     )
 

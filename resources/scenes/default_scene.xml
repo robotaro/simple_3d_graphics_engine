@@ -1,12 +1,20 @@
 <scene>
 
-    <entity name="Light 1" >
-        <point_light position="0.0 10.0 -15.0" color="1.0 1.0 1.0"/>
+    <entity name="Point Light 1" >
+        <point_light position="1.0 12.3 3.6" color="1.0 1.0 1.0"/>
+    </entity>
+
+    <entity name="Point Light 2" >
+        <point_light position="1.0 12.3 -3.6" color="1.0 1.0 1.0"/>
+    </entity>
+
+    <entity name="Directional Light 1" >
+        <directional_light direction="0.0 -1.0 0.0" color="1.0 1.0 1.0"/>
     </entity>
 
     <entity name="Main Camera" >
-        <camera viewport="0 0 1024 768"/>
-        <transform_3d position="0 0 2"/>
+        <camera viewport="0 0 1600 900"/>
+        <transform_3d position="-0.5 0.5 2.8"/>
         <input_control/>
     </entity>
 
