@@ -307,7 +307,11 @@ class RenderSystem(System):
 
             # TODO: Technically, you only need to upload the material once since it doesn't change. The program will keep its variable states!
             if material is not None:
-                program["material_diffuse_color"].write(np.array((*material.diffuse, material.alpha), dtype=np.float32).tobytes())
+                program["material_albedo"].write(np.array((*material.albedo, material.alpha), dtype=np.float32).tobytes())
+                #program["material_diffuse_factor"].value = material.diffuse_factor
+                #program["material_ambient_factor"].value = material.ambient_factor
+                #program["material_specular_factor"].value = material.specular_factor
+
                 #program["material_ambient_factor"] = material.ambient
                 #program["material_specular_factor"] = material.specular
 
@@ -388,8 +392,6 @@ class RenderSystem(System):
         self.shadow_map_framebuffer.use()
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS]
-
-        #directional_lights_uids = self.
 
         for uid, renderable_component in component_pool.renderable_components.items():
 

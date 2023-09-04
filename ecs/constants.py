@@ -71,8 +71,6 @@ EVENT_WINDOW_FRAMEBUFFER_RESIZE = 31    # args: (width, height) <int, int>
 EVENT_WINDOW_DROP_FILES = 32            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a list
 
 
-
-
 # =============================================================================
 #                              GLFW Types
 # =============================================================================

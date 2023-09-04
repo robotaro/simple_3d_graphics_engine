@@ -406,12 +406,21 @@ class Editor:
                 continue
 
             if component_soup.name == constants.COMPONENT_NAME_MATERIAL:
-                diffuse_str = component_soup.attrs.get("diffuse", ".75 .75 .75")
-                diffuse = utils_string.string2float_list(diffuse_str)
+                albedo_str = component_soup.attrs.get("albedo", ".75 .75 .75")
+                albedo = utils_string.string2float_list(albedo_str)
+
+                diffuse_factor = float(component_soup.attrs.get("diffuse_factor", "0.5"))
+                ambient_factor = float(component_soup.attrs.get("ambient_factor", "0.5"))
+                specular_factor = float(component_soup.attrs.get("specular_factor", "0.5"))
+
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_MATERIAL,
-                    diffuse=diffuse)
+                    albedo=albedo,
+                    diffuse_factor=diffuse_factor,
+                    ambient_factor=ambient_factor,
+                    specular_factor=specular_factor,
+                )
                 continue
 
             if component_soup.name == constants.COMPONENT_NAME_INPUT_CONTROL:

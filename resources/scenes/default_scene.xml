@@ -20,7 +20,7 @@
 
     <entity name="Dragon 1" >
         <mesh shape="obj" fpath="D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj"/>
-        <material diffuse="0.2 1.0 0.6"/>
+        <material albedo="0.2 1.0 0.6"/>
         <transform_3d/>
         <renderable/>
     </entity>
@@ -28,7 +28,7 @@
     <entity name="Dragon 2" >
         <mesh shape="obj" fpath="D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj"/>
         <transform_3d position="-1 0 -1"/>
-        <material diffuse="0 0 0.9"/>
+        <material albedo="0.2 .3 0.8"/>
         <renderable/>
     </entity>
 
