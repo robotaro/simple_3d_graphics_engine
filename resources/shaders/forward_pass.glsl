@@ -99,6 +99,7 @@ void main() {
 
     vec3 color_rgb = material_albedo.rgb;
 
+    // Calculate point light contributions
     for (int i = 0; i < num_point_lights; ++i){
         light_direction = normalize(point_lights[i].position - v_position);
         s = max(0.0, dot(normal, light_direction));
@@ -115,7 +116,6 @@ void main() {
         vec3 dir_light_color = calculate_directional_light(directional_lights[i], color_rgb, normal);
         color_rgb += dir_light_color;
     }
-
 
     out_fragment_color = vec4(color_rgb * 0.5, material_albedo.a);
     out_fragment_normal = vec4(normal, 1.0);
