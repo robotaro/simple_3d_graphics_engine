@@ -1,5 +1,8 @@
+import os
 import numpy as np
 import trimesh
+
+from ecs import constants
 
 
 class MeshFactory:
@@ -25,7 +28,14 @@ class MeshFactory:
 
     @staticmethod
     def from_obj(fpath: str) -> tuple:
-        mesh = trimesh.load(fpath)
+
+        # First try the fpath as a relative path from RESOURCES, and if it not there, assume fpath is an absolute path
+        os_compatible_fpath = fpath.replace("\\", os.sep).replace("/", os.sep)
+        new_fpath = os.path.join(constants.RESOURCES_DIR, os_compatible_fpath)
+        if os.path.isfile(new_fpath):
+            mesh = trimesh.load(new_fpath)
+        else:
+            mesh = trimesh.load(fpath)
 
         vertices = np.array(mesh.vertices, dtype=np.float32)
         normals = np.array(mesh.vertex_normals, dtype=np.float32)

@@ -299,9 +299,9 @@ class Editor:
                 raise Exception(f"[ERROR] System {system._type} failed to initialise")
 
         # Update systems - Main Loop
-        exit_application = False
+        exit_application_now = False
         timestamp_past = time.perf_counter()
-        while not glfw.window_should_close(self.window_glfw) and not exit_application:
+        while not glfw.window_should_close(self.window_glfw) and not exit_application_now:
 
             glfw.poll_events()
 
@@ -314,7 +314,7 @@ class Editor:
             for system in self.systems:
                 if not system.update(elapsed_time=elapsed_time,
                                       context=self.context):
-                    exit_application = True
+                    exit_application_now = True
                     break
 
             # Still swap these even if you have to exit application?

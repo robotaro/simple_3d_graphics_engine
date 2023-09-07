@@ -20,14 +20,14 @@
     </entity>
 
     <entity name="Dragon 1" >
-        <mesh shape="obj" fpath="/home/alex/Code/simple_3d_graphics_enigne/resources/models/dragon.obj"/>
+        <mesh shape="obj" fpath="models/dragon.obj"/>
         <material albedo="0.2 1.0 0.6"/>
         <transform_3d/>
         <renderable/>
     </entity>
 
     <entity name="Dragon 2" >
-        <mesh shape="obj" fpath="/home/alex/Code/simple_3d_graphics_enigne/resources/models/dragon.obj"/>
+        <mesh shape="obj" fpath="models/dragon.obj"/>
         <transform_3d position="-1 0 -1"/>
         <material albedo="0.2 .3 0.8"/>
         <renderable/>
