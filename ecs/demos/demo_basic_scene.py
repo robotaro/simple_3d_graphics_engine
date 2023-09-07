@@ -8,7 +8,7 @@ import os
 def main():
 
     editor = Editor(
-        window_size=(1600, 900),
+        window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
         window_title="Basic Scene Demo"
     )
 
@@ -16,7 +16,7 @@ def main():
     editor.create_system(system_type="render_system")
     editor.create_system(system_type="imgui_system")
 
-    editor.load_scene(scene_xml_fpath=r"D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\scenes\default_scene.xml")
+    editor.load_scene(scene_xml_fpath=os.path.join(constants.RESOURCES_DIR,"scenes", "default_scene.xml"))
 
     editor.run()
 

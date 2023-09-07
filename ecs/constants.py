@@ -15,7 +15,7 @@ SHADERS_DIRECTORY = os.path.join(RESOURCES_DIR, "shaders")
 #                                Editor
 # =============================================================================
 
-DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)
+DEFAULT_EDITOR_WINDOW_SIZE = (1024, 768)
 SYSTEM_NAME_RENDER = "render_system"
 SYSTEM_NAME_IMGUI = "imgui_system"
 SYSTEM_NAME_INPUT_CONTROL = "input_control_system"
@@ -79,6 +79,7 @@ EVENT_WINDOW_DROP_FILES = 32            # args: (filepath, ...) <int, ...>  # TO
 CAMERA_FOV_DEG = 45
 CAMERA_Z_NEAR = 0.01
 CAMERA_Z_FAR = 1000.0
+CAMERA_VIEWPORT_NORM = (0.0, 0.0, 1.0, 1.0)
 CAMERA_ZOOM_SPEED = 0.05
 
 # Mouse Input

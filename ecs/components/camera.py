@@ -13,7 +13,9 @@ class Camera(Component):
         "z_near",
         "z_far",
         "x_mag",
-        "y_mag"
+        "y_mag",
+        "viewport_norm",
+        "viewport"
     ]
 
     def __init__(self, **kwargs):
@@ -30,21 +32,20 @@ class Camera(Component):
         self.x_mag = 1.0
         self.y_mag = 1.0
 
-        if "viewport" not in kwargs:
-            raise Exception(f"[ERROR] Camera needs a viewport argument")
+        self.viewport_norm = kwargs.get("viewport_norm", constants.CAMERA_VIEWPORT_NORM)
+        self.viewport = None
 
-        self.viewport = kwargs["viewport"]
+    def upload_uniforms(self, program: moderngl.Program, window_width: int, window_height: int):
 
-    def upload_uniforms(self, program: moderngl.Program):
-
-        proj_matrix_bytes = self.get_projection_matrix(
-            width=self.viewport[constants.VIEWPORT_INDEX_WIDTH],
-            height=self.viewport[constants.VIEWPORT_INDEX_HEIGHT]).T.astype('f4').tobytes()
+        proj_matrix_bytes = self.get_projection_matrix(window_width=window_width,
+                                                       window_height=window_height).T.tobytes()
         program["projection_matrix"].write(proj_matrix_bytes)
 
-    def get_projection_matrix(self, width: int, height: int):
+    def get_projection_matrix(self, window_width: int, window_height: int):
 
-        aspect_ratio = float(width) / float(height)
+        num = window_width * (self.viewport_norm[2] - self.viewport_norm[0])
+        den = window_height * (self.viewport_norm[3] - self.viewport_norm[1])
+        aspect_ratio = num / den
 
         a = aspect_ratio
         y_fov_rad = self.y_fov_deg * np.pi / 180.0
@@ -66,16 +67,16 @@ class Camera(Component):
 
         return projection_matrix
 
-    def get_orthographic_matrix(self, width: int, height: int):
+    def get_orthographic_matrix(self, window_width: int, window_height: int):
 
-        # TODO: Terst this
+        # TODO: Test this
 
         xmag = self.x_mag
         ymag = self.y_mag
 
         # If screen width/height defined, rescale xmag
-        if width is not None and height is not None:
-            xmag = width / height * ymag
+        if window_width is not None and window_height is not None:
+            xmag = window_width / window_height * ymag
 
         n = self.z_near
         f = self.z_far

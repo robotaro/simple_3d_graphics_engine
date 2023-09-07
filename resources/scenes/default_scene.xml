@@ -12,21 +12,22 @@
         <directional_light direction="0.0 -1.0 0.0" color="1.0 1.0 1.0"/>
     </entity>
 
+    <!-- Viewports should be set in terms of ratios. This is a more versatile solution for resizing windows -->
     <entity name="Main Camera" >
-        <camera viewport="0 0 1600 900"/>
+        <camera viewport_norm="0 0 1 1"/>
         <transform_3d position="-0.5 0.5 2.8"/>
         <input_control/>
     </entity>
 
     <entity name="Dragon 1" >
-        <mesh shape="obj" fpath="D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj"/>
+        <mesh shape="obj" fpath="/home/alex/Code/simple_3d_graphics_enigne/resources/models/dragon.obj"/>
         <material albedo="0.2 1.0 0.6"/>
         <transform_3d/>
         <renderable/>
     </entity>
 
     <entity name="Dragon 2" >
-        <mesh shape="obj" fpath="D:\git_repositories\alexandrepv\simple_3d_graphics_enigne\resources\models\dragon.obj"/>
+        <mesh shape="obj" fpath="/home/alex/Code/simple_3d_graphics_enigne/resources/models/dragon.obj"/>
         <transform_3d position="-1 0 -1"/>
         <material albedo="0.2 .3 0.8"/>
         <renderable/>
@@ -35,7 +36,7 @@
     <entity name="Floor" >
         <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
         <transform_3d position="0 -0.5 0"/>
-        <material diffuse="0.75 0.75 0.75"/>
+        <material albedo="0.75 0.75 0.75"/>
         <renderable/>
     </entity>w
 

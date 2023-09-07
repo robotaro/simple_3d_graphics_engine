@@ -347,6 +347,7 @@ class Editor:
 
         for component_soup in entity_soup.find_all():
 
+            # Transform 3D
             if component_soup.name == constants.COMPONENT_NAME_TRANSFORM_3D:
                 position_str = component_soup.attrs.get("position", "0 0 0")
                 position = utils_string.string2float_list(position_str)
@@ -357,9 +358,11 @@ class Editor:
                     position=position)
                 continue
 
+            # Transform 2D
             if component_soup.name == constants.COMPONENT_NAME_TRANSFORM_2D:
                 continue
 
+            # Mesh
             if component_soup.name == constants.COMPONENT_NAME_MESH:
                 shape = component_soup.attrs.get("shape", None)
                 if shape is None:
@@ -389,26 +392,28 @@ class Editor:
 
                 continue
 
+            # Camera
             if component_soup.name == constants.COMPONENT_NAME_CAMERA:
-                viewport_str = component_soup.attrs.get("viewport", "0, 0, 1024, 768")
-                viewport = tuple(utils_string.string2int_list(viewport_str))
+                viewport_norm_str = component_soup.attrs.get("viewport_ratio", "0.0, 0.0, 1.0, 1.0")
+                viewport_norm = tuple(utils_string.string2int_list(viewport_norm_str))
 
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_CAMERA,
-                    viewport=viewport)
+                    viewport_norm=viewport_norm)
                 continue
 
+            # Renderable
             if component_soup.name == constants.COMPONENT_NAME_RENDERABLE:
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_RENDERABLE)
                 continue
 
+            # Material
             if component_soup.name == constants.COMPONENT_NAME_MATERIAL:
                 albedo_str = component_soup.attrs.get("albedo", ".75 .75 .75")
                 albedo = utils_string.string2float_list(albedo_str)
-
                 diffuse_factor = float(component_soup.attrs.get("diffuse_factor", "0.5"))
                 ambient_factor = float(component_soup.attrs.get("ambient_factor", "0.5"))
                 specular_factor = float(component_soup.attrs.get("specular_factor", "0.5"))
@@ -423,6 +428,7 @@ class Editor:
                 )
                 continue
 
+            # Input Control
             if component_soup.name == constants.COMPONENT_NAME_INPUT_CONTROL:
                 self.add_component(
                     entity_uid=entity_uid,

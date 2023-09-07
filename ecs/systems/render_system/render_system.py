@@ -281,7 +281,11 @@ class RenderSystem(System):
         #directional_light_components = list(component_pool.directional_light_components.keys())
 
         camera_transform.update()
-        camera_component.upload_uniforms(program=program)
+        camera_component.upload_uniforms(
+            program=program,
+            window_width=self.buffer_size[0],
+            window_height=self.buffer_size[1]
+        )
 
         # Lights
         program["num_point_lights"].value = len(self.component_pool.point_light_components)

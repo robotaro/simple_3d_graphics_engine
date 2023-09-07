@@ -32,6 +32,38 @@ the setter, it sets the translation to None, and if None
 when requested via a getter, it recalculates it just in time.
 This is a flexible solution, but not a very efficient one.
 
+## Linux installation
+
+If you are getting this error when you try creating a context (most likely from moderngl.create_context()):
+```commandline
+Exception: (detect) glXGetCurrentContext: cannot detect OpenGL context
+```
+Do the following:
+- List all the vailable drivers
+```commandline
+ubuntu-drivers devices
+```
+Pick the latest one that is compatible an run:
+```commandline
+sudo apt install nvidia-driver-name
+```
+Then Reboot
+```commandline
+sudo reboot
+```
+Then update the system
+```commandline
+sudo apt update
+sudo apt upgrade
+```
+Install the mesa drivers
+```commandline
+sudo apt install mesa-utils
+```
+And reboot again
+```commandline
+sudo reboot
+```
 
 ## Widget TODOs
 
