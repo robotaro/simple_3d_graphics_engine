@@ -139,7 +139,7 @@ class ImguiSystem(System):
                 # File -> Quit
                 clicked, selected = imgui.menu_item("Quit", "Ctrl + Q", False, True)
                 if clicked:
-                    exit(1)
+                    self._exit_popup_open = True
 
                 imgui.end_menu()
 

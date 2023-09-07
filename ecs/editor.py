@@ -313,7 +313,7 @@ class Editor:
             # Update All systems in order
             for system in self.systems:
                 if not system.update(elapsed_time=elapsed_time,
-                                      context=self.context):
+                                     context=self.context):
                     exit_application_now = True
                     break
 
