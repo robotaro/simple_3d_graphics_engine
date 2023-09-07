@@ -1,3 +1,4 @@
+import glfw
 import moderngl
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
@@ -15,7 +16,8 @@ class ImguiSystem(System):
         "selected_entity_uid",
         "selected_entity_name",
         "selected_entity_components",
-        "pass_window_hover"
+        "pass_window_hover",
+        "_exit_popup_open"
     ]
 
     _type = "imgui_system"
@@ -31,6 +33,9 @@ class ImguiSystem(System):
         self.selected_entity_name = ""
         self.selected_entity_components = []
         self.pass_window_hover = False
+
+        # Flags
+        self._exit_popup_open = False
 
     # =========================================================================
     #                         System Core functions
@@ -50,7 +55,7 @@ class ImguiSystem(System):
 
     def update(self,
                elapsed_time: float,
-               context: moderngl.Context):
+               context: moderngl.Context) -> bool:
 
         self.imgui_renderer.process_inputs()
         imgui.get_io().ini_file_name = ""  # Disables creating an .ini file with the last window details
@@ -60,11 +65,16 @@ class ImguiSystem(System):
         self.gui_main_menu_bar()
         self.gui_entity_window()
 
+        if not self.gui_exit_modal():
+            return False
+
         self.publish_events()
 
         imgui.end_frame()
         imgui.render()
         self.imgui_renderer.render(imgui.get_draw_data())
+
+        return True
 
     def on_event(self, event_type: int, event_data: tuple):
 
@@ -73,6 +83,11 @@ class ImguiSystem(System):
 
         if event_type == constants.EVENT_ACTION_ENTITY_SELECTED and event_data[0] >= constants.COMPONENT_POOL_STARTING_ID_COUNTER:
             self.select_entity(entity_uid=event_data[0])
+
+        if event_type == constants.EVENT_KEYBOARD_PRESS:
+            if event_data[constants.EVENT_INDEX_KEYBOARD_KEY] == glfw.KEY_ESCAPE:
+                print("escape pressed")
+                self._exit_popup_open = True
 
     def shutdown(self):
         self.imgui_renderer.shutdown()
@@ -140,6 +155,41 @@ class ImguiSystem(System):
                 clicked, selected = imgui.menu_item("Preferences", "Ctrl + Q", False, True)
 
                 imgui.end_menu()
+
+    def gui_exit_modal(self):
+
+        if self._exit_popup_open:
+            imgui.open_popup("Exit##exit-popup")
+
+        if imgui.begin_popup_modal("Exit##exit-popup", flags=imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_MOVE)[0]:
+            if self._exit_popup_open:
+                imgui.text("Are you sure you want to exit?")
+                imgui.spacing()
+
+                # Draw a cancel and exit button on the same line using the available space
+                button_width = (imgui.get_content_region_available()[0] - imgui.get_style().item_spacing[0]) * 0.5
+
+                # Style the cancel with a grey color
+                imgui.push_style_color(imgui.COLOR_BUTTON, 0.5, 0.5, 0.5, 1.0)
+                imgui.push_style_color(imgui.COLOR_BUTTON_ACTIVE, 0.6, 0.6, 0.6, 1.0)
+                imgui.push_style_color(imgui.COLOR_BUTTON_HOVERED, 0.7, 0.7, 0.7, 1.0)
+
+                if imgui.button("cancel", width=button_width):
+                    imgui.close_current_popup()
+                    self._exit_popup_open = False
+
+                imgui.pop_style_color()
+                imgui.pop_style_color()
+                imgui.pop_style_color()
+
+                imgui.same_line()
+                if imgui.button("exit", button_width):
+                    return False
+            else:
+                imgui.close_current_popup()
+            imgui.end_popup()
+
+        return True
 
     def gui_entity_window(self):
 

@@ -144,7 +144,7 @@ class RenderSystem(System):
 
         return True
 
-    def update(self, elapsed_time: float, context: moderngl.Context, event=None):
+    def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
         # Initialise object on the GPU if they haven't been already
 
@@ -178,10 +178,13 @@ class RenderSystem(System):
         # Final pass renders everything to a full screen quad from the offscreen textures
         self.render_to_screen()
 
+        return True
+
     def on_event(self, event_type: int, event_data: tuple):
 
-        if event_type == constants.EVENT_WINDOW_RESIZE:
+        if event_type == constants.EVENT_WINDOW_SIZE:
             # TODO: Safe release all offscreen framebuffers and create new ones
+            print(event_data)
             pass
 
         if event_type == constants.EVENT_MOUSE_BUTTON_ENABLED:
@@ -350,7 +353,9 @@ class RenderSystem(System):
         camera_transform.update()
 
         # Upload uniforms
-        camera_component.upload_uniforms(program=program)
+        camera_component.upload_uniforms(program=program,
+                                         window_width=self.buffer_size[0],
+                                         window_height=self.buffer_size[1])
         program["view_matrix"].write(camera_transform.local_matrix.T.tobytes())
         program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
 

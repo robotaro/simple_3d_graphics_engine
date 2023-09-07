@@ -58,10 +58,10 @@ CAMERA_Z_NEAR = 0.01
 CAMERA_Z_FAR = 1000.0
 CAMERA_ZOOM_SPEED = 0.05
 
-# Render Flags
+# Render Flags - not yet used
 RENDER_FLAG_NONE = 0  # Normal PBR Render.
 RENDER_FLAG_DEPTH_ONLY = 1  # Only render the depth buffer.
-RENDER_FLAG_OFFSCREEN = 2  # Render offscreen and return the depth and (optionally) color buffers.
+RENDER_FLAG_OFFSCREEN = 2  # Render off-screen and return the depth and (optionally) color buffers.
 RENDER_FLAG_FLIP_WIREFRAME = 4  # Invert the status of wireframe rendering for each mes
 RENDER_FLAG_ALL_WIREFRAME = 8  # Render all meshes as wireframes.
 RENDER_FLAG_ALL_SOLID = 16  # Render all meshes as solids.

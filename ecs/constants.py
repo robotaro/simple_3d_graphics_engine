@@ -63,11 +63,12 @@ EVENT_INDEX_MOUSE_SCROLL_X = 0
 EVENT_INDEX_MOUSE_SCROLL_Y = 1
 
 # Actions
-EVENT_ACTION_ENTITY_SELECTED = 20
+EVENT_EXIT_APPLICATION = 20
+EVENT_ACTION_ENTITY_SELECTED = 21
 
 # Window
-EVENT_WINDOW_RESIZE = 30                # args: (width, height) <int, int>
-EVENT_WINDOW_FRAMEBUFFER_RESIZE = 31    # args: (width, height) <int, int>
+EVENT_WINDOW_SIZE = 30                # args: (width, height) <int, int>
+EVENT_WINDOW_FRAMEBUFFER_SIZE = 31    # args: (width, height) <int, int>
 EVENT_WINDOW_DROP_FILES = 32            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a list
 
 

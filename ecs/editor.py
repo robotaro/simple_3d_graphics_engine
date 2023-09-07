@@ -172,13 +172,19 @@ class Editor:
         self.mouse_state[constants.MOUSE_SCROLL_POSITION] += y_offset
 
     def _glfw_callback_window_resize(self, glfw_window, width, height):
-        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_RESIZE,
+        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_SIZE,
                                      event_data=(width, height),
                                      sender=self)
         self.window_size = (width, height)
 
     def _glfw_callback_framebuffer_size(self, glfw_window, width, height):
-        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_RESIZE,
+        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_SIZE,
+                                     event_data=(width, height),
+                                     sender=self)
+        self.buffer_size = (width, height)
+
+    def _glfw_callback_window_size(self, glfw_window, width, height):
+        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_SIZE,
                                      event_data=(width, height),
                                      sender=self)
         self.buffer_size = (width, height)
@@ -234,7 +240,7 @@ class Editor:
                      constants.EVENT_MOUSE_BUTTON_DISABLED,
                      constants.EVENT_MOUSE_BUTTON_PRESS,
                      constants.EVENT_KEYBOARD_PRESS,
-                     constants.EVENT_WINDOW_RESIZE,
+                     constants.EVENT_WINDOW_SIZE,
                  ]
 
         if system_type == ImguiSystem._type:
@@ -247,7 +253,8 @@ class Editor:
             # Set default events to subscribe too
             if subscribed_events is None:
                 subscribed_events = [
-                    constants.EVENT_ACTION_ENTITY_SELECTED
+                    constants.EVENT_ACTION_ENTITY_SELECTED,
+                    constants.EVENT_KEYBOARD_PRESS
                 ]
 
         if system_type == InputControlSystem._type:
@@ -292,8 +299,9 @@ class Editor:
                 raise Exception(f"[ERROR] System {system._type} failed to initialise")
 
         # Update systems - Main Loop
+        exit_application = False
         timestamp_past = time.perf_counter()
-        while not glfw.window_should_close(self.window_glfw):
+        while not glfw.window_should_close(self.window_glfw) and not exit_application:
 
             glfw.poll_events()
 
@@ -304,9 +312,12 @@ class Editor:
 
             # Update All systems in order
             for system in self.systems:
-                system.update(elapsed_time=elapsed_time,
-                              context=self.context)
+                if not system.update(elapsed_time=elapsed_time,
+                                      context=self.context):
+                    exit_application = True
+                    break
 
+            # Still swap these even if you have to exit application?
             glfw.swap_buffers(self.window_glfw)
 
         # Shutdown systems

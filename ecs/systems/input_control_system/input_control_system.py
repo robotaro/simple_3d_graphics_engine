@@ -53,7 +53,7 @@ class InputControlSystem(System):
     def initialise(self, **kwargs) -> bool:
         return True
 
-    def update(self, elapsed_time: float, context: moderngl.Context):
+    def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
         for entity_uid in list(self.component_pool.input_control_components.keys()):
 
@@ -94,6 +94,8 @@ class InputControlSystem(System):
             input_control.right = right_temp / np.linalg.norm(right_temp)
             up_temp = np.cross(input_control.right, input_control.forward)
             input_control.up = up_temp / np.linalg.norm(up_temp)"""
+
+        return True
 
     def on_event(self, event_type: int, event_data: tuple):
 

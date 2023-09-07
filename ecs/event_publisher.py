@@ -19,8 +19,8 @@ class EventPublisher:
             constants.EVENT_MOUSE_BUTTON_RELEASE: [],
             constants.EVENT_MOUSE_MOVE: [],
             constants.EVENT_MOUSE_SCROLL: [],
-            constants.EVENT_WINDOW_RESIZE: [],
-            constants.EVENT_WINDOW_FRAMEBUFFER_RESIZE: [],
+            constants.EVENT_WINDOW_SIZE: [],
+            constants.EVENT_WINDOW_FRAMEBUFFER_SIZE: [],
             constants.EVENT_WINDOW_DROP_FILES: [],
             constants.EVENT_ACTION_ENTITY_SELECTED: []
         }

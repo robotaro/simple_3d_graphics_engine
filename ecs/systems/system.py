@@ -27,8 +27,8 @@ class System:
 
     def update(self,
                elapsed_time: float,
-               context: moderngl.Context):
-        pass
+               context: moderngl.Context) -> bool:
+        return True
 
     def on_event(self, event_type: int, event_data: tuple):
         pass
