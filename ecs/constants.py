@@ -23,6 +23,11 @@ AVAILABLE_SYSTEMS = [
     SYSTEM_NAME_RENDER,
     SYSTEM_NAME_IMGUI
 ]
+DEFAULT_SYSTEMS_DECLARATION = [
+    SYSTEM_NAME_INPUT_CONTROL,
+    SYSTEM_NAME_RENDER,
+    SYSTEM_NAME_IMGUI
+]
 
 # =============================================================================
 #                               Imgui System

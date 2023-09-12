@@ -10,6 +10,7 @@
 
     <entity name="Directional Light 1" >
         <directional_light direction="0.0 -1.0 0.0" color="1.0 1.0 1.0"/>
+
     </entity>
 
     <!-- Viewports should be set in terms of ratios. This is a more versatile solution for resizing windows -->

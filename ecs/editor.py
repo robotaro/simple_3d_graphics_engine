@@ -45,6 +45,7 @@ class Editor:
     def __init__(self,
                  window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
                  window_title="New Editor",
+                 systems: Union[List[str], None] = None,
                  vertical_sync=True):
 
         self.logger = utils_logging.get_project_logger()
@@ -102,6 +103,14 @@ class Editor:
 
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
+
+        # If not systems are specified, stick with the default ones
+        if systems is None:
+            systems = constants.DEFAULT_SYSTEMS_DECLARATION
+
+        # Create systems
+        for system_type in systems:
+            self.create_system(system_type=system_type)
 
     # ========================================================================
     #                           Input State Functions
