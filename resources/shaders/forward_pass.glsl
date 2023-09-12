@@ -14,6 +14,13 @@ out vec3 v_normal;
 out vec3 v_position;
 out vec3 v_viewpos;
 
+struct global_ambient
+{
+    vec3 direction;  // direction of top color
+    vec3 top;        // top color
+    vec3 bottom;     // bottom color
+};
+
 
 void main() {
     v_position = in_vert;
@@ -58,6 +65,8 @@ in vec3 v_viewpos;
 uniform int entity_id;
 uniform int entity_render_mode;
 
+uniform float gamma = 2.2;
+
 // MVP
 uniform mat4 view_matrix;
 
@@ -84,7 +93,7 @@ uniform DirectionalLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
 
 
 // Functions pre-declaration
-vec3 calculate_point_lights_contribution();
+//vec3 calculate_point_lights_contribution();
 vec3 calculate_directional_light(DirectionalLight dir_light, vec3 color, vec3 normal);
 
 
@@ -116,6 +125,10 @@ void main() {
         vec3 dir_light_color = calculate_directional_light(directional_lights[i], color_rgb, normal);
         color_rgb += dir_light_color;
     }
+
+    // Apply gamma correction
+    //color_rgb = pow(color_rgb, vec3(1.0 / gamma));
+
 
     out_fragment_color = vec4(color_rgb * 0.5, material_albedo.a);
     out_fragment_normal = vec4(normal, 1.0);

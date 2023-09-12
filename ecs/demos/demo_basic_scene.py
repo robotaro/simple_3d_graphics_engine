@@ -12,5 +12,6 @@ def main():
 
     editor.run()
 
+
 if __name__ == "__main__":
     main()
