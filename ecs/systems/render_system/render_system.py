@@ -125,6 +125,8 @@ class RenderSystem(System):
                                                                           components=4,
                                                                           dtype='f4')
         self.textures_offscreen_rendering["selection"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.textures_offscreen_rendering["selection"].repeat_x = False  # This prevent outlining from spiling over to the other edge
+        self.textures_offscreen_rendering["selection"].repeat_y = False
         self.textures_offscreen_rendering["selection_depth"] = self.ctx.depth_texture(size=self.buffer_size)
         self.framebuffers["selection_fbo"] = self.ctx.framebuffer(
             color_attachments=[

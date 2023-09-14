@@ -16,7 +16,6 @@ struct GlobalAmbient
     vec3 bottom;     // bottom color
 };
 
-
 in vec3 in_vert;
 in vec3 in_normal;
 
@@ -182,7 +181,7 @@ void main() {
     }
 
     // Apply gamma correction
-    //color_rgb = pow(color_rgb, vec3(1.0 / gamma));
+    color_rgb = pow(color_rgb, vec3(1.0 / gamma));
 
     out_fragment_color = vec4(color_rgb, material_albedo.a);
     out_fragment_normal = vec4(normal, 1.0);

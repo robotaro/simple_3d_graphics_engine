@@ -14,15 +14,15 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
+in vec2 uv;
+
 // Input textures
 uniform sampler2D color_texture;
 uniform sampler2D normal_texture;
 uniform sampler2D viewpos_texture;
 uniform sampler2D entity_info_texture;
 uniform sampler2D selected_entity_texture;
-
-in vec2 uv;
-
+uniform vec3 outline_color = vec3(1.0, 0.65, 0.0);  // Default orange color used in Blender
 uniform int selected_texture = 0;
 
 out vec4 fragColor;
@@ -89,10 +89,7 @@ vec3 calculate_outline_color(){
     vec3 silhouette_color = texture(selected_entity_texture, uv).rgb;
 
     // Check if the pixel is part of the object silhouette
-    bool is_silhouette = silhouette_color == vec3(1.0, 0.0, 0.0);
-
-    // Define the outline color
-    vec3 outline_color = vec3(1.0, 0.65, 0.0); // Orange outline color
+    bool is_silhouette = silhouette_color.r == 1.0;
 
     // Sample the neighboring pixels
     float top_left = textureOffset(selected_entity_texture, uv, ivec2(-1, -1)).r;

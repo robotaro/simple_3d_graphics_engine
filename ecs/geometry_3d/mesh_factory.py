@@ -2,7 +2,7 @@ import os
 import numpy as np
 import trimesh
 
-from core.mesh import Mesh
+from ecs.components.mesh import Mesh
 
 
 class MeshFactory:

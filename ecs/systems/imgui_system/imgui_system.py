@@ -240,10 +240,10 @@ class ImguiSystem(System):
 
         # [ Material]
         material = self.component_pool.material_components.get(self.selected_entity_uid, None)
-        if material:
-            uc, color = imgui.color_edit4("Material", *material.albedo)
+        #if material:
+        #    uc, color = imgui.color_edit4("Material", *material.albedo)
 
         # draw text label inside of current window
-        imgui.text(f"Entity: {self.selected_entity_name}")
+        #imgui.text(f"Entity: {self.selected_entity_name}")
 
         imgui.end()
