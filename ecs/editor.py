@@ -445,12 +445,11 @@ class Editor:
             if component_soup.name == constants.COMPONENT_NAME_MATERIAL:
 
                 diffuse_str = component_soup.attrs.get("diffuse", ".75 .75 .75")
-                diffuse = tuple(utils_string.string2float_list(diffuse_str))
-
                 ambient_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
-                ambient = tuple(utils_string.string2float_list(ambient_str))
-
                 specular_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
+
+                diffuse = tuple(utils_string.string2float_list(diffuse_str))
+                ambient = tuple(utils_string.string2float_list(ambient_str))
                 specular = tuple(utils_string.string2float_list(specular_str))
 
                 shininess_factor = float(component_soup.attrs.get("shininess_factor", "0.5"))
@@ -465,8 +464,8 @@ class Editor:
                     specular=specular,
                     shininess_factor=shininess_factor,
                     metallic_factor=metallic_factor,
-                    roughness_factor=roughness_factor
-                )
+                    roughness_factor=roughness_factor)
+
                 continue
 
             # Input Control

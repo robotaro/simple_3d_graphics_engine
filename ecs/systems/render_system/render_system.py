@@ -40,7 +40,10 @@ class RenderSystem(System):
         "shadow_map_program",
         "shadow_map_depth_texture",
         "shadow_map_framebuffer",
-        "_sample_entity_location"
+        "_sample_entity_location",
+        "_ambient_lighting_enabled",
+        "_diffuse_lighting_enabled",
+        "_specular_lighting_enabled"
     ]
 
     def __init__(self, **kwargs):
@@ -84,6 +87,9 @@ class RenderSystem(System):
 
         # Flags
         self._sample_entity_location = None
+        self._ambient_lighting_enabled = True
+        self._diffuse_lighting_enabled = True
+        self._specular_lighting_enabled = True
 
     # =========================================================================
     #                         System Core functions
@@ -125,7 +131,7 @@ class RenderSystem(System):
                                                                           components=4,
                                                                           dtype='f4')
         self.textures_offscreen_rendering["selection"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.textures_offscreen_rendering["selection"].repeat_x = False  # This prevent outlining from spiling over to the other edge
+        self.textures_offscreen_rendering["selection"].repeat_x = False  # This prevents outlining from spilling over to the other edge
         self.textures_offscreen_rendering["selection"].repeat_y = False
         self.textures_offscreen_rendering["selection_depth"] = self.ctx.depth_texture(size=self.buffer_size)
         self.framebuffers["selection_fbo"] = self.ctx.framebuffer(
@@ -218,10 +224,19 @@ class RenderSystem(System):
                                              sender=self)
 
         if event_type == constants.EVENT_KEYBOARD_PRESS:
+
             # Texture debugging modes
             key_value = event_data[constants.EVENT_INDEX_KEYBOARD_KEY]
             if glfw.KEY_F1 <= key_value <= glfw.KEY_F11:
                 self.fullscreen_selected_texture = key_value - glfw.KEY_F1
+
+            # Light debugging modes
+            if glfw.KEY_1 == key_value:
+                self._ambient_lighting_enabled = not self._ambient_lighting_enabled
+            if glfw.KEY_2 == key_value:
+                self._diffuse_lighting_enabled = not self._diffuse_lighting_enabled
+            if glfw.KEY_3 == key_value:
+                self._specular_lighting_enabled = not self._specular_lighting_enabled
 
         if event_type == constants.EVENT_ACTION_ENTITY_SELECTED:
             # Other systems may change the selected entity, so this should be reflected by the render system
@@ -295,8 +310,11 @@ class RenderSystem(System):
         # Lights
         program["num_point_lights"].value = len(self.component_pool.point_light_components)
         for index, (_, point_light_component) in enumerate(self.component_pool.point_light_components.items()):
-            program[f"point_lights[{index}].color"] = point_light_component.color
             program[f"point_lights[{index}].position"] = point_light_component.position
+            program[f"point_lights[{index}].diffuse"] = point_light_component.diffuse
+            program[f"point_lights[{index}].ambient"] = point_light_component.ambient
+            program[f"point_lights[{index}].specular"] = point_light_component.specular
+            program[f"point_lights[{index}].attenuation_coeffs"] = point_light_component.attenuation_coeffs
 
         # Renderables
         for uid, renderable_component in component_pool.renderable_components.items():
@@ -313,16 +331,13 @@ class RenderSystem(System):
             # Upload uniforms
             program["entity_id"].value = uid
             program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
+            #program["ambient_lighting_enable"].value = self._ambient_lighting_enabled
+            #program["diffuse_lighting_enable"].value = self._diffuse_lighting_enabled
+            #program["specular_lighting_enable"].value = self._specular_lighting_enabled
 
             # TODO: Technically, you only need to upload the material once since it doesn't change. The program will keep its variable states!
             if material is not None:
                 program["material.diffuse"].value = material.diffuse
-                #program["material_diffuse_factor"].value = material.diffuse_factor
-                #program["material_ambient_factor"].value = material.ambient_factor
-                #program["material_specular_factor"].value = material.specular_factor
-
-                #program["material_ambient_factor"] = material.ambient
-                #program["material_specular_factor"] = material.specular
 
             # Render the vao at the end
             renderable_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)

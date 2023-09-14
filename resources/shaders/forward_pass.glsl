@@ -59,10 +59,10 @@ void main() {
     v_viewpos = viewpos.xyz;
 
     //Make sure global ambient direction is unit length
-    vec3 L = normalize(hemisphere_light_direction);
+    vec3 hemisphere_light_direction = normalize(hemisphere_light_direction);
 
     //Calculate cosine of angle between global ambient direction and normal
-    float cos_theta = dot(L, in_normal);
+    float cos_theta = dot(hemisphere_light_direction, in_normal);
 
     //Calculate global ambient colour
     float alpha = 0.5 + (0.5 * cos_theta);
@@ -89,17 +89,22 @@ struct Material {
 
 struct PointLight {
     vec3 position;
-    vec3 color;
+    vec3 diffuse;
+    vec3 ambient;
+    vec3 specular;
+    vec3 attenuation_coeffs;
+    float intensity;
 };
 
 struct DirectionalLight {
     vec3 direction;
-    vec3 color;
+    vec3 diffuse;
+    vec3 ambient;
+    vec3 specular;
     float strength;
     bool shadow_enabled;
     mat4 matrix;
 };
-
 
 // Output buffers (Textures)
 layout(location=0) out vec4 out_fragment_color;
@@ -122,62 +127,45 @@ uniform int entity_render_mode;
 
 // Rendering Mode details
 uniform bool point_light_enabled = false;
-uniform bool use_hemisphere_lighting = true;
+uniform bool use_hemisphere_lighting = false;
 uniform float gamma = 2.2;
+uniform bool ambient_lighting_enabled = true;
+uniform bool diffuse_lighting_enabled = true;
+uniform bool specular_lighting_enabled = true;
 
-// MVP
+// MVP matrices
 uniform mat4 view_matrix;
 
-// Old Light variables
-const vec3 ambient = vec3(1.0);
-uniform vec4 uColor = vec4(1.0, 0.5, 0.1, 1.0);
-uniform float uHardness = 16.0;
-
-// New Lights
-uniform vec3 ambient_color = vec3(1.0, 1.0, 1.0);
-uniform float ambient_strength;
-
+// Point Lights
 uniform int num_point_lights = 0;
 uniform PointLight point_lights[MAX_POINT_LIGHTS];
 
+// Directional Lights
 uniform int num_directional_lights = 0;
 uniform DirectionalLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
 
 // Functions pre-declaration
-//vec3 calculate_point_lights_contribution();
-vec3 calculate_directional_light(DirectionalLight dir_light, vec3 color, vec3 normal);
+//vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir);
+vec3 calculate_point_light(PointLight light, Material material, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main() {
 
     vec3 view_position = transpose(inverse(view_matrix))[3].xyz;
-    vec3 normal = normalize(v_normal);
-    vec3 c = v_material.diffuse * ambient;
-    vec3 v = normalize(view_position - v_position);
-    vec3 light_direction, r;
-    float s, spec;
+    vec3 normal = normalize(v_normal);  // TODO: Consider not doint this per fragment. Assume normas ar unitary
+    vec3 c = v_material.diffuse * v_ambient_color;
+    vec3 view_direction = normalize(view_position - v_position);
 
-    vec3 color_rgb = v_material.diffuse;
 
-    // Calculate point light contributions
+    vec3 color_rgb = vec3(0.0);
+
+    // phase 1: Directional lighting
+    //if (ambient_lighting_enabled)
+    //    vec3 final_color_rgb = calculate_directional_light(light_direction, normal, view_direction);
+
+    // phase 2: Point lights
     if (point_light_enabled)
-    {
-        for (int i = 0; i < num_point_lights; ++i){
-            light_direction = normalize(point_lights[i].position - v_position);
-            s = max(0.0, dot(normal, light_direction));
-            color_rgb += color_rgb * s * point_lights[i].color;
-            if (s > 0) {
-                r = reflect(-light_direction, normal);
-                spec = pow(max(0.0, dot(v, r)), uHardness);
-                color_rgb += spec * point_lights[i].color;
-            }
-        }
-    }
-
-    // Calculate directional light contributions
-    for (int i = 0; i < num_directional_lights; ++i) {
-        vec3 dir_light_color = calculate_directional_light(directional_lights[i], color_rgb, normal);
-        color_rgb += dir_light_color;
-    }
+        for(int i = 0; i < num_point_lights; i++)
+            color_rgb += calculate_point_light(point_lights[i], v_material, normal, v_position, view_direction);
 
     if (use_hemisphere_lighting){
         color_rgb = v_ambient_color;
@@ -192,13 +180,61 @@ void main() {
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
 
+vec3 calculate_point_light(PointLight light, Material material, vec3 normal, vec3 fragPos, vec3 viewDir)
+{
+    // Direction
+    vec3 lightDir = normalize(light.position - fragPos);
 
-vec3 calculate_directional_light(DirectionalLight dir_light, vec3 color, vec3 normal) {
+    // diffuse shading
+    float diff = max(dot(normal, lightDir), 0.0);
+
+    // specular shading
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess_factor);
+
+    // attenuation
+    float distance    = length(light.position - fragPos);
+    float attenuation = 1.0 / (light.attenuation_coeffs.r +
+                               light.attenuation_coeffs.g * distance +
+                               light.attenuation_coeffs.b * (distance * distance));
+
+    // combine results
+    vec3 ambient  = light.ambient  * material.diffuse;
+    vec3 diffuse  = light.diffuse  * diff * material.diffuse;
+    vec3 specular = light.specular * spec * material.specular;
+    ambient  *= attenuation;
+    diffuse  *= attenuation;
+    specular *= attenuation;
+    return (ambient + diffuse + specular);
+}
+
+
+
+/*vec3 calculate_directional_light(DirectionalLight dir_light, vec3 color, vec3 normal) {
     vec3 light_direction = -dir_light.direction;
     float diff = max(dot(normal, light_direction), 0.0);
-    vec3 diffuse = /*material_diffuse_factor*/ diff * dir_light.color * dir_light.strength;
+    vec3 diffuse = materia.diffuse * diff * dir_light.color * dir_light.strength;
     return diffuse * color;
-}
+}*/
+
+/*vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir)
+{
+    vec3 lightDir = normalize(-light.direction);
+
+    // diffuse shading
+    float diff = max(dot(normal, lightDir), 0.0);
+
+    // specular shading
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess_factor);
+
+    // Combine results
+    vec3 ambient  = light.ambient * material.diffuse;
+    vec3 diffuse  = light.diffuse * diff * material.diffuse;
+    vec3 specular = light.specular * spec * material.specular;
+    return (ambient + diffuse + specular);
+}*/
+
 
 /*
 vec3 calculate_point_lights_contribution(vec3 material_diffuse, vec3 material_specular){
