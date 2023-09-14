@@ -3,10 +3,12 @@
 #if defined VERTEX_SHADER
 
 struct Material {
-    vec3 albedo;
-    float diffuse_factor;
-    float ambient_factor;
-    float specular_factor;
+    vec3 diffuse;
+    vec3 ambient;
+    vec3 specular;
+    float shininess_factor;
+    float metallic_factor;
+    float roughness_factor;
 };
 
 struct GlobalAmbient
@@ -31,10 +33,12 @@ uniform GlobalAmbient global = GlobalAmbient(
 );
 
 uniform Material material = Material(
-    vec3(0.8, 0.8, 0.8),   // Default albedo color (e.g., gray)
-    0.5,                   // Default diffuse factor
-    0.2,                   // Default ambient factor
-    0.5                    // Default specular factor
+    vec3(0.85, 0.85, 0.85), // Default diffuse color (e.g., gray)
+    vec3(1.0, 1.0, 1.0),    // Default ambient color
+    vec3(1.0, 1.0, 1.0),    // Default specular color
+    0.5,                    // Default shiness factor
+    1.0,                    // Default metallic factor
+    0.0                     // Default roughness factor
 );
 
 uniform vec3 hemisphere_up_color = vec3(1.0, 1.0, 1.0);
@@ -45,6 +49,7 @@ out vec3 v_normal;
 out vec3 v_position;
 out vec3 v_viewpos;
 out vec3 v_ambient_color;
+out Material v_material;
 
 void main() {
 
@@ -61,8 +66,9 @@ void main() {
 
     //Calculate global ambient colour
     float alpha = 0.5 + (0.5 * cos_theta);
-    v_ambient_color = alpha * global.top * material.albedo + (1.0 - alpha) * global.bottom * material.albedo;
+    v_ambient_color = alpha * global.top * material.diffuse + (1.0 - alpha) * global.bottom * material.diffuse;
 
+    v_material = material;
     gl_Position = projection_matrix * viewpos;
 }
 
@@ -71,11 +77,14 @@ void main() {
 #define MAX_DIRECTIONAL_LIGHTS 4
 #define MAX_POINT_LIGHTS 8
 
+// Already defined in the vertex shader
 struct Material {
-    vec3 albedo;
-    float diffuse_factor;
-    float ambient_factor;
-    float specular_factor;
+    vec3 diffuse;
+    vec3 ambient;
+    vec3 specular;
+    float shininess_factor;
+    float metallic_factor;
+    float roughness_factor;
 };
 
 struct PointLight {
@@ -103,6 +112,7 @@ in vec3 v_normal;
 in vec3 v_position;
 in vec3 v_viewpos;
 in vec3 v_ambient_color;
+in Material v_material;
 
 // =======[ Uniforms ]========
 
@@ -117,13 +127,6 @@ uniform float gamma = 2.2;
 
 // MVP
 uniform mat4 view_matrix;
-
-// Material
-// uniform Material material;
-uniform vec4 material_albedo = vec4(0.8, 0.8, 0.8, 1.0);
-uniform float material_diffuse_factor = 0.5;
-uniform float material_ambient_factor = 0.5;
-uniform float material_specular_factor = 0.5;
 
 // Old Light variables
 const vec3 ambient = vec3(1.0);
@@ -148,12 +151,12 @@ void main() {
 
     vec3 view_position = transpose(inverse(view_matrix))[3].xyz;
     vec3 normal = normalize(v_normal);
-    vec3 c = material_albedo.rgb * ambient;
+    vec3 c = v_material.diffuse * ambient;
     vec3 v = normalize(view_position - v_position);
     vec3 light_direction, r;
     float s, spec;
 
-    vec3 color_rgb = material_albedo.rgb;
+    vec3 color_rgb = v_material.diffuse;
 
     // Calculate point light contributions
     if (point_light_enabled)
@@ -183,7 +186,7 @@ void main() {
     // Apply gamma correction
     color_rgb = pow(color_rgb, vec3(1.0 / gamma));
 
-    out_fragment_color = vec4(color_rgb, material_albedo.a);
+    out_fragment_color = vec4(color_rgb, 1.0);
     out_fragment_normal = vec4(normal, 1.0);
     out_fragment_viewpos = vec4(v_viewpos, 1);
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
@@ -193,7 +196,7 @@ void main() {
 vec3 calculate_directional_light(DirectionalLight dir_light, vec3 color, vec3 normal) {
     vec3 light_direction = -dir_light.direction;
     float diff = max(dot(normal, light_direction), 0.0);
-    vec3 diffuse = material_diffuse_factor * diff * dir_light.color * dir_light.strength;
+    vec3 diffuse = /*material_diffuse_factor*/ diff * dir_light.color * dir_light.strength;
     return diffuse * color;
 }
 

@@ -316,7 +316,7 @@ class RenderSystem(System):
 
             # TODO: Technically, you only need to upload the material once since it doesn't change. The program will keep its variable states!
             if material is not None:
-                program["material_albedo"].write(np.array((*material.albedo, material.alpha), dtype=np.float32).tobytes())
+                program["material.diffuse"].value = material.diffuse
                 #program["material_diffuse_factor"].value = material.diffuse_factor
                 #program["material_ambient_factor"].value = material.ambient_factor
                 #program["material_specular_factor"].value = material.specular_factor

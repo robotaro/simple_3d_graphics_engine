@@ -8,7 +8,7 @@ def main():
 
     editor = Editor(window_title="Basic Scene Demo")
 
-    editor.load_scene(scene_xml_fpath=os.path.join(constants.RESOURCES_DIR, "scenes", "default_scene.xml"))
+    editor.load_scene(scene_xml_fpath="demos/demo_01_basic_scene/basic_scene.xml", )
 
     editor.run()
 

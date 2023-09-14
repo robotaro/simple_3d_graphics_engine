@@ -5,10 +5,18 @@ import moderngl
 class Material(Component):
 
     def __init__(self, **kwargs):
-        self.albedo = kwargs.get("albedo", (0.85, 0.85, 0.85))  # Albedo is the base color
-        self.diffuse_factor = kwargs.get("diffuse_factor", 0.5)
-        self.ambient_factor = kwargs.get("ambient_factor", 0.5)
-        self.specular_factor = kwargs.get("specular_factor", 0.5)
+
+        # Colors
+        self.diffuse = kwargs.get("diffuse", (0.85, 0.85, 0.85))
+        self.ambient = kwargs.get("ambient", (1.0, 1.0, 1.0))
+        self.specular = kwargs.get("specular", (1.0, 1.0, 1.0))
+
+        # Factors
+        self.shininess_factor = kwargs.get("shininess_factor", 0.0)
+        self.metalic_factor = kwargs.get("metalic_factor", 0.0)
+        self.roughness_factor = kwargs.get("roughness_factor", 1.0)
+
+        # Transparency
         self.alpha = kwargs.get("specular", 1.0)
 
     def is_transparent(self) -> bool:

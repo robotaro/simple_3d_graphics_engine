@@ -340,8 +340,19 @@ class Editor:
         :return:
         """
 
+
+        # Check if path is absolute
+        fpath = None
+        if os.path.isfile(scene_xml_fpath):
+            fpath = scene_xml_fpath
+
+        if fpath is None:
+            # Assume it is a relative path from the working directory/root directory
+            clean_scene_xml_fpath = scene_xml_fpath.replace("\\", os.sep).replace("/", os.sep)
+            fpath = os.path.join(constants.ROOT_DIR, clean_scene_xml_fpath)
+
         # Load UI window blueprint
-        with open(scene_xml_fpath) as file:
+        with open(fpath) as file:
             root_soup = BeautifulSoup(file.read(), features="lxml")
 
             # Find window root node - there should be only one
@@ -432,19 +443,29 @@ class Editor:
 
             # Material
             if component_soup.name == constants.COMPONENT_NAME_MATERIAL:
-                albedo_str = component_soup.attrs.get("albedo", ".75 .75 .75")
-                albedo = utils_string.string2float_list(albedo_str)
-                diffuse_factor = float(component_soup.attrs.get("diffuse_factor", "0.5"))
-                ambient_factor = float(component_soup.attrs.get("ambient_factor", "0.5"))
-                specular_factor = float(component_soup.attrs.get("specular_factor", "0.5"))
+
+                diffuse_str = component_soup.attrs.get("diffuse", ".75 .75 .75")
+                diffuse = tuple(utils_string.string2float_list(diffuse_str))
+
+                ambient_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
+                ambient = tuple(utils_string.string2float_list(ambient_str))
+
+                specular_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
+                specular = tuple(utils_string.string2float_list(specular_str))
+
+                shininess_factor = float(component_soup.attrs.get("shininess_factor", "0.5"))
+                metallic_factor = float(component_soup.attrs.get("metallic_factor", "1.0"))
+                roughness_factor = float(component_soup.attrs.get("roughness_factor", "0.0"))
 
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_MATERIAL,
-                    albedo=albedo,
-                    diffuse_factor=diffuse_factor,
-                    ambient_factor=ambient_factor,
-                    specular_factor=specular_factor,
+                    diffuse=diffuse,
+                    ambient=ambient,
+                    specular=specular,
+                    shininess_factor=shininess_factor,
+                    metallic_factor=metallic_factor,
+                    roughness_factor=roughness_factor
                 )
                 continue
 
