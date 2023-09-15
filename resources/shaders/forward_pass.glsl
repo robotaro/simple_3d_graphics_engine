@@ -62,7 +62,7 @@ void main() {
     vec3 hemisphere_light_direction = normalize(hemisphere_light_direction);
 
     //Calculate cosine of angle between global ambient direction and normal
-    float cos_theta = dot(hemisphere_light_direction, in_normal);
+    float cos_theta = dot(hemisphere_light_direction, v_normal);
 
     //Calculate global ambient colour
     float alpha = 0.5 + (0.5 * cos_theta);
