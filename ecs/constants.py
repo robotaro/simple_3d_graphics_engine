@@ -199,6 +199,7 @@ COMPONENT_ARG_MESH_FPATH = "fpath"
 
 MESH_SHAPE_BOX = "box"
 MESH_SHAPE_SPHERE = "sphere"
+MESH_SHAPE_ICOSPHERE = "icosphere"
 MESH_SHAPE_CYLINDER = "cylinder"
 MESH_SHAPE_FROM_OBJ = "obj"  # TODO: Kinda of a hack. You need to add argument "fpath"
 

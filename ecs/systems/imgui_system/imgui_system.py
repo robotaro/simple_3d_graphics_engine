@@ -217,6 +217,9 @@ class ImguiSystem(System):
             imgui.end()
             return
 
+        imgui.text(f"[ Entity ] {self.selected_entity_name}")
+        imgui.spacing()
+
         # [ Point Light ]
         point_light = self.component_pool.point_light_components.get(self.selected_entity_uid, None)
         if point_light:
@@ -255,14 +258,16 @@ class ImguiSystem(System):
 
             imgui.spacing()
 
-
-
         # [ Material]
         material = self.component_pool.material_components.get(self.selected_entity_uid, None)
-        #if material:
-        #    uc, color = imgui.color_edit4("Material", *material.albedo)
+        if material:
+            imgui.text(f"Material")
+            a, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
+            b, material.specular = imgui.color_edit3("Specular", *material.specular)
+            c, material.shininess_factor = imgui.drag_float("Shininess Factor", material.shininess_factor)
+
+            imgui.spacing()
 
         # draw text label inside of current window
-        #imgui.text(f"Entity: {self.selected_entity_name}")
 
         imgui.end()

@@ -3,11 +3,15 @@
     <entity name="Point Light 1" >
         <point_light diffuse="1.0 1.0 1.0"/>
         <transform_3d position="5.0 5.0 5.0"/>
+        <mesh shape="icosphere" radius="0.2" subdivisions="4"/>
+        <renderable/>
     </entity>
 
     <entity name="Point Light 2" >
         <point_light diffuse="1.0 1.0 1.0"/>
         <transform_3d position="-5.0 5.0 5.0"/>
+        <mesh shape="icosphere" radius="0.2" subdivisions="4"/>
+        <renderable/>
     </entity>
 
     <entity name="Directional Light 1" >

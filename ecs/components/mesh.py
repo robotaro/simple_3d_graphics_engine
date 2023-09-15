@@ -141,6 +141,11 @@ class Mesh(Component):
             depth = kwargs.get("depth", 1.0)
             v, n, u, f = MeshFactory.create_cube(width=width, height=height, depth=depth)
 
+        if shape == constants.MESH_SHAPE_ICOSPHERE:
+            radius = kwargs.get("radius", 1.0)
+            subdivisions = kwargs.get("subdivisions", 3)
+            v, n, u, f = MeshFactory.create_icosphere(radius=radius, subdivisions=subdivisions)
+
         if shape == constants.MESH_SHAPE_SPHERE:
             raise NotImplemented(f"[ERROR] Shape {constants.MESH_SHAPE_SPHERE} not yet implement")
 

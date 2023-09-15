@@ -421,6 +421,15 @@ class Editor:
                         height=float(component_soup.attrs.get("height", "1.0")),
                         depth=float(component_soup.attrs.get("depth", "1.0")))
 
+                # Shape: ICOSPHERE
+                if shape == constants.MESH_SHAPE_ICOSPHERE:
+                    self.add_component(
+                        entity_uid=entity_uid,
+                        component_type=constants.COMPONENT_TYPE_MESH,
+                        shape=shape,
+                        radius=float(component_soup.attrs.get("radius", "0.2")),
+                        subdivisions=int(component_soup.attrs.get("subdivisions", "3")))
+
                 continue
 
             # Camera

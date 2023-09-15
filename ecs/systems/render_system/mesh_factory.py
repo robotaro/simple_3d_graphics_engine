@@ -27,6 +27,18 @@ class MeshFactory:
         return vertices, normals, uvs, indices
 
     @staticmethod
+    def create_icosphere(radius: float, subdivisions: int) -> tuple:
+
+        result = trimesh.creation.icosphere(radius=radius, subdivisions=subdivisions)
+
+        vertices = np.array(result.vertices).astype('f4')
+        normals = np.array(result.vertex_normals).astype('f4')
+        uvs = None
+        indices = np.array(result.faces).astype('i4')
+
+        return vertices, normals, uvs, indices
+
+    @staticmethod
     def from_obj(fpath: str) -> tuple:
 
         # First try the fpath as a relative path from RESOURCES, and if it not there, assume fpath is an absolute path
