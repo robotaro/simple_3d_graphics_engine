@@ -317,8 +317,11 @@ class RenderSystem(System):
 
         # Lights
         program["num_point_lights"].value = len(self.component_pool.point_light_components)
-        for index, (_, point_light_component) in enumerate(self.component_pool.point_light_components.items()):
-            program[f"point_lights[{index}].position"] = point_light_component.position
+        for index, (uid, point_light_component) in enumerate(self.component_pool.point_light_components.items()):
+
+            point_light_transform = self.component_pool.transform_3d_components[uid]
+
+            program[f"point_lights[{index}].position"] = point_light_transform.position
             program[f"point_lights[{index}].diffuse"] = point_light_component.diffuse
             program[f"point_lights[{index}].ambient"] = point_light_component.ambient
             program[f"point_lights[{index}].specular"] = point_light_component.specular

@@ -54,7 +54,7 @@ out Material v_material;
 void main() {
 
     v_position = in_vert;
-    v_normal = in_normal;
+    v_normal = mat3(transpose(inverse(model_matrix))) * in_normal;
     vec4 viewpos = inverse(view_matrix) * model_matrix * vec4(v_position, 1.0);
     v_viewpos = viewpos.xyz;
 
@@ -160,7 +160,7 @@ void main() {
     vec3 color_rgb = vec3(0.0);
 
     if (ambient_hemisphere_light_enabled){
-        color_rgb = v_ambient_color;
+        color_rgb += v_ambient_color;
     }
 
     // Directional lighting
@@ -230,30 +230,6 @@ vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewD
     return (ambient + diffuse + specular);
 }
 
-
-/*
-vec3 calculate_point_lights_contribution(vec3 material_diffuse, vec3 material_specular){
-
-    // ambient
-    vec3 ambient = light.ambient * texture(material.diffuse, TexCoords).rgb;
-
-    // diffuse
-    vec3 norm = normalize(Normal);
-
-    // vec3 lightDir = normalize(light.position - FragPos);
-    vec3 lightDir = normalize(-light.direction);
-    float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = light.diffuse * diff * material_diffuse;
-
-    // specular
-    vec3 viewDir = normalize(viewPos - FragPos);
-    vec3 reflectDir = reflect(-lightDir, norm);
-    float specular = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
-    vec3 specular_color = light.specular * specular * material_specular;
-
-    vec3 result = ambient + diffuse + specular_color;
-    return result;
-}*/
 
 
 /*

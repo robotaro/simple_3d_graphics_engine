@@ -17,7 +17,7 @@ class Material(Component):
         self.roughness_factor = kwargs.get("roughness_factor", 1.0)
 
         # Transparency
-        self.alpha = kwargs.get("specular", 1.0)
+        self.alpha = kwargs.get("alpha", 1.0)
 
     def is_transparent(self) -> bool:
         return self.alpha == 1.0

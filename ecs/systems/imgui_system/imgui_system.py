@@ -196,7 +196,7 @@ class ImguiSystem(System):
         # open new window context
         imgui.begin(f"Selected Entity", True)
 
-        imgui.set_window_size(400, 300)
+        imgui.set_window_size(500, 500)
 
         flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP
 
@@ -217,6 +217,31 @@ class ImguiSystem(System):
             imgui.end()
             return
 
+        # [ Point Light ]
+        point_light = self.component_pool.point_light_components.get(self.selected_entity_uid, None)
+        if point_light:
+            imgui.text(f"Colors")
+            _, point_light.diffuse = imgui.drag_float3("Diffuse Color",
+                                                       *point_light.diffuse,
+                                                       0.005,
+                                                       0.0,
+                                                       1.0,
+                                                       "%.3f")
+            _, point_light.specular = imgui.drag_float3("Specular Color",
+                                                        *point_light.specular,
+                                                        0.005,
+                                                        0.0,
+                                                        1.0,
+                                                        "%.3f")
+            _, point_light.attenuation_coeffs = imgui.drag_float3("Attenuation Coeffs.",
+                                                        *point_light.attenuation_coeffs,
+                                                        0.005,
+                                                        0.0,
+                                                        100.0,
+                                                        "%.3f")
+
+            imgui.spacing()
+
         # [ Transform 3D ]
         transform = self.component_pool.transform_3d_components.get(self.selected_entity_uid, None)
         if transform:
@@ -224,19 +249,13 @@ class ImguiSystem(System):
             _, transform.position = imgui.drag_float3("Position",
                                                       *transform.position,
                                                       constants.IMGUI_DRAG_FLOAT_PRECISION)
-
-            imgui.separator()
-
-        # [ Point Light ]
-        point_light = self.component_pool.point_light_components.get(self.selected_entity_uid, None)
-        if point_light:
-            imgui.text(f"Point Light")
-            _, point_light.position = imgui.drag_float3("Position",
-                                                      *point_light.position,
+            _, transform.rotation = imgui.drag_float3("Rotation",
+                                                      *transform.rotation,
                                                       constants.IMGUI_DRAG_FLOAT_PRECISION)
 
+            imgui.spacing()
 
-            imgui.separator()
+
 
         # [ Material]
         material = self.component_pool.material_components.get(self.selected_entity_uid, None)

@@ -9,9 +9,8 @@ uniform mat4 view_matrix;
 uniform mat4 model_matrix;
 
 void main() {
-    vec3 world_position = (model_matrix * vec4(in_vert, 1.0)).xyz;
-    gl_Position = projection_matrix * inverse(view_matrix) * vec4(world_position, 1.0);
 
+    gl_Position = projection_matrix * inverse(view_matrix) * model_matrix * vec4(in_vert, 1.0);
 }
 #endif
 

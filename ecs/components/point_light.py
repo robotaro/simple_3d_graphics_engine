@@ -19,7 +19,6 @@ class PointLight(Component):
     _type = constants.COMPONENT_TYPE_SPOT_LIGHT
 
     def __init__(self, **kwargs):
-        self.position = kwargs.get("position", (50, 10, 50))
         self.diffuse = kwargs.get("diffuse", (1.0, 1.0, 1.0))
         self.ambient = kwargs.get("ambient", (1.0, 1.0, 1.0))
         self.specular = kwargs.get("specular", (1.0, 1.0, 1.0))
