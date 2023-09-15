@@ -41,6 +41,9 @@ class RenderSystem(System):
         "shadow_map_depth_texture",
         "shadow_map_framebuffer",
         "_sample_entity_location",
+        "_ambient_hemisphere_light_enabled",
+        "_point_lights_enabled",
+        "_directional_lights_enabled",
         "_ambient_lighting_enabled",
         "_diffuse_lighting_enabled",
         "_specular_lighting_enabled"
@@ -87,6 +90,11 @@ class RenderSystem(System):
 
         # Flags
         self._sample_entity_location = None
+
+        self._ambient_hemisphere_light_enabled = True
+        self._point_lights_enabled = True
+        self._directional_lights_enabled = True
+
         self._ambient_lighting_enabled = True
         self._diffuse_lighting_enabled = True
         self._specular_lighting_enabled = True
@@ -232,11 +240,11 @@ class RenderSystem(System):
 
             # Light debugging modes
             if glfw.KEY_1 == key_value:
-                self._ambient_lighting_enabled = not self._ambient_lighting_enabled
+                self._ambient_hemisphere_light_enabled = not self._ambient_hemisphere_light_enabled
             if glfw.KEY_2 == key_value:
-                self._diffuse_lighting_enabled = not self._diffuse_lighting_enabled
+                self._point_lights_enabled = not self._point_lights_enabled
             if glfw.KEY_3 == key_value:
-                self._specular_lighting_enabled = not self._specular_lighting_enabled
+                self._directional_lights_enabled = not self._directional_lights_enabled
 
         if event_type == constants.EVENT_ACTION_ENTITY_SELECTED:
             # Other systems may change the selected entity, so this should be reflected by the render system
@@ -331,13 +339,21 @@ class RenderSystem(System):
             # Upload uniforms
             program["entity_id"].value = uid
             program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
-            #program["ambient_lighting_enable"].value = self._ambient_lighting_enabled
-            #program["diffuse_lighting_enable"].value = self._diffuse_lighting_enabled
-            #program["specular_lighting_enable"].value = self._specular_lighting_enabled
+
+            program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
+            program["directional_lights_enabled"].value = self._directional_lights_enabled
+            program["point_lights_enabled"].value = self._point_lights_enabled
+
+            #program["ambient_lighting_enabled"].value = self._ambient_lighting_enabled
+            #program["diffuse_lighting_enabled"].value = self._diffuse_lighting_enabled
+            #program["specular_lighting_enabled"].value = self._specular_lighting_enabled
 
             # TODO: Technically, you only need to upload the material once since it doesn't change. The program will keep its variable states!
             if material is not None:
                 program["material.diffuse"].value = material.diffuse
+                program["material.ambient"].value = material.ambient
+                program["material.specular"].value = material.specular
+                program["material.shininess_factor"] = material.shininess_factor
 
             # Render the vao at the end
             renderable_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
@@ -377,7 +393,6 @@ class RenderSystem(System):
         program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
 
         # Render
-
         renderable_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
 
     def text_2d_pass(self, component_pool: ComponentPool):

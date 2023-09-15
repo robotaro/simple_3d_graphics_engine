@@ -36,7 +36,7 @@ uniform Material material = Material(
     vec3(0.85, 0.85, 0.85), // Default diffuse color (e.g., gray)
     vec3(1.0, 1.0, 1.0),    // Default ambient color
     vec3(1.0, 1.0, 1.0),    // Default specular color
-    0.5,                    // Default shiness factor
+    0.5,                    // Default shininess factor
     1.0,                    // Default metallic factor
     0.0                     // Default roughness factor
 );
@@ -119,60 +119,63 @@ in vec3 v_viewpos;
 in vec3 v_ambient_color;
 in Material v_material;
 
-// =======[ Uniforms ]========
-
 // Entity details
 uniform int entity_id;
 uniform int entity_render_mode;
 
 // Rendering Mode details
-uniform bool point_light_enabled = false;
-uniform bool use_hemisphere_lighting = false;
-uniform float gamma = 2.2;
+uniform bool point_lights_enabled = true;
+uniform bool directional_lights_enabled = true;
+uniform bool gamma_correction_enabled = true;
+
+uniform bool ambient_hemisphere_light_enabled = true;
+
 uniform bool ambient_lighting_enabled = true;
 uniform bool diffuse_lighting_enabled = true;
 uniform bool specular_lighting_enabled = true;
 
+uniform float gamma = 2.2;
+
 // MVP matrices
 uniform mat4 view_matrix;
 
-// Point Lights
+// Lights
 uniform int num_point_lights = 0;
-uniform PointLight point_lights[MAX_POINT_LIGHTS];
-
-// Directional Lights
 uniform int num_directional_lights = 0;
+
+uniform PointLight point_lights[MAX_POINT_LIGHTS];
 uniform DirectionalLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
 
 // Functions pre-declaration
-//vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir);
-vec3 calculate_point_light(PointLight light, Material material, vec3 normal, vec3 fragPos, vec3 viewDir);
+vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir);
+vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 
 void main() {
 
     vec3 view_position = transpose(inverse(view_matrix))[3].xyz;
     vec3 normal = normalize(v_normal);  // TODO: Consider not doint this per fragment. Assume normas ar unitary
-    vec3 c = v_material.diffuse * v_ambient_color;
     vec3 view_direction = normalize(view_position - v_position);
 
 
     vec3 color_rgb = vec3(0.0);
 
-    // phase 1: Directional lighting
-    //if (ambient_lighting_enabled)
-    //    vec3 final_color_rgb = calculate_directional_light(light_direction, normal, view_direction);
-
-    // phase 2: Point lights
-    if (point_light_enabled)
-        for(int i = 0; i < num_point_lights; i++)
-            color_rgb += calculate_point_light(point_lights[i], v_material, normal, v_position, view_direction);
-
-    if (use_hemisphere_lighting){
+    if (ambient_hemisphere_light_enabled){
         color_rgb = v_ambient_color;
     }
 
-    // Apply gamma correction
-    color_rgb = pow(color_rgb, vec3(1.0 / gamma));
+    // Directional lighting
+    if (directional_lights_enabled)
+        for(int i = 0; i < num_directional_lights; i++)
+            color_rgb += calculate_directional_light(directional_lights[i], normal, view_direction);
+
+    // Point lights
+    if (point_lights_enabled)
+        for(int i = 0; i < num_point_lights; i++)
+            color_rgb += calculate_point_light(point_lights[i], normal, v_position, view_direction);
+
+    // Gamma correction
+    if (gamma_correction_enabled)
+        color_rgb = pow(color_rgb, vec3(1.0 / gamma));
 
     out_fragment_color = vec4(color_rgb, 1.0);
     out_fragment_normal = vec4(normal, 1.0);
@@ -180,7 +183,7 @@ void main() {
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
 
-vec3 calculate_point_light(PointLight light, Material material, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     // Direction
     vec3 lightDir = normalize(light.position - fragPos);
@@ -190,7 +193,7 @@ vec3 calculate_point_light(PointLight light, Material material, vec3 normal, vec
 
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess_factor);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), v_material.shininess_factor);
 
     // attenuation
     float distance    = length(light.position - fragPos);
@@ -199,9 +202,9 @@ vec3 calculate_point_light(PointLight light, Material material, vec3 normal, vec
                                light.attenuation_coeffs.b * (distance * distance));
 
     // combine results
-    vec3 ambient  = light.ambient  * material.diffuse;
-    vec3 diffuse  = light.diffuse  * diff * material.diffuse;
-    vec3 specular = light.specular * spec * material.specular;
+    vec3 ambient  = vec3(0.0); //light.ambient  * v_material.diffuse;
+    vec3 diffuse  = light.diffuse  * diff * v_material.diffuse;
+    vec3 specular = light.specular * spec * v_material.specular;
     ambient  *= attenuation;
     diffuse  *= attenuation;
     specular *= attenuation;
@@ -209,15 +212,7 @@ vec3 calculate_point_light(PointLight light, Material material, vec3 normal, vec
 }
 
 
-
-/*vec3 calculate_directional_light(DirectionalLight dir_light, vec3 color, vec3 normal) {
-    vec3 light_direction = -dir_light.direction;
-    float diff = max(dot(normal, light_direction), 0.0);
-    vec3 diffuse = materia.diffuse * diff * dir_light.color * dir_light.strength;
-    return diffuse * color;
-}*/
-
-/*vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir)
+vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir)
 {
     vec3 lightDir = normalize(-light.direction);
 
@@ -226,14 +221,14 @@ vec3 calculate_point_light(PointLight light, Material material, vec3 normal, vec
 
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess_factor);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), v_material.shininess_factor);
 
     // Combine results
-    vec3 ambient  = light.ambient * material.diffuse;
-    vec3 diffuse  = light.diffuse * diff * material.diffuse;
-    vec3 specular = light.specular * spec * material.specular;
+    vec3 ambient  = vec3(0.0); //light.ambient * v_material.diffuse;
+    vec3 diffuse  = light.diffuse * diff * v_material.diffuse;
+    vec3 specular = light.specular * spec * v_material.specular;
     return (ambient + diffuse + specular);
-}*/
+}
 
 
 /*

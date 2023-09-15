@@ -1,11 +1,11 @@
 <scene>
 
     <entity name="Point Light 1" >
-        <point_light position="1.0 12.3 3.6" diffuse="1.0 1.0 1.0"/>
+        <point_light position="1.0 1.3 3.6" diffuse="1.0 1.0 1.0"/>
     </entity>
 
     <entity name="Point Light 2" >
-        <point_light position="1.0 12.3 -3.6" diffuse="1.0 1.0 1.0"/>
+        <point_light position="1.0 1.3 -3.6" diffuse="1.0 1.0 1.0"/>
     </entity>
 
     <entity name="Directional Light 1" >
