@@ -44,9 +44,7 @@ class RenderSystem(System):
         "_ambient_hemisphere_light_enabled",
         "_point_lights_enabled",
         "_directional_lights_enabled",
-        "_ambient_lighting_enabled",
-        "_diffuse_lighting_enabled",
-        "_specular_lighting_enabled"
+        "_gamma_correction_enabled"
     ]
 
     def __init__(self, **kwargs):
@@ -94,10 +92,8 @@ class RenderSystem(System):
         self._ambient_hemisphere_light_enabled = True
         self._point_lights_enabled = True
         self._directional_lights_enabled = True
+        self._gamma_correction_enabled = True
 
-        self._ambient_lighting_enabled = True
-        self._diffuse_lighting_enabled = True
-        self._specular_lighting_enabled = True
 
     # =========================================================================
     #                         System Core functions
@@ -245,6 +241,8 @@ class RenderSystem(System):
                 self._point_lights_enabled = not self._point_lights_enabled
             if glfw.KEY_3 == key_value:
                 self._directional_lights_enabled = not self._directional_lights_enabled
+            if glfw.KEY_4 == key_value:
+                self._gamma_correction_enabled = not self._gamma_correction_enabled
 
         if event_type == constants.EVENT_ACTION_ENTITY_SELECTED:
             # Other systems may change the selected entity, so this should be reflected by the render system
@@ -319,13 +317,23 @@ class RenderSystem(System):
         program["num_point_lights"].value = len(self.component_pool.point_light_components)
         for index, (uid, point_light_component) in enumerate(self.component_pool.point_light_components.items()):
 
-            point_light_transform = self.component_pool.transform_3d_components[uid]
+            light_transform = self.component_pool.transform_3d_components[uid]
 
-            program[f"point_lights[{index}].position"] = point_light_transform.position
+            program[f"point_lights[{index}].position"] = light_transform.position
             program[f"point_lights[{index}].diffuse"] = point_light_component.diffuse
             program[f"point_lights[{index}].ambient"] = point_light_component.ambient
             program[f"point_lights[{index}].specular"] = point_light_component.specular
             program[f"point_lights[{index}].attenuation_coeffs"] = point_light_component.attenuation_coeffs
+
+        program["num_directional_lights"].value = len(self.component_pool.directional_light_components)
+        for index, (uid, dir_light_component) in enumerate(self.component_pool.directional_light_components.items()):
+            light_transform = self.component_pool.transform_3d_components[uid]
+
+            program[f"directional_lights[{index}].direction"] = tuple(light_transform.local_matrix[:3, 2])
+            program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
+            program[f"directional_lights[{index}].ambient"] = dir_light_component.ambient
+            program[f"directional_lights[{index}].specular"] = dir_light_component.specular
+            #program[f"point_lights[{index}].strength"] = dir_light_component.strength
 
         # Renderables
         for uid, renderable_component in component_pool.renderable_components.items():
@@ -346,10 +354,7 @@ class RenderSystem(System):
             program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
             program["directional_lights_enabled"].value = self._directional_lights_enabled
             program["point_lights_enabled"].value = self._point_lights_enabled
-
-            #program["ambient_lighting_enabled"].value = self._ambient_lighting_enabled
-            #program["diffuse_lighting_enabled"].value = self._diffuse_lighting_enabled
-            #program["specular_lighting_enabled"].value = self._specular_lighting_enabled
+            program["gamma_correction_enabled"].value = self._gamma_correction_enabled
 
             # TODO: Technically, you only need to upload the material once since it doesn't change. The program will keep its variable states!
             if material is not None:

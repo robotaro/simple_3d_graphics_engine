@@ -461,7 +461,7 @@ class Editor:
                 ambient = tuple(utils_string.string2float_list(ambient_str))
                 specular = tuple(utils_string.string2float_list(specular_str))
 
-                shininess_factor = float(component_soup.attrs.get("shininess_factor", "0.5"))
+                shininess_factor = float(component_soup.attrs.get("shininess_factor", "32.0"))
                 metallic_factor = float(component_soup.attrs.get("metallic_factor", "1.0"))
                 roughness_factor = float(component_soup.attrs.get("roughness_factor", "0.0"))
 
@@ -502,15 +502,12 @@ class Editor:
                 continue
 
             if component_soup.name == constants.COMPONENT_NAME_DIRECTIONAL_LIGHT:
-                direction_str = component_soup.attrs.get("direction", "0.0 -1.0 0.0")
-                direction = utils_string.string2float_list(direction_str)
                 color_str = component_soup.attrs.get("color", "1.0 1.0 1.0")
                 color = utils_string.string2float_list(color_str)
 
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT,
-                    direction=direction,
                     color=color)
 
                 continue

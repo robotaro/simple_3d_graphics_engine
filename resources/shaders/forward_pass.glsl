@@ -56,9 +56,8 @@ void main() {
 
     v_local_position = in_vert;
     v_world_position = (model_matrix * vec4(v_local_position, 1.0)).xyz;
-    v_world_normal = mat3(model_matrix) * in_normal;  // World normal
-    vec4 viewpos = inverse(view_matrix) * model_matrix * vec4(v_local_position, 1.0);
-    v_view_position = viewpos.xyz;
+    v_world_normal = mat3(transpose(inverse(model_matrix))) * in_normal;  // World normal
+    v_view_position = view_matrix[3].xyz;
 
     //Make sure global ambient direction is unit length
     vec3 hemisphere_light_direction = normalize(hemisphere_light_direction);
@@ -71,7 +70,8 @@ void main() {
     v_ambient_color = alpha * global.top * material.diffuse + (1.0 - alpha) * global.bottom * material.diffuse;
 
     v_material = material;
-    gl_Position = projection_matrix * viewpos;
+
+    gl_Position = projection_matrix * inverse(view_matrix) * model_matrix * vec4(v_local_position, 1.0);;
 }
 
 #elif defined FRAGMENT_SHADER
@@ -111,7 +111,7 @@ struct DirectionalLight {
 // Output buffers (Textures)
 layout(location=0) out vec4 out_fragment_color;
 layout(location=1) out vec4 out_fragment_normal;
-layout(location=2) out vec4 out_fragment_viewpos;
+layout(location=2) out vec4 out_fragment_world_position;
 layout(location=3) out vec4 out_fragment_entity_info;
 
 // Input Buffers
@@ -127,15 +127,10 @@ uniform int entity_id;
 uniform int entity_render_mode;
 
 // Rendering Mode details
+uniform bool ambient_hemisphere_light_enabled = true;
 uniform bool point_lights_enabled = true;
 uniform bool directional_lights_enabled = true;
 uniform bool gamma_correction_enabled = true;
-
-uniform bool ambient_hemisphere_light_enabled = true;
-
-uniform bool ambient_lighting_enabled = true;
-uniform bool diffuse_lighting_enabled = true;
-uniform bool specular_lighting_enabled = true;
 
 uniform mat4 model_matrix;
 uniform bool temp_flag = true;
@@ -159,7 +154,7 @@ vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 vie
 void main() {
 
     vec3 normal = normalize(v_world_normal);  // TODO: Consider not doint this per fragment. Assume normas ar unitary
-    vec3 view_direction = normalize(v_world_position - v_local_position);
+    vec3 view_direction = normalize(v_view_position - v_world_position);
 
     vec3 color_rgb = vec3(0.0);
 
@@ -175,7 +170,7 @@ void main() {
     // Point lights
     if (point_lights_enabled)
         for(int i = 0; i < num_point_lights; i++)
-            color_rgb += calculate_point_light(point_lights[i], normal, v_local_position, view_direction);
+            color_rgb += calculate_point_light(point_lights[i], normal, v_world_position, view_direction);
 
     // Gamma correction
     if (gamma_correction_enabled)
@@ -183,13 +178,7 @@ void main() {
 
     out_fragment_color = vec4(color_rgb, 1.0);
     out_fragment_normal = vec4(normal, 1.0);
-    if (temp_flag)
-    {
-        out_fragment_viewpos = vec4(v_world_position, 1);
-    }else{
-        out_fragment_viewpos = vec4(v_view_position, 1);
-    }
-
+    out_fragment_world_position = vec4(v_world_position, 1);
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
 
@@ -212,13 +201,11 @@ vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 vie
                                light.attenuation_coeffs.b * (distance * distance));
 
     // combine results
-    vec3 ambient  = vec3(0.0); //light.ambient  * v_material.diffuse;
     vec3 diffuse  = light.diffuse  * diff * v_material.diffuse;
     vec3 specular = light.specular * spec * v_material.specular;
-    ambient  *= attenuation;
     diffuse  *= attenuation;
     specular *= attenuation;
-    return (ambient + diffuse + specular);
+    return  diffuse + specular;
 }
 
 
@@ -234,10 +221,9 @@ vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewD
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), v_material.shininess_factor);
 
     // Combine results
-    vec3 ambient  = vec3(0.0); //light.ambient * v_material.diffuse;
     vec3 diffuse  = light.diffuse * diff * v_material.diffuse;
     vec3 specular = light.specular * spec * v_material.specular;
-    return (ambient + diffuse + specular);
+    return diffuse + specular;
 }
 
 

@@ -264,7 +264,12 @@ class ImguiSystem(System):
             imgui.text(f"Material")
             a, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
             b, material.specular = imgui.color_edit3("Specular", *material.specular)
-            c, material.shininess_factor = imgui.drag_float("Shininess Factor", material.shininess_factor)
+            c, material.shininess_factor = imgui.drag_float("Shininess Factor",
+                                                            material.shininess_factor,
+                                                            0.05,
+                                                            0.0,
+                                                            32.0,
+                                                            "%.3f",)
 
             imgui.spacing()
 

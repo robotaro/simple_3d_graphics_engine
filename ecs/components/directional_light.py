@@ -8,12 +8,7 @@ from ecs.math import mat4
 class DirectionalLight(Component):
 
     def __init__(self, **kwargs):
-        self.color = (0.5, 0.5, 0.5)
-        self.direction = kwargs.get("direction", np.array((-1, -1, 0), dtype=np.float32))
-        self.specular = 0.5
-
-    def get_view_matrix(self):
-        return mat4.look_at_direction(
-            position=self.position,
-            direction=self.direction,
-            up=np.array(constants.RENDER_SYSTEM_DEFAULT_UP_VECTOR, dtype=np.float32))
+        self.diffuse = kwargs.get("diffuse", (1.0, 1.0, 1.0))
+        self.ambient = kwargs.get("ambient", (1.0, 1.0, 1.0))
+        self.specular = kwargs.get("specular", (1.0, 1.0, 1.0))
+        self.strength = kwargs.get("strength", 1.0)
