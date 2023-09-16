@@ -2,14 +2,7 @@
 
     <entity name="Point Light 1" >
         <point_light diffuse="1.0 1.0 1.0"/>
-        <transform_3d position="5.0 5.0 5.0"/>
-        <mesh shape="icosphere" radius="0.2" subdivisions="4"/>
-        <renderable/>
-    </entity>
-
-    <entity name="Point Light 2" >
-        <point_light diffuse="1.0 1.0 1.0"/>
-        <transform_3d position="-5.0 5.0 5.0"/>
+        <transform_3d position="2.0 2.0 2.0"/>
         <mesh shape="icosphere" radius="0.2" subdivisions="4"/>
         <renderable/>
     </entity>
@@ -27,7 +20,7 @@
 
     <entity name="Dragon 1" >
         <mesh shape="obj" fpath="models/dragon.obj"/>
-        <material diffuse="0.2 1.0 0.6"/>
+        <material diffuse="0.0 0.41 0.2"/>
         <transform_3d/>
         <renderable/>
     </entity>

@@ -23,8 +23,9 @@ in vec3 in_normal;
 
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
-uniform mat4 dir_light_view_matrix;
 uniform mat4 model_matrix;
+uniform mat4 dir_light_view_matrix;
+
 
 uniform GlobalAmbient global = GlobalAmbient(
     vec3(0.0, 1.0, 0.0),
@@ -45,8 +46,9 @@ uniform vec3 hemisphere_up_color = vec3(1.0, 1.0, 1.0);
 uniform vec3 hemisphere_down_color = vec3(0.0, 0.0, 0.0);
 uniform vec3 hemisphere_light_direction = vec3(0.0, 1.0, 0.0);
 
-out vec3 v_normal;
 out vec3 v_position;
+out vec3 v_normal;
+out vec3 v_world_position;
 out vec3 v_viewpos;
 out vec3 v_ambient_color;
 out Material v_material;
@@ -57,6 +59,7 @@ void main() {
     v_normal = mat3(transpose(inverse(model_matrix))) * in_normal;
     vec4 viewpos = inverse(view_matrix) * model_matrix * vec4(v_position, 1.0);
     v_viewpos = viewpos.xyz;
+    v_world_position = (view_matrix * model_matrix * vec4(v_position, 1.0)).xyz;
 
     //Make sure global ambient direction is unit length
     vec3 hemisphere_light_direction = normalize(hemisphere_light_direction);
@@ -116,6 +119,7 @@ layout(location=3) out vec4 out_fragment_entity_info;
 in vec3 v_normal;
 in vec3 v_position;
 in vec3 v_viewpos;
+in vec3 v_world_position;
 in vec3 v_ambient_color;
 in Material v_material;
 
@@ -133,6 +137,9 @@ uniform bool ambient_hemisphere_light_enabled = true;
 uniform bool ambient_lighting_enabled = true;
 uniform bool diffuse_lighting_enabled = true;
 uniform bool specular_lighting_enabled = true;
+
+uniform mat4 model_matrix;
+uniform bool temp_flag = true;
 
 uniform float gamma = 2.2;
 
@@ -152,10 +159,9 @@ vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 vie
 
 void main() {
 
-    vec3 view_position = transpose(inverse(view_matrix))[3].xyz;
+    //vec3 view_position = transpose(inverse(view_matrix) * model_matrix)[3].xyz;
     vec3 normal = normalize(v_normal);  // TODO: Consider not doint this per fragment. Assume normas ar unitary
-    vec3 view_direction = normalize(view_position - v_position);
-
+    vec3 view_direction = normalize(v_world_position - v_position);
 
     vec3 color_rgb = vec3(0.0);
 
@@ -179,7 +185,13 @@ void main() {
 
     out_fragment_color = vec4(color_rgb, 1.0);
     out_fragment_normal = vec4(normal, 1.0);
-    out_fragment_viewpos = vec4(v_viewpos, 1);
+    if (temp_flag)
+    {
+        out_fragment_viewpos = vec4(v_world_position, 1);
+    }else{
+        out_fragment_viewpos = vec4(v_viewpos, 1);
+    }
+
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
 
