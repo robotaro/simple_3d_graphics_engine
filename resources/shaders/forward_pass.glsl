@@ -26,7 +26,6 @@ uniform mat4 view_matrix;
 uniform mat4 model_matrix;
 uniform mat4 dir_light_view_matrix;
 
-
 uniform GlobalAmbient global = GlobalAmbient(
     vec3(0.0, 1.0, 0.0),
     vec3(1.0, 1.0, 1.0),
@@ -46,26 +45,26 @@ uniform vec3 hemisphere_up_color = vec3(1.0, 1.0, 1.0);
 uniform vec3 hemisphere_down_color = vec3(0.0, 0.0, 0.0);
 uniform vec3 hemisphere_light_direction = vec3(0.0, 1.0, 0.0);
 
-out vec3 v_position;
-out vec3 v_normal;
+out vec3 v_local_position;
+out vec3 v_world_normal;
 out vec3 v_world_position;
-out vec3 v_viewpos;
+out vec3 v_view_position;
 out vec3 v_ambient_color;
 out Material v_material;
 
 void main() {
 
-    v_position = in_vert;
-    v_normal = mat3(transpose(inverse(model_matrix))) * in_normal;
-    vec4 viewpos = inverse(view_matrix) * model_matrix * vec4(v_position, 1.0);
-    v_viewpos = viewpos.xyz;
-    v_world_position = (view_matrix * model_matrix * vec4(v_position, 1.0)).xyz;
+    v_local_position = in_vert;
+    v_world_position = (model_matrix * vec4(v_local_position, 1.0)).xyz;
+    v_world_normal = mat3(model_matrix) * in_normal;  // World normal
+    vec4 viewpos = inverse(view_matrix) * model_matrix * vec4(v_local_position, 1.0);
+    v_view_position = viewpos.xyz;
 
     //Make sure global ambient direction is unit length
     vec3 hemisphere_light_direction = normalize(hemisphere_light_direction);
 
     //Calculate cosine of angle between global ambient direction and normal
-    float cos_theta = dot(hemisphere_light_direction, v_normal);
+    float cos_theta = dot(hemisphere_light_direction, v_world_normal);
 
     //Calculate global ambient colour
     float alpha = 0.5 + (0.5 * cos_theta);
@@ -116,9 +115,9 @@ layout(location=2) out vec4 out_fragment_viewpos;
 layout(location=3) out vec4 out_fragment_entity_info;
 
 // Input Buffers
-in vec3 v_normal;
-in vec3 v_position;
-in vec3 v_viewpos;
+in vec3 v_local_position;
+in vec3 v_world_normal;
+in vec3 v_view_position;
 in vec3 v_world_position;
 in vec3 v_ambient_color;
 in Material v_material;
@@ -159,9 +158,8 @@ vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 vie
 
 void main() {
 
-    //vec3 view_position = transpose(inverse(view_matrix) * model_matrix)[3].xyz;
-    vec3 normal = normalize(v_normal);  // TODO: Consider not doint this per fragment. Assume normas ar unitary
-    vec3 view_direction = normalize(v_world_position - v_position);
+    vec3 normal = normalize(v_world_normal);  // TODO: Consider not doint this per fragment. Assume normas ar unitary
+    vec3 view_direction = normalize(v_world_position - v_local_position);
 
     vec3 color_rgb = vec3(0.0);
 
@@ -177,7 +175,7 @@ void main() {
     // Point lights
     if (point_lights_enabled)
         for(int i = 0; i < num_point_lights; i++)
-            color_rgb += calculate_point_light(point_lights[i], normal, v_position, view_direction);
+            color_rgb += calculate_point_light(point_lights[i], normal, v_local_position, view_direction);
 
     // Gamma correction
     if (gamma_correction_enabled)
@@ -189,7 +187,7 @@ void main() {
     {
         out_fragment_viewpos = vec4(v_world_position, 1);
     }else{
-        out_fragment_viewpos = vec4(v_viewpos, 1);
+        out_fragment_viewpos = vec4(v_view_position, 1);
     }
 
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
