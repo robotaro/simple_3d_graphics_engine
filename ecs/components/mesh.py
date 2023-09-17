@@ -72,7 +72,7 @@ class Mesh(Component):
             self.vbo_declaration_list.append((self.vbo_colors, "3f", constants.SHADER_INPUT_COLOR))
 
         if self.uvs is not None:
-            self.vbo_uvs = ctx.buffer(self.colors.astype("f4").tobytes())
+            self.vbo_uvs = ctx.buffer(self.uvs.astype("f4").tobytes())
             self.vbo_declaration_list.append((self.vbo_uvs, "2f", constants.SHADER_INPUT_UV))
 
         if self.faces is not None:
@@ -139,7 +139,8 @@ class Mesh(Component):
             width = kwargs.get("width", 1.0)
             height = kwargs.get("height", 1.0)
             depth = kwargs.get("depth", 1.0)
-            v, n, u, f = MeshFactory.create_cube(width=width, height=height, depth=depth)
+            v, n, u, f = MeshFactory.create_box(width=width, height=height, depth=depth)
+            g = 0
 
         if shape == constants.MESH_SHAPE_ICOSPHERE:
             radius = kwargs.get("radius", 1.0)

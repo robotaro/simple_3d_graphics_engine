@@ -16,6 +16,7 @@ struct GlobalAmbient
     vec3 direction;  // direction of top color
     vec3 top;        // top color
     vec3 bottom;     // bottom color
+    float strength;
 };
 
 in vec3 in_vert;
@@ -29,7 +30,8 @@ uniform mat4 dir_light_view_matrix;
 uniform GlobalAmbient global = GlobalAmbient(
     vec3(0.0, 1.0, 0.0),
     vec3(1.0, 1.0, 1.0),
-    vec3(0.0, 0.0, 0.0)
+    vec3(0.0, 0.0, 0.0),
+    1.0
 );
 
 uniform Material material = Material(
@@ -158,9 +160,9 @@ void main() {
 
     vec3 color_rgb = vec3(0.0);
 
-    if (ambient_hemisphere_light_enabled){
+    // Ambient Lighting
+    if (ambient_hemisphere_light_enabled)
         color_rgb += v_ambient_color;
-    }
 
     // Directional lighting
     if (directional_lights_enabled)
@@ -180,6 +182,23 @@ void main() {
     out_fragment_normal = vec4(normal, 1.0);
     out_fragment_world_position = vec4(v_world_position, 1);
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
+}
+
+vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir)
+{
+    vec3 lightDir = normalize(-light.direction);
+
+    // diffuse shading
+    float diff = max(dot(normal, lightDir), 0.0);
+
+    // specular shading
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), v_material.shininess_factor);
+
+    // Combine results
+    vec3 diffuse  = light.diffuse * diff * v_material.diffuse;
+    vec3 specular = light.specular * spec * v_material.specular;
+    return diffuse + specular;
 }
 
 vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
@@ -208,52 +227,7 @@ vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 vie
     return  diffuse + specular;
 }
 
-
-vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir)
-{
-    vec3 lightDir = normalize(-light.direction);
-
-    // diffuse shading
-    float diff = max(dot(normal, lightDir), 0.0);
-
-    // specular shading
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), v_material.shininess_factor);
-
-    // Combine results
-    vec3 diffuse  = light.diffuse * diff * v_material.diffuse;
-    vec3 specular = light.specular * spec * v_material.specular;
-    return diffuse + specular;
-}
-
-
-
 /*
-
-vec3 add_light_and_shadow_contribution(vec3 color, vec3 normal) {
-
-    vec3 Normal = normalize(normal);
-
-    // ambient light
-    vec3 ambient = light.Ia;
-
-    // diffuse light
-    vec3 lightDir = normalize(light.position - fragPos);
-    float diff = max(0, dot(lightDir, Normal));
-    vec3 diffuse = diff * light.Id;
-
-    // specular light
-    vec3 viewDir = normalize(camPos - fragPos);
-    vec3 reflectDir = reflect(-lightDir, Normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0), 32);
-    vec3 specular = spec * light.Is;
-
-    // shadow
-    float shadow = get_soft_shadow_x16();
-
-    return color * (ambient + (diffuse + specular) * shadow);
-}
-
 float get_soft_shadow_x16() {
     float shadow;
     float swidth = 1.0;

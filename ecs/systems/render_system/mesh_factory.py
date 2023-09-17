@@ -3,6 +3,7 @@ import numpy as np
 import trimesh
 
 from ecs import constants
+from ecs.utilities import utils_mesh_3d
 
 
 class MeshFactory:
@@ -15,16 +16,17 @@ class MeshFactory:
         pass
 
     @staticmethod
-    def create_cube(width: float, height: float, depth: float) -> tuple:
+    def create_box(width: float, height: float, depth: float) -> tuple:
 
-        result = trimesh.creation.box(extents=(width, height, depth))
+        """result = trimesh.creation.box(extents=(width, height, depth))
 
         vertices = np.array(result.vertices).astype('f4')
         normals = np.array(result.vertex_normals).astype('f4')
         uvs = None
-        indices = np.array(result.faces).astype('i4')
+        indices = np.array(result.faces).astype('i4')"""
+        vertices, normals, uvs = utils_mesh_3d.create_box(width=width, height=height, depth=depth)
 
-        return vertices, normals, uvs, indices
+        return vertices, normals, uvs, None
 
     @staticmethod
     def create_icosphere(radius: float, subdivisions: int) -> tuple:
