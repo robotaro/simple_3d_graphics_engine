@@ -8,7 +8,6 @@ class Material(Component):
 
         # Colors
         self.diffuse = kwargs.get("diffuse", (0.85, 0.85, 0.85))
-        self.ambient = kwargs.get("ambient", (1.0, 1.0, 1.0))
         self.specular = kwargs.get("specular", (1.0, 1.0, 1.0))
 
         # Factors

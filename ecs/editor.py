@@ -334,12 +334,6 @@ class Editor:
             system.shutdown()
 
     def load_scene(self, scene_xml_fpath: str):
-        """
-        Loads the
-        :param scene_xml_fpath:
-        :return:
-        """
-
 
         # Check if path is absolute
         fpath = None
@@ -434,7 +428,7 @@ class Editor:
 
             # Camera
             if component_soup.name == constants.COMPONENT_NAME_CAMERA:
-                viewport_norm_str = component_soup.attrs.get("viewport_ratio", "0.0, 0.0, 1.0, 1.0")
+                viewport_norm_str = component_soup.attrs.get("viewport_ratio", "0.0 0.0 1.0 1.0")
                 viewport_norm = tuple(utils_string.string2int_list(viewport_norm_str))
 
                 self.add_component(
@@ -454,11 +448,9 @@ class Editor:
             if component_soup.name == constants.COMPONENT_NAME_MATERIAL:
 
                 diffuse_str = component_soup.attrs.get("diffuse", ".75 .75 .75")
-                ambient_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
                 specular_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
 
                 diffuse = tuple(utils_string.string2float_list(diffuse_str))
-                ambient = tuple(utils_string.string2float_list(ambient_str))
                 specular = tuple(utils_string.string2float_list(specular_str))
 
                 shininess_factor = float(component_soup.attrs.get("shininess_factor", "32.0"))
@@ -469,7 +461,6 @@ class Editor:
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_MATERIAL,
                     diffuse=diffuse,
-                    ambient=ambient,
                     specular=specular,
                     shininess_factor=shininess_factor,
                     metallic_factor=metallic_factor,
@@ -501,14 +492,23 @@ class Editor:
 
                 continue
 
+            # Directional Light
             if component_soup.name == constants.COMPONENT_NAME_DIRECTIONAL_LIGHT:
-                color_str = component_soup.attrs.get("color", "1.0 1.0 1.0")
-                color = utils_string.string2float_list(color_str)
+                diffuse_str = component_soup.attrs.get("diffuse", "1.0 1.0 1.0")
+                ambient_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
+                specular_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
+
+                diffuse = tuple(utils_string.string2float_list(diffuse_str))
+                ambient = tuple(utils_string.string2float_list(ambient_str))
+                specular = tuple(utils_string.string2float_list(specular_str))
 
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT,
-                    color=color)
+                    diffuse=diffuse,
+                    ambient=ambient,
+                    specular=specular
+                )
 
                 continue
 

@@ -177,6 +177,15 @@ class RenderSystem(System):
         for _, transform in self.component_pool.transform_3d_components.items():
             transform.update()
 
+        # Render shadowmaps
+        for entity_uid, directional_light in self.component_pool.directional_light_components.items():
+
+            if not directional_light.enabled or not directional_light.shadow_enabled:
+                continue
+
+            # Now render the scene
+            self.shadow_mapping_pass(component_pool=self.component_pool)
+
         # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
             self.forward_pass(component_pool=self.component_pool,
@@ -184,7 +193,6 @@ class RenderSystem(System):
             self.selected_entity_pass(component_pool=self.component_pool,
                                       camera_uid=camera_uid,
                                       selected_entity_uid=self.selected_entity_id)
-            self.shadow_mapping_pass(component_pool=self.component_pool)
             self.text_2d_pass(component_pool=self.component_pool)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
@@ -321,9 +329,9 @@ class RenderSystem(System):
 
             program[f"point_lights[{index}].position"] = light_transform.position
             program[f"point_lights[{index}].diffuse"] = point_light_component.diffuse
-            program[f"point_lights[{index}].ambient"] = point_light_component.ambient
             program[f"point_lights[{index}].specular"] = point_light_component.specular
             program[f"point_lights[{index}].attenuation_coeffs"] = point_light_component.attenuation_coeffs
+            program[f"point_lights[{index}].enabled"] = point_light_component.enabled
 
         program["num_directional_lights"].value = len(self.component_pool.directional_light_components)
         for index, (uid, dir_light_component) in enumerate(self.component_pool.directional_light_components.items()):
@@ -331,9 +339,9 @@ class RenderSystem(System):
 
             program[f"directional_lights[{index}].direction"] = tuple(light_transform.local_matrix[:3, 2])
             program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
-            program[f"directional_lights[{index}].ambient"] = dir_light_component.ambient
             program[f"directional_lights[{index}].specular"] = dir_light_component.specular
-            #program[f"point_lights[{index}].strength"] = dir_light_component.strength
+            program[f"directional_lights[{index}].strength"] = dir_light_component.strength
+            program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
 
         # Renderables
         for uid, renderable_component in component_pool.renderable_components.items():
@@ -359,7 +367,6 @@ class RenderSystem(System):
             # TODO: Technically, you only need to upload the material once since it doesn't change. The program will keep its variable states!
             if material is not None:
                 program["material.diffuse"].value = material.diffuse
-                program["material.ambient"].value = material.ambient
                 program["material.specular"].value = material.specular
                 program["material.shininess_factor"] = material.shininess_factor
 
