@@ -18,9 +18,13 @@ class DirectionalLight(Component):
 
     def __init__(self, **kwargs):
 
+        # Colors
         self.diffuse = kwargs.get("diffuse", (1.0, 1.0, 1.0))
         self.specular = kwargs.get("specular", (1.0, 1.0, 1.0))
 
+        # Modifiers
         self.strength = kwargs.get("strength", 1.0)
+
+        # Flags
         self.shadow_enabled = kwargs.get("shadow_enabled", True)
         self.enabled = kwargs.get("enabled", True)

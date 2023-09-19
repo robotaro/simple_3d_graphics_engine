@@ -3,6 +3,7 @@ import moderngl
 
 from ecs import constants
 from ecs.components.component import Component
+from ecs.utilities import utils_camera
 
 
 class Camera(Component):
@@ -12,10 +13,10 @@ class Camera(Component):
     __slots__ = [
         "z_near",
         "z_far",
-        "x_mag",
-        "y_mag",
+        "orthographic_scale",
         "viewport_norm",
-        "viewport"
+        "viewport",
+        "perspective"
     ]
 
     def __init__(self, **kwargs):
@@ -29,11 +30,13 @@ class Camera(Component):
 
         # TODO: Figure out how to use these values
         # Orthographic variables
-        self.x_mag = 1.0
-        self.y_mag = 1.0
+        self.orthographic_scale = 1.0
 
         self.viewport_norm = kwargs.get("viewport_norm", constants.CAMERA_VIEWPORT_NORM)
         self.viewport = None
+
+        # Flags
+        self.perspective = True
 
     def upload_uniforms(self, program: moderngl.Program, window_width: int, window_height: int):
 
@@ -43,48 +46,20 @@ class Camera(Component):
 
     def get_projection_matrix(self, window_width: int, window_height: int):
 
-        num = window_width * (self.viewport_norm[2] - self.viewport_norm[0])
+        nom = window_width * (self.viewport_norm[2] - self.viewport_norm[0])
         den = window_height * (self.viewport_norm[3] - self.viewport_norm[1])
-        aspect_ratio = num / den
+        aspect_ratio = nom / den
 
-        a = aspect_ratio
-        y_fov_rad = self.y_fov_deg * np.pi / 180.0
-        t = np.tan(y_fov_rad / 2.0)
-        n = self.z_near
-        f = self.z_far
-
-        projection_matrix = np.zeros((4, 4), dtype=np.float32)
-        projection_matrix[0][0] = 1.0 / (a * t)
-        projection_matrix[1][1] = 1.0 / t
-        projection_matrix[3][2] = -1.0
-
-        if f is None:
-            projection_matrix[2][2] = -1.0
-            projection_matrix[2][3] = -2.0 * n
+        if self.perspective:
+            return utils_camera.perspective_projection(
+                fov_rad=self.y_fov_deg * np.pi / 180.0, # TODO: OPtimise deg2rad conversion
+                aspect_ratio=aspect_ratio,
+                z_near=self.z_near,
+                z_far=self.z_far)
         else:
-            projection_matrix[2][2] = (f + n) / (n - f)
-            projection_matrix[2][3] = (2 * f * n) / (n - f)
+            return utils_camera.orthographic_projection(
+                scale_x=self.orthographic_scale * aspect_ratio,
+                scale_y=self.orthographic_scale,
+                z_near=self.z_near,
+                z_far=self.z_far)
 
-        return projection_matrix
-
-    def get_orthographic_matrix(self, window_width: int, window_height: int):
-
-        # TODO: Test this
-
-        xmag = self.x_mag
-        ymag = self.y_mag
-
-        # If screen width/height defined, rescale xmag
-        if window_width is not None and window_height is not None:
-            xmag = window_width / window_height * ymag
-
-        n = self.z_near
-        f = self.z_far
-        projection_matrix = np.zeros((4, 4))
-        projection_matrix[0][0] = 1.0 / xmag
-        projection_matrix[1][1] = 1.0 / ymag
-        projection_matrix[2][2] = 2.0 / (n - f)
-        projection_matrix[2][3] = (f + n) / (n - f)
-        projection_matrix[3][3] = 1.0
-
-        return projection_matrix

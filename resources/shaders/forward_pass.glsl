@@ -168,12 +168,19 @@ void main() {
     // Directional lighting
     if (directional_lights_enabled)
         for(int i = 0; i < num_directional_lights; i++)
+        {
+            if (!directional_lights[i].enabled) continue;
             color_rgb += calculate_directional_light(directional_lights[i], normal, view_direction);
+        }
 
     // Point lights
     if (point_lights_enabled)
         for(int i = 0; i < num_point_lights; i++)
+        {
+            if(!point_lights[i].enabled) continue;
             color_rgb += calculate_point_light(point_lights[i], normal, v_world_position, view_direction);
+        }
+
 
     // Gamma correction
     if (gamma_correction_enabled)

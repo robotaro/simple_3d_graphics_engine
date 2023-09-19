@@ -41,33 +41,33 @@ def look_at(position, target, up):
     return rot @ trans
 
 
-def orthographic_projection(scale_x, scale_y, znear, zfar):
+def orthographic_projection(scale_x: float, scale_y: float, z_near: float, z_far: float):
     """Returns an orthographic projection matrix."""
-    P = np.zeros((4, 4))
-    P[0][0] = 1.0 / scale_x
-    P[1][1] = 1.0 / scale_y
-    P[2][2] = 2.0 / (znear - zfar)
-    P[2][3] = (zfar + znear) / (znear - zfar)
-    P[3][3] = 1.0
-    return P
+    projection = np.zeros((4, 4), dtype=np.float32)
+    projection[0, 0] = 1.0 / scale_x
+    projection[1, 1] = 1.0 / scale_y
+    projection[2, 2] = 2.0 / (z_near - z_far)
+    projection[2, 3] = (z_far + z_near) / (z_near - z_far)
+    projection[3, 3] = 1.0
+    return projection
 
 
-def perspective_projection(fov, aspect_ratio, znear, zfar):
+def perspective_projection(fov_rad: float, aspect_ratio: float, z_near: float, z_far: float):
     """Returns a perspective projection matrix."""
     ar = aspect_ratio
-    t = np.tan(fov / 2.0)
+    t = np.tan(fov_rad / 2.0)
 
-    P = np.zeros((4, 4))
-    P[0][0] = 1.0 / (ar * t)
-    P[1][1] = 1.0 / t
-    P[3][2] = -1.0
+    projection = np.zeros((4, 4), dtype=np.float32)
+    projection[0, 0] = 1.0 / (ar * t)
+    projection[1, 1] = 1.0 / t
+    projection[3, 2] = -1.0
 
-    f, n = zfar, znear
+    f, n = z_far, z_near
     if f is None:
-        P[2][2] = -1.0
-        P[2][3] = -2.0 * n
+        projection[2, 2] = -1.0
+        projection[2, 3] = -2.0 * n
     else:
-        P[2][2] = (f + n) / (n - f)
-        P[2][3] = (2 * f * n) / (n - f)
+        projection[2, 2] = (f + n) / (n - f)
+        projection[2, 3] = (2 * f * n) / (n - f)
 
-    return P
+    return projection

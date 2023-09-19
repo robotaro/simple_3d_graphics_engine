@@ -94,7 +94,6 @@ class RenderSystem(System):
         self._directional_lights_enabled = True
         self._gamma_correction_enabled = True
 
-
     # =========================================================================
     #                         System Core functions
     # =========================================================================
@@ -139,9 +138,7 @@ class RenderSystem(System):
         self.textures_offscreen_rendering["selection"].repeat_y = False
         self.textures_offscreen_rendering["selection_depth"] = self.ctx.depth_texture(size=self.buffer_size)
         self.framebuffers["selection_fbo"] = self.ctx.framebuffer(
-            color_attachments=[
-                self.textures_offscreen_rendering["selection"],
-            ],
+            color_attachments=[self.textures_offscreen_rendering["selection"]],
             depth_attachment=self.textures_offscreen_rendering["selection_depth"],
         )
 
@@ -177,14 +174,8 @@ class RenderSystem(System):
         for _, transform in self.component_pool.transform_3d_components.items():
             transform.update()
 
-        # Render shadowmaps
-        for entity_uid, directional_light in self.component_pool.directional_light_components.items():
-
-            if not directional_light.enabled or not directional_light.shadow_enabled:
-                continue
-
-            # Now render the scene
-            self.shadow_mapping_pass(component_pool=self.component_pool)
+        # Render shadow texture (if enabled)
+        self.shadow_mapping_pass(component_pool=self.component_pool)
 
         # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
@@ -311,8 +302,6 @@ class RenderSystem(System):
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
         program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
-
-        #directional_light_components = list(component_pool.directional_light_components.keys())
 
         camera_transform.update()
         camera_component.upload_uniforms(
@@ -449,13 +438,24 @@ class RenderSystem(System):
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS]
 
+        dir_light_uid = None
+        for uid, directional_light in component_pool.directional_light_components.items():
+            if directional_light.shadow_enabled:
+                dir_light_uid = uid
+                break
+
+        if dir_light_uid is None:
+            return
+
         for uid, renderable_component in component_pool.renderable_components.items():
 
-            if not renderable_component.visible:
+            if not renderable_component.visible and not renderable_component.is_transparent():
                 continue
 
             renderable_transform = component_pool.transform_3d_components[uid]
-            program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
+            program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
+
+            renderable_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(moderngl.TRIANGLES)
 
     def render_to_screen(self) -> None:
 

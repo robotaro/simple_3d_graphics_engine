@@ -475,6 +475,7 @@ class Editor:
                     component_type=constants.COMPONENT_TYPE_INPUT_CONTROL)
                 continue
 
+            # Text 2D
             if component_soup.name == constants.COMPONENT_NAME_TEXT_2D:
                 font_name = component_soup.attrs.get("font_name", None)
                 if font_name is None:
@@ -495,27 +496,20 @@ class Editor:
             # Directional Light
             if component_soup.name == constants.COMPONENT_NAME_DIRECTIONAL_LIGHT:
                 diffuse_str = component_soup.attrs.get("diffuse", "1.0 1.0 1.0")
-                ambient_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
                 specular_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
 
                 diffuse = tuple(utils_string.string2float_list(diffuse_str))
-                ambient = tuple(utils_string.string2float_list(ambient_str))
                 specular = tuple(utils_string.string2float_list(specular_str))
 
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT,
                     diffuse=diffuse,
-                    ambient=ambient,
-                    specular=specular
-                )
+                    specular=specular)
 
                 continue
 
-            if component_soup.name == constants.COMPONENT_NAME_SPOT_LIGHT:
-                raise Exception("Spot light component not yet implemented")
-                continue
-
+            # Point Light
             if component_soup.name == constants.COMPONENT_NAME_POINT_LIGHT:
                 position_str = component_soup.attrs.get("position", "22.0 16.0 50.0")
                 position = utils_string.string2float_list(position_str)
