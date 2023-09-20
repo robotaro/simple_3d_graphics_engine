@@ -11,6 +11,7 @@ from ecs.systems.render_system.font_library import FontLibrary
 from ecs.component_pool import ComponentPool
 from ecs.geometry_3d import ready_to_render
 from ecs.math import mat4
+from ecs.utilities import utils_camera
 
 
 class RenderSystem(System):
@@ -44,7 +45,8 @@ class RenderSystem(System):
         "_ambient_hemisphere_light_enabled",
         "_point_lights_enabled",
         "_directional_lights_enabled",
-        "_gamma_correction_enabled"
+        "_gamma_correction_enabled",
+        "_shadow_enabled"
     ]
 
     def __init__(self, **kwargs):
@@ -93,6 +95,7 @@ class RenderSystem(System):
         self._point_lights_enabled = True
         self._directional_lights_enabled = True
         self._gamma_correction_enabled = True
+        self._shadow_enabled = True
 
     # =========================================================================
     #                         System Core functions
@@ -117,7 +120,8 @@ class RenderSystem(System):
                 self.textures_offscreen_rendering["color"],
                 self.textures_offscreen_rendering["normal"],
                 self.textures_offscreen_rendering["viewpos"],
-                self.textures_offscreen_rendering["entity_info"]
+                self.textures_offscreen_rendering["entity_info"],
+                self.textures_offscreen_rendering["entity_info"],
             ],
             depth_attachment=self.textures_offscreen_rendering["depth"],
         )
@@ -242,6 +246,8 @@ class RenderSystem(System):
                 self._directional_lights_enabled = not self._directional_lights_enabled
             if glfw.KEY_4 == key_value:
                 self._gamma_correction_enabled = not self._gamma_correction_enabled
+            if glfw.KEY_5 == key_value:
+                self._shadow_enabled = not self._shadow_enabled
 
         if event_type == constants.EVENT_ACTION_ENTITY_SELECTED:
             # Other systems may change the selected entity, so this should be reflected by the render system
@@ -438,6 +444,7 @@ class RenderSystem(System):
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS]
 
+        # Find which directional light, if any creates shadows
         dir_light_uid = None
         for uid, directional_light in component_pool.directional_light_components.items():
             if directional_light.shadow_enabled:
@@ -447,12 +454,15 @@ class RenderSystem(System):
         if dir_light_uid is None:
             return
 
-        for uid, renderable_component in component_pool.renderable_components.items():
+        for renderable_uid, renderable_component in component_pool.renderable_components.items():
 
             if not renderable_component.visible and not renderable_component.is_transparent():
                 continue
 
-            renderable_transform = component_pool.transform_3d_components[uid]
+            renderable_transform = component_pool.transform_3d_components[renderable_uid]
+            light_transform = component_pool.transform_3d_components[dir_light_uid]
+
+            program["view_matrix"].write(light_transform.local_matrix.T.tobytes())
             program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
 
             renderable_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(moderngl.TRIANGLES)

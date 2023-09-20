@@ -133,6 +133,7 @@ uniform bool ambient_hemisphere_light_enabled = true;
 uniform bool point_lights_enabled = true;
 uniform bool directional_lights_enabled = true;
 uniform bool gamma_correction_enabled = true;
+uniform bool shadow_enabled = true;
 
 uniform mat4 model_matrix;
 uniform bool temp_flag = true;
@@ -148,9 +149,9 @@ uniform int num_directional_lights = 0;
 
 uniform PointLight point_lights[MAX_POINT_LIGHTS];
 uniform DirectionalLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
-uniform sampler2DShadow shadow_maps[MAX_DIRECTIONAL_LIGHTS];
+uniform sampler2DShadow shadow_depth_texture;
 
-vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir);
+vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir, float shadow_coeff);
 vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
 float shadow_calculation(sampler2DShadow shadow_map, vec4 frag_pos_light_space, vec3 light_dir, vec3 normal);
 
@@ -165,14 +166,6 @@ void main() {
     if (ambient_hemisphere_light_enabled)
         color_rgb += v_ambient_color;
 
-    // Directional lighting
-    if (directional_lights_enabled)
-        for(int i = 0; i < num_directional_lights; i++)
-        {
-            if (!directional_lights[i].enabled) continue;
-            color_rgb += calculate_directional_light(directional_lights[i], normal, view_direction);
-        }
-
     // Point lights
     if (point_lights_enabled)
         for(int i = 0; i < num_point_lights; i++)
@@ -181,6 +174,16 @@ void main() {
             color_rgb += calculate_point_light(point_lights[i], normal, v_world_position, view_direction);
         }
 
+    // Directional lighting
+    if (directional_lights_enabled)
+        for(int i = 0; i < num_directional_lights; i++)
+        {
+            if (!directional_lights[i].enabled) continue;
+
+            float shadow_coeff = shadow_calculation(shadow_depth_texture, vec4(1.0), vec3(1.0), v_world_normal);
+
+            color_rgb += calculate_directional_light(directional_lights[i], normal, view_direction, shadow_coeff);
+        }
 
     // Gamma correction
     if (gamma_correction_enabled)
@@ -192,9 +195,9 @@ void main() {
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
 
-vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir)
+vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir, float shadow_coeff)
 {
-    vec3 lightDir = normalize(-light.direction);
+    vec3 lightDir = normalize(light.direction);
 
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
@@ -206,7 +209,8 @@ vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewD
     // Combine results
     vec3 diffuse  = light.diffuse * diff * v_material.diffuse;
     vec3 specular = light.specular * spec * v_material.specular;
-    return diffuse + specular;
+
+    return (1.0 - shadow_coeff) * (diffuse + specular);
 }
 
 vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)

@@ -429,12 +429,16 @@ class Editor:
             # Camera
             if component_soup.name == constants.COMPONENT_NAME_CAMERA:
                 viewport_norm_str = component_soup.attrs.get("viewport_ratio", "0.0 0.0 1.0 1.0")
+                perspective_str = component_soup.attrs.get("perspective", "true")
+
                 viewport_norm = tuple(utils_string.string2int_list(viewport_norm_str))
+                perspective = utils_string.str2bool(perspective_str)
 
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_CAMERA,
-                    viewport_norm=viewport_norm)
+                    viewport_norm=viewport_norm,
+                    perspective=perspective)
                 continue
 
             # Renderable
@@ -490,7 +494,6 @@ class Editor:
                 text = entity_soup.text.strip()
                 if len(text) > 0:
                     text_component.set_text(text=text)
-
                 continue
 
             # Directional Light
@@ -506,22 +509,21 @@ class Editor:
                     component_type=constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT,
                     diffuse=diffuse,
                     specular=specular)
-
                 continue
 
             # Point Light
             if component_soup.name == constants.COMPONENT_NAME_POINT_LIGHT:
                 position_str = component_soup.attrs.get("position", "22.0 16.0 50.0")
-                position = utils_string.string2float_list(position_str)
                 color_str = component_soup.attrs.get("color", "1.0 1.0 1.0")
+
+                position = utils_string.string2float_list(position_str)
                 color = utils_string.string2float_list(color_str)
 
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_POINT_LIGHT,
                     position=position,
-                    color=color
-                )
+                    color=color)
                 continue
 
             # If you got here, it means the component you selected is not supported :(

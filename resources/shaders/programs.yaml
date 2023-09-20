@@ -2,6 +2,8 @@
 forward_pass:
   vertex_shader: "forward_pass.glsl"
   fragment_shader: "forward_pass.glsl"
+  sampler_2d_location:
+    shadow_depth_texture: 0
 
 selected_entity_pass:
   vertex_shader: "selected_entity.glsl"
@@ -36,9 +38,3 @@ screen_quad:
 shadow_mapping:
   vertex_shader: "shadow_mapping.glsl"
   fragment_shader: "shadow_mapping.glsl"
-
-texture_1_channel:
-  vertex_shader: "texture_1_channel.glsl"
-  fragment_shader: "texture_1_channel.glsl"
-  sampler_2d_location:
-    texture0: 0

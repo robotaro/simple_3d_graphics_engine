@@ -36,7 +36,7 @@ class Camera(Component):
         self.viewport = None
 
         # Flags
-        self.perspective = True
+        self.perspective = kwargs.get("perspective", True)
 
     def upload_uniforms(self, program: moderngl.Program, window_width: int, window_height: int):
 
@@ -52,7 +52,7 @@ class Camera(Component):
 
         if self.perspective:
             return utils_camera.perspective_projection(
-                fov_rad=self.y_fov_deg * np.pi / 180.0, # TODO: OPtimise deg2rad conversion
+                fov_rad=self.y_fov_deg * np.pi / 180.0,  # TODO: OPtimise deg2rad conversion
                 aspect_ratio=aspect_ratio,
                 z_near=self.z_near,
                 z_far=self.z_far)
