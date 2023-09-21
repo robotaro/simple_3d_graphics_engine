@@ -34,6 +34,7 @@ class Editor:
                  "mouse_state",
                  "keyboard_state",
                  "window_glfw",
+                 "monitor_gltf",
                  "context",
                  "buffer_size",
                  "transform_components",
@@ -69,16 +70,25 @@ class Editor:
         # TODO: Find out about samples hint before creating the window
         glfw.window_hint(glfw.SAMPLES, 4)
 
+        self.monitor_gltf = glfw.get_primary_monitor()
         self.window_glfw = glfw.create_window(width=self.window_size[0],
                                               height=self.window_size[1],
                                               title=window_title,
                                               monitor=None,
                                               share=None)
-
-        # Create a windowed mode window and its OpenGL context
         if not self.window_glfw:
             glfw.terminate()
             raise Exception('[ERROR] Could not create GLFW window.')
+
+        # Set window to the center of the main monitor
+        pos = glfw.get_monitor_pos(self.monitor_gltf)
+        size = glfw.get_window_size(self.window_glfw)
+        mode = glfw.get_video_mode(self.monitor_gltf)
+        print(int((mode.size.height - size[1]) / 2))
+        glfw.set_window_pos(
+            self.window_glfw,
+            int(pos[0] + (mode.size.width - size[0]) / 2),
+            int(pos[1] + (mode.size.height - size[1]) / 2))
 
         glfw.make_context_current(self.window_glfw)
         glfw.swap_interval(1 if self.vertical_sync else 0)
