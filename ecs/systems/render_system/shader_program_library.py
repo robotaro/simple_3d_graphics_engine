@@ -71,7 +71,6 @@ class ShaderProgramLibrary:
     def shutdown(self):
         # After removing the vao release stage from all other parts of the pipeline, add them here
 
-
         pass
 
     # =========================================================================
@@ -269,6 +268,9 @@ class ShaderProgramLibrary:
 
                     if not isinstance(sampler_location, int):
                         raise Exception("[ERROR] Uniform Sampler2D location should be of type 'int'")
+
+                    if sampler_name not in program:
+                        raise Exception(f"[ERROR] Sampler '{sampler_name}' not declared in shader")
 
                     program[sampler_name].value = sampler_location
 

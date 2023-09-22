@@ -126,7 +126,8 @@ class Editor:
     #                           Input State Functions
     # ========================================================================
 
-    def initialise_mouse_state(self) -> dict:
+    @staticmethod
+    def initialise_mouse_state() -> dict:
         return {
             constants.MOUSE_LEFT: constants.BUTTON_UP,
             constants.MOUSE_RIGHT: constants.BUTTON_UP,
@@ -136,7 +137,8 @@ class Editor:
             constants.MOUSE_SCROLL_POSITION: 0
         }
 
-    def initialise_keyboard_state(self) -> np.array:
+    @staticmethod
+    def initialise_keyboard_state() -> np.array:
         return np.ones((constants.KEYBOARD_SIZE,), dtype=np.int8) * constants.KEY_STATE_UP
 
     # ========================================================================

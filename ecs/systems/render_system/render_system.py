@@ -46,7 +46,7 @@ class RenderSystem(System):
         "_point_lights_enabled",
         "_directional_lights_enabled",
         "_gamma_correction_enabled",
-        "_shadow_enabled"
+        "_shadows_enabled"
     ]
 
     def __init__(self, **kwargs):
@@ -95,7 +95,7 @@ class RenderSystem(System):
         self._point_lights_enabled = True
         self._directional_lights_enabled = True
         self._gamma_correction_enabled = True
-        self._shadow_enabled = True
+        self._shadows_enabled = False
 
     # =========================================================================
     #                         System Core functions
@@ -247,7 +247,7 @@ class RenderSystem(System):
             if glfw.KEY_4 == key_value:
                 self._gamma_correction_enabled = not self._gamma_correction_enabled
             if glfw.KEY_5 == key_value:
-                self._shadow_enabled = not self._shadow_enabled
+                self._shadows_enabled = not self._shadows_enabled
 
         if event_type == constants.EVENT_ACTION_ENTITY_SELECTED:
             # Other systems may change the selected entity, so this should be reflected by the render system
@@ -336,6 +336,7 @@ class RenderSystem(System):
             program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
             program[f"directional_lights[{index}].specular"] = dir_light_component.specular
             program[f"directional_lights[{index}].strength"] = dir_light_component.strength
+            program[f"directional_lights[{index}].shadow_enabled"] = dir_light_component.shadow_enabled
             program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
 
         # Renderables
@@ -353,13 +354,14 @@ class RenderSystem(System):
             # Upload uniforms
             program["entity_id"].value = uid
             program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
-
             program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
             program["directional_lights_enabled"].value = self._directional_lights_enabled
             program["point_lights_enabled"].value = self._point_lights_enabled
             program["gamma_correction_enabled"].value = self._gamma_correction_enabled
+            program["shadows_enabled"].value = self._shadows_enabled
 
-            # TODO: Technically, you only need to upload the material once since it doesn't change. The program will keep its variable states!
+            # TODO: Technically, you only need to upload the material once since it doesn't change.
+            #       The program will keep its variable states!
             if material is not None:
                 program["material.diffuse"].value = material.diffuse
                 program["material.specular"].value = material.specular

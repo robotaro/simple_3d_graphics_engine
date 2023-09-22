@@ -61,13 +61,13 @@ void main() {
     v_world_normal = mat3(transpose(inverse(model_matrix))) * in_normal;  // World normal
     v_view_position = view_matrix[3].xyz;
 
-    //Make sure global ambient direction is unit length
+    // Make sure global ambient direction is unit length
     vec3 hemisphere_light_direction = normalize(hemisphere_light_direction);
 
-    //Calculate cosine of angle between global ambient direction and normal
+    // Calculate cosine of angle between global ambient direction and normal
     float cos_theta = dot(hemisphere_light_direction, v_world_normal);
 
-    //Calculate global ambient colour
+    // Calculate global ambient colour
     float alpha = 0.5 + (0.5 * cos_theta);
     v_ambient_color = alpha * global.top * material.diffuse + (1.0 - alpha) * global.bottom * material.diffuse;
 
@@ -105,7 +105,8 @@ struct DirectionalLight {
     vec3 diffuse;
     vec3 specular;
     float strength;
-    mat4 orthogonal_matrix;
+    mat4 matrix;
+    sampler2D shadow_map;
     bool shadow_enabled;
     bool enabled;
 };
@@ -133,7 +134,7 @@ uniform bool ambient_hemisphere_light_enabled = true;
 uniform bool point_lights_enabled = true;
 uniform bool directional_lights_enabled = true;
 uniform bool gamma_correction_enabled = true;
-uniform bool shadow_enabled = true;
+uniform bool shadows_enabled = false;
 
 uniform mat4 model_matrix;
 uniform bool temp_flag = true;
@@ -149,11 +150,11 @@ uniform int num_directional_lights = 0;
 
 uniform PointLight point_lights[MAX_POINT_LIGHTS];
 uniform DirectionalLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
-uniform sampler2DShadow shadow_depth_texture;
 
-vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir, float shadow_coeff);
+vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir);
 vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
-float shadow_calculation(sampler2DShadow shadow_map, vec4 frag_pos_light_space, vec3 light_dir, vec3 normal);
+//float shadow_calculation(sampler2DShadow shadow_map, vec4 frag_pos_light_space, vec3 light_dir, vec3 normal);
+float shadow_calculation(mat4 light_view_projection_matrix, sampler2D shadow_map, float normal);
 
 void main() {
 
@@ -180,9 +181,23 @@ void main() {
         {
             if (!directional_lights[i].enabled) continue;
 
-            float shadow_coeff = shadow_calculation(shadow_depth_texture, vec4(1.0), vec3(1.0), v_world_normal);
+            // Light
+            vec3 dir_light = calculate_directional_light(directional_lights[i], normal, view_direction);
 
-            color_rgb += calculate_directional_light(directional_lights[i], normal, view_direction, shadow_coeff);
+            // Shadow
+            if (shadows_enabled)
+            {
+                float nl = clamp(dot(normal, directional_lights[i].direction), 0.0, 1.0);
+                float shadow = shadow_calculation(
+                    directional_lights[i].matrix,
+                    directional_lights[i].shadow_map,
+                    nl);
+                
+                shadow = clamp(shadow, 0.0, 1.0);
+                dir_light *= (1.0 - shadow);
+            }
+
+            color_rgb += dir_light;
         }
 
     // Gamma correction
@@ -195,9 +210,9 @@ void main() {
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
 
-vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir, float shadow_coeff)
+vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir)
 {
-    vec3 lightDir = normalize(light.direction);
+    vec3 lightDir = normalize(-light.direction);
 
     // diffuse shading
     float diff = max(dot(normal, lightDir), 0.0);
@@ -210,7 +225,7 @@ vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewD
     vec3 diffuse  = light.diffuse * diff * v_material.diffuse;
     vec3 specular = light.specular * spec * v_material.specular;
 
-    return (1.0 - shadow_coeff) * (diffuse + specular);
+    return diffuse + specular;
 }
 
 vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
@@ -239,6 +254,55 @@ vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 vie
     return  diffuse + specular;
 }
 
+float texture2DCompare(sampler2D depths, vec2 uv, float compare) {
+    return compare > texture(depths, uv.xy).r ? 1.0 : 0.0;
+}
+
+float texture2DShadowLerp(sampler2D depths, vec2 size, vec2 uv, float compare) {
+    vec2 texelSize = vec2(1.0)/size;
+    vec2 f = fract(uv*size+0.5);
+    vec2 centroidUV = floor(uv*size+0.5)/size;
+
+    float lb = texture2DCompare(depths, centroidUV+texelSize*vec2(0.0, 0.0), compare);
+    float lt = texture2DCompare(depths, centroidUV+texelSize*vec2(0.0, 1.0), compare);
+    float rb = texture2DCompare(depths, centroidUV+texelSize*vec2(1.0, 0.0), compare);
+    float rt = texture2DCompare(depths, centroidUV+texelSize*vec2(1.0, 1.0), compare);
+    float a = mix(lb, lt, f.y);
+    float b = mix(rb, rt, f.y);
+    float c = mix(a, b, f.x);
+    return c;
+}
+
+float PCF(sampler2D depths, vec2 size, vec2 uv, float compare){
+    float result = 0.0;
+    for(int x=-1; x<=1; x++){
+        for(int y=-1; y<=1; y++){
+            vec2 off = vec2(x,y)/size;
+            result += texture2DShadowLerp(depths, size, uv+off, compare);
+        }
+    }
+    return result/9.0;
+}
+
+float shadow_calculation(mat4 light_view_projection_matrix, sampler2D shadow_map, float normal)
+{
+    // Shadow calculation for direction lights
+
+    // Compute light texture UV coords
+    vec4 proj_coords = vec4(light_view_projection_matrix * vec4(v_world_position.xyz, 1.0));
+    vec3 light_coords = proj_coords.xyz / proj_coords.w;
+    light_coords = light_coords * 0.5 + 0.5;
+    float current_depth = light_coords.z;
+    float bias = max(0.001 * (1.0 - normal), 0.0001) / proj_coords.w;
+    float compare = (current_depth - bias);
+    float shadow = PCF(shadow_map, textureSize(shadow_map, 0), light_coords.xy, compare);
+    if (light_coords.z > 1.0) {
+        shadow = 0.0;
+    }
+    return shadow;
+}
+
+/*
 float shadow_calculation(sampler2DShadow shadow_map, vec4 frag_pos_light_space, vec3 light_dir, vec3 normal) {
     // perform perspective divide (not needed for orthographic projection)
     vec3 projCoords = frag_pos_light_space.xyz / frag_pos_light_space.w;
@@ -269,7 +333,7 @@ float shadow_calculation(sampler2DShadow shadow_map, vec4 frag_pos_light_space, 
 
     return shadow;
 }
-
+*/
 
 /*
 float get_soft_shadow_x16() {
