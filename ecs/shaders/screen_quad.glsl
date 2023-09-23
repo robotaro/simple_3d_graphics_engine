@@ -22,6 +22,9 @@ uniform sampler2D normal_texture;
 uniform sampler2D viewpos_texture;
 uniform sampler2D entity_info_texture;
 uniform sampler2D selection_texture;
+uniform sampler2D depth_texture;
+
+// Other input uniforms
 uniform vec3 outline_color = vec3(1.0, 0.65, 0.0);  // Default orange color used in Blender
 uniform int selected_texture = 0;
 
@@ -51,6 +54,7 @@ vec3 int_to_color(uint i) {
 }
 
 vec3 calculate_outline_color();
+float LinearizeDepth(float depthValue);
 
 void main() {
 
@@ -59,29 +63,39 @@ void main() {
     if (selected_texture == 0) {
         // Color
         color_rgb = calculate_outline_color();
+
     } else if (selected_texture == 1) {
         // Normal
         color_rgb = texture(normal_texture, uv).rgb;
+
     } else if (selected_texture == 2) {
         // Viewpos
         color_rgb = texture(viewpos_texture, uv).xyz;
+
     } else if (selected_texture == 3) {
         // Entity ID
         uint id = floatBitsToUint(texture(entity_info_texture, uv).r);
         color_rgb = int_to_color(id);
+
     } else if (selected_texture == 4) {
-        // Instance ID
-        uint id = floatBitsToUint(texture(entity_info_texture, uv).g);
-        color_rgb = int_to_color(id);
-    } else if (selected_texture == 5) {
         // Current Selection
         color_rgb = texture(selection_texture, uv).rgb;
-    } else if (selected_texture == 6) {
+
+    } else if (selected_texture == 5) {
         // Depth
-        color_rgb = texture(selection_texture, uv).rgb;
+        float depth = texture(depth_texture, uv).r;
+        depth = LinearizeDepth(depth);
+        color_rgb = vec3(depth);
+
     }
 
     fragColor = vec4(color_rgb, 1.0);
+}
+
+float LinearizeDepth(float depthValue) {
+    float zNear = 0.1; // Adjust this to match your scene's near clipping plane
+    float zFar = 100.0; // Adjust this to match your scene's far clipping plane
+    return (2.0 * zNear) / (zFar + zNear - depthValue * (zFar - zNear));
 }
 
 vec3 calculate_outline_color(){

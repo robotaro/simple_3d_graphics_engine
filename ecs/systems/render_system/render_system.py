@@ -24,8 +24,7 @@ class RenderSystem(System):
         "shader_program_library",
         "font_library",
         "framebuffers",
-        "textures_offscreen_rendering",
-        "textures_font",
+        "textures",
         "vbo_groups",
         "quads",
         "fullscreen_selected_texture",
@@ -61,8 +60,8 @@ class RenderSystem(System):
 
         # Internal components (different from normal components)
         self.framebuffers = {}
-        self.textures_offscreen_rendering = {}
-        self.textures_font = {}
+        self.textures = {}
+        self.textures = {}
         self.vbo_groups = {}
         self.quads = {}
 
@@ -109,41 +108,38 @@ class RenderSystem(System):
         self.picker_vao = self.ctx.vertex_array(self.picker_program, [])
 
         # Offscreen rendering
-        self.textures_offscreen_rendering["color"] = self.ctx.texture(size=self.buffer_size, components=4)
-        self.textures_offscreen_rendering["normal"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures_offscreen_rendering["viewpos"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures_offscreen_rendering["entity_info"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures_offscreen_rendering["entity_info"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.textures_offscreen_rendering["depth"] = self.ctx.depth_texture(size=self.buffer_size)
+        self.textures["color"] = self.ctx.texture(size=self.buffer_size, components=4)
+        self.textures["normal"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["viewpos"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["entity_info"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["entity_info"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.textures["depth"] = self.ctx.depth_texture(size=self.buffer_size)
         self.framebuffers["offscreen"] = self.ctx.framebuffer(
             color_attachments=[
-                self.textures_offscreen_rendering["color"],
-                self.textures_offscreen_rendering["normal"],
-                self.textures_offscreen_rendering["viewpos"],
-                self.textures_offscreen_rendering["entity_info"]
+                self.textures["color"],
+                self.textures["normal"],
+                self.textures["viewpos"],
+                self.textures["entity_info"]
             ],
-            depth_attachment=self.textures_offscreen_rendering["depth"],
+            depth_attachment=self.textures["depth"],
         )
 
         # Fonts
         for font_name, font in self.font_library.fonts.items():
-            self.textures_font[font_name] = self.ctx.texture(size=font.texture_data.shape,
-                                                             data=font.texture_data.astype('f4').tobytes(),
-                                                             components=1,
-                                                             dtype='f4')
+            self.textures[font_name] = self.ctx.texture(size=font.texture_data.shape,
+                                                                  data=font.texture_data.astype('f4').tobytes(),
+                                                                  components=1,
+                                                                  dtype='f4')
 
         # Selection Pass
-        self.textures_offscreen_rendering["selection"] = self.ctx.texture(size=self.buffer_size,
-                                                                          components=4,
-                                                                          dtype='f4')
-        self.textures_offscreen_rendering["selection"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.textures_offscreen_rendering["selection"].repeat_x = False  # This prevents outlining from spilling over to the other edge
-        self.textures_offscreen_rendering["selection"].repeat_y = False
-        self.textures_offscreen_rendering["selection_depth"] = self.ctx.depth_texture(size=self.buffer_size)
+        self.textures["selection"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["selection"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.textures["selection"].repeat_x = False  # This prevents outlining from spilling over to the other edge
+        self.textures["selection"].repeat_y = False
+        self.textures["selection_depth"] = self.ctx.depth_texture(size=self.buffer_size)
         self.framebuffers["selection_fbo"] = self.ctx.framebuffer(
-            color_attachments=[self.textures_offscreen_rendering["selection"]],
-            depth_attachment=self.textures_offscreen_rendering["selection_depth"],
-        )
+            color_attachments=[self.textures["selection"]],
+            depth_attachment=self.textures["selection_depth"])
 
         # Shadow mapping
         self.shadow_map_program = self.shader_program_library["shadow_mapping"]
@@ -214,7 +210,7 @@ class RenderSystem(System):
                 # TODO: Move this to its own function!
                 # Pass the coordinate of the pixel you want to sample to the fragment picking shader
                 self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
-                self.textures_offscreen_rendering["entity_info"].use(location=0)
+                self.textures["entity_info"].use(location=0)
 
                 self.picker_vao.transform(
                     self.picker_buffer,
@@ -255,7 +251,7 @@ class RenderSystem(System):
     def shutdown(self):
 
         # Release textures
-        for texture_name, texture_obj in self.textures_offscreen_rendering.items():
+        for texture_name, texture_obj in self.textures.items():
             texture_obj.release()
 
         # Release Framebuffers
@@ -435,7 +431,7 @@ class RenderSystem(System):
             text_2d.update_buffer(font_library=self.font_library)
 
             # Rendering
-            self.textures_font[text_2d.font_name].use(location=0)
+            self.textures[text_2d.font_name].use(location=0)
             text_2d.vao.render(moderngl.POINTS)
 
     def shadow_mapping_pass(self, component_pool: ComponentPool):
@@ -480,11 +476,12 @@ class RenderSystem(System):
         self.ctx.screen.clear(red=1, green=1, blue=1)  # TODO: Check if this line is necessary
         self.ctx.disable(moderngl.DEPTH_TEST)
 
-        self.textures_offscreen_rendering["color"].use(location=0)
-        self.textures_offscreen_rendering["normal"].use(location=1)
-        self.textures_offscreen_rendering["viewpos"].use(location=2)
-        self.textures_offscreen_rendering["entity_info"].use(location=3)
-        self.textures_offscreen_rendering["selection"].use(location=4)
+        self.textures["color"].use(location=0)
+        self.textures["normal"].use(location=1)
+        self.textures["viewpos"].use(location=2)
+        self.textures["entity_info"].use(location=3)
+        self.textures["selection"].use(location=4)
+        self.textures["depth"].use(location=5)
 
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture
@@ -500,11 +497,11 @@ class RenderSystem(System):
             buffer.release()
 
     def load_texture_from_file(self, texture_fpath: str, texture_id: str, datatype="f4"):
-        if texture_id in self.textures_offscreen_rendering:
+        if texture_id in self.textures:
             raise KeyError(f"[ERROR] Texture ID '{texture_id}' already exists")
 
         image = Image.open(texture_fpath)
         image_data = np.array(image)
-        self.textures_offscreen_rendering[texture_id] = self.ctx.texture(size=image.size,
-                                                                         components=image_data.shape[-1],
-                                                                         data=image_data.tobytes())
+        self.textures[texture_id] = self.ctx.texture(size=image.size,
+                                                     components=image_data.shape[-1],
+                                                     data=image_data.tobytes())

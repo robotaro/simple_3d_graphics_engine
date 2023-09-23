@@ -263,7 +263,7 @@ class ShaderProgramLibrary:
                     varyings=blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_VARYING, []))
 
                 # Assign uniform sampler2d locations, if defined
-                uniform_samplers = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_SAMPLER_2D_LOCATION, {})
+                uniform_samplers = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_INPUT_TEXTURE_LOCATION, {})
                 for sampler_name, sampler_location in uniform_samplers.items():
 
                     if not isinstance(sampler_location, int):

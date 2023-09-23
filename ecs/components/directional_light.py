@@ -1,4 +1,5 @@
 import numpy as np
+import moderngl
 
 from ecs import constants
 from ecs.components.component import Component
@@ -12,6 +13,7 @@ class DirectionalLight(Component):
         "ambient",
         "specular",
         "strength",
+        "shadow_texture",
         "shadow_enabled",
         "enabled"
     ]
@@ -28,3 +30,10 @@ class DirectionalLight(Component):
         # Flags
         self.shadow_enabled = kwargs.get("shadow_enabled", True)
         self.enabled = kwargs.get("enabled", True)
+
+    def initialise_on_gpu(self, ctx: moderngl.Context) -> None:
+
+        pass
+
+    def release(self):
+        pass
