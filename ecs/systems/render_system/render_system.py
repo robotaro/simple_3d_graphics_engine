@@ -120,8 +120,7 @@ class RenderSystem(System):
                 self.textures_offscreen_rendering["color"],
                 self.textures_offscreen_rendering["normal"],
                 self.textures_offscreen_rendering["viewpos"],
-                self.textures_offscreen_rendering["entity_info"],
-                self.textures_offscreen_rendering["entity_info"],
+                self.textures_offscreen_rendering["entity_info"]
             ],
             depth_attachment=self.textures_offscreen_rendering["depth"],
         )

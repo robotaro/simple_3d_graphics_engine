@@ -21,7 +21,7 @@ uniform sampler2D color_texture;
 uniform sampler2D normal_texture;
 uniform sampler2D viewpos_texture;
 uniform sampler2D entity_info_texture;
-uniform sampler2D selected_entity_texture;
+uniform sampler2D selection_texture;
 uniform vec3 outline_color = vec3(1.0, 0.65, 0.0);  // Default orange color used in Blender
 uniform int selected_texture = 0;
 
@@ -75,7 +75,10 @@ void main() {
         color_rgb = int_to_color(id);
     } else if (selected_texture == 5) {
         // Current Selection
-        color_rgb = texture(selected_entity_texture, uv).rgb;
+        color_rgb = texture(selection_texture, uv).rgb;
+    } else if (selected_texture == 6) {
+        // Depth
+        color_rgb = texture(selection_texture, uv).rgb;
     }
 
     fragColor = vec4(color_rgb, 1.0);
@@ -86,26 +89,26 @@ vec3 calculate_outline_color(){
     // TODO: Fix issue where outline roll over to the other edge of the screen
 
     // Sample the silhouette texture
-    vec3 silhouette_color = texture(selected_entity_texture, uv).rgb;
+    vec3 silhouette_color = texture(selection_texture, uv).rgb;
 
     // Check if the pixel is part of the object silhouette
     bool is_silhouette = silhouette_color.r == 1.0;
 
     // Sample the neighboring pixels
-    float top_left = textureOffset(selected_entity_texture, uv, ivec2(-1, -1)).r;
-    float top = textureOffset(selected_entity_texture, uv, ivec2(0, -1)).r;
-    float top2 = textureOffset(selected_entity_texture, uv, ivec2(0, -2)).r;
-    float top_right = textureOffset(selected_entity_texture, uv, ivec2(1, -1)).r;
+    float top_left = textureOffset(selection_texture, uv, ivec2(-1, -1)).r;
+    float top = textureOffset(selection_texture, uv, ivec2(0, -1)).r;
+    float top2 = textureOffset(selection_texture, uv, ivec2(0, -2)).r;
+    float top_right = textureOffset(selection_texture, uv, ivec2(1, -1)).r;
 
-    float left2 = textureOffset(selected_entity_texture, uv, ivec2(-2, 0)).r;
-    float left = textureOffset(selected_entity_texture, uv, ivec2(-1, 0)).r;
-    float right = textureOffset(selected_entity_texture, uv, ivec2(1, 0)).r;
-    float right2 = textureOffset(selected_entity_texture, uv, ivec2(2, 0)).r;
+    float left2 = textureOffset(selection_texture, uv, ivec2(-2, 0)).r;
+    float left = textureOffset(selection_texture, uv, ivec2(-1, 0)).r;
+    float right = textureOffset(selection_texture, uv, ivec2(1, 0)).r;
+    float right2 = textureOffset(selection_texture, uv, ivec2(2, 0)).r;
 
-    float bottom_left = textureOffset(selected_entity_texture, uv, ivec2(-1, 1)).r;
-    float bottom = textureOffset(selected_entity_texture, uv, ivec2(0, 1)).r;
-    float bottom2 = textureOffset(selected_entity_texture, uv, ivec2(0, 2)).r;
-    float bottom_right = textureOffset(selected_entity_texture, uv, ivec2(1, 1)).r;
+    float bottom_left = textureOffset(selection_texture, uv, ivec2(-1, 1)).r;
+    float bottom = textureOffset(selection_texture, uv, ivec2(0, 1)).r;
+    float bottom2 = textureOffset(selection_texture, uv, ivec2(0, 2)).r;
+    float bottom_right = textureOffset(selection_texture, uv, ivec2(1, 1)).r;
 
     // Check if any neighboring pixel is not part of the silhouette
     bool is_edge = !is_silhouette && (

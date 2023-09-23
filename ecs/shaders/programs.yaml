@@ -31,7 +31,7 @@ screen_quad:
     normal_texture: 1
     viewpos_texture: 2
     entity_info_texture: 3
-    selected_entity_texture: 4
+    selection_texture: 4
 
 shadow_mapping:
   vertex_shader: "shadow_mapping.glsl"
