@@ -75,7 +75,28 @@ EVENT_ACTION_ENTITY_SELECTED = 21
 # Window
 EVENT_WINDOW_SIZE = 30                # args: (width, height) <int, int>
 EVENT_WINDOW_FRAMEBUFFER_SIZE = 31    # args: (width, height) <int, int>
-EVENT_WINDOW_DROP_FILES = 32            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a list
+EVENT_WINDOW_DROP_FILES = 32            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a
+
+# Default subscribed events
+SUBSCRIBED_EVENTS_RENDER_SYSTEM = [
+    EVENT_ACTION_ENTITY_SELECTED,
+    EVENT_MOUSE_BUTTON_ENABLED,
+    EVENT_MOUSE_BUTTON_DISABLED,
+    EVENT_MOUSE_BUTTON_PRESS,
+    EVENT_KEYBOARD_PRESS,
+    EVENT_WINDOW_SIZE
+]
+SUBSCRIBED_EVENTS_IMGUI_SYSTEM = [
+    EVENT_ACTION_ENTITY_SELECTED,
+    EVENT_KEYBOARD_PRESS
+]
+SUBSCRIBED_EVENTS_INPUT_CONTROL_SYSTEM = [
+    EVENT_MOUSE_SCROLL,
+    EVENT_MOUSE_MOVE,
+    EVENT_KEYBOARD_PRESS,
+    EVENT_KEYBOARD_RELEASE
+]
+
 
 
 # =============================================================================
@@ -161,6 +182,7 @@ FONT_NUM_GLYPHS = FONT_SHEET_ROWS * FONT_SHEET_COLS
 FONT_TEXTURE_WIDTH = FONT_SHEET_CELL_WIDTH * FONT_SHEET_COLS
 FONT_TEXTURE_HEIGHT = FONT_SHEET_CELL_HEIGHT * FONT_SHEET_ROWS
 
+DIRECTIONAL_LIGHT_SIZE = (2048, 2048)
 
 # =============================================================================
 #                              Component Pool

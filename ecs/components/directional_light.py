@@ -19,6 +19,8 @@ class DirectionalLight(Component):
     ]
 
     def __init__(self, **kwargs):
+        
+        super().__init__()
 
         # Colors
         self.diffuse = kwargs.get("diffuse", (1.0, 1.0, 1.0))
@@ -27,13 +29,21 @@ class DirectionalLight(Component):
         # Modifiers
         self.strength = kwargs.get("strength", 1.0)
 
+        # Moderngl variables
+        self.shadow_texture = None
+
         # Flags
         self.shadow_enabled = kwargs.get("shadow_enabled", True)
         self.enabled = kwargs.get("enabled", True)
 
     def initialise_on_gpu(self, ctx: moderngl.Context) -> None:
 
-        pass
+        if self.gpu_initialised:
+            return
+
+        self.shadow_texture = ctx.depth_texture(size=constants.DIRECTIONAL_LIGHT_SIZE)
 
     def release(self):
-        pass
+
+        if self.shadow_texture is not None:
+            self.shadow_texture.release()

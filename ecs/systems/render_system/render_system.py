@@ -167,19 +167,19 @@ class RenderSystem(System):
             transform.update()
 
         # Render shadow texture (if enabled)
-        self.shadow_mapping_pass(component_pool=self.component_pool)
+        self.render_pass_shadow_mapping(component_pool=self.component_pool)
 
         # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
-            self.forward_pass(component_pool=self.component_pool,
-                              camera_uid=camera_uid)
-            self.selected_entity_pass(component_pool=self.component_pool,
-                                      camera_uid=camera_uid,
-                                      selected_entity_uid=self.selected_entity_id)
-            self.text_2d_pass(component_pool=self.component_pool)
+            self.render_pass_forward(component_pool=self.component_pool,
+                                     camera_uid=camera_uid)
+            self.render_pass_selection(component_pool=self.component_pool,
+                                       camera_uid=camera_uid,
+                                       selected_entity_uid=self.selected_entity_id)
+            self.render_pass_text_2d(component_pool=self.component_pool)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
-        self.render_to_screen()
+        self.render_pass_screen()
 
         return True
 
@@ -280,7 +280,7 @@ class RenderSystem(System):
     #                           Custom functions
     # =========================================================================
 
-    def forward_pass(self, component_pool: ComponentPool, camera_uid: int):
+    def render_pass_forward(self, component_pool: ComponentPool, camera_uid: int):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
         self.framebuffers["offscreen"].use()
@@ -372,7 +372,7 @@ class RenderSystem(System):
 
             # Stage: Draw transparent objects back to front
 
-    def selected_entity_pass(self, component_pool: ComponentPool, camera_uid: int, selected_entity_uid: int):
+    def render_pass_selection(self, component_pool: ComponentPool, camera_uid: int, selected_entity_uid: int):
 
         # IMPORTANT: It uses the current bound framebuffer!
 
@@ -407,7 +407,7 @@ class RenderSystem(System):
         # Render
         renderable_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
 
-    def text_2d_pass(self, component_pool: ComponentPool):
+    def render_pass_text_2d(self, component_pool: ComponentPool):
 
         if len(component_pool.text_2d_components) == 0:
             return
@@ -439,7 +439,7 @@ class RenderSystem(System):
             self.textures[text_2d.font_name].use(location=0)
             text_2d.vao.render(moderngl.POINTS)
 
-    def shadow_mapping_pass(self, component_pool: ComponentPool):
+    def render_pass_shadow_mapping(self, component_pool: ComponentPool):
 
         self.shadow_map_framebuffer.clear()
         self.shadow_map_framebuffer.use()
@@ -469,7 +469,7 @@ class RenderSystem(System):
 
             renderable_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(moderngl.TRIANGLES)
 
-    def render_to_screen(self) -> None:
+    def render_pass_screen(self) -> None:
 
         """
         Renders selected offscreen texture to window. By default, it is the color texture, but you can

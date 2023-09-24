@@ -254,14 +254,7 @@ class Editor:
 
             # Set default events to subscribe too
             if subscribed_events is None:
-                subscribed_events = [
-                     constants.EVENT_ACTION_ENTITY_SELECTED,
-                     constants.EVENT_MOUSE_BUTTON_ENABLED,
-                     constants.EVENT_MOUSE_BUTTON_DISABLED,
-                     constants.EVENT_MOUSE_BUTTON_PRESS,
-                     constants.EVENT_KEYBOARD_PRESS,
-                     constants.EVENT_WINDOW_SIZE,
-                 ]
+                subscribed_events = constants.SUBSCRIBED_EVENTS_RENDER_SYSTEM
 
         if system_type == ImguiSystem._type:
             new_system = ImguiSystem(
@@ -272,10 +265,7 @@ class Editor:
 
             # Set default events to subscribe too
             if subscribed_events is None:
-                subscribed_events = [
-                    constants.EVENT_ACTION_ENTITY_SELECTED,
-                    constants.EVENT_KEYBOARD_PRESS
-                ]
+                subscribed_events = constants.SUBSCRIBED_EVENTS_IMGUI_SYSTEM
 
         if system_type == InputControlSystem._type:
             new_system = InputControlSystem(
@@ -286,12 +276,7 @@ class Editor:
 
             # Set default events to subscribe too
             if subscribed_events is None:
-                subscribed_events =[
-                    constants.EVENT_MOUSE_SCROLL,
-                    constants.EVENT_MOUSE_MOVE,
-                    constants.EVENT_KEYBOARD_PRESS,
-                    constants.EVENT_KEYBOARD_RELEASE,
-                ]
+                subscribed_events = constants.SUBSCRIBED_EVENTS_INPUT_CONTROL_SYSTEM
 
         if new_system is None:
             self.logger.error(f"Failed to create system {system_type}")
