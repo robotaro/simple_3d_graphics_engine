@@ -95,8 +95,10 @@ class ShadowMappingSample(Example):
                     vec3 normal_obj_space = normalize(v_norm);
                     float cos_theta = dot(light_vector_obj_space, normal_obj_space);
                     float diffuse = clamp(cos_theta, 0.0, 1.0);
+                    
                     // Shadow component                
                     float lum = mix(LIGHT_AMBIENT, 1.0, diffuse * compute_visibility(cos_theta));
+                    
                     // Color object (color or texture)                    
                     vec4 object_color = u_use_color_texture ? vec4(texture(u_sampler_billboard, v_text).rgb, 1.0) : vec4(u_color, 1.0);
                     // Final pixel color

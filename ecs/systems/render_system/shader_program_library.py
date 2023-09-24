@@ -71,7 +71,6 @@ class ShaderProgramLibrary:
     def shutdown(self):
         # After removing the vao release stage from all other parts of the pipeline, add them here
 
-
         pass
 
     # =========================================================================
@@ -264,11 +263,14 @@ class ShaderProgramLibrary:
                     varyings=blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_VARYING, []))
 
                 # Assign uniform sampler2d locations, if defined
-                uniform_samplers = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_SAMPLER_2D_LOCATION, {})
+                uniform_samplers = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_INPUT_TEXTURE_LOCATION, {})
                 for sampler_name, sampler_location in uniform_samplers.items():
 
                     if not isinstance(sampler_location, int):
                         raise Exception("[ERROR] Uniform Sampler2D location should be of type 'int'")
+
+                    if sampler_name not in program:
+                        raise Exception(f"[ERROR] Sampler '{sampler_name}' not declared in shader")
 
                     program[sampler_name].value = sampler_location
 

@@ -10,7 +10,7 @@ from ecs.components.mesh import Mesh
 def test_constructor():
 
     pool = ComponentPool()
-    assert pool.entity_uid_counter == 0
+    assert pool.entity_uid_counter == constants.COMPONENT_POOL_STARTING_ID_COUNTER
     assert pool.entities == {}
     assert pool.transform_3d_components == {}
     assert pool.mesh_components == {}
@@ -26,9 +26,9 @@ def test_create_entity():
     new_entity_uid_2 = pool.create_entity()
     new_entity_uid_3 = pool.create_entity()
 
-    assert new_entity_uid_2 == 1
-    assert new_entity_uid_1 == 0
-    assert new_entity_uid_3 == 2
+    assert new_entity_uid_1 == constants.COMPONENT_POOL_STARTING_ID_COUNTER
+    assert new_entity_uid_2 == constants.COMPONENT_POOL_STARTING_ID_COUNTER + 1
+    assert new_entity_uid_3 == constants.COMPONENT_POOL_STARTING_ID_COUNTER + 2
 
 
 def test_add_and_remove_components():

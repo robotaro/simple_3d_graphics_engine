@@ -1,4 +1,5 @@
 import glfw
+import matplotlib.pyplot as plt
 import moderngl
 from PIL import Image
 import numpy as np
@@ -11,6 +12,7 @@ from ecs.systems.render_system.font_library import FontLibrary
 from ecs.component_pool import ComponentPool
 from ecs.geometry_3d import ready_to_render
 from ecs.math import mat4
+from ecs.utilities import utils_camera
 
 
 class RenderSystem(System):
@@ -23,8 +25,7 @@ class RenderSystem(System):
         "shader_program_library",
         "font_library",
         "framebuffers",
-        "textures_offscreen_rendering",
-        "textures_font",
+        "textures",
         "vbo_groups",
         "quads",
         "fullscreen_selected_texture",
@@ -35,15 +36,23 @@ class RenderSystem(System):
         "outline_program",
         "outline_texture",
         "outline_framebuffer",
+        "entity_selection_enabled",
         "selected_entity_id",
         "shadow_map_program",
         "shadow_map_depth_texture",
         "shadow_map_framebuffer",
-        "_sample_entity_location"
+        "_sample_entity_location",
+        "_ambient_hemisphere_light_enabled",
+        "_point_lights_enabled",
+        "_directional_lights_enabled",
+        "_gamma_correction_enabled",
+        "_shadows_enabled"
     ]
 
     def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"])
+        super().__init__(logger=kwargs["logger"],
+                         component_pool=kwargs["component_pool"],
+                         event_publisher=kwargs["event_publisher"])
 
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
@@ -52,8 +61,8 @@ class RenderSystem(System):
 
         # Internal components (different from normal components)
         self.framebuffers = {}
-        self.textures_offscreen_rendering = {}
-        self.textures_font = {}
+        self.textures = {}
+        self.textures = {}
         self.vbo_groups = {}
         self.quads = {}
 
@@ -70,6 +79,8 @@ class RenderSystem(System):
         self.outline_texture = None
         self.outline_framebuffer = None
 
+        # Entity selection variables
+        self.entity_selection_enabled = True
         self.selected_entity_id = -1
 
         # Shadow Mapping
@@ -79,6 +90,12 @@ class RenderSystem(System):
 
         # Flags
         self._sample_entity_location = None
+
+        self._ambient_hemisphere_light_enabled = True
+        self._point_lights_enabled = True
+        self._directional_lights_enabled = True
+        self._gamma_correction_enabled = True
+        self._shadows_enabled = False
 
     # =========================================================================
     #                         System Core functions
@@ -92,41 +109,38 @@ class RenderSystem(System):
         self.picker_vao = self.ctx.vertex_array(self.picker_program, [])
 
         # Offscreen rendering
-        self.textures_offscreen_rendering["color"] = self.ctx.texture(size=self.buffer_size, components=4)
-        self.textures_offscreen_rendering["normal"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures_offscreen_rendering["viewpos"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures_offscreen_rendering["entity_info"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures_offscreen_rendering["entity_info"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.textures_offscreen_rendering["depth"] = self.ctx.depth_texture(size=self.buffer_size)
+        self.textures["color"] = self.ctx.texture(size=self.buffer_size, components=4)
+        self.textures["normal"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["viewpos"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["entity_info"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["entity_info"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.textures["depth"] = self.ctx.depth_texture(size=self.buffer_size)
         self.framebuffers["offscreen"] = self.ctx.framebuffer(
             color_attachments=[
-                self.textures_offscreen_rendering["color"],
-                self.textures_offscreen_rendering["normal"],
-                self.textures_offscreen_rendering["viewpos"],
-                self.textures_offscreen_rendering["entity_info"]
+                self.textures["color"],
+                self.textures["normal"],
+                self.textures["viewpos"],
+                self.textures["entity_info"]
             ],
-            depth_attachment=self.textures_offscreen_rendering["depth"],
+            depth_attachment=self.textures["depth"],
         )
 
         # Fonts
         for font_name, font in self.font_library.fonts.items():
-            self.textures_font[font_name] = self.ctx.texture(size=font.texture_data.shape,
-                                                             data=font.texture_data.astype('f4').tobytes(),
-                                                             components=1,
-                                                             dtype='f4')
+            self.textures[font_name] = self.ctx.texture(size=font.texture_data.shape,
+                                                                  data=font.texture_data.astype('f4').tobytes(),
+                                                                  components=1,
+                                                                  dtype='f4')
 
         # Selection Pass
-        self.textures_offscreen_rendering["selection"] = self.ctx.texture(size=self.buffer_size,
-                                                                          components=4,
-                                                                          dtype='f4')
-        self.textures_offscreen_rendering["selection"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.textures_offscreen_rendering["selection_depth"] = self.ctx.depth_texture(size=self.buffer_size)
+        self.textures["selection"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.textures["selection"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.textures["selection"].repeat_x = False  # This prevents outlining from spilling over to the other edge
+        self.textures["selection"].repeat_y = False
+        self.textures["selection_depth"] = self.ctx.depth_texture(size=self.buffer_size)
         self.framebuffers["selection_fbo"] = self.ctx.framebuffer(
-            color_attachments=[
-                self.textures_offscreen_rendering["selection"],
-            ],
-            depth_attachment=self.textures_offscreen_rendering["selection_depth"],
-        )
+            color_attachments=[self.textures["selection"]],
+            depth_attachment=self.textures["selection_depth"])
 
         # Shadow mapping
         self.shadow_map_program = self.shader_program_library["shadow_mapping"]
@@ -139,75 +153,110 @@ class RenderSystem(System):
 
         return True
 
-    def update(self, elapsed_time: float, component_pool: ComponentPool, context: moderngl.Context, event=None):
+    def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
         # Initialise object on the GPU if they haven't been already
 
         # TODO: Move initialisation to only when objects are created
-        for entity_uid, renderable in component_pool.renderable_components.items():
+        self.initialise_all_components_on_gpu()
 
-            mesh = component_pool.mesh_components[entity_uid]
-            mesh.initialise_on_gpu(ctx=self.ctx)
-            renderable.initialise_on_gpu(ctx=self.ctx,
-                                         program_name_list=constants.SHADER_PASSES_LIST,
-                                         shader_library=self.shader_program_library,
-                                         vbo_tuple_list=mesh.get_vbo_declaration_list(),
-                                         ibo_faces=mesh.ibo_faces)
-
-        renderable_entity_uids = list(component_pool.renderable_components.keys())
-        camera_entity_uids = list(component_pool.camera_components.keys())
-        directional_lights_entity_uids = list(component_pool.directional_light_components.keys())
+        camera_entity_uids = list(self.component_pool.camera_components.keys())
 
         # DEBUG -HACK TODO: MOVE THIS TO THE TRANSFORM SYSTEM!!!
-        for _, transform in component_pool.transform_3d_components.items():
+        for _, transform in self.component_pool.transform_3d_components.items():
             transform.update()
+
+        # Render shadow texture (if enabled)
+        self.render_pass_shadow_mapping(component_pool=self.component_pool)
 
         # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
-
-            self.forward_pass(component_pool=component_pool,
-                              camera_uid=camera_uid)
-            self.selected_entity_pass(component_pool=component_pool,
-                                      camera_uid=camera_uid,
-                                      selected_entity_uid=self.selected_entity_id)
-            self.shadow_mapping_pass(component_pool=component_pool)
-            self.text_2d_pass(component_pool=component_pool)
+            self.render_pass_forward(component_pool=self.component_pool,
+                                     camera_uid=camera_uid)
+            self.render_pass_selection(component_pool=self.component_pool,
+                                       camera_uid=camera_uid,
+                                       selected_entity_uid=self.selected_entity_id)
+            self.render_pass_text_2d(component_pool=self.component_pool)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
-        self.render_to_screen()
+        self.render_pass_screen()
+
+        return True
+
+    def initialise_all_components_on_gpu(self):
+        for entity_uid, renderable in self.component_pool.renderable_components.items():
+
+            mesh = self.component_pool.mesh_components[entity_uid]
+            mesh.initialise_on_gpu(ctx=self.ctx)
+            renderable.initialise_on_gpu(
+                ctx=self.ctx,
+                program_name_list=constants.SHADER_PASSES_LIST,
+                shader_library=self.shader_program_library,
+                vbo_tuple_list=mesh.get_vbo_declaration_list(),
+                ibo_faces=mesh.ibo_faces)
 
     def on_event(self, event_type: int, event_data: tuple):
 
-        if event_type == constants.EVENT_WINDOW_RESIZE:
+        if event_type == constants.EVENT_WINDOW_SIZE:
             # TODO: Safe release all offscreen framebuffers and create new ones
+            print(event_data)
             pass
 
-        if (event_type == constants.EVENT_MOUSE_BUTTON_PRESS and
-                event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] == glfw.MOUSE_BUTTON_LEFT):
+        if event_type == constants.EVENT_MOUSE_BUTTON_ENABLED:
+            self.entity_selection_enabled = True
 
-            # TODO: Move this to its own function!
-            # Pass the coordinate of the pixel you want to sample to the fragment picking shader
-            self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
-            self.textures_offscreen_rendering["entity_info"].use(location=0)
+        if event_type == constants.EVENT_MOUSE_BUTTON_DISABLED:
+            self.entity_selection_enabled = False
 
-            self.picker_vao.transform(
-                self.picker_buffer,
-                mode=moderngl.POINTS,
-                vertices=1,
-                first=0,
-                instances=1)
-            self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
+        if self.entity_selection_enabled:
+            if (event_type == constants.EVENT_MOUSE_BUTTON_PRESS and
+                    event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] == glfw.MOUSE_BUTTON_LEFT):
 
-        # FULLSCREEN VIEW MODES
+                # TODO: Move this to its own function!
+                # Pass the coordinate of the pixel you want to sample to the fragment picking shader
+                self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
+                self.textures["entity_info"].use(location=0)
+
+                self.picker_vao.transform(
+                    self.picker_buffer,
+                    mode=moderngl.POINTS,
+                    vertices=1,
+                    first=0,
+                    instances=1)
+
+                self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
+
+                self.event_publisher.publish(event_type=constants.EVENT_ACTION_ENTITY_SELECTED,
+                                             event_data=(self.selected_entity_id,),
+                                             sender=self)
+
         if event_type == constants.EVENT_KEYBOARD_PRESS:
+
+            # Texture debugging modes
             key_value = event_data[constants.EVENT_INDEX_KEYBOARD_KEY]
             if glfw.KEY_F1 <= key_value <= glfw.KEY_F11:
                 self.fullscreen_selected_texture = key_value - glfw.KEY_F1
 
+            # Light debugging modes
+            if glfw.KEY_1 == key_value:
+                self._ambient_hemisphere_light_enabled = not self._ambient_hemisphere_light_enabled
+            if glfw.KEY_2 == key_value:
+                self._point_lights_enabled = not self._point_lights_enabled
+            if glfw.KEY_3 == key_value:
+                self._directional_lights_enabled = not self._directional_lights_enabled
+            if glfw.KEY_4 == key_value:
+                self._gamma_correction_enabled = not self._gamma_correction_enabled
+            if glfw.KEY_5 == key_value:
+                self._shadows_enabled = not self._shadows_enabled
+
+        if event_type == constants.EVENT_ACTION_ENTITY_SELECTED:
+            # Other systems may change the selected entity, so this should be reflected by the render system
+            self.selected_entity_id = event_data[0]
+
     def shutdown(self):
 
         # Release textures
-        for texture_name, texture_obj in self.textures_offscreen_rendering.items():
+        for texture_name, texture_obj in self.textures.items():
             texture_obj.release()
 
         # Release Framebuffers
@@ -228,10 +277,10 @@ class RenderSystem(System):
         self.font_library.shutdown()
 
     # =========================================================================
-    #                         Render functions
+    #                           Custom functions
     # =========================================================================
 
-    def forward_pass(self, component_pool: ComponentPool, camera_uid: int):
+    def render_pass_forward(self, component_pool: ComponentPool, camera_uid: int):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
         self.framebuffers["offscreen"].use()
@@ -239,7 +288,6 @@ class RenderSystem(System):
         camera_component = component_pool.camera_components[camera_uid]
         camera_transform = component_pool.transform_3d_components[camera_uid]
 
-        # TODO: maybe move this to inside the scene?
         # Clear context (you need to use the use() first to bind it!)
         self.ctx.clear(
             red=1,
@@ -261,13 +309,37 @@ class RenderSystem(System):
         program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
         program["view_matrix"].write(camera_transform.local_matrix.T.astype('f4').tobytes())
 
-        #directional_light_components = list(component_pool.directional_light_components.keys())
-
-        camera_component = component_pool.camera_components[camera_uid]
-        camera_transform = component_pool.transform_3d_components[camera_uid]
         camera_transform.update()
-        camera_component.upload_uniforms(program=program)
+        camera_component.upload_uniforms(
+            program=program,
+            window_width=self.buffer_size[0],
+            window_height=self.buffer_size[1]
+        )
 
+        # Lights
+        program["num_point_lights"].value = len(self.component_pool.point_light_components)
+        for index, (uid, point_light_component) in enumerate(self.component_pool.point_light_components.items()):
+
+            light_transform = self.component_pool.transform_3d_components[uid]
+
+            program[f"point_lights[{index}].position"] = light_transform.position
+            program[f"point_lights[{index}].diffuse"] = point_light_component.diffuse
+            program[f"point_lights[{index}].specular"] = point_light_component.specular
+            program[f"point_lights[{index}].attenuation_coeffs"] = point_light_component.attenuation_coeffs
+            program[f"point_lights[{index}].enabled"] = point_light_component.enabled
+
+        program["num_directional_lights"].value = len(self.component_pool.directional_light_components)
+        for index, (uid, dir_light_component) in enumerate(self.component_pool.directional_light_components.items()):
+            light_transform = self.component_pool.transform_3d_components[uid]
+
+            program[f"directional_lights[{index}].direction"] = tuple(light_transform.local_matrix[:3, 2])
+            program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
+            program[f"directional_lights[{index}].specular"] = dir_light_component.specular
+            program[f"directional_lights[{index}].strength"] = dir_light_component.strength
+            program[f"directional_lights[{index}].shadow_enabled"] = dir_light_component.shadow_enabled
+            program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
+
+        # Renderables
         for uid, renderable_component in component_pool.renderable_components.items():
 
             if not renderable_component.visible:
@@ -277,16 +349,30 @@ class RenderSystem(System):
             program[constants.SHADER_UNIFORM_ENTITY_ID] = uid
             renderable_transform = component_pool.transform_3d_components[uid]
 
+            material = component_pool.material_components.get(uid, None)
+
             # Upload uniforms
             program["entity_id"].value = uid
-            program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
+            program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
+            program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
+            program["directional_lights_enabled"].value = self._directional_lights_enabled
+            program["point_lights_enabled"].value = self._point_lights_enabled
+            program["gamma_correction_enabled"].value = self._gamma_correction_enabled
+            program["shadows_enabled"].value = self._shadows_enabled
+
+            # TODO: Technically, you only need to upload the material once since it doesn't change.
+            #       The program will keep its variable states!
+            if material is not None:
+                program["material.diffuse"].value = material.diffuse
+                program["material.specular"].value = material.specular
+                program["material.shininess_factor"] = material.shininess_factor
 
             # Render the vao at the end
             renderable_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
 
             # Stage: Draw transparent objects back to front
 
-    def selected_entity_pass(self, component_pool: ComponentPool, camera_uid: int, selected_entity_uid: int):
+    def render_pass_selection(self, component_pool: ComponentPool, camera_uid: int, selected_entity_uid: int):
 
         # IMPORTANT: It uses the current bound framebuffer!
 
@@ -299,20 +385,29 @@ class RenderSystem(System):
             return
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
+
+        # Safety checks before we go any further!
+        renderable_transform = component_pool.transform_3d_components.get(selected_entity_uid, None)
+        if renderable_transform is None:
+            return
+        renderable_component = component_pool.renderable_components.get(selected_entity_uid, None)
+        if renderable_component is None:
+            return
+
         camera_transform = component_pool.transform_3d_components[camera_uid]
-        renderable_transform = component_pool.transform_3d_components[selected_entity_uid]
         camera_transform.update()
 
         # Upload uniforms
-        camera_component.upload_uniforms(program=program)
+        camera_component.upload_uniforms(program=program,
+                                         window_width=self.buffer_size[0],
+                                         window_height=self.buffer_size[1])
         program["view_matrix"].write(camera_transform.local_matrix.T.tobytes())
         program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
 
         # Render
-        renderable_component = component_pool.renderable_components[selected_entity_uid]
         renderable_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
 
-    def text_2d_pass(self, component_pool: ComponentPool):
+    def render_pass_text_2d(self, component_pool: ComponentPool):
 
         if len(component_pool.text_2d_components) == 0:
             return
@@ -341,27 +436,40 @@ class RenderSystem(System):
             text_2d.update_buffer(font_library=self.font_library)
 
             # Rendering
-            self.textures_font[text_2d.font_name].use(location=0)
+            self.textures[text_2d.font_name].use(location=0)
             text_2d.vao.render(moderngl.POINTS)
 
-    def shadow_mapping_pass(self, component_pool: ComponentPool):
+    def render_pass_shadow_mapping(self, component_pool: ComponentPool):
 
         self.shadow_map_framebuffer.clear()
         self.shadow_map_framebuffer.use()
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS]
 
-        #directional_lights_uids = self.
+        # Find which directional light, if any creates shadows
+        dir_light_uid = None
+        for uid, directional_light in component_pool.directional_light_components.items():
+            if directional_light.shadow_enabled:
+                dir_light_uid = uid
+                break
 
-        for uid, renderable_component in component_pool.renderable_components.items():
+        if dir_light_uid is None:
+            return
 
-            if not renderable_component.visible:
+        for renderable_uid, renderable_component in component_pool.renderable_components.items():
+
+            if not renderable_component.visible and not renderable_component.is_transparent():
                 continue
 
-            renderable_transform = component_pool.transform_3d_components[uid]
-            program["model_matrix"].write(renderable_transform.local_matrix.T.astype('f4').tobytes())
+            renderable_transform = component_pool.transform_3d_components[renderable_uid]
+            light_transform = component_pool.transform_3d_components[dir_light_uid]
 
-    def render_to_screen(self) -> None:
+            program["view_matrix"].write(light_transform.local_matrix.T.tobytes())
+            program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
+
+            renderable_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(moderngl.TRIANGLES)
+
+    def render_pass_screen(self) -> None:
 
         """
         Renders selected offscreen texture to window. By default, it is the color texture, but you can
@@ -373,11 +481,12 @@ class RenderSystem(System):
         self.ctx.screen.clear(red=1, green=1, blue=1)  # TODO: Check if this line is necessary
         self.ctx.disable(moderngl.DEPTH_TEST)
 
-        self.textures_offscreen_rendering["color"].use(location=0)
-        self.textures_offscreen_rendering["normal"].use(location=1)
-        self.textures_offscreen_rendering["viewpos"].use(location=2)
-        self.textures_offscreen_rendering["entity_info"].use(location=3)
-        self.textures_offscreen_rendering["selection"].use(location=4)
+        self.textures["color"].use(location=0)
+        self.textures["normal"].use(location=1)
+        self.textures["viewpos"].use(location=2)
+        self.textures["entity_info"].use(location=3)
+        self.textures["selection"].use(location=4)
+        self.textures["depth"].use(location=5)
 
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture
@@ -393,11 +502,11 @@ class RenderSystem(System):
             buffer.release()
 
     def load_texture_from_file(self, texture_fpath: str, texture_id: str, datatype="f4"):
-        if texture_id in self.textures_offscreen_rendering:
+        if texture_id in self.textures:
             raise KeyError(f"[ERROR] Texture ID '{texture_id}' already exists")
 
         image = Image.open(texture_fpath)
         image_data = np.array(image)
-        self.textures_offscreen_rendering[texture_id] = self.ctx.texture(size=image.size,
-                                                                         components=image_data.shape[-1],
-                                                                         data=image_data.tobytes())
+        self.textures[texture_id] = self.ctx.texture(size=image.size,
+                                                     components=image_data.shape[-1],
+                                                     data=image_data.tobytes())

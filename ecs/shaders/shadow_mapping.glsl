@@ -16,6 +16,8 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
-void main() {}
+void main() {
+    // The main function is empty becayuse all we need is the depth function
+}
 
 #endif

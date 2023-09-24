@@ -2,6 +2,9 @@
 numba==0.56.2
 PyGLM==2.5.7        # Required for rendering as well
 
+# Documentation
+sphinx==7.1.2
+
 # Core modules
 moderngl==5.7.4
 glfw==2.5.5

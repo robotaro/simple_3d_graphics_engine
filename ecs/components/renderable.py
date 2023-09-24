@@ -1,18 +1,19 @@
 import moderngl
 
+from ecs import constants
 from ecs.components.component import Component
 from ecs.systems.render_system.shader_program_library import ShaderProgramLibrary
 
 
 class Renderable(Component):
 
-    _type = "renderable"
+    _type = constants.COMPONENT_TYPE_RENDERABLE
 
     __slots__ = [
         "render_layer",
         "vaos",
         "visible",
-        "cast_shadow",
+        "shadow_caster",
         "_gpu_initialised"
     ]
 
@@ -25,7 +26,7 @@ class Renderable(Component):
 
         # Flags
         self.visible = True
-        self.cast_shadow = True
+        self.shadow_caster = True
         self._gpu_initialised = False
 
     def initialise_on_gpu(self,

@@ -21,8 +21,7 @@ class Mesh(Component):
         "vbo_colors",
         "vbo_uvs",
         "ibo_faces",
-        "vbo_declaration_list",
-        "_gpu_initialised"
+        "vbo_declaration_list"
     ]
 
     def __init__(self, **kwargs):
@@ -47,8 +46,6 @@ class Mesh(Component):
         self.generate_shape(**kwargs)
         self.vbo_declaration_list = []
 
-        self._gpu_initialised = False
-
     def initialise_on_gpu(self, ctx: moderngl.Context) -> None:
         """
         Creates VBOs AND upload any already populated vertex arrays
@@ -56,7 +53,7 @@ class Mesh(Component):
         :return:
         """
 
-        if self._gpu_initialised:
+        if self.gpu_initialised:
             return
 
         if self.vertices is not None:
@@ -72,22 +69,22 @@ class Mesh(Component):
             self.vbo_declaration_list.append((self.vbo_colors, "3f", constants.SHADER_INPUT_COLOR))
 
         if self.uvs is not None:
-            self.vbo_uvs = ctx.buffer(self.colors.astype("f4").tobytes())
+            self.vbo_uvs = ctx.buffer(self.uvs.astype("f4").tobytes())
             self.vbo_declaration_list.append((self.vbo_uvs, "2f", constants.SHADER_INPUT_UV))
 
         if self.faces is not None:
             self.ibo_faces = ctx.buffer(self.faces.astype("i4").tobytes())
 
-        self._gpu_initialised = True
+        self.gpu_initialised = True
 
     def upload_buffers(self) -> None:
 
         """
-        Uploades current vertices referenced externally (in RAM) to the GPU
+        Uploads current vertices referenced externally (in RAM) to the GPU
         :return:
         """
 
-        if not self._gpu_initialised:
+        if not self.gpu_initialised:
             return
 
         if self.vbo_vertices is not None:
@@ -104,9 +101,9 @@ class Mesh(Component):
 
         # TODO: Consider the case where the number of vertices changes and so the number of faces
 
-    def get_vbo_declaration_list(self) -> list:
+    def get_vbo_declaration_list(self) -> Union[list, None]:
 
-        if not self._gpu_initialised:
+        if not self.gpu_initialised:
             return None
 
         return self.vbo_declaration_list
@@ -139,7 +136,12 @@ class Mesh(Component):
             width = kwargs.get("width", 1.0)
             height = kwargs.get("height", 1.0)
             depth = kwargs.get("depth", 1.0)
-            v, n, u, f = MeshFactory.create_cube(width=width, height=height, depth=depth)
+            v, n, u, f = MeshFactory.create_box(width=width, height=height, depth=depth)
+
+        if shape == constants.MESH_SHAPE_ICOSPHERE:
+            radius = kwargs.get("radius", 1.0)
+            subdivisions = kwargs.get("subdivisions", 3)
+            v, n, u, f = MeshFactory.create_icosphere(radius=radius, subdivisions=subdivisions)
 
         if shape == constants.MESH_SHAPE_SPHERE:
             raise NotImplemented(f"[ERROR] Shape {constants.MESH_SHAPE_SPHERE} not yet implement")

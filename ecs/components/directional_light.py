@@ -1,19 +1,49 @@
 import numpy as np
+import moderngl
 
+from ecs import constants
 from ecs.components.component import Component
 from ecs.math import mat4
 
 
 class DirectionalLight(Component):
 
-    def __init__(self, **kwargs):
-        self.color = (0.5, 0.5, 0.5)
-        self.position = kwargs.get("position", np.array((50, 10, 50), dtype=np.float32))
-        self.direction = kwargs.get("direction", np.array((-1, -1, 0), dtype=np.float32))
-        self.specular = 0.5
+    __slots__ = [
+        "diffuse",
+        "ambient",
+        "specular",
+        "strength",
+        "shadow_texture",
+        "shadow_enabled",
+        "enabled"
+    ]
 
-    def get_view_matrix(self):
-        return mat4.look_at_direction(
-            position=self.position,
-            direction=self.direction,
-            up=np.array((0, 1, 0), dtype=np.float32))
+    def __init__(self, **kwargs):
+        
+        super().__init__()
+
+        # Colors
+        self.diffuse = kwargs.get("diffuse", (1.0, 1.0, 1.0))
+        self.specular = kwargs.get("specular", (1.0, 1.0, 1.0))
+
+        # Modifiers
+        self.strength = kwargs.get("strength", 1.0)
+
+        # Moderngl variables
+        self.shadow_texture = None
+
+        # Flags
+        self.shadow_enabled = kwargs.get("shadow_enabled", True)
+        self.enabled = kwargs.get("enabled", True)
+
+    def initialise_on_gpu(self, ctx: moderngl.Context) -> None:
+
+        if self.gpu_initialised:
+            return
+
+        self.shadow_texture = ctx.depth_texture(size=constants.DIRECTIONAL_LIGHT_SIZE)
+
+    def release(self):
+
+        if self.shadow_texture is not None:
+            self.shadow_texture.release()

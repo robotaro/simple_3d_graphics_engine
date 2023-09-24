@@ -5,22 +5,38 @@ import numpy as np
 #                                Directories
 # =============================================================================
 
-ROOT_DIR = os.path.dirname(os.path.dirname(__file__))
+ECS_DIR = os.path.dirname(__file__)
+ROOT_DIR = os.path.dirname(ECS_DIR)
 RESOURCES_DIR = os.path.join(ROOT_DIR, "resources")
 FONTS_DIR = os.path.join(RESOURCES_DIR, "fonts")
-SHADERS_DIRECTORY = os.path.join(RESOURCES_DIR, "shaders")
+IMAGES_DIR = os.path.join(RESOURCES_DIR, "images")
+SHADERS_DIRECTORY = os.path.join(ECS_DIR, "shaders")
 
 # =============================================================================
-#                               Editor
+#                                Editor
 # =============================================================================
 
+DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)  # (1280, 720)
 SYSTEM_NAME_RENDER = "render_system"
 SYSTEM_NAME_IMGUI = "imgui_system"
 SYSTEM_NAME_INPUT_CONTROL = "input_control_system"
 AVAILABLE_SYSTEMS = [
     SYSTEM_NAME_RENDER,
+    SYSTEM_NAME_IMGUI,
+    SYSTEM_NAME_INPUT_CONTROL
+]
+DEFAULT_SYSTEMS_DECLARATION = [
+    SYSTEM_NAME_INPUT_CONTROL,
+    SYSTEM_NAME_RENDER,
     SYSTEM_NAME_IMGUI
 ]
+
+# =============================================================================
+#                               Imgui System
+# =============================================================================
+
+IMGUI_DRAG_FLOAT_PRECISION = 1e-2
+
 # =============================================================================
 #                               Event types
 # =============================================================================
@@ -29,32 +45,58 @@ AVAILABLE_SYSTEMS = [
 EVENT_KEYBOARD_PRESS = 1            # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_RELEASE = 2          # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_REPEAT = 3           # args: (key, scancode, mods) <int, int, int>
+
 EVENT_INDEX_KEYBOARD_KEY = 0
 EVENT_INDEX_KEYBOARD_SCANCODE = 1
 EVENT_INDEX_KEYBOARD_MODS = 2
 
 # Mouse
-EVENT_MOUSE_BUTTON_PRESS = 4        # args: (button, mods, x, y) <int, int, int, int>
-EVENT_MOUSE_BUTTON_RELEASE = 5      # args: (button, mods, x, y) <int, int, int, int>
+EVENT_MOUSE_BUTTON_ENABLED = 10
+EVENT_MOUSE_BUTTON_DISABLED = 11
+EVENT_MOUSE_BUTTON_PRESS = 12        # args: (button, mods, x, y) <int, int, int, int>
+EVENT_MOUSE_BUTTON_RELEASE = 13      # args: (button, mods, x, y) <int, int, int, int>
+
 EVENT_INDEX_MOUSE_BUTTON_BUTTON = 0
 EVENT_INDEX_MOUSE_BUTTON_MODS = 1
 EVENT_INDEX_MOUSE_BUTTON_X = 2
 EVENT_INDEX_MOUSE_BUTTON_Y = 3
 
-EVENT_MOUSE_MOVE = 6                # args: (x, y) <float, float>
+EVENT_MOUSE_MOVE = 14                # args: (x, y) <float, float>
 EVENT_INDEX_MOUSE_MOVE_X = 0
 EVENT_INDEX_MOUSE_MOVE_Y = 1
 
-EVENT_MOUSE_SCROLL = 7              # args: (offset_x, offset_y) <float, float>
+EVENT_MOUSE_SCROLL = 15              # args: (offset_x, offset_y) <float, float>
 EVENT_INDEX_MOUSE_SCROLL_X = 0
 EVENT_INDEX_MOUSE_SCROLL_Y = 1
 
-# Window
-EVENT_WINDOW_RESIZE = 8                 # args: (width, height) <int, int>
-EVENT_WINDOW_FRAMEBUFFER_RESIZE = 9     # args: (width, height) <int, int>
-EVENT_WINDOW_DROP_FILES = 10            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a list
+# Actions
+EVENT_EXIT_APPLICATION = 20
+EVENT_ACTION_ENTITY_SELECTED = 21
 
-EVENT_LOAD_FILE = 1                 #args: (filepath) <str>
+# Window
+EVENT_WINDOW_SIZE = 30                # args: (width, height) <int, int>
+EVENT_WINDOW_FRAMEBUFFER_SIZE = 31    # args: (width, height) <int, int>
+EVENT_WINDOW_DROP_FILES = 32            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a
+
+# Default subscribed events
+SUBSCRIBED_EVENTS_RENDER_SYSTEM = [
+    EVENT_ACTION_ENTITY_SELECTED,
+    EVENT_MOUSE_BUTTON_ENABLED,
+    EVENT_MOUSE_BUTTON_DISABLED,
+    EVENT_MOUSE_BUTTON_PRESS,
+    EVENT_KEYBOARD_PRESS,
+    EVENT_WINDOW_SIZE
+]
+SUBSCRIBED_EVENTS_IMGUI_SYSTEM = [
+    EVENT_ACTION_ENTITY_SELECTED,
+    EVENT_KEYBOARD_PRESS
+]
+SUBSCRIBED_EVENTS_INPUT_CONTROL_SYSTEM = [
+    EVENT_MOUSE_SCROLL,
+    EVENT_MOUSE_MOVE,
+    EVENT_KEYBOARD_PRESS,
+    EVENT_KEYBOARD_RELEASE
+]
 
 # =============================================================================
 #                              GLFW Types
@@ -64,6 +106,7 @@ EVENT_LOAD_FILE = 1                 #args: (filepath) <str>
 CAMERA_FOV_DEG = 45
 CAMERA_Z_NEAR = 0.01
 CAMERA_Z_FAR = 1000.0
+CAMERA_VIEWPORT_NORM = (0.0, 0.0, 1.0, 1.0)
 CAMERA_ZOOM_SPEED = 0.05
 
 # Mouse Input
@@ -98,6 +141,8 @@ VIEWPORT_INDEX_HEIGHT = 3
 # =============================================================================
 #                                Render System
 # =============================================================================
+
+RENDER_SYSTEM_DEFAULT_UP_VECTOR = (0.0, 1.0, 0.0)
 
 RENDER_3D_SYSTEM_MODE_FINAL = 0
 RENDER_3D_SYSTEM_MODE_NORMAL = 1
@@ -136,10 +181,13 @@ FONT_NUM_GLYPHS = FONT_SHEET_ROWS * FONT_SHEET_COLS
 FONT_TEXTURE_WIDTH = FONT_SHEET_CELL_WIDTH * FONT_SHEET_COLS
 FONT_TEXTURE_HEIGHT = FONT_SHEET_CELL_HEIGHT * FONT_SHEET_ROWS
 
+DIRECTIONAL_LIGHT_SIZE = (2048, 2048)
 
 # =============================================================================
 #                              Component Pool
 # =============================================================================
+
+COMPONENT_POOL_STARTING_ID_COUNTER = 2
 
 # Component Types
 COMPONENT_TYPE_TRANSFORM_3D = 0
@@ -154,12 +202,26 @@ COMPONENT_TYPE_DIRECTIONAL_LIGHT = 8
 COMPONENT_TYPE_SPOT_LIGHT = 9
 COMPONENT_TYPE_POINT_LIGHT = 10
 
+# Component Names (For loading from XML)
+COMPONENT_NAME_TRANSFORM_3D = "transform_3d"
+COMPONENT_NAME_TRANSFORM_2D = "transform_2d"
+COMPONENT_NAME_MESH = "mesh"
+COMPONENT_NAME_CAMERA = "camera"
+COMPONENT_NAME_RENDERABLE = "renderable"
+COMPONENT_NAME_MATERIAL = "material"
+COMPONENT_NAME_INPUT_CONTROL = "input_control"
+COMPONENT_NAME_TEXT_2D = "text_2d"
+COMPONENT_NAME_DIRECTIONAL_LIGHT = "directional_light"
+COMPONENT_NAME_SPOT_LIGHT = "spot_light"
+COMPONENT_NAME_POINT_LIGHT = "point_light"
+
 # Mesh Component Arguments
 COMPONENT_ARG_MESH_SHAPE = "shape"
 COMPONENT_ARG_MESH_FPATH = "fpath"
 
 MESH_SHAPE_BOX = "box"
 MESH_SHAPE_SPHERE = "sphere"
+MESH_SHAPE_ICOSPHERE = "icosphere"
 MESH_SHAPE_CYLINDER = "cylinder"
 MESH_SHAPE_FROM_OBJ = "obj"  # TODO: Kinda of a hack. You need to add argument "fpath"
 
@@ -178,7 +240,7 @@ SHADER_TYPE_FRAGMENT = "fragment"
 
 SHADER_LIBRARY_YAML_KEY_DEFINE = "define"  # For extra definitions
 SHADER_LIBRARY_YAML_KEY_VARYING = "varying"  # For varying variables (those who output to VBos rather than textures)
-SHADER_LIBRARY_YAML_KEY_SAMPLER_2D_LOCATION = "sampler_2d_location"
+SHADER_LIBRARY_YAML_KEY_INPUT_TEXTURE_LOCATION = "input_texture_location"
 SHADER_LIBRARY_FILE_EXTENSION = ".glsl"
 
 SHADER_LIBRARY_DIRECTIVE_VERSION = "#version"
