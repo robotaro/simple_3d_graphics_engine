@@ -84,7 +84,6 @@ class Editor:
         pos = glfw.get_monitor_pos(self.monitor_gltf)
         size = glfw.get_window_size(self.window_glfw)
         mode = glfw.get_video_mode(self.monitor_gltf)
-        print(int((mode.size.height - size[1]) / 2))
         glfw.set_window_pos(
             self.window_glfw,
             int(pos[0] + (mode.size.width - size[0]) / 2),

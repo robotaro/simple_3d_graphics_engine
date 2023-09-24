@@ -11,6 +11,7 @@ class Camera(Component):
     _type = "camera"
 
     __slots__ = [
+        "y_fov_deg",
         "z_near",
         "z_far",
         "orthographic_scale",
@@ -28,7 +29,6 @@ class Camera(Component):
         # Perspective variables
         self.y_fov_deg = constants.CAMERA_FOV_DEG
 
-        # TODO: Figure out how to use these values
         # Orthographic variables
         self.orthographic_scale = 1.0
 

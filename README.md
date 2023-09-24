@@ -25,6 +25,9 @@ https://github.com/pygfx/pygfx
 https://github.com/3b1b/manim
 https://github.com/eliemichel/Python3dViewer
 
+# Camera math and depth conversion
+https://stackoverflow.com/questions/7777913/how-to-render-depth-linearly-in-modern-opengl-with-gl-fragcoord-z-in-fragment-sh
+
 
 ## Insights on current engine inner workings
 - WHen node's translation/rotation/scale is changed via

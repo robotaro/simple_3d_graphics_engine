@@ -1,4 +1,5 @@
 import glfw
+import matplotlib.pyplot as plt
 import moderngl
 from PIL import Image
 import numpy as np
@@ -157,15 +158,7 @@ class RenderSystem(System):
         # Initialise object on the GPU if they haven't been already
 
         # TODO: Move initialisation to only when objects are created
-        for entity_uid, renderable in self.component_pool.renderable_components.items():
-
-            mesh = self.component_pool.mesh_components[entity_uid]
-            mesh.initialise_on_gpu(ctx=self.ctx)
-            renderable.initialise_on_gpu(ctx=self.ctx,
-                                         program_name_list=constants.SHADER_PASSES_LIST,
-                                         shader_library=self.shader_program_library,
-                                         vbo_tuple_list=mesh.get_vbo_declaration_list(),
-                                         ibo_faces=mesh.ibo_faces)
+        self.initialise_all_components_on_gpu()
 
         camera_entity_uids = list(self.component_pool.camera_components.keys())
 
@@ -189,6 +182,18 @@ class RenderSystem(System):
         self.render_to_screen()
 
         return True
+
+    def initialise_all_components_on_gpu(self):
+        for entity_uid, renderable in self.component_pool.renderable_components.items():
+
+            mesh = self.component_pool.mesh_components[entity_uid]
+            mesh.initialise_on_gpu(ctx=self.ctx)
+            renderable.initialise_on_gpu(
+                ctx=self.ctx,
+                program_name_list=constants.SHADER_PASSES_LIST,
+                shader_library=self.shader_program_library,
+                vbo_tuple_list=mesh.get_vbo_declaration_list(),
+                ibo_faces=mesh.ibo_faces)
 
     def on_event(self, event_type: int, event_data: tuple):
 

@@ -86,7 +86,6 @@ class ImguiSystem(System):
 
         if event_type == constants.EVENT_KEYBOARD_PRESS:
             if event_data[constants.EVENT_INDEX_KEYBOARD_KEY] == glfw.KEY_ESCAPE:
-                print("escape pressed")
                 self._exit_popup_open = True
 
     def shutdown(self):

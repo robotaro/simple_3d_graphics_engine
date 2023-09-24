@@ -27,6 +27,7 @@ uniform sampler2D depth_texture;
 // Other input uniforms
 uniform vec3 outline_color = vec3(1.0, 0.65, 0.0);  // Default orange color used in Blender
 uniform int selected_texture = 0;
+uniform bool perspective_projection = true;
 
 out vec4 fragColor;
 
@@ -54,7 +55,8 @@ vec3 int_to_color(uint i) {
 }
 
 vec3 calculate_outline_color();
-float LinearizeDepth(float depthValue);
+float linearise_depth_perspective(float depthValue);
+float linearise_depth_orthographic(float depthValue);
 
 void main() {
 
@@ -84,7 +86,10 @@ void main() {
     } else if (selected_texture == 5) {
         // Depth
         float depth = texture(depth_texture, uv).r;
-        depth = LinearizeDepth(depth);
+        if (perspective_projection)
+            depth = linearise_depth_perspective(depth);
+        else
+            depth = linearise_depth_orthographic(depth);
         color_rgb = vec3(depth);
 
     }
@@ -92,10 +97,17 @@ void main() {
     fragColor = vec4(color_rgb, 1.0);
 }
 
-float LinearizeDepth(float depthValue) {
+float linearise_depth_perspective(float depth_value) {
     float zNear = 0.1; // Adjust this to match your scene's near clipping plane
     float zFar = 100.0; // Adjust this to match your scene's far clipping plane
-    return (2.0 * zNear) / (zFar + zNear - depthValue * (zFar - zNear));
+    return (2.0 * zNear) / (zFar + zNear - depth_value * (zFar - zNear));
+}
+
+float linearise_depth_orthographic(float depth_value) {
+    // Check: https://stackoverflow.com/questions/7777913/how-to-render-depth-linearly-in-modern-opengl-with-gl-fragcoord-z-in-fragment-sh
+    float zNear = 0.1; // Adjust this to match your scene's near clipping plane
+    float zFar = 100.0; // Adjust this to match your scene's far clipping plane
+    return depth_value * (zFar - zNear) + zNear;
 }
 
 vec3 calculate_outline_color(){

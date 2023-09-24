@@ -17,7 +17,8 @@ class InputControl(Component):
         "right",
         "up",
         "yaw",      # In radians
-        "pitch"     # In radians
+        "pitch",     # In radians
+        "max_tilt"
     ]
 
     def __init__(self, **kwargs):
