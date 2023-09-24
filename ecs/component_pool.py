@@ -73,7 +73,8 @@ class ComponentPool:
             constants.COMPONENT_TYPE_POINT_LIGHT: self.point_light_components,
         }
 
-
+        # This variable is a temporary solution to keep track of all entities added during the xml scene loading
+        self.entity_uids_to_be_initiliased = []
 
     def create_entity(self, name="") -> int:
         uid = self.entity_uid_counter
@@ -151,6 +152,7 @@ class ComponentPool:
                 entity_name = entity_soup.attrs.get("name", "unamed_entity")
                 entity_uid = self.create_entity(name=entity_name)
 
+                self.entity_uids_to_be_initiliased.append(entity_uid)
                 self._add_entity_components(entity_uid=entity_uid, entity_soup=entity_soup)
 
     def _add_entity_components(self, entity_uid: int, entity_soup: BeautifulSoup) -> None:
