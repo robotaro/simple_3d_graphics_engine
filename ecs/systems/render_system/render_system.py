@@ -1,5 +1,4 @@
 import glfw
-import matplotlib.pyplot as plt
 import moderngl
 from PIL import Image
 import numpy as np
@@ -11,8 +10,10 @@ from ecs.systems.render_system.shader_program_library import ShaderProgramLibrar
 from ecs.systems.render_system.font_library import FontLibrary
 from ecs.component_pool import ComponentPool
 from ecs.geometry_3d import ready_to_render
+from ecs.components.renderable import Renderable
+from ecs.components.mesh import Mesh
+from ecs.components.directional_light import DirectionalLight
 from ecs.math import mat4
-from ecs.utilities import utils_camera
 
 
 class RenderSystem(System):
@@ -491,6 +492,19 @@ class RenderSystem(System):
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture
         quad_vao.render(moderngl.TRIANGLES)
+
+    # =========================================================================
+    #                      Component Initialisation functions
+    # =========================================================================
+
+    def initialise_component_renderable(self, renderable: Renderable):
+        pass
+
+    def initialise_component_mesh(self, mesh: Mesh):
+        pass
+
+    def initialise_component_directional_light(self, directional_light: DirectionalLight):
+        pass
 
     # =========================================================================
     #                         Other Functions

@@ -17,17 +17,16 @@ class Renderable(Component):
         "_gpu_initialised"
     ]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
 
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
         self.render_layer = 0
         self.vaos = {}
 
         # Flags
-        self.visible = True
-        self.shadow_caster = True
-        self._gpu_initialised = False
+        self.visible = kwargs.get("visible", True)
+        self.shadow_caster = kwargs.get("shadow_caster", True)
 
     def initialise_on_gpu(self,
                           ctx: moderngl.Context,
@@ -49,7 +48,7 @@ class Renderable(Component):
             else:
                 self.vaos[program_name] = ctx.vertex_array(program, vbo_tuple_list, ibo_faces)
 
-        self._gpu_initialised = True
+        self.gpu_initialised = True
 
     def release(self):
         for _, vao in self.vaos:
