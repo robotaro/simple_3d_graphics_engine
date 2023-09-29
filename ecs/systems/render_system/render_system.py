@@ -1,18 +1,21 @@
 import glfw
-import matplotlib.pyplot as plt
 import moderngl
 from PIL import Image
 import numpy as np
 import struct
+import logging
 
 from ecs import constants
 from ecs.systems.system import System
+from ecs.component_pool import ComponentPool
+from ecs.event_publisher import EventPublisher
 from ecs.systems.render_system.shader_program_library import ShaderProgramLibrary
 from ecs.systems.render_system.font_library import FontLibrary
 from ecs.component_pool import ComponentPool
 from ecs.geometry_3d import ready_to_render
+from ecs.components.mesh import Mesh
+from ecs.components.directional_light import DirectionalLight
 from ecs.math import mat4
-from ecs.utilities import utils_camera
 
 
 class RenderSystem(System):
@@ -26,7 +29,9 @@ class RenderSystem(System):
         "font_library",
         "framebuffers",
         "textures",
-        "vbo_groups",
+        "vbos",
+        "vaos",
+        "ibos",
         "quads",
         "fullscreen_selected_texture",
         "picker_buffer",
@@ -49,21 +54,23 @@ class RenderSystem(System):
         "_shadows_enabled"
     ]
 
-    def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"],
-                         component_pool=kwargs["component_pool"],
-                         event_publisher=kwargs["event_publisher"])
+    def __init__(self,
+                 logger: logging.Logger,
+                 component_pool: ComponentPool,
+                 event_publisher: EventPublisher,
+                 **kwargs):
+        super().__init__(logger=logger,
+                         component_pool=component_pool,
+                         event_publisher=event_publisher)
 
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
-        self.shader_program_library = ShaderProgramLibrary(context=self.ctx, logger=kwargs["logger"])
-        self.font_library = FontLibrary(logger=kwargs["logger"])
+        self.shader_program_library = ShaderProgramLibrary(context=self.ctx, logger=logger)
+        self.font_library = FontLibrary(logger=logger)
 
         # Internal components (different from normal components)
         self.framebuffers = {}
         self.textures = {}
-        self.textures = {}
-        self.vbo_groups = {}
         self.quads = {}
 
         self.fullscreen_selected_texture = 0  # Color is selected by default
@@ -128,9 +135,9 @@ class RenderSystem(System):
         # Fonts
         for font_name, font in self.font_library.fonts.items():
             self.textures[font_name] = self.ctx.texture(size=font.texture_data.shape,
-                                                                  data=font.texture_data.astype('f4').tobytes(),
-                                                                  components=1,
-                                                                  dtype='f4')
+                                                        data=font.texture_data.astype('f4').tobytes(),
+                                                        components=1,
+                                                        dtype='f4')
 
         # Selection Pass
         self.textures["selection"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
@@ -156,10 +163,6 @@ class RenderSystem(System):
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
         # Initialise object on the GPU if they haven't been already
-
-        # TODO: Move initialisation to only when objects are created
-        self.initialise_all_components_on_gpu()
-
         camera_entity_uids = list(self.component_pool.camera_components.keys())
 
         # DEBUG -HACK TODO: MOVE THIS TO THE TRANSFORM SYSTEM!!!
@@ -182,18 +185,6 @@ class RenderSystem(System):
         self.render_pass_screen()
 
         return True
-
-    def initialise_all_components_on_gpu(self):
-        for entity_uid, renderable in self.component_pool.renderable_components.items():
-
-            mesh = self.component_pool.mesh_components[entity_uid]
-            mesh.initialise_on_gpu(ctx=self.ctx)
-            renderable.initialise_on_gpu(
-                ctx=self.ctx,
-                program_name_list=constants.SHADER_PASSES_LIST,
-                shader_library=self.shader_program_library,
-                vbo_tuple_list=mesh.get_vbo_declaration_list(),
-                ibo_faces=mesh.ibo_faces)
 
     def on_event(self, event_type: int, event_data: tuple):
 
@@ -313,8 +304,7 @@ class RenderSystem(System):
         camera_component.upload_uniforms(
             program=program,
             window_width=self.buffer_size[0],
-            window_height=self.buffer_size[1]
-        )
+            window_height=self.buffer_size[1])
 
         # Lights
         program["num_point_lights"].value = len(self.component_pool.point_light_components)
@@ -340,20 +330,20 @@ class RenderSystem(System):
             program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
 
         # Renderables
-        for uid, renderable_component in component_pool.renderable_components.items():
+        for uid, mesh_component in component_pool.mesh_components.items():
 
-            if not renderable_component.visible:
+            if not mesh_component.visible:
                 continue
 
             # Set entity ID
             program[constants.SHADER_UNIFORM_ENTITY_ID] = uid
-            renderable_transform = component_pool.transform_3d_components[uid]
+            mesh_transform = component_pool.transform_3d_components[uid]
 
             material = component_pool.material_components.get(uid, None)
 
             # Upload uniforms
             program["entity_id"].value = uid
-            program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
+            program["model_matrix"].write(mesh_transform.local_matrix.T.tobytes())
             program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
             program["directional_lights_enabled"].value = self._directional_lights_enabled
             program["point_lights_enabled"].value = self._point_lights_enabled
@@ -368,7 +358,7 @@ class RenderSystem(System):
                 program["material.shininess_factor"] = material.shininess_factor
 
             # Render the vao at the end
-            renderable_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
+            mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
 
             # Stage: Draw transparent objects back to front
 
@@ -384,20 +374,20 @@ class RenderSystem(System):
         if selected_entity_uid is None or selected_entity_uid <= 1:
             return
 
-        program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
-
         # Safety checks before we go any further!
         renderable_transform = component_pool.transform_3d_components.get(selected_entity_uid, None)
         if renderable_transform is None:
             return
-        renderable_component = component_pool.renderable_components.get(selected_entity_uid, None)
-        if renderable_component is None:
+
+        mesh_component = component_pool.mesh_components.get(selected_entity_uid, None)
+        if mesh_component is None:
             return
 
         camera_transform = component_pool.transform_3d_components[camera_uid]
         camera_transform.update()
 
         # Upload uniforms
+        program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
         camera_component.upload_uniforms(program=program,
                                          window_width=self.buffer_size[0],
                                          window_height=self.buffer_size[1])
@@ -405,7 +395,7 @@ class RenderSystem(System):
         program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
 
         # Render
-        renderable_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
+        mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
 
     def render_pass_text_2d(self, component_pool: ComponentPool):
 
@@ -456,18 +446,21 @@ class RenderSystem(System):
         if dir_light_uid is None:
             return
 
-        for renderable_uid, renderable_component in component_pool.renderable_components.items():
+        for entity_uid, mesh_component in component_pool.mesh_components.items():
 
-            if not renderable_component.visible and not renderable_component.is_transparent():
+            material = component_pool.material_components[entity_uid]
+
+            # TODO: IF you forget to declare the material in the xml, you are fucked. Make sure a default material
+            if not mesh_component.visible and not material.is_transparent():
                 continue
 
-            renderable_transform = component_pool.transform_3d_components[renderable_uid]
+            mesh_transform = component_pool.transform_3d_components[entity_uid]
             light_transform = component_pool.transform_3d_components[dir_light_uid]
 
             program["view_matrix"].write(light_transform.local_matrix.T.tobytes())
-            program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
+            program["model_matrix"].write(mesh_transform.local_matrix.T.tobytes())
 
-            renderable_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(moderngl.TRIANGLES)
+            mesh_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(moderngl.TRIANGLES)
 
     def render_pass_screen(self) -> None:
 

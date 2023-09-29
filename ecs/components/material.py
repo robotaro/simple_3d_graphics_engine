@@ -1,10 +1,15 @@
 from ecs.components.component import Component
 import moderngl
+from ecs import constants
 
 
 class Material(Component):
 
+    _type = constants.COMPONENT_TYPE_MESH  # TODO: I think I don't need to set the type as I can use the class itself
+
     def __init__(self, **kwargs):
+        
+        super().__init__()
 
         # Colors
         self.diffuse = kwargs.get("diffuse", (0.85, 0.85, 0.85))

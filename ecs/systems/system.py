@@ -1,8 +1,8 @@
 import logging
 import moderngl
-import time
 
 from ecs.component_pool import ComponentPool
+from ecs.event_publisher import EventPublisher
 
 
 class System:
@@ -16,7 +16,7 @@ class System:
 
     _type = "base_system"
 
-    def __init__(self, logger: logging.Logger, component_pool, event_publisher):
+    def __init__(self, logger: logging.Logger, component_pool: ComponentPool, event_publisher: EventPublisher):
         self.logger = logger
         self.event_publisher = event_publisher
         self.component_pool = component_pool

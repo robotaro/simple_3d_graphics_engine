@@ -36,12 +36,16 @@ class DirectionalLight(Component):
         self.shadow_enabled = kwargs.get("shadow_enabled", True)
         self.enabled = kwargs.get("enabled", True)
 
-    def initialise_on_gpu(self, ctx: moderngl.Context) -> None:
+    def initialise(self, **kwargs) -> None:
 
-        if self.gpu_initialised:
+        if self.initialised:
             return
 
+        ctx = kwargs["ctx"]
+
         self.shadow_texture = ctx.depth_texture(size=constants.DIRECTIONAL_LIGHT_SIZE)
+
+        self.initialised = True
 
     def release(self):
 

@@ -3,6 +3,7 @@ from typing import Union
 
 from ecs import constants
 from ecs.components.component import Component
+from ecs.systems.render_system.shader_program_library import ShaderProgramLibrary
 from ecs.systems.render_system.mesh_factory import MeshFactory
 
 
@@ -16,12 +17,13 @@ class Mesh(Component):
         "colors",
         "uvs",
         "faces",
+        "vaos",
         "vbo_vertices",
         "vbo_normals",
         "vbo_colors",
         "vbo_uvs",
         "ibo_faces",
-        "vbo_declaration_list"
+        "visible"
     ]
 
     def __init__(self, **kwargs):
@@ -36,6 +38,7 @@ class Mesh(Component):
         self.faces = None
 
         # GPU (VRAM) Vertex Data
+        self.vaos = {}
         self.vbo_vertices = None
         self.vbo_normals = None
         self.vbo_colors = None
@@ -44,47 +47,79 @@ class Mesh(Component):
 
         # Generate external data
         self.generate_shape(**kwargs)
-        self.vbo_declaration_list = []
 
-    def initialise_on_gpu(self, ctx: moderngl.Context) -> None:
-        """
-        Creates VBOs AND upload any already populated vertex arrays
-        :param ctx:
-        :return:
-        """
+        # Flags
+        self.visible = True
+        
+    def initialise(self, **kwargs):
 
-        if self.gpu_initialised:
+        if self.initialised:
             return
 
+        ctx = kwargs["ctx"]
+        shader_library = kwargs["shader_library"]
+        vbo_declaration_list = []
+
+        # Create VBOs
         if self.vertices is not None:
             self.vbo_vertices = ctx.buffer(self.vertices.astype("f4").tobytes())
-            self.vbo_declaration_list.append((self.vbo_vertices, "3f", constants.SHADER_INPUT_VERTEX))
+            vbo_declaration_list.append((self.vbo_vertices, "3f", constants.SHADER_INPUT_VERTEX))
 
         if self.normals is not None:
             self.vbo_normals = ctx.buffer(self.normals.astype("f4").tobytes())
-            self.vbo_declaration_list.append((self.vbo_normals, "3f", constants.SHADER_INPUT_NORMAL))
+            vbo_declaration_list.append((self.vbo_normals, "3f", constants.SHADER_INPUT_NORMAL))
 
         if self.colors is not None:
             self.vbo_colors = ctx.buffer(self.colors.astype("f4").tobytes())
-            self.vbo_declaration_list.append((self.vbo_colors, "3f", constants.SHADER_INPUT_COLOR))
+            vbo_declaration_list.append((self.vbo_colors, "3f", constants.SHADER_INPUT_COLOR))
 
         if self.uvs is not None:
             self.vbo_uvs = ctx.buffer(self.uvs.astype("f4").tobytes())
-            self.vbo_declaration_list.append((self.vbo_uvs, "2f", constants.SHADER_INPUT_UV))
+            vbo_declaration_list.append((self.vbo_uvs, "2f", constants.SHADER_INPUT_UV))
 
         if self.faces is not None:
             self.ibo_faces = ctx.buffer(self.faces.astype("i4").tobytes())
 
-        self.gpu_initialised = True
+        # Create VAOs
+        for program_name in constants.SHADER_PASSES_LIST:
+
+            program = shader_library[program_name]
+
+            # TODO: I think one version serves both if ibo_faces is None. Default value seems ot be None as well
+            if self.ibo_faces is None:
+                self.vaos[program_name] = ctx.vertex_array(program, vbo_declaration_list)
+            else:
+                self.vaos[program_name] = ctx.vertex_array(program, vbo_declaration_list, self.ibo_faces)
+
+        self.initialised = True
+
+    def release(self):
+
+        for _, vao in self.vaos:
+            vao.release()
+
+        if self.vbo_vertices:
+            self.vbo_vertices.release()
+
+        if self.vbo_normals:
+            self.vbo_normals.release()
+
+        if self.vbo_uvs:
+            self.vbo_uvs.release()
+
+        if self.ibo_faces:
+            self.ibo_faces.release()
 
     def upload_buffers(self) -> None:
 
         """
+        NOT YET BEING USED
+
         Uploads current vertices referenced externally (in RAM) to the GPU
         :return:
         """
 
-        if not self.gpu_initialised:
+        if not self.initialised:
             return
 
         if self.vbo_vertices is not None:
@@ -100,26 +135,6 @@ class Mesh(Component):
             self.vbo_uvs.write(self.normals.tobytes())
 
         # TODO: Consider the case where the number of vertices changes and so the number of faces
-
-    def get_vbo_declaration_list(self) -> Union[list, None]:
-
-        if not self.gpu_initialised:
-            return None
-
-        return self.vbo_declaration_list
-
-    def release(self):
-        if self.vbo_vertices:
-            self.vbo_vertices.release()
-
-        if self.vbo_normals:
-            self.vbo_normals.release()
-
-        if self.vbo_uvs:
-            self.vbo_uvs.release()
-
-        if self.ibo_faces:
-            self.ibo_faces.release()
 
     def generate_shape(self, **kwargs) -> None:
 
@@ -158,5 +173,3 @@ class Mesh(Component):
         self.normals = n
         self.uvs = u
         self.faces = f
-
-

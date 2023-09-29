@@ -19,11 +19,12 @@ https://github.com/ubuntunux/PyEngine3D
 
 
 ## Python 3D graphics sources
-https://github.com/eth-ait/aitviewer
-https://github.com/mmatl/pyrender
-https://github.com/pygfx/pygfx
-https://github.com/3b1b/manim
-https://github.com/eliemichel/Python3dViewer
+- https://github.com/eth-ait/aitviewer
+- https://github.com/mmatl/pyrender
+- https://github.com/pygfx/pygfx
+- https://github.com/3b1b/manim
+- https://github.com/eliemichel/Python3dViewer
+- https://github.com/ubuntunux/PyEngine3D
 
 # Camera math and depth conversion
 https://stackoverflow.com/questions/7777913/how-to-render-depth-linearly-in-modern-opengl-with-gl-fragcoord-z-in-fragment-sh
