@@ -184,6 +184,12 @@ FONT_TEXTURE_HEIGHT = FONT_SHEET_CELL_HEIGHT * FONT_SHEET_ROWS
 DIRECTIONAL_LIGHT_SIZE = (2048, 2048)
 
 # =============================================================================
+#                              Transform System
+# =============================================================================
+
+TRANSFORM_SYSTEM_MAX_NUM_TRANSFORMS = 256
+
+# =============================================================================
 #                              Component Pool
 # =============================================================================
 
@@ -194,20 +200,18 @@ COMPONENT_TYPE_TRANSFORM_3D = 0
 COMPONENT_TYPE_TRANSFORM_2D = 1
 COMPONENT_TYPE_MESH = 2
 COMPONENT_TYPE_CAMERA = 3
-COMPONENT_TYPE_RENDERABLE = 4
-COMPONENT_TYPE_MATERIAL = 5
-COMPONENT_TYPE_INPUT_CONTROL = 6
-COMPONENT_TYPE_TEXT_2D = 7
-COMPONENT_TYPE_DIRECTIONAL_LIGHT = 8
-COMPONENT_TYPE_SPOT_LIGHT = 9
-COMPONENT_TYPE_POINT_LIGHT = 10
+COMPONENT_TYPE_MATERIAL = 4
+COMPONENT_TYPE_INPUT_CONTROL = 5
+COMPONENT_TYPE_TEXT_2D = 6
+COMPONENT_TYPE_DIRECTIONAL_LIGHT = 7
+COMPONENT_TYPE_SPOT_LIGHT = 8
+COMPONENT_TYPE_POINT_LIGHT = 9
 
 # Component Names (For loading from XML)
 COMPONENT_NAME_TRANSFORM_3D = "transform_3d"
 COMPONENT_NAME_TRANSFORM_2D = "transform_2d"
 COMPONENT_NAME_MESH = "mesh"
 COMPONENT_NAME_CAMERA = "camera"
-COMPONENT_NAME_RENDERABLE = "renderable"
 COMPONENT_NAME_MATERIAL = "material"
 COMPONENT_NAME_INPUT_CONTROL = "input_control"
 COMPONENT_NAME_TEXT_2D = "text_2d"

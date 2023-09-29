@@ -4,7 +4,6 @@
         <point_light diffuse="1.0 1.0 1.0"/>
         <transform_3d position="2.0 2.0 2.0"/>
         <mesh shape="icosphere" radius="0.2" subdivisions="4"/>
-        <renderable/>
     </entity>
 
     <entity name="Directional Light 1" >
@@ -23,22 +22,19 @@
         <mesh shape="obj" fpath="models/dragon.obj"/>
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
         <transform_3d/>
-        <renderable/>
     </entity>
 
     <entity name="Dragon 2" >
         <mesh shape="obj" fpath="models/dragon.obj"/>
         <transform_3d position="-1 0 -1"/>
         <material diffuse="0.2 .3 0.8" shininess_factor="32.0"/>
-        <renderable/>
     </entity>
 
     <entity name="Floor" >
         <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
         <transform_3d position="0 -0.5 0"/>
         <material albedo="0.75 0.75 0.75" shininess_factor="32.0"/>
-        <renderable/>
-    </entity>w
+    </entity>
 
     <entity name="Sample text" >
         <text_2d font_name="Consolas.ttf" >

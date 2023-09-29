@@ -1,10 +1,12 @@
 import glfw
 import moderngl
 import numpy as np
+import logging
 
 from ecs import constants
 from ecs.systems.system import System
 from ecs.component_pool import ComponentPool
+from ecs.event_publisher import EventPublisher
 
 
 class InputControlSystem(System):
@@ -28,10 +30,10 @@ class InputControlSystem(System):
         "pan_right"
     ]
 
-    def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"],
-                         component_pool=kwargs["component_pool"],
-                         event_publisher=kwargs["event_publisher"])
+    def __init__(self, logger: logging.Logger, component_pool: ComponentPool, event_publisher: EventPublisher):
+        super().__init__(logger=logger,
+                         component_pool=component_pool,
+                         event_publisher=event_publisher)
 
         self.mouse_x_past = None
         self.mouse_y_past = None
@@ -55,7 +57,7 @@ class InputControlSystem(System):
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
-        for entity_uid in list(self.component_pool.input_control_components.keys()):
+        for entity_uid, input_control in self.component_pool.input_control_components.items():
 
             input_control = self.component_pool.input_control_components[entity_uid]
             if not input_control.active:

@@ -1,11 +1,13 @@
 import glfw
 import moderngl
 import imgui
+import logging
 from imgui.integrations.glfw import GlfwRenderer
 
 from ecs import constants
 from ecs.systems.system import System
 from ecs.component_pool import ComponentPool
+from ecs.event_publisher import EventPublisher
 
 
 class ImguiSystem(System):
@@ -22,10 +24,14 @@ class ImguiSystem(System):
 
     _type = "imgui_system"
 
-    def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"],
-                         component_pool=kwargs["component_pool"],
-                         event_publisher=kwargs["event_publisher"])
+    def __init__(self,
+                 logger: logging.Logger,
+                 component_pool: ComponentPool,
+                 event_publisher: EventPublisher,
+                 **kwargs):
+        super().__init__(logger=logger,
+                         component_pool=component_pool,
+                         event_publisher=event_publisher)
 
         self.window_glfw = kwargs["window_glfw"]
         self.imgui_renderer = None

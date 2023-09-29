@@ -3,14 +3,16 @@ import moderngl
 from PIL import Image
 import numpy as np
 import struct
+import logging
 
 from ecs import constants
 from ecs.systems.system import System
+from ecs.component_pool import ComponentPool
+from ecs.event_publisher import EventPublisher
 from ecs.systems.render_system.shader_program_library import ShaderProgramLibrary
 from ecs.systems.render_system.font_library import FontLibrary
 from ecs.component_pool import ComponentPool
 from ecs.geometry_3d import ready_to_render
-from ecs.components.renderable import Renderable
 from ecs.components.mesh import Mesh
 from ecs.components.directional_light import DirectionalLight
 from ecs.math import mat4
@@ -27,7 +29,9 @@ class RenderSystem(System):
         "font_library",
         "framebuffers",
         "textures",
-        "vbo_groups",
+        "vbos",
+        "vaos",
+        "ibos",
         "quads",
         "fullscreen_selected_texture",
         "picker_buffer",
@@ -50,21 +54,23 @@ class RenderSystem(System):
         "_shadows_enabled"
     ]
 
-    def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"],
-                         component_pool=kwargs["component_pool"],
-                         event_publisher=kwargs["event_publisher"])
+    def __init__(self,
+                 logger: logging.Logger,
+                 component_pool: ComponentPool,
+                 event_publisher: EventPublisher,
+                 **kwargs):
+        super().__init__(logger=logger,
+                         component_pool=component_pool,
+                         event_publisher=event_publisher)
 
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
-        self.shader_program_library = ShaderProgramLibrary(context=self.ctx, logger=kwargs["logger"])
-        self.font_library = FontLibrary(logger=kwargs["logger"])
+        self.shader_program_library = ShaderProgramLibrary(context=self.ctx, logger=logger)
+        self.font_library = FontLibrary(logger=logger)
 
         # Internal components (different from normal components)
         self.framebuffers = {}
         self.textures = {}
-        self.textures = {}
-        self.vbo_groups = {}
         self.quads = {}
 
         self.fullscreen_selected_texture = 0  # Color is selected by default
@@ -129,9 +135,9 @@ class RenderSystem(System):
         # Fonts
         for font_name, font in self.font_library.fonts.items():
             self.textures[font_name] = self.ctx.texture(size=font.texture_data.shape,
-                                                                  data=font.texture_data.astype('f4').tobytes(),
-                                                                  components=1,
-                                                                  dtype='f4')
+                                                        data=font.texture_data.astype('f4').tobytes(),
+                                                        components=1,
+                                                        dtype='f4')
 
         # Selection Pass
         self.textures["selection"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
@@ -193,7 +199,7 @@ class RenderSystem(System):
                 ctx=self.ctx,
                 program_name_list=constants.SHADER_PASSES_LIST,
                 shader_library=self.shader_program_library,
-                vbo_tuple_list=mesh.get_vbo_declaration_list(),
+                vbo_tuple_list=mesh.initialise_on_gpu(),
                 ibo_faces=mesh.ibo_faces)
 
     def on_event(self, event_type: int, event_data: tuple):
@@ -314,8 +320,7 @@ class RenderSystem(System):
         camera_component.upload_uniforms(
             program=program,
             window_width=self.buffer_size[0],
-            window_height=self.buffer_size[1]
-        )
+            window_height=self.buffer_size[1])
 
         # Lights
         program["num_point_lights"].value = len(self.component_pool.point_light_components)
@@ -496,12 +501,6 @@ class RenderSystem(System):
     # =========================================================================
     #                      Component Initialisation functions
     # =========================================================================
-
-    def initialise_component_renderable(self, renderable: Renderable):
-        pass
-
-    def initialise_component_mesh(self, mesh: Mesh):
-        pass
 
     def initialise_component_directional_light(self, directional_light: DirectionalLight):
         pass

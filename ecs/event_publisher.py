@@ -1,5 +1,4 @@
 from ecs import constants
-from ecs.systems.system import System
 
 
 class EventPublisher:
@@ -25,10 +24,10 @@ class EventPublisher:
             constants.EVENT_ACTION_ENTITY_SELECTED: []
         }
 
-    def subscribe(self, event_type: int, listener: System):
+    def subscribe(self, event_type: int, listener):
         self.listeners[event_type].append(listener)
 
-    def unsubscribe(self, event_type, listener: System):
+    def unsubscribe(self, event_type, listener):
         if listener in self.listeners[event_type]:
             self.listeners[event_type].remove(listener)
 

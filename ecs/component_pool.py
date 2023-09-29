@@ -6,7 +6,6 @@ from ecs.components.component import Component
 from ecs.components.transform_3d import Transform3D
 from ecs.components.mesh import Mesh
 from ecs.components.material import Material
-from ecs.components.renderable import Renderable
 from ecs.components.camera import Camera
 from ecs.components.input_control import InputControl
 from ecs.components.text_2d import Text2D
@@ -29,7 +28,6 @@ class ComponentPool:
     COMPONENT_CLASS_MAP = {
         constants.COMPONENT_TYPE_TRANSFORM_3D: Transform3D,
         constants.COMPONENT_TYPE_MESH: Mesh,
-        constants.COMPONENT_TYPE_RENDERABLE: Renderable,
         constants.COMPONENT_TYPE_CAMERA: Camera,
         constants.COMPONENT_TYPE_MATERIAL: Material,
         constants.COMPONENT_TYPE_INPUT_CONTROL: InputControl,
@@ -63,7 +61,6 @@ class ComponentPool:
             constants.COMPONENT_TYPE_TRANSFORM_3D: self.transform_3d_components,
             constants.COMPONENT_TYPE_TRANSFORM_2D: self.transform_2d_components,
             constants.COMPONENT_TYPE_MESH: self.mesh_components,
-            constants.COMPONENT_TYPE_RENDERABLE: self.renderable_components,
             constants.COMPONENT_TYPE_CAMERA: self.camera_components,
             constants.COMPONENT_TYPE_MATERIAL: self.material_components,
             constants.COMPONENT_TYPE_INPUT_CONTROL: self.input_control_components,
@@ -232,13 +229,6 @@ class ComponentPool:
                     component_type=constants.COMPONENT_TYPE_CAMERA,
                     viewport_norm=viewport_norm,
                     perspective=perspective)
-                continue
-
-            # Renderable
-            if component_soup.name == constants.COMPONENT_NAME_RENDERABLE:
-                self.add_component(
-                    entity_uid=entity_uid,
-                    component_type=constants.COMPONENT_TYPE_RENDERABLE)
                 continue
 
             # Material

@@ -227,14 +227,6 @@ class Editor:
         self.mouse_state[constants.MOUSE_SCROLL_POSITION_LAST_FRAME] = self.mouse_state[
             constants.MOUSE_SCROLL_POSITION]
 
-    def from_yaml(self, yaml_fpath: str):
-        """
-        Loads the editor's systems and their respective parameters from the same
-        :param yaml_fpath:
-        :return:
-        """
-        pass
-
     def create_system(self, system_type: str, subscribed_events: Union[List[int], None] = None) -> bool:
 
         new_system = None
@@ -290,12 +282,28 @@ class Editor:
     def load_scene(self, scene_xml_fpath: str):
         self.component_pool.load_scene(scene_xml_fpath=scene_xml_fpath)
 
+    def initialise_components(self):
+
+        # TODO: This is SORT OF a hack. Please think of a way to make this universal
+        render_system = [system for system in self.systems if system._type == constants.SYSTEM_NAME_RENDER][0]
+
+        for component_id, components in self.component_pool.component_storage_map.items():
+            for entity_uid, component in components.items():
+                component.initialise(ctx=self.context, shader_library=render_system.shader_program_library)
+
+    def release_components(self):
+        for component_id, components in self.component_pool.component_storage_map.items():
+            for entity_uid, component in components.items():
+                component.release()
+
     def run(self):
 
         # Initialise systems
         for system in self.systems:
             if not system.initialise():
                 raise Exception(f"[ERROR] System {system._type} failed to initialise")
+
+        self.initialise_components()
 
         # Update systems - Main Loop
         exit_application_now = False
@@ -322,5 +330,3 @@ class Editor:
         # Shutdown systems
         for system in self.systems:
             system.shutdown()
-
-
