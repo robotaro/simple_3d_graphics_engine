@@ -38,12 +38,14 @@ class DirectionalLight(Component):
 
     def initialise(self, **kwargs) -> None:
 
-        ctx = kwargs["ctx"]
-
         if self.initialised:
             return
 
+        ctx = kwargs["ctx"]
+
         self.shadow_texture = ctx.depth_texture(size=constants.DIRECTIONAL_LIGHT_SIZE)
+
+        self.initialised = True
 
     def release(self):
 

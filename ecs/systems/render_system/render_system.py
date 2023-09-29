@@ -374,12 +374,11 @@ class RenderSystem(System):
         if selected_entity_uid is None or selected_entity_uid <= 1:
             return
 
-        program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
-
         # Safety checks before we go any further!
         renderable_transform = component_pool.transform_3d_components.get(selected_entity_uid, None)
         if renderable_transform is None:
             return
+
         mesh_component = component_pool.mesh_components.get(selected_entity_uid, None)
         if mesh_component is None:
             return
@@ -388,6 +387,7 @@ class RenderSystem(System):
         camera_transform.update()
 
         # Upload uniforms
+        program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
         camera_component.upload_uniforms(program=program,
                                          window_width=self.buffer_size[0],
                                          window_height=self.buffer_size[1])
@@ -484,13 +484,6 @@ class RenderSystem(System):
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture
         quad_vao.render(moderngl.TRIANGLES)
-
-    # =========================================================================
-    #                      Component Initialisation functions
-    # =========================================================================
-
-    def initialise_component_directional_light(self, directional_light: DirectionalLight):
-        pass
 
     # =========================================================================
     #                         Other Functions

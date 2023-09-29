@@ -20,6 +20,7 @@ class Transform3D(Component):
     ]
 
     def __init__(self, **kwargs):
+        super().__init__()
 
         self.world_matrix = np.eye(4, dtype=np.float32)
         self.local_matrix = np.eye(4, dtype=np.float32)

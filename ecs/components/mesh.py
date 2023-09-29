@@ -113,6 +113,8 @@ class Mesh(Component):
     def upload_buffers(self) -> None:
 
         """
+        NOT YET BEING USED
+
         Uploads current vertices referenced externally (in RAM) to the GPU
         :return:
         """

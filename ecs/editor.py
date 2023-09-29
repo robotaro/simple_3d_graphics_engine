@@ -52,8 +52,8 @@ class Editor:
 
         # Core Variables
         self.systems = []
-        self.component_pool = ComponentPool()
-        self.event_publisher = EventPublisher()
+        self.component_pool = ComponentPool(logger=self.logger)
+        self.event_publisher = EventPublisher(logger=self.logger)
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()

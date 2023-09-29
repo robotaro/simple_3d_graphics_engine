@@ -1,3 +1,4 @@
+import logging
 import os
 from bs4 import BeautifulSoup
 
@@ -36,7 +37,9 @@ class ComponentPool:
         constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT: DirectionalLight
     }
 
-    def __init__(self):
+    def __init__(self, logger: logging.Logger):
+
+        self.logger = logger
 
         # TODO: We start from 2 to make it easy to discern the background [0, 1]
         self.entity_uid_counter = constants.COMPONENT_POOL_STARTING_ID_COUNTER

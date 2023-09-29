@@ -1,11 +1,18 @@
+import logging
+
 from ecs import constants
 
 
 class EventPublisher:
 
-    __slots__ = ["listeners"]
+    __slots__ = [
+        "logger",
+        "listeners"
+    ]
 
-    def __init__(self):
+    def __init__(self, logger: logging.Logger):
+
+        self.logger = logger
 
         # Do it manually here to avoid having to check at every publish() call
         self.listeners = {
