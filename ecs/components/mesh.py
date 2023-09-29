@@ -22,7 +22,8 @@ class Mesh(Component):
         "vbo_normals",
         "vbo_colors",
         "vbo_uvs",
-        "ibo_faces"
+        "ibo_faces",
+        "visible"
     ]
 
     def __init__(self, **kwargs):
@@ -46,6 +47,9 @@ class Mesh(Component):
 
         # Generate external data
         self.generate_shape(**kwargs)
+
+        # Flags
+        self.visible = True
         
     def initialise(self, **kwargs):
 

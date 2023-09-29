@@ -49,7 +49,6 @@ class ComponentPool:
         self.transform_2d_components = {}
         self.camera_components = {}
         self.mesh_components = {}
-        self.renderable_components = {}
         self.material_components = {}
         self.input_control_components = {}
         self.text_2d_components = {}
