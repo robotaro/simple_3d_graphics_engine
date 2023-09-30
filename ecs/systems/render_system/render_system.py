@@ -34,6 +34,15 @@ class RenderSystem(System):
         "ibos",
         "quads",
         "fullscreen_selected_texture",
+        "forward_pass_texture_color",
+        "forward_pass_texture_normal",
+        "forward_pass_texture_viewpos",
+        "forward_pass_texture_entity_info",
+        "forward_pass_texture_depth",
+        "forward_pass_framebuffer",
+        "selection_pass_texture_color",
+        "selection_pass_texture_depth",
+        "selection_pass_framebuffer",
         "picker_buffer",
         "picker_program",
         "picker_output",
@@ -75,6 +84,19 @@ class RenderSystem(System):
 
         self.fullscreen_selected_texture = 0  # Color is selected by default
 
+        # Forward Pass
+        self.forward_pass_texture_color = None
+        self.forward_pass_texture_normal = None
+        self.forward_pass_texture_viewpos = None
+        self.forward_pass_texture_entity_info = None
+        self.forward_pass_texture_depth = None
+        self.forward_pass_framebuffer = None
+
+        # Selection Pass
+        self.selection_pass_texture_color = None
+        self.selection_pass_texture_depth = None
+        self.selection_pass_framebuffer = None
+
         # Fragment Picking - altogether for now
         self.picker_buffer = None
         self.picker_program = None
@@ -115,39 +137,12 @@ class RenderSystem(System):
         self.picker_buffer = self.ctx.buffer(reserve=3 * 4)  # 3 ints
         self.picker_vao = self.ctx.vertex_array(self.picker_program, [])
 
-        # Offscreen rendering
-        self.textures["color"] = self.ctx.texture(size=self.buffer_size, components=4)
-        self.textures["normal"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures["viewpos"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures["entity_info"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures["entity_info"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.textures["depth"] = self.ctx.depth_texture(size=self.buffer_size)
-        self.framebuffers["offscreen"] = self.ctx.framebuffer(
-            color_attachments=[
-                self.textures["color"],
-                self.textures["normal"],
-                self.textures["viewpos"],
-                self.textures["entity_info"]
-            ],
-            depth_attachment=self.textures["depth"],
-        )
-
         # Fonts
         for font_name, font in self.font_library.fonts.items():
             self.textures[font_name] = self.ctx.texture(size=font.texture_data.shape,
                                                         data=font.texture_data.astype('f4').tobytes(),
                                                         components=1,
                                                         dtype='f4')
-
-        # Selection Pass
-        self.textures["selection"] = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
-        self.textures["selection"].filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.textures["selection"].repeat_x = False  # This prevents outlining from spilling over to the other edge
-        self.textures["selection"].repeat_y = False
-        self.textures["selection_depth"] = self.ctx.depth_texture(size=self.buffer_size)
-        self.framebuffers["selection_fbo"] = self.ctx.framebuffer(
-            color_attachments=[self.textures["selection"]],
-            depth_attachment=self.textures["selection_depth"])
 
         # Shadow mapping
         self.shadow_map_program = self.shader_program_library["shadow_mapping"]
@@ -158,7 +153,35 @@ class RenderSystem(System):
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
                                                            program=self.shader_program_library["screen_quad"])
 
+        self.create_framebuffers(width=self.buffer_size[0], height=self.buffer_size[1])
         return True
+
+    def create_framebuffers(self, width: int, height: int):
+
+        # Forward Pass
+        self.forward_pass_texture_color = self.ctx.texture(size=self.buffer_size, components=4)
+        self.forward_pass_texture_normal = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.forward_pass_texture_viewpos = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.forward_pass_texture_entity_info = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.forward_pass_texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.forward_pass_texture_depth = self.ctx.depth_texture(size=self.buffer_size)
+        self.forward_pass_framebuffer = self.ctx.framebuffer(
+            color_attachments=[
+                self.forward_pass_texture_color,
+                self.forward_pass_texture_normal,
+                self.forward_pass_texture_viewpos,
+                self.forward_pass_texture_entity_info],
+            depth_attachment=self.forward_pass_texture_depth)
+
+        # Selection Pass
+        self.selection_pass_texture_color = self.ctx.texture(size=self.buffer_size, components=4, dtype='f4')
+        self.selection_pass_texture_color.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.selection_pass_texture_color.repeat_x = False  # This prevents outlining from spilling over to the other edge
+        self.selection_pass_texture_color.repeat_y = False
+        self.selection_pass_texture_depth = self.ctx.depth_texture(size=self.buffer_size)
+        self.selection_pass_framebuffer = self.ctx.framebuffer(
+            color_attachments=[self.selection_pass_texture_color],
+            depth_attachment=self.selection_pass_texture_depth)
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
@@ -190,7 +213,6 @@ class RenderSystem(System):
 
         if event_type == constants.EVENT_WINDOW_SIZE:
             # TODO: Safe release all offscreen framebuffers and create new ones
-            print(event_data)
             pass
 
         if event_type == constants.EVENT_MOUSE_BUTTON_ENABLED:
@@ -206,7 +228,7 @@ class RenderSystem(System):
                 # TODO: Move this to its own function!
                 # Pass the coordinate of the pixel you want to sample to the fragment picking shader
                 self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
-                self.textures["entity_info"].use(location=0)
+                self.forward_pass_texture_entity_info.use(location=0)
 
                 self.picker_vao.transform(
                     self.picker_buffer,
@@ -268,13 +290,13 @@ class RenderSystem(System):
         self.font_library.shutdown()
 
     # =========================================================================
-    #                           Custom functions
+    #                           Render Passes
     # =========================================================================
 
     def render_pass_forward(self, component_pool: ComponentPool, camera_uid: int):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
-        self.framebuffers["offscreen"].use()
+        self.forward_pass_framebuffer.use()
 
         camera_component = component_pool.camera_components[camera_uid]
         camera_transform = component_pool.transform_3d_components[camera_uid]
@@ -366,7 +388,7 @@ class RenderSystem(System):
 
         # IMPORTANT: It uses the current bound framebuffer!
 
-        self.framebuffers["selection_fbo"].use()
+        self.selection_pass_framebuffer.use()
         camera_component = component_pool.camera_components[camera_uid]
         self.ctx.clear(depth=1.0, viewport=camera_component.viewport)
 
@@ -402,7 +424,7 @@ class RenderSystem(System):
         if len(component_pool.text_2d_components) == 0:
             return
 
-        self.framebuffers["offscreen"].use()
+        self.forward_pass_framebuffer.use()
         self.ctx.disable(moderngl.DEPTH_TEST)
 
         # Upload uniforms TODO: Move this to render system
@@ -474,12 +496,12 @@ class RenderSystem(System):
         self.ctx.screen.clear(red=1, green=1, blue=1)  # TODO: Check if this line is necessary
         self.ctx.disable(moderngl.DEPTH_TEST)
 
-        self.textures["color"].use(location=0)
-        self.textures["normal"].use(location=1)
-        self.textures["viewpos"].use(location=2)
-        self.textures["entity_info"].use(location=3)
-        self.textures["selection"].use(location=4)
-        self.textures["depth"].use(location=5)
+        self.forward_pass_texture_color.use(location=0)
+        self.forward_pass_texture_normal.use(location=1)
+        self.forward_pass_texture_viewpos.use(location=2)
+        self.forward_pass_texture_entity_info.use(location=3)
+        self.selection_pass_texture_color.use(location=4)
+        self.forward_pass_texture_depth.use(location=5)
 
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture

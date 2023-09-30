@@ -110,14 +110,9 @@ class Mesh(Component):
         if self.ibo_faces:
             self.ibo_faces.release()
 
-    def upload_buffers(self) -> None:
-
-        """
-        NOT YET BEING USED
-
-        Uploads current vertices referenced externally (in RAM) to the GPU
-        :return:
-        """
+    """def upload_buffers(self) -> None:
+    
+        # Not being used yet
 
         if not self.initialised:
             return
@@ -134,7 +129,7 @@ class Mesh(Component):
         if self.vbo_uvs is not None:
             self.vbo_uvs.write(self.normals.tobytes())
 
-        # TODO: Consider the case where the number of vertices changes and so the number of faces
+        # TODO: Consider the case where the number of vertices changes and so the number of faces"""
 
     def generate_shape(self, **kwargs) -> None:
 
