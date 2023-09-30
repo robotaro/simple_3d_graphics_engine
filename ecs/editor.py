@@ -30,7 +30,7 @@ class Editor:
                  "keyboard_state",
                  "window_glfw",
                  "monitor_gltf",
-                 "context",
+                 "ctx",
                  "buffer_size",
                  "transform_components",
                  "camera_components",
@@ -87,15 +87,15 @@ class Editor:
         glfw.make_context_current(self.window_glfw)
         glfw.swap_interval(1 if self.vertical_sync else 0)
 
-        self.context = moderngl.create_context()
+        self.ctx = moderngl.create_context()
 
         # Assign callback functions
         glfw.set_key_callback(self.window_glfw, self._glfw_callback_keyboard)
         glfw.set_char_callback(self.window_glfw, self._glfw_callback_char)
         glfw.set_cursor_pos_callback(self.window_glfw, self._glfw_callback_mouse_move)
         glfw.set_mouse_button_callback(self.window_glfw, self._glfw_callback_mouse_button)
-        glfw.set_window_size_callback(self.window_glfw, self._glfw_callback_window_resize)
         glfw.set_scroll_callback(self.window_glfw, self._glfw_callback_mouse_scroll)
+        glfw.set_window_size_callback(self.window_glfw, self._glfw_callback_window_resize)
         glfw.set_framebuffer_size_callback(self.window_glfw, self._glfw_callback_framebuffer_size)
         glfw.set_drop_callback(self.window_glfw, self._glfw_callback_drop_files)
 
@@ -148,6 +148,7 @@ class Editor:
                                          event_data=(key, scancode, mods),
                                          sender=self)
             self.keyboard_state[key] = constants.KEY_STATE_DOWN
+
         if action == glfw.RELEASE:
             self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_RELEASE,
                                          event_data=(key, scancode, mods),
@@ -190,19 +191,23 @@ class Editor:
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_SIZE,
                                      event_data=(width, height),
                                      sender=self)
+        # TODO: Why doesn't window resize get called? Instead, only frambuffer is called
         self.window_size = (width, height)
 
     def _glfw_callback_framebuffer_size(self, glfw_window, width, height):
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_SIZE,
                                      event_data=(width, height),
                                      sender=self)
+
+        # IMPORTANT: You need to update the final screen framebuffer viewport in toder to render to the whole window!
+        self.ctx.viewport = (0, 0, width, height)
         self.buffer_size = (width, height)
 
     def _glfw_callback_window_size(self, glfw_window, width, height):
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_SIZE,
                                      event_data=(width, height),
                                      sender=self)
-        self.buffer_size = (width, height)
+        self.window_size = (width, height)
 
     def _glfw_callback_drop_files(self, glfw_window, file_list):
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_DROP_FILES,
@@ -236,7 +241,7 @@ class Editor:
                 logger=self.logger,
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
-                context=self.context,
+                context=self.ctx,
                 buffer_size=self.buffer_size)
 
             # Set default events to subscribe too
@@ -289,7 +294,7 @@ class Editor:
 
         for component_id, components in self.component_pool.component_storage_map.items():
             for entity_uid, component in components.items():
-                component.initialise(ctx=self.context, shader_library=render_system.shader_program_library)
+                component.initialise(ctx=self.ctx, shader_library=render_system.shader_program_library)
 
     def release_components(self):
         for component_id, components in self.component_pool.component_storage_map.items():
@@ -320,7 +325,7 @@ class Editor:
             # Update All systems in order
             for system in self.systems:
                 if not system.update(elapsed_time=elapsed_time,
-                                     context=self.context):
+                                     context=self.ctx):
                     exit_application_now = True
                     break
 

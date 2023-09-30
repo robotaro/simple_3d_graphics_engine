@@ -16,7 +16,7 @@ class Camera(Component):
         "z_far",
         "orthographic_scale",
         "viewport_norm",
-        "viewport",
+        "viewport_pixels",
         "perspective"
     ]
 
@@ -33,16 +33,21 @@ class Camera(Component):
         self.orthographic_scale = 1.0
 
         self.viewport_norm = kwargs.get("viewport_norm", constants.CAMERA_VIEWPORT_NORM)
-        self.viewport = None
+        self.viewport_pixels = None
 
         # Flags
         self.perspective = kwargs.get("perspective", True)
 
     def upload_uniforms(self, program: moderngl.Program, window_width: int, window_height: int):
-
         proj_matrix_bytes = self.get_projection_matrix(window_width=window_width,
                                                        window_height=window_height).T.tobytes()
         program["projection_matrix"].write(proj_matrix_bytes)
+
+    def update_viewport(self, window_size: tuple):
+        self.viewport_pixels = (int(self.viewport_norm[0] * window_size[0]),
+                                int(self.viewport_norm[1] * window_size[1]),
+                                int(self.viewport_norm[2] * window_size[0]),
+                                int(self.viewport_norm[3] * window_size[1]))
 
     def get_projection_matrix(self, window_width: int, window_height: int):
 
