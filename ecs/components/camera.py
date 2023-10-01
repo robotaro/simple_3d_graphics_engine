@@ -16,7 +16,7 @@ class Camera(Component):
         "z_near",
         "z_far",
         "orthographic_scale",
-        "viewport_norm",
+        "viewport_ratio",
         "viewport_pixels",
         "perspective"
     ]
@@ -33,7 +33,7 @@ class Camera(Component):
         # Orthographic variables
         self.orthographic_scale = 1.0
 
-        self.viewport_norm = kwargs.get("viewport_norm", constants.CAMERA_VIEWPORT_NORM)
+        self.viewport_ratio = kwargs.get("viewport_ratio", constants.CAMERA_VIEWPORT_RATIO)
         self.viewport_pixels = None
 
         # Flags
@@ -45,20 +45,21 @@ class Camera(Component):
         program["projection_matrix"].write(proj_matrix_bytes)
 
     def update_viewport(self, window_size: tuple):
-        self.viewport_pixels = (int(self.viewport_norm[0] * window_size[0]),
-                                int(self.viewport_norm[1] * window_size[1]),
-                                int(self.viewport_norm[2] * window_size[0]),
-                                int(self.viewport_norm[3] * window_size[1]))
+        self.viewport_pixels = (int(self.viewport_ratio[0] * window_size[0]),
+                                int(self.viewport_ratio[1] * window_size[1]),
+                                int(self.viewport_ratio[2] * window_size[0]),
+                                int(self.viewport_ratio[3] * window_size[1]))
 
     def is_inside_viewport(self, coord_pixels: tuple) -> bool:
         if self.viewport_pixels is None:
             return False
 
-        flag_x = self.viewport_pixels[0] <= coord_pixels[0] <= self.viewport_pixels[2]
-        flag_y = self.viewport_pixels[1] <= coord_pixels[1] <= self.viewport_pixels[3]
+        flag_x = self.viewport_pixels[0] <= coord_pixels[0] < self.viewport_pixels[2] + self.viewport_pixels[0]
+        flag_y = self.viewport_pixels[1] <= coord_pixels[1] < self.viewport_pixels[3] + self.viewport_pixels[1]
+
         return flag_x & flag_y
 
-    def get_normalised_screen_coordinates(self, screen_coord_pixels: tuple) -> Union[tuple, None]:
+    def get_viewport_coordinates(self, screen_coord_pixels: tuple) -> Union[tuple, None]:
         """
         Returns a normalised coordinates withing the viewport of the camera. This will return
         errouneous values if the input coordinates are outside the viewport in screen values
@@ -66,15 +67,20 @@ class Camera(Component):
         if self.viewport_pixels is None:
             return None
 
-        x = (screen_coord_pixels[0] - self.viewport_pixels[0]) / (self.viewport_pixels[2] - self.viewport_pixels[0])
-        y = (screen_coord_pixels[1] - self.viewport_pixels[1]) / (self.viewport_pixels[3] - self.viewport_pixels[1])
+        # Get normalise values
+        x = (screen_coord_pixels[0] - self.viewport_pixels[0]) / self.viewport_pixels[2]
+        y = (screen_coord_pixels[1] - self.viewport_pixels[1]) / self.viewport_pixels[3]
+
+        # Convert normalised values to viewport coordidates (-1 to 1)
+        x = 2.0 * x - 1.0
+        y = 2.0 * y - 1.0
 
         return x, y
 
     def get_projection_matrix(self, window_width: int, window_height: int):
 
-        nom = window_width * (self.viewport_norm[2] - self.viewport_norm[0])
-        den = window_height * (self.viewport_norm[3] - self.viewport_norm[1])
+        nom = window_width * (self.viewport_ratio[2] - self.viewport_ratio[0])
+        den = window_height * (self.viewport_ratio[3] - self.viewport_ratio[1])
         aspect_ratio = nom / den
 
         if self.perspective:

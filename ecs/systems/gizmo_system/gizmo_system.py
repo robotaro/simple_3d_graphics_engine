@@ -56,6 +56,8 @@ class GizmoSystem(System):
                     view_matrix=view_matrix,
                     projection_matrix=projection_matrix)
 
+                print(ray_direction, ray_origin)
+
                 for collider_id, collider_component in self.component_pool.collider_components.items():
 
                     collider_transform = self.component_pool.transform_3d_components[collider_id]
@@ -66,7 +68,7 @@ class GizmoSystem(System):
                             ray_direction=ray_direction,
                             sphere_origin=collider_transform.local_matrix[:3, 3].flatten(),
                             sphere_radius=collider_component.radius)
-
+                        print(collision)
 
         pass
 

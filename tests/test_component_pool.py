@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 import numpy as np
 
@@ -9,18 +11,19 @@ from ecs.components.mesh import Mesh
 
 def test_constructor():
 
-    pool = ComponentPool()
+    logger = logging.getLogger('test_logger')
+    pool = ComponentPool(logger=logger)
     assert pool.entity_uid_counter == constants.COMPONENT_POOL_STARTING_ID_COUNTER
     assert pool.entities == {}
     assert pool.transform_3d_components == {}
     assert pool.mesh_components == {}
-    assert pool.renderable_components == {}
     assert pool.camera_components == {}
 
 
 def test_create_entity():
 
-    pool = ComponentPool()
+    logger = logging.getLogger('test_logger')
+    pool = ComponentPool(logger=logger)
 
     new_entity_uid_1 = pool.create_entity()
     new_entity_uid_2 = pool.create_entity()
@@ -33,7 +36,8 @@ def test_create_entity():
 
 def test_add_and_remove_components():
 
-    pool = ComponentPool()
+    logger = logging.getLogger('test_logger')
+    pool = ComponentPool(logger=logger)
 
     entity_uid = pool.create_entity()
 

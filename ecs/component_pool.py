@@ -224,16 +224,16 @@ class ComponentPool:
 
             # Camera
             if component_soup.name == constants.COMPONENT_NAME_CAMERA:
-                viewport_norm_str = component_soup.attrs.get("viewport_ratio", "0.0 0.0 1.0 1.0")
+                viewport_ratio_str = component_soup.attrs.get("viewport_ratio", "0.0 0.0 1.0 1.0")
                 perspective_str = component_soup.attrs.get("perspective", "true")
 
-                viewport_norm = utils_string.string2int_tuple(viewport_norm_str)
+                viewport_ratio = utils_string.string2int_tuple(viewport_ratio_str)
                 perspective = utils_string.str2bool(perspective_str)
 
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_CAMERA,
-                    viewport_norm=viewport_norm,
+                    viewport_ratio=viewport_ratio,
                     perspective=perspective)
                 continue
 
