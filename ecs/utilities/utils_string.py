@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Union, Tuple
 
 
 def str2bool(input_string: str) -> bool:
@@ -10,11 +10,17 @@ def str2bool(input_string: str) -> bool:
     raise ValueError(f"[ERROR] Input string '{input_string}' must be some variation of true or false")
 
 
-def string2float_list(input_string: str) -> List[float]:
+def string2float_tuple(input_string: str) -> Union[Tuple[float], None]:
     clean_string = input_string.replace("\t", " ").replace(",", " ").strip(" ")
-    return [float(value) for value in clean_string.split(" ") if len(value) > 0]
+    try:
+        return tuple([float(value) for value in clean_string.split(" ") if len(value) > 0])
+    except Exception:
+        return None
 
 
-def string2int_list(input_string: str) -> List[float]:
+def string2int_tuple(input_string: str) -> Union[Tuple[int], None]:
     clean_string = input_string.replace("\t", " ").replace(",", " ").strip(" ")
-    return [int(float(value)) for value in clean_string.split(" ") if len(value) > 0]
+    try:
+        return tuple([int(float(value)) for value in clean_string.split(" ") if len(value) > 0])
+    except Exception:
+        return None

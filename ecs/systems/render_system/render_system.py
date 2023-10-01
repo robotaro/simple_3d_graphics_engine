@@ -199,7 +199,6 @@ class RenderSystem(System):
 
         # Screen quads
 
-
     def on_event(self, event_type: int, event_data: tuple):
 
         if event_type == constants.EVENT_WINDOW_FRAMEBUFFER_SIZE:

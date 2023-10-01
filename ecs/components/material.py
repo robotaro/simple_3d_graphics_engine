@@ -1,5 +1,4 @@
 from ecs.components.component import Component
-import moderngl
 from ecs import constants
 
 

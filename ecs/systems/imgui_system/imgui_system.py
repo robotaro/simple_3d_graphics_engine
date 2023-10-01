@@ -250,6 +250,13 @@ class ImguiSystem(System):
 
             imgui.spacing()
 
+        # [ Camera ]
+        camera = self.component_pool.camera_components.get(self.selected_entity_uid, None)
+        if camera:
+            imgui.text(f"Camera")
+            _, camera.perspective = imgui.checkbox("Perspective", camera.perspective)
+
+
         # [ Transform 3D ]
         transform = self.component_pool.transform_3d_components.get(self.selected_entity_uid, None)
         if transform:

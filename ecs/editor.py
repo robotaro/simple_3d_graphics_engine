@@ -1,5 +1,6 @@
 import time
 import glfw
+import signal
 
 import moderngl
 import numpy as np
@@ -10,6 +11,7 @@ from typing import List, Union
 from ecs import constants
 from ecs.systems.render_system.render_system import RenderSystem
 from ecs.systems.imgui_system.imgui_system import ImguiSystem
+from ecs.systems.gizmo_system.gizmo_system import GizmoSystem
 from ecs.systems.input_control_system.input_control_system import InputControlSystem
 from ecs.event_publisher import EventPublisher
 from ecs.component_pool import ComponentPool
@@ -36,12 +38,13 @@ class Editor:
                  "camera_components",
                  "systems",
                  "component_pool",
-                 "event_publisher")
+                 "event_publisher",
+                 "close_application")
 
     def __init__(self,
                  window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
                  window_title="New Editor",
-                 systems: Union[List[str], None] = None,
+                 system_types=constants.DEFAULT_SYSTEMS,
                  vertical_sync=True):
 
         self.logger = utils_logging.get_project_logger()
@@ -51,9 +54,8 @@ class Editor:
         self.vertical_sync = vertical_sync
 
         # Core Variables
-        self.systems = []
-        self.component_pool = ComponentPool(logger=self.logger)
-        self.event_publisher = EventPublisher(logger=self.logger)
+        self.component_pool = ComponentPool(logger=self.logger)  # Must be created before systems
+        self.event_publisher = EventPublisher(logger=self.logger)  # Must be created before systems
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -108,13 +110,19 @@ class Editor:
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
 
-        # If not systems are specified, stick with the default ones
-        if systems is None:
-            systems = constants.DEFAULT_SYSTEMS_DECLARATION
-
-        # Create systems
-        for system_type in systems:
+        # Systems - Need to be created after everything else has been created
+        self.systems = []
+        for system_type in system_types:
             self.create_system(system_type=system_type)
+
+        # Flags
+        self.close_application = False
+
+        signal.signal(signal.SIGINT, self.callback_signal_handler)
+
+    def callback_signal_handler(self, signum, frame):
+        self.logger.debug("Signal received : Closing editor now")
+        self.close_application = True
 
     # ========================================================================
     #                           Input State Functions
@@ -191,7 +199,7 @@ class Editor:
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_SIZE,
                                      event_data=(width, height),
                                      sender=self)
-        # TODO: Why doesn't window resize get called? Instead, only frambuffer is called
+        # TODO: Why doesn't window resize get called? Instead, only framebuffer is called
         self.window_size = (width, height)
 
     def _glfw_callback_framebuffer_size(self, glfw_window, width, height):
@@ -199,7 +207,7 @@ class Editor:
                                      event_data=(width, height),
                                      sender=self)
 
-        # IMPORTANT: You need to update the final screen framebuffer viewport in toder to render to the whole window!
+        # IMPORTANT: You need to update the final screen framebuffer viewport in order to render to the whole window!
         self.ctx.viewport = (0, 0, width, height)
         self.buffer_size = (width, height)
 
@@ -263,12 +271,21 @@ class Editor:
             new_system = InputControlSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
-                event_publisher=self.event_publisher
-            )
+                event_publisher=self.event_publisher)
 
             # Set default events to subscribe too
             if subscribed_events is None:
                 subscribed_events = constants.SUBSCRIBED_EVENTS_INPUT_CONTROL_SYSTEM
+
+        if system_type == GizmoSystem._type:
+            new_system = GizmoSystem(
+                logger=self.logger,
+                component_pool=self.component_pool,
+                event_publisher=self.event_publisher)
+
+            # Set default events to subscribe too
+            if subscribed_events is None:
+                subscribed_events = constants.SUBSCRIBED_EVENTS_GIZMO_SYSTEM
 
         if new_system is None:
             self.logger.error(f"Failed to create system {system_type}")
@@ -301,6 +318,14 @@ class Editor:
             for entity_uid, component in components.items():
                 component.release()
 
+    def publish_startup_events(self):
+        """
+        Publish all the events that will help the systems setup before we start running the application :)
+        """
+        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_SIZE,
+                                     event_data=self.buffer_size,
+                                     sender=self)
+
     def run(self):
 
         # Initialise systems
@@ -309,11 +334,12 @@ class Editor:
                 raise Exception(f"[ERROR] System {system._type} failed to initialise")
 
         self.initialise_components()
+        self.publish_startup_events()
 
         # Update systems - Main Loop
-        exit_application_now = False
+        self.close_application = False
         timestamp_past = time.perf_counter()
-        while not glfw.window_should_close(self.window_glfw) and not exit_application_now:
+        while not glfw.window_should_close(self.window_glfw) and not self.close_application:
 
             glfw.poll_events()
 

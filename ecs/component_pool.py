@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 from ecs import constants
 from ecs.components.component import Component
 from ecs.components.transform_3d import Transform3D
+from ecs.components.collider import Collider
 from ecs.components.mesh import Mesh
 from ecs.components.material import Material
 from ecs.components.camera import Camera
@@ -34,7 +35,8 @@ class ComponentPool:
         constants.COMPONENT_TYPE_INPUT_CONTROL: InputControl,
         constants.COMPONENT_TYPE_TEXT_2D: Text2D,
         constants.COMPONENT_TYPE_POINT_LIGHT: PointLight,
-        constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT: DirectionalLight
+        constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT: DirectionalLight,
+        constants.COMPONENT_TYPE_COLLIDER: Collider,
     }
 
     def __init__(self, logger: logging.Logger):
@@ -58,6 +60,7 @@ class ComponentPool:
         self.directional_light_components = {}
         self.spot_light_components = {}
         self.point_light_components = {}
+        self.collider_components = {}
 
         self.component_storage_map = {
             constants.COMPONENT_TYPE_TRANSFORM_3D: self.transform_3d_components,
@@ -70,6 +73,7 @@ class ComponentPool:
             constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT: self.directional_light_components,
             constants.COMPONENT_TYPE_SPOT_LIGHT: self.spot_light_components,
             constants.COMPONENT_TYPE_POINT_LIGHT: self.point_light_components,
+            constants.COMPONENT_TYPE_COLLIDER: self.collider_components,
         }
 
         # This variable is a temporary solution to keep track of all entities added during the xml scene loading
@@ -168,7 +172,7 @@ class ComponentPool:
             # Transform 3D
             if component_soup.name == constants.COMPONENT_NAME_TRANSFORM_3D:
                 position_str = component_soup.attrs.get("position", "0 0 0")
-                position = utils_string.string2float_list(position_str)
+                position = utils_string.string2float_tuple(position_str)
 
                 self.add_component(
                     entity_uid=entity_uid,
@@ -223,7 +227,7 @@ class ComponentPool:
                 viewport_norm_str = component_soup.attrs.get("viewport_ratio", "0.0 0.0 1.0 1.0")
                 perspective_str = component_soup.attrs.get("perspective", "true")
 
-                viewport_norm = tuple(utils_string.string2int_list(viewport_norm_str))
+                viewport_norm = utils_string.string2int_tuple(viewport_norm_str)
                 perspective = utils_string.str2bool(perspective_str)
 
                 self.add_component(
@@ -239,8 +243,8 @@ class ComponentPool:
                 diffuse_str = component_soup.attrs.get("diffuse", ".75 .75 .75")
                 specular_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
 
-                diffuse = tuple(utils_string.string2float_list(diffuse_str))
-                specular = tuple(utils_string.string2float_list(specular_str))
+                diffuse = constants.MATERIAL_COLORS_TAB10.get(diffuse_str, utils_string.string2float_tuple(diffuse_str))
+                specular = constants.MATERIAL_COLORS_TAB10.get(specular_str, utils_string.string2float_tuple(specular_str))
 
                 shininess_factor = float(component_soup.attrs.get("shininess_factor", "32.0"))
                 metallic_factor = float(component_soup.attrs.get("metallic_factor", "1.0"))
@@ -286,8 +290,8 @@ class ComponentPool:
                 diffuse_str = component_soup.attrs.get("diffuse", "1.0 1.0 1.0")
                 specular_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
 
-                diffuse = tuple(utils_string.string2float_list(diffuse_str))
-                specular = tuple(utils_string.string2float_list(specular_str))
+                diffuse = tuple(utils_string.string2float_tuple(diffuse_str))
+                specular = tuple(utils_string.string2float_tuple(specular_str))
 
                 self.add_component(
                     entity_uid=entity_uid,
@@ -301,14 +305,28 @@ class ComponentPool:
                 position_str = component_soup.attrs.get("position", "22.0 16.0 50.0")
                 color_str = component_soup.attrs.get("color", "1.0 1.0 1.0")
 
-                position = utils_string.string2float_list(position_str)
-                color = utils_string.string2float_list(color_str)
+                position = utils_string.string2float_tuple(position_str)
+                color = utils_string.string2float_tuple(color_str)
 
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_POINT_LIGHT,
                     position=position,
                     color=color)
+                continue
+
+            # Collider
+            if component_soup.name == constants.COMPONENT_NAME_COLLIDER:
+                shape_str = component_soup.attrs.get("shape", "sphere")
+                radius_str = component_soup.attrs.get("radius", "0.5")
+
+                radius = float(radius_str)
+
+                self.add_component(
+                    entity_uid=entity_uid,
+                    component_type=constants.COMPONENT_TYPE_COLLIDER,
+                    shape=shape_str,
+                    radius=radius)
                 continue
 
             # If you got here, it means the component you selected is not supported :(

@@ -15,7 +15,7 @@ def test_string2float_list():
     ]
 
     for test, target in zip(test, target):
-        result = utils_string.string2float_list(input_string=test)
+        result = utils_string.string2float_tuple(input_string=test)
         assert target == result
 
 

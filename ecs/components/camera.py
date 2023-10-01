@@ -1,5 +1,6 @@
 import numpy as np
 import moderngl
+from typing import Union
 
 from ecs import constants
 from ecs.components.component import Component
@@ -48,6 +49,27 @@ class Camera(Component):
                                 int(self.viewport_norm[1] * window_size[1]),
                                 int(self.viewport_norm[2] * window_size[0]),
                                 int(self.viewport_norm[3] * window_size[1]))
+
+    def is_inside_viewport(self, coord_pixels: tuple) -> bool:
+        if self.viewport_pixels is None:
+            return False
+
+        flag_x = self.viewport_pixels[0] <= coord_pixels[0] <= self.viewport_pixels[2]
+        flag_y = self.viewport_pixels[1] <= coord_pixels[1] <= self.viewport_pixels[3]
+        return flag_x & flag_y
+
+    def get_normalised_screen_coordinates(self, screen_coord_pixels: tuple) -> Union[tuple, None]:
+        """
+        Returns a normalised coordinates withing the viewport of the camera. This will return
+        errouneous values if the input coordinates are outside the viewport in screen values
+        """
+        if self.viewport_pixels is None:
+            return None
+
+        x = (screen_coord_pixels[0] - self.viewport_pixels[0]) / (self.viewport_pixels[2] - self.viewport_pixels[0])
+        y = (screen_coord_pixels[1] - self.viewport_pixels[1]) / (self.viewport_pixels[3] - self.viewport_pixels[1])
+
+        return x, y
 
     def get_projection_matrix(self, window_width: int, window_height: int):
 

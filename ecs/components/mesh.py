@@ -153,9 +153,6 @@ class Mesh(Component):
             subdivisions = kwargs.get("subdivisions", 3)
             v, n, u, f = MeshFactory.create_icosphere(radius=radius, subdivisions=subdivisions)
 
-        if shape == constants.MESH_SHAPE_SPHERE:
-            raise NotImplemented(f"[ERROR] Shape {constants.MESH_SHAPE_SPHERE} not yet implement")
-
         if shape == constants.MESH_SHAPE_CYLINDER:
             raise NotImplemented(f"[ERROR] Shape {constants.MESH_SHAPE_CYLINDER} not yet implement")
 

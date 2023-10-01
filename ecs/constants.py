@@ -17,18 +17,23 @@ SHADERS_DIRECTORY = os.path.join(ECS_DIR, "shaders")
 # =============================================================================
 
 DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)  # (1280, 720)
+
 SYSTEM_NAME_RENDER = "render_system"
 SYSTEM_NAME_IMGUI = "imgui_system"
 SYSTEM_NAME_INPUT_CONTROL = "input_control_system"
+SYSTEM_NAME_GIZMO = "gizmo_system"
+
 AVAILABLE_SYSTEMS = [
     SYSTEM_NAME_RENDER,
     SYSTEM_NAME_IMGUI,
     SYSTEM_NAME_INPUT_CONTROL
 ]
-DEFAULT_SYSTEMS_DECLARATION = [
+
+DEFAULT_SYSTEMS = [
     SYSTEM_NAME_INPUT_CONTROL,
     SYSTEM_NAME_RENDER,
-    SYSTEM_NAME_IMGUI
+    SYSTEM_NAME_IMGUI,
+    SYSTEM_NAME_GIZMO
 ]
 
 # =============================================================================
@@ -96,6 +101,13 @@ SUBSCRIBED_EVENTS_INPUT_CONTROL_SYSTEM = [
     EVENT_MOUSE_MOVE,
     EVENT_KEYBOARD_PRESS,
     EVENT_KEYBOARD_RELEASE
+]
+SUBSCRIBED_EVENTS_GIZMO_SYSTEM = [
+    EVENT_MOUSE_SCROLL,
+    EVENT_MOUSE_MOVE,
+    EVENT_KEYBOARD_PRESS,
+    EVENT_KEYBOARD_RELEASE,
+    EVENT_WINDOW_FRAMEBUFFER_SIZE
 ]
 
 # =============================================================================
@@ -206,6 +218,7 @@ COMPONENT_TYPE_TEXT_2D = 6
 COMPONENT_TYPE_DIRECTIONAL_LIGHT = 7
 COMPONENT_TYPE_SPOT_LIGHT = 8
 COMPONENT_TYPE_POINT_LIGHT = 9
+COMPONENT_TYPE_COLLIDER = 10
 
 # Component Names (For loading from XML)
 COMPONENT_NAME_TRANSFORM_3D = "transform_3d"
@@ -218,16 +231,48 @@ COMPONENT_NAME_TEXT_2D = "text_2d"
 COMPONENT_NAME_DIRECTIONAL_LIGHT = "directional_light"
 COMPONENT_NAME_SPOT_LIGHT = "spot_light"
 COMPONENT_NAME_POINT_LIGHT = "point_light"
+COMPONENT_NAME_COLLIDER = "collider"
 
 # Mesh Component Arguments
 COMPONENT_ARG_MESH_SHAPE = "shape"
 COMPONENT_ARG_MESH_FPATH = "fpath"
 
 MESH_SHAPE_BOX = "box"
-MESH_SHAPE_SPHERE = "sphere"
 MESH_SHAPE_ICOSPHERE = "icosphere"
 MESH_SHAPE_CYLINDER = "cylinder"
 MESH_SHAPE_FROM_OBJ = "obj"  # TODO: Kinda of a hack. You need to add argument "fpath"
+
+COLLIDER_SHAPE_SPHERE = "sphere"
+COLLIDER_SHAPE_CAPSULE = "capsule"
+COLLIDER_SHAPE_PLANE = "plane"
+
+# =============================================================================
+#                               Materials
+# =============================================================================
+# From: https://stackoverflow.com/questions/64369710/what-are-the-hex-codes-of-matplotlib-tab10-palette
+MATERIAL_COLOR_TAB10_BLUE = (31 / 255.0, 119 / 255.0, 180 / 255.0)  # #1f77b4
+MATERIAL_COLOR_TAB10_ORANGE = (255 / 255.0, 127 / 255.0, 14 / 255.0)  # #ff7f0e
+MATERIAL_COLOR_TAB10_GREEN = (44 / 255.0, 160 / 255.0, 44 / 255.0)  # #2ca02c
+MATERIAL_COLOR_TAB10_RED = (214 / 255.0, 39 / 255.0, 40 / 255.0)  #d62728
+MATERIAL_COLOR_TAB10_PURPLE = (148 / 255.0, 103 / 255.0, 189 / 255.0)  # #9467bd
+MATERIAL_COLOR_TAB10_BROWN = (140 / 255.0, 86 / 255.0, 75 / 255.0)  # #8c564b
+MATERIAL_COLOR_TAB10_PINK = (227 / 255.0, 119 / 255.0, 194 / 255.0)  # #e377c2
+MATERIAL_COLOR_TAB10_GRAY = (127 / 255.0, 127 / 255.0, 127 / 255.0)  # #7f7f7f
+MATERIAL_COLOR_TAB10_OLIVE = (188 / 255.0, 189 / 255.0, 34 / 255.0)  # #bcbd22
+MATERIAL_COLOR_TAB10_CYAN = (23 / 255.0, 190 / 255.0, 207 / 255.0)  #17becf
+
+MATERIAL_COLORS_TAB10 = {
+    "tab10_blue": MATERIAL_COLOR_TAB10_BLUE,
+    "tab10_orange": MATERIAL_COLOR_TAB10_ORANGE,
+    "tab10_green": MATERIAL_COLOR_TAB10_GREEN,
+    "tab10_red": MATERIAL_COLOR_TAB10_RED,
+    "tab10_purple": MATERIAL_COLOR_TAB10_PURPLE,
+    "tab10_brown": MATERIAL_COLOR_TAB10_BROWN,
+    "tab10_pink": MATERIAL_COLOR_TAB10_PINK,
+    "tab10_gray": MATERIAL_COLOR_TAB10_GRAY,
+    "tab10_olive": MATERIAL_COLOR_TAB10_OLIVE,
+    "tab10_cyan": MATERIAL_COLOR_TAB10_CYAN
+}
 
 # =============================================================================
 #                               Transforms
