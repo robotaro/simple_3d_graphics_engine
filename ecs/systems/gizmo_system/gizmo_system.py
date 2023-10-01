@@ -7,6 +7,7 @@ from ecs.component_pool import ComponentPool
 from ecs.math import intersection_3d
 from ecs.utilities import utils_camera
 
+
 class GizmoSystem(System):
 
     _type = "gizmo_system"
@@ -47,7 +48,7 @@ class GizmoSystem(System):
                     window_height=self.window_size[1],
                 )
 
-                viewport_coord_norm = camera_component.get_normalised_screen_coordinates(screen_coord_pixels=event_data)
+                viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=event_data)
                 if viewport_coord_norm is None:
                     continue
 
@@ -56,21 +57,24 @@ class GizmoSystem(System):
                     view_matrix=view_matrix,
                     projection_matrix=projection_matrix)
 
-                print(ray_direction, ray_origin)
+                for entity_id, collider_component in self.component_pool.collider_components.items():
 
-                for collider_id, collider_component in self.component_pool.collider_components.items():
+                    collider_transform = self.component_pool.transform_3d_components[entity_id]
 
-                    collider_transform = self.component_pool.transform_3d_components[collider_id]
-
+                    collision = False
                     if collider_component.shape == "sphere":
                         collision = intersection_3d.intersect_boolean_ray_sphere(
                             ray_origin=ray_origin,
                             ray_direction=ray_direction,
                             sphere_origin=collider_transform.local_matrix[:3, 3].flatten(),
                             sphere_radius=collider_component.radius)
-                        print(collision)
 
-        pass
+                    material = self.component_pool.material_components[entity_id]
+                    if collision:
+                        material.diffuse = constants.MATERIAL_COLORS_TAB10["tab10_red"]
+                    else:
+                        material.diffuse = constants.MATERIAL_COLORS_TAB10["tab10_green"]
+
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 

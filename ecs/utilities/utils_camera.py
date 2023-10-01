@@ -25,14 +25,14 @@ def screen_to_world_ray(viewport_coord_norm: tuple,
     eye_coordinates = np.array([eye_coordinates[0], eye_coordinates[1], -1.0, 0.0], dtype=np.float32)
 
     # Inverse the view matrix to get the world coordinates
-    inv_view_matrix = np.linalg.inv(view_matrix)
-    world_coordinates = np.dot(inv_view_matrix, eye_coordinates)
+    world_coordinates = np.dot(view_matrix, eye_coordinates)
 
     # Extract the ray's origin from the inverted view matrix
     ray_origin = view_matrix[:, 3][:3]
 
     # Normalize the world coordinates to get the ray direction
     ray_direction = world_coordinates[:3]
+    ray_direction[1] = -ray_direction[1]  # TODO: FIND OUT WHY THE Y-AXIS IS REVERSED!!!!!! VERY IMPORTANT!!!a
     ray_direction /= np.linalg.norm(ray_direction)
 
     return ray_direction, ray_origin

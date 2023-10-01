@@ -26,7 +26,7 @@ class Collider(Component):
         self.shape = kwargs.get("shape", "sphere")
         self.layer = 0
 
-        self.radius = kwargs.get("radius", 1.0)
+        self.radius = kwargs.get("radius", 0.5)
 
     def ray_intersection_boolean(self, ray_origin: np.array, ray_direction: np.array) -> bool:
 

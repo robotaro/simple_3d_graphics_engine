@@ -71,7 +71,7 @@ class Camera(Component):
         x = (screen_coord_pixels[0] - self.viewport_pixels[0]) / self.viewport_pixels[2]
         y = (screen_coord_pixels[1] - self.viewport_pixels[1]) / self.viewport_pixels[3]
 
-        # Convert normalised values to viewport coordidates (-1 to 1)
+        # Convert normalised values to viewport coordinates (-1 to 1)
         x = 2.0 * x - 1.0
         y = 2.0 * y - 1.0
 
