@@ -220,6 +220,23 @@ class ComponentPool:
                         shape=shape,
                         radius=float(component_soup.attrs.get("radius", "0.2")),
                         subdivisions=int(component_soup.attrs.get("subdivisions", "3")))
+
+                # Shape: CYLINDER
+                if shape == constants.MESH_SHAPE_CYLINDER:
+
+                    point_a = utils_string.string2int_tuple(component_soup.attrs.get("point_a", "0 0 0"))
+                    point_b = utils_string.string2int_tuple(component_soup.attrs.get("point_a", "0 1 0"))
+                    radius = component_soup.attrs.get("radius", 0.5)
+                    sections = component_soup.attrs.get("sections", 32)
+
+                    self.add_component(
+                        entity_uid=entity_uid,
+                        component_type=constants.COMPONENT_TYPE_MESH,
+                        shape=shape,
+                        point_a=point_a,
+                        point_b=point_b,
+                        radius=radius,
+                        sections=sections)
                 continue
 
             # Camera

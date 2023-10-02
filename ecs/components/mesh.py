@@ -149,8 +149,19 @@ class Mesh(Component):
             subdivisions = kwargs.get("subdivisions", 3)
             v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
 
+        if shape == constants.MESH_SHAPE_CAPSULE:
+            radius = kwargs.get("radius", 1.0)
+            subdivisions = kwargs.get("subdivisions", 3)
+            v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
+
         if shape == constants.MESH_SHAPE_CYLINDER:
-            raise NotImplemented(f"[ERROR] Shape {constants.MESH_SHAPE_CYLINDER} not yet implement")
+            point_a = kwargs.get("point_a", (0, 0, 0))
+            point_b = kwargs.get("point_b", (0, 1, 0))
+            radius = kwargs.get("radius", 0.5)
+            sections = kwargs.get("sections", 32)
+
+            v, n, u, f = utils_mesh_3d.create_cylinder(point_a=point_a, point_b=point_b,
+                                                       sections=sections, radius=radius)
 
         if shape == constants.MESH_SHAPE_FROM_OBJ:
             if fpath is None:

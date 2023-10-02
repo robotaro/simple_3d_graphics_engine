@@ -38,6 +38,12 @@
         <material diffuse="tab10_red" shininess_factor="32.0"/>
     </entity>
 
+    <entity name="Cylinder 1" >
+        <mesh shape="cylinder" radius="0.1"/>
+        <transform_3d position="-2 0 2"/>
+        <material diffuse="tab10_purple" shininess_factor="32.0"/>
+    </entity>
+
     <entity name="Floor" >
         <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
         <transform_3d position="0 -0.5 0"/>
