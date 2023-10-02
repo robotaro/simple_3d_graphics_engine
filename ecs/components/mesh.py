@@ -1,10 +1,6 @@
-import moderngl
-from typing import Union
-
 from ecs import constants
 from ecs.components.component import Component
-from ecs.systems.render_system.shader_program_library import ShaderProgramLibrary
-from ecs.systems.render_system.mesh_factory import MeshFactory
+from ecs.utilities import utils_mesh_3d
 
 
 class Mesh(Component):
@@ -146,12 +142,12 @@ class Mesh(Component):
             width = kwargs.get("width", 1.0)
             height = kwargs.get("height", 1.0)
             depth = kwargs.get("depth", 1.0)
-            v, n, u, f = MeshFactory.create_box(width=width, height=height, depth=depth)
+            v, n, u = utils_mesh_3d.create_box(width=width, height=height, depth=depth)
 
         if shape == constants.MESH_SHAPE_ICOSPHERE:
             radius = kwargs.get("radius", 1.0)
             subdivisions = kwargs.get("subdivisions", 3)
-            v, n, u, f = MeshFactory.create_icosphere(radius=radius, subdivisions=subdivisions)
+            v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
 
         if shape == constants.MESH_SHAPE_CYLINDER:
             raise NotImplemented(f"[ERROR] Shape {constants.MESH_SHAPE_CYLINDER} not yet implement")
@@ -159,7 +155,7 @@ class Mesh(Component):
         if shape == constants.MESH_SHAPE_FROM_OBJ:
             if fpath is None:
                 raise KeyError("[ERROR] Missing argument 'fpath' in order to load OBJ file")
-            v, n, u, f = MeshFactory.from_obj(fpath=kwargs["fpath"])
+            v, n, u, f = utils_mesh_3d.from_obj(fpath=kwargs["fpath"])
 
         self.vertices = v
         self.normals = n

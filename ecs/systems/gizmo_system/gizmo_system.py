@@ -35,14 +35,14 @@ class GizmoSystem(System):
 
         if event_type == constants.EVENT_MOUSE_MOVE and self.window_size is not None:
 
-            for camera_id, camera_component in self.component_pool.camera_components.items():
+            for entity_camera_id, camera_component in self.component_pool.camera_components.items():
 
                 # Check if mouse is inside viewport
                 if not camera_component.is_inside_viewport(coord_pixels=event_data):
                     continue
 
                 # TODO: This needs to be changed to world matrix once the transform system is in place!
-                view_matrix = self.component_pool.transform_3d_components[camera_id].local_matrix
+                view_matrix = self.component_pool.transform_3d_components[entity_camera_id].local_matrix
                 projection_matrix = camera_component.get_projection_matrix(
                     window_width=self.window_size[0],
                     window_height=self.window_size[1],
@@ -57,9 +57,9 @@ class GizmoSystem(System):
                     view_matrix=view_matrix,
                     projection_matrix=projection_matrix)
 
-                for entity_id, collider_component in self.component_pool.collider_components.items():
+                for entity_entity_id, collider_component in self.component_pool.collider_components.items():
 
-                    collider_transform = self.component_pool.transform_3d_components[entity_id]
+                    collider_transform = self.component_pool.transform_3d_components[entity_entity_id]
 
                     collision = False
                     if collider_component.shape == "sphere":
@@ -69,12 +69,11 @@ class GizmoSystem(System):
                             sphere_origin=collider_transform.local_matrix[:3, 3].flatten(),
                             sphere_radius=collider_component.radius)
 
-                    material = self.component_pool.material_components[entity_id]
+                    material = self.component_pool.material_components[entity_entity_id]
                     if collision:
-                        material.diffuse = constants.MATERIAL_COLORS_TAB10["tab10_red"]
-                    else:
                         material.diffuse = constants.MATERIAL_COLORS_TAB10["tab10_green"]
-
+                    else:
+                        material.diffuse = constants.MATERIAL_COLORS_TAB10["tab10_red"]
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
