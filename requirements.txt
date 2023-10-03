@@ -39,8 +39,9 @@ PyOpenGL==3.1.7
 pytest==7.3.1
 flake8==6.0.0
 
-# [DEBUG]
+# [Debugging and Profiling]
 matplotlib==3.6.2
+CProfileV==1.0.7
 
 # [ Aitviewer Integration ]
 scipy==1.10.1

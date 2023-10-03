@@ -17,6 +17,10 @@ from ecs.event_publisher import EventPublisher
 from ecs.component_pool import ComponentPool
 from ecs.utilities import utils_logging
 
+# Debug
+import cProfile, pstats, io
+from pstats import SortKey
+
 
 class Editor:
 
@@ -326,7 +330,13 @@ class Editor:
                                      event_data=self.buffer_size,
                                      sender=self)
 
-    def run(self):
+    def run(self, profiling_enabled=False) -> str:
+
+        profiling_result = ""
+
+        if profiling_enabled:
+            profiler = cProfile.Profile()
+            profiler.enable()
 
         # Initialise systems
         for system in self.systems:
@@ -361,3 +371,13 @@ class Editor:
         # Shutdown systems
         for system in self.systems:
             system.shutdown()
+
+        if profiling_enabled:
+            profiler.disable()
+            string_stream = io.StringIO()
+            sortby = SortKey.CUMULATIVE
+            ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+            ps.print_stats()
+            profiling_result = string_stream.getvalue()
+
+        return profiling_result
