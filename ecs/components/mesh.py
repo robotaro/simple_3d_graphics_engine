@@ -142,7 +142,7 @@ class Mesh(Component):
             width = kwargs.get("width", 1.0)
             height = kwargs.get("height", 1.0)
             depth = kwargs.get("depth", 1.0)
-            v, n, u = utils_mesh_3d.create_box(width=width, height=height, depth=depth)
+            v, n, u, f = utils_mesh_3d.create_box(width=width, height=height, depth=depth)
 
         if shape == constants.MESH_SHAPE_ICOSPHERE:
             radius = kwargs.get("radius", 1.0)

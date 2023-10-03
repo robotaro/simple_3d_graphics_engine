@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit
 
 
-@njit
+@njit(cache=True)
 def intersect_boolean_ray_sphere(ray_origin: np.array,
                                  ray_direction: np.array,
                                  sphere_origin: np.array,
@@ -33,7 +33,7 @@ def intersect_boolean_ray_sphere(ray_origin: np.array,
     discriminant = b * b - 4 * a * c
     return discriminant >= 0  # Return if at least one intersection exists
 
-@njit
+@njit(cache=True)
 def intersect_distance_ray_sphere(ray_origin: np.array,
                                   ray_direction: np.array,
                                   sphere_origin: np.array,

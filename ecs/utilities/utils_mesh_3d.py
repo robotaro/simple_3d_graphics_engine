@@ -16,7 +16,7 @@ def create_box(width=1.0, height=1.0, depth=1.0):
 
     new_vertices, new_normals, _ = convert_faces_to_triangles(vertices=vertices, uvs=None, faces=indices)
 
-    return new_vertices, new_normals, None
+    return new_vertices, new_normals, None, None
 
 
 def create_icosphere(radius: float, subdivisions: int) -> tuple:

@@ -2,7 +2,7 @@ import numpy as np
 from numba import njit
 
 
-@njit
+@njit(cache=True)
 def screen_to_world_ray(viewport_coord_norm: tuple,
                         view_matrix: np.ndarray,
                         projection_matrix: np.ndarray):
