@@ -250,6 +250,25 @@ COLLIDER_SHAPE_PLANE = "plane"
 # =============================================================================
 #                               Materials
 # =============================================================================
+
+MATERIAL_COLOR_BLACK = (0.0, 0.0, 0.0)
+MATERIAL_COLOR_WHITE = (1.0, 1.0, 1.0)
+MATERIAL_COLOR_RED = (1.0, 0.0, 0.0)
+MATERIAL_COLOR_LIME = (0.0, 1.0, 0.0)
+MATERIAL_COLOR_BLUE = (0.0, 0.0, 1.0)
+MATERIAL_COLOR_YELLOW = (1.0, 1.0, 0.0)
+MATERIAL_COLOR_CYAN = (0.0, 1.0, 1.0)  # Also known as Aqua
+MATERIAL_COLOR_MAGENTA = (1.0, 0.0, 1.0)  # Also known as Fuchsia
+MATERIAL_COLOR_SILVER = (192.0 / 255.0, 192.0 / 255.0, 192.0 / 255.0)
+MATERIAL_COLOR_GRAY = (128.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0)
+MATERIAL_COLOR_MAROON = (128.0 / 255.0, 0.0, 0.0)
+MATERIAL_COLOR_OLIVE = (128.0 / 255.0, 128.0 / 255.0, 0.0)
+MATERIAL_COLOR_GREEN = (0.0, 128.0 / 255.0, 0.0)
+MATERIAL_COLOR_PURPLE = (128.0 / 255.0, 0.0, 128.0 / 255.0)
+MATERIAL_COLOR_TEAL = (0.0, 128.0 / 255.0, 128.0 / 255.0)
+MATERIAL_COLOR_NAVY = (0.0, 0.0, 128.0 / 255.0)
+
+
 # From: https://stackoverflow.com/questions/64369710/what-are-the-hex-codes-of-matplotlib-tab10-palette
 MATERIAL_COLOR_TAB10_BLUE = (31 / 255.0, 119 / 255.0, 180 / 255.0)  # #1f77b4
 MATERIAL_COLOR_TAB10_ORANGE = (255 / 255.0, 127 / 255.0, 14 / 255.0)  # #ff7f0e
@@ -262,7 +281,23 @@ MATERIAL_COLOR_TAB10_GRAY = (127 / 255.0, 127 / 255.0, 127 / 255.0)  # #7f7f7f
 MATERIAL_COLOR_TAB10_OLIVE = (188 / 255.0, 189 / 255.0, 34 / 255.0)  # #bcbd22
 MATERIAL_COLOR_TAB10_CYAN = (23 / 255.0, 190 / 255.0, 207 / 255.0)  #17becf
 
-MATERIAL_COLORS_TAB10 = {
+MATERIAL_COLORS = {
+    "black": MATERIAL_COLOR_BLACK,
+    "white": MATERIAL_COLOR_WHITE,
+    "red": MATERIAL_COLOR_RED,
+    "lime": MATERIAL_COLOR_LIME,
+    "blue": MATERIAL_COLOR_BLUE,
+    "yellow": MATERIAL_COLOR_YELLOW,
+    "cyan": MATERIAL_COLOR_CYAN,  # Also known as Aqua
+    "magenta": MATERIAL_COLOR_MAGENTA,  # Also known as Fuchsia
+    "silver": MATERIAL_COLOR_SILVER,
+    "gray": MATERIAL_COLOR_GRAY,
+    "maroon": MATERIAL_COLOR_MAROON,
+    "olive": MATERIAL_COLOR_OLIVE,
+    "green": MATERIAL_COLOR_GREEN,
+    "purple": MATERIAL_COLOR_PURPLE,
+    "teal": MATERIAL_COLOR_TEAL,
+    "navy": MATERIAL_COLOR_NAVY,
     "tab10_blue": MATERIAL_COLOR_TAB10_BLUE,
     "tab10_orange": MATERIAL_COLOR_TAB10_ORANGE,
     "tab10_green": MATERIAL_COLOR_TAB10_GREEN,

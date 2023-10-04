@@ -71,9 +71,9 @@ class GizmoSystem(System):
 
                     material = self.component_pool.material_components[entity_entity_id]
                     if collision:
-                        material.diffuse = constants.MATERIAL_COLORS_TAB10["tab10_green"]
+                        material.diffuse = constants.MATERIAL_COLORS["tab10_green"]
                     else:
-                        material.diffuse = constants.MATERIAL_COLORS_TAB10["tab10_red"]
+                        material.diffuse = constants.MATERIAL_COLORS["tab10_red"]
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 

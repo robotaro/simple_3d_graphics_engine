@@ -1,5 +1,6 @@
 import logging
 import os
+import numpy as np
 from bs4 import BeautifulSoup
 
 from ecs import constants
@@ -19,10 +20,14 @@ from ecs.utilities import utils_string
 
 class Entity:
 
-    def __init__(self, name="", entity_type=-1):
+    def __init__(self, name=""):
         self.name = name
-        self.sub_entities = []
-        self.is_subcomponent = False
+        self.parent_entity = None
+        self.children_entities = []
+
+    @property
+    def is_subentity(self):
+        return self.parent_entity is not None
 
 
 class ComponentPool:
@@ -99,7 +104,7 @@ class ComponentPool:
 
     def remove_component(self, entity_uid: int, component_type: str):
 
-        if self.entities[entity_uid].is_subcomponent:
+        if self.entities[entity_uid].is_sub_entity:
             raise Exception("[ERROR] Tried to remove sub-component directly")
         component_pool = self.component_storage_map.get(component_type, None)
 
@@ -111,13 +116,21 @@ class ComponentPool:
         component_pool.pop(entity_uid)
 
     def get_component(self, entity_uid: int, component_type: str) -> Component:
+
+        entity = self.entities.get(entity_uid, None)
+        if entity is None:
+            raise TypeError(f"[ERROR] Entity ID '{entity}' not present")
+
         component_pool = self.component_storage_map.get(component_type, None)
 
-        # Safety
-        if component_pool is None:
-            raise TypeError(f"[ERROR] Component type '{component_type}' not supported")
+        component = component_pool.get(entity_uid, None)
+        if component is not None:
+            return component
 
-        return component_pool.get(entity_uid, None)
+        if entity.is_sub_entity():
+            return self.get_component(entity_uid=entity_uid.parent_entity)
+
+        raise TypeError(f"[ERROR] Component type '{component_type}' not supported")
 
     def get_all_components(self, entity_uid: int) -> list:
         return [storage[entity_uid] for _, storage in self.component_storage_map.items() if entity_uid in storage]
@@ -172,12 +185,23 @@ class ComponentPool:
             # Transform 3D
             if component_soup.name == constants.COMPONENT_NAME_TRANSFORM_3D:
                 position_str = component_soup.attrs.get("position", "0 0 0")
+
+                in_degrees = True if "rotation_deg" in component_soup.attrs else False
+                rotation_str = component_soup.attrs.get("rotation_deg" if in_degrees else "rotation", "0 0 0")
+
                 position = utils_string.string2float_tuple(position_str)
+                rotation = utils_string.string2float_tuple(rotation_str)
+
+                if in_degrees:
+                    deg2rad = np.pi / 180.0
+                    rotation = (rotation[0] * deg2rad, rotation[1] * deg2rad, rotation[2] * deg2rad)
 
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
-                    position=position)
+                    position=position,
+                    rotation=rotation
+                )
                 continue
 
             # Transform 2D
@@ -260,8 +284,8 @@ class ComponentPool:
                 diffuse_str = component_soup.attrs.get("diffuse", ".75 .75 .75")
                 specular_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
 
-                diffuse = constants.MATERIAL_COLORS_TAB10.get(diffuse_str, utils_string.string2float_tuple(diffuse_str))
-                specular = constants.MATERIAL_COLORS_TAB10.get(specular_str, utils_string.string2float_tuple(specular_str))
+                diffuse = constants.MATERIAL_COLORS.get(diffuse_str, utils_string.string2float_tuple(diffuse_str))
+                specular = constants.MATERIAL_COLORS.get(specular_str, utils_string.string2float_tuple(specular_str))
 
                 shininess_factor = float(component_soup.attrs.get("shininess_factor", "32.0"))
                 metallic_factor = float(component_soup.attrs.get("metallic_factor", "1.0"))
