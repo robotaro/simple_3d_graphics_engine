@@ -5,6 +5,17 @@ This is an attempt to simplify the core functions of t
 
 Maybe check the following projects for inspiration:
 
+## Important Notes
+- Events 
+  - DO NOT modify components
+  - Cannot be stacked
+  - work immediatly across systems
+- Actions: 
+  - DO modify components
+  - Only happens during update
+  - May be immediate or over time
+  - Can be queued up by systems
+
 https://github.com/ubuntunux/PyEngine3D
 
 ## High Performance Computing Sources

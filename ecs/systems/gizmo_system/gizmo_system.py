@@ -1,7 +1,9 @@
-import numpy as np
+import logging
 import moderngl
 
 from ecs import constants
+from ecs.event_publisher import EventPublisher
+from ecs.action_publisher import ActionPublisher
 from ecs.systems.system import System
 from ecs.component_pool import ComponentPool
 from ecs.math import intersection_3d
@@ -17,10 +19,14 @@ class GizmoSystem(System):
         "window_size"
     ]
 
-    def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"],
-                         component_pool=kwargs["component_pool"],
-                         event_publisher=kwargs["event_publisher"])
+    def __init__(self, logger: logging.Logger,
+                 component_pool: ComponentPool,
+                 event_publisher: EventPublisher,
+                 action_publisher: ActionPublisher):
+        super().__init__(logger=logger,
+                         component_pool=component_pool,
+                         event_publisher=event_publisher,
+                         action_publisher=action_publisher)
 
         self.window_size = None
         self.entity_ray_intersection_list = []

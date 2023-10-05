@@ -7,14 +7,13 @@ import logging
 
 from ecs import constants
 from ecs.systems.system import System
-from ecs.component_pool import ComponentPool
 from ecs.event_publisher import EventPublisher
+from ecs.action_publisher import ActionPublisher
 from ecs.systems.render_system.shader_program_library import ShaderProgramLibrary
 from ecs.systems.render_system.font_library import FontLibrary
 from ecs.component_pool import ComponentPool
 from ecs.geometry_3d import ready_to_render
-from ecs.components.mesh import Mesh
-from ecs.components.directional_light import DirectionalLight
+
 from ecs.math import mat4
 
 
@@ -63,14 +62,15 @@ class RenderSystem(System):
         "_shadows_enabled"
     ]
 
-    def __init__(self,
-                 logger: logging.Logger,
+    def __init__(self, logger: logging.Logger,
                  component_pool: ComponentPool,
                  event_publisher: EventPublisher,
+                 action_publisher: ActionPublisher,
                  **kwargs):
         super().__init__(logger=logger,
-                         component_pool=component_pool,
-                         event_publisher=event_publisher)
+             component_pool=component_pool,
+             event_publisher=event_publisher,
+             action_publisher=action_publisher)
 
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
@@ -262,10 +262,6 @@ class RenderSystem(System):
         # Initialise object on the GPU if they haven't been already
         camera_entity_uids = list(self.component_pool.camera_components.keys())
 
-        # DEBUG -HACK TODO: MOVE THIS TO THE TRANSFORM SYSTEM!!!
-        for _, transform in self.component_pool.transform_3d_components.items():
-            transform.update()
-
         # Render shadow texture (if enabled)
         self.render_shadow_mapping_pass(component_pool=self.component_pool)
 
@@ -340,7 +336,6 @@ class RenderSystem(System):
         program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
         program["view_matrix"].write(camera_transform.local_matrix.T.tobytes())
 
-        camera_transform.update()
         camera_component.upload_uniforms(
             program=program,
             window_width=self.buffer_size[0],

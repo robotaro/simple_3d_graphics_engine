@@ -7,6 +7,7 @@ from ecs import constants
 from ecs.systems.system import System
 from ecs.component_pool import ComponentPool
 from ecs.event_publisher import EventPublisher
+from ecs.action_publisher import ActionPublisher
 
 
 class InputControlSystem(System):
@@ -30,10 +31,14 @@ class InputControlSystem(System):
         "pan_right"
     ]
 
-    def __init__(self, logger: logging.Logger, component_pool: ComponentPool, event_publisher: EventPublisher):
+    def __init__(self, logger: logging.Logger,
+                 component_pool: ComponentPool,
+                 event_publisher: EventPublisher,
+                 action_publisher: ActionPublisher):
         super().__init__(logger=logger,
                          component_pool=component_pool,
-                         event_publisher=event_publisher)
+                         event_publisher=event_publisher,
+                         action_publisher=action_publisher)
 
         self.mouse_x_past = None
         self.mouse_y_past = None

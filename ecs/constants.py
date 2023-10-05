@@ -18,6 +18,7 @@ SHADERS_DIRECTORY = os.path.join(ECS_DIR, "shaders")
 
 DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)  # (1280, 720)
 
+SYSTEM_NAME_TRANSFORM = "transform_system"
 SYSTEM_NAME_RENDER = "render_system"
 SYSTEM_NAME_IMGUI = "imgui_system"
 SYSTEM_NAME_INPUT_CONTROL = "input_control_system"
@@ -33,6 +34,7 @@ DEFAULT_SYSTEMS = [
     SYSTEM_NAME_INPUT_CONTROL,
     SYSTEM_NAME_RENDER,
     SYSTEM_NAME_IMGUI,
+    SYSTEM_NAME_TRANSFORM,
     SYSTEM_NAME_GIZMO
 ]
 
@@ -109,6 +111,11 @@ SUBSCRIBED_EVENTS_GIZMO_SYSTEM = [
     EVENT_KEYBOARD_RELEASE,
     EVENT_WINDOW_FRAMEBUFFER_SIZE
 ]
+
+# =============================================================================
+#                               Action types
+# =============================================================================
+ACTION_TRANSFORM_LOOK_AT = 0
 
 # =============================================================================
 #                              GLFW Types

@@ -249,7 +249,7 @@ class ComponentPool:
                 if shape == constants.MESH_SHAPE_CYLINDER:
 
                     point_a = utils_string.string2int_tuple(component_soup.attrs.get("point_a", "0 0 0"))
-                    point_b = utils_string.string2int_tuple(component_soup.attrs.get("point_a", "0 1 0"))
+                    point_b = utils_string.string2int_tuple(component_soup.attrs.get("point_b", "0 1 0"))
                     radius = component_soup.attrs.get("radius", 0.5)
                     sections = component_soup.attrs.get("sections", 32)
 
@@ -299,7 +299,6 @@ class ComponentPool:
                     shininess_factor=shininess_factor,
                     metallic_factor=metallic_factor,
                     roughness_factor=roughness_factor)
-
                 continue
 
             # Input Control

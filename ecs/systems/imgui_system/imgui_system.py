@@ -8,6 +8,7 @@ from ecs import constants
 from ecs.systems.system import System
 from ecs.component_pool import ComponentPool
 from ecs.event_publisher import EventPublisher
+from ecs.action_publisher import ActionPublisher
 
 
 class ImguiSystem(System):
@@ -28,10 +29,12 @@ class ImguiSystem(System):
                  logger: logging.Logger,
                  component_pool: ComponentPool,
                  event_publisher: EventPublisher,
+                 action_publisher: ActionPublisher,
                  **kwargs):
         super().__init__(logger=logger,
                          component_pool=component_pool,
-                         event_publisher=event_publisher)
+                         event_publisher=event_publisher,
+                         action_publisher=action_publisher)
 
         self.window_glfw = kwargs["window_glfw"]
         self.imgui_renderer = None

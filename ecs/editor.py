@@ -12,8 +12,10 @@ from ecs import constants
 from ecs.systems.render_system.render_system import RenderSystem
 from ecs.systems.imgui_system.imgui_system import ImguiSystem
 from ecs.systems.gizmo_system.gizmo_system import GizmoSystem
+from ecs.systems.transform_system.transform_system import TransformSystem
 from ecs.systems.input_control_system.input_control_system import InputControlSystem
 from ecs.event_publisher import EventPublisher
+from ecs.action_publisher import ActionPublisher
 from ecs.component_pool import ComponentPool
 from ecs.utilities import utils_logging
 
@@ -43,6 +45,7 @@ class Editor:
                  "systems",
                  "component_pool",
                  "event_publisher",
+                 "action_publisher",
                  "close_application")
 
     def __init__(self,
@@ -58,8 +61,9 @@ class Editor:
         self.vertical_sync = vertical_sync
 
         # Core Variables
-        self.component_pool = ComponentPool(logger=self.logger)  # Must be created before systems
+        self.component_pool = ComponentPool(logger=self.logger)  #s Must be created before systems
         self.event_publisher = EventPublisher(logger=self.logger)  # Must be created before systems
+        self.action_publisher = ActionPublisher(logger=self.logger)  # Must be created before systems
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -253,6 +257,7 @@ class Editor:
                 logger=self.logger,
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher,
                 context=self.ctx,
                 buffer_size=self.buffer_size)
 
@@ -265,6 +270,7 @@ class Editor:
                 logger=self.logger,
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher,
                 window_glfw=self.window_glfw)
 
             # Set default events to subscribe too
@@ -275,7 +281,8 @@ class Editor:
             new_system = InputControlSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
-                event_publisher=self.event_publisher)
+                event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher)
 
             # Set default events to subscribe too
             if subscribed_events is None:
@@ -285,7 +292,8 @@ class Editor:
             new_system = GizmoSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
-                event_publisher=self.event_publisher)
+                event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher)
 
             # Set default events to subscribe too
             if subscribed_events is None:
@@ -360,9 +368,8 @@ class Editor:
 
             # Update All systems in order
             for system in self.systems:
-                if not system.update(elapsed_time=elapsed_time,
-                                     context=self.ctx):
-                    exit_application_now = True
+                if not system.update(elapsed_time=elapsed_time, context=self.ctx):
+                    self.close_application = True
                     break
 
             # Still swap these even if you have to exit application?
