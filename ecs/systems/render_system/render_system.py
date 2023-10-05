@@ -419,7 +419,6 @@ class RenderSystem(System):
             return
 
         camera_transform = component_pool.transform_3d_components[camera_uid]
-        camera_transform.update()
 
         # Upload uniforms
         program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]

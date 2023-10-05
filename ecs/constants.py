@@ -111,6 +111,9 @@ SUBSCRIBED_EVENTS_GIZMO_SYSTEM = [
     EVENT_KEYBOARD_RELEASE,
     EVENT_WINDOW_FRAMEBUFFER_SIZE
 ]
+SUBSCRIBED_EVENTS_TRANSFORM_SYSTEM = [
+
+]
 
 # =============================================================================
 #                               Action types

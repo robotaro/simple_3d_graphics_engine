@@ -299,6 +299,17 @@ class Editor:
             if subscribed_events is None:
                 subscribed_events = constants.SUBSCRIBED_EVENTS_GIZMO_SYSTEM
 
+        if system_type == TransformSystem._type:
+            new_system = TransformSystem(
+                logger=self.logger,
+                component_pool=self.component_pool,
+                event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher)
+
+            # Set default events to subscribe too
+            if subscribed_events is None:
+                subscribed_events = constants.SUBSCRIBED_EVENTS_TRANSFORM_SYSTEM
+
         if new_system is None:
             self.logger.error(f"Failed to create system {system_type}")
             return False
@@ -313,13 +324,14 @@ class Editor:
         # And finally add the new system to the roster
         self.systems.append(new_system)
 
+
     def load_scene(self, scene_xml_fpath: str):
         self.component_pool.load_scene(scene_xml_fpath=scene_xml_fpath)
 
     def initialise_components(self):
 
         # TODO: This is SORT OF a hack. Please think of a way to make this universal
-        render_system = [system for system in self.systems if system._type == constants.SYSTEM_NAME_RENDER][0]
+        render_system = [system for system in self.systems if isinstance(system, RenderSystem)][0]
 
         for component_id, components in self.component_pool.component_storage_map.items():
             for entity_uid, component in components.items():

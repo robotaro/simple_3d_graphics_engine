@@ -60,50 +60,6 @@ class InputControlSystem(System):
     def initialise(self, **kwargs) -> bool:
         return True
 
-    def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
-
-        for entity_uid, input_control in self.component_pool.input_control_components.items():
-
-            input_control = self.component_pool.input_control_components[entity_uid]
-            if not input_control.active:
-                continue
-
-            transform = self.component_pool.transform_3d_components[entity_uid]
-
-            # TODO: Investigate why the directions seem to be reversed...
-
-            # Rotate
-            input_control.yaw += self.mouse_dx * input_control.mouse_sensitivity
-            input_control.pitch -= self.mouse_dy * input_control.mouse_sensitivity
-            input_control.pitch = np.clip(input_control.pitch, -np.pi * 0.49, np.pi * 0.49)
-
-            # Translate
-            if self.move_forward:
-                transform.position -= input_control.speed * input_control.forward
-            if self.move_back:
-                transform.position += input_control.speed * input_control.forward
-            if self.move_left:
-                transform.position -= input_control.speed * input_control.right
-            if self.move_right:
-                transform.position += input_control.speed * input_control.right
-            if self.move_up:
-                transform.position += input_control.speed * np.array((0, 1, 0), np.float32)
-            if self.move_down:
-                transform.position -= input_control.speed * np.array((0, 1, 0), np.float32)
-
-            # Update camera vectors
-            """input_control.forward[0] = np.cos(input_control.yaw) * np.cos(input_control.pitch)
-            input_control.forward[1] = np.sin(input_control.pitch)
-            input_control.forward[2] = np.sin(input_control.yaw) * np.cos(input_control.pitch)
-
-            input_control.forward = input_control.forward / np.linalg.norm(input_control.forward)
-            right_temp = np.cross(input_control.forward, np.array((0, 1, 0)))
-            input_control.right = right_temp / np.linalg.norm(right_temp)
-            up_temp = np.cross(input_control.right, input_control.forward)
-            input_control.up = up_temp / np.linalg.norm(up_temp)"""
-
-        return True
-
     def on_event(self, event_type: int, event_data: tuple):
 
         # TODO: Add all indices to constants.py
@@ -180,6 +136,50 @@ class InputControlSystem(System):
             if event_data[0] == glfw.KEY_Q:
                 self.move_down = False
                 return
+
+    def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
+
+        for entity_uid, input_control in self.component_pool.input_control_components.items():
+
+            input_control = self.component_pool.input_control_components[entity_uid]
+            if not input_control.active:
+                continue
+
+            transform = self.component_pool.transform_3d_components[entity_uid]
+
+            # TODO: Investigate why the directions seem to be reversed...
+
+            # Rotate
+            input_control.yaw += self.mouse_dx * input_control.mouse_sensitivity
+            input_control.pitch -= self.mouse_dy * input_control.mouse_sensitivity
+            input_control.pitch = np.clip(input_control.pitch, -np.pi * 0.49, np.pi * 0.49)
+
+            # Translate
+            if self.move_forward:
+                transform.position -= input_control.speed * input_control.forward
+            if self.move_back:
+                transform.position += input_control.speed * input_control.forward
+            if self.move_left:
+                transform.position -= input_control.speed * input_control.right
+            if self.move_right:
+                transform.position += input_control.speed * input_control.right
+            if self.move_up:
+                transform.position += input_control.speed * np.array((0, 1, 0), np.float32)
+            if self.move_down:
+                transform.position -= input_control.speed * np.array((0, 1, 0), np.float32)
+
+            # Update camera vectors
+            """input_control.forward[0] = np.cos(input_control.yaw) * np.cos(input_control.pitch)
+            input_control.forward[1] = np.sin(input_control.pitch)
+            input_control.forward[2] = np.sin(input_control.yaw) * np.cos(input_control.pitch)
+
+            input_control.forward = input_control.forward / np.linalg.norm(input_control.forward)
+            right_temp = np.cross(input_control.forward, np.array((0, 1, 0)))
+            input_control.right = right_temp / np.linalg.norm(right_temp)
+            up_temp = np.cross(input_control.right, input_control.forward)
+            input_control.up = up_temp / np.linalg.norm(up_temp)"""
+
+        return True
 
     def shutdown(self):
         pass

@@ -39,13 +39,14 @@ class System:
     def on_action(self, action_type: int, action_data: tuple, entity_id: int, component_type: int):
         self.action_queue.appendleft((action_type, action_data, entity_id, component_type))
 
-    def select_action(self) -> bool:
+    def select_next_action(self) -> None:
         """
-        Returns false if there are no more actions to execute
+        Whatever part of the algorithm is performing an action, nas to set the self.current_action to None
+        once it is done, so that the "select_next_action" can kick in
         """
-        if self.current_action is None:
+
+        if self.current_action is None and len(self.action_queue) > 0:
             self.current_action = self.action_queue.pop()
-        return self.current_action is not None
 
     def initialise(self, **kwargs) -> bool:
         return True

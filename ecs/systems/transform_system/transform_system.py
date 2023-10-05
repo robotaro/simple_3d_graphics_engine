@@ -1,48 +1,43 @@
 import numpy as np
 import moderngl
+import logging
 
-from ecs import constants
+from ecs.component_pool import ComponentPool
 from ecs.systems.system import System
-from ecs.math import intersection_3d
-from ecs.utilities import utils_camera
+from ecs.event_publisher import EventPublisher
+from ecs.action_publisher import ActionPublisher
 from ecs.math import mat4
 
 
 class TransformSystem(System):
 
-    _type = "gizmo_system"
+    _type = "transform_system"
 
-    __slots__ = [
-        "entity_ray_intersection_list",
-        "window_size"
-    ]
-
-    def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"],
-                         component_pool=kwargs["component_pool"],
-                         event_publisher=kwargs["event_publisher"])
-
-        self.window_size = None
-        self.entity_ray_intersection_list = []
+    def __init__(self, logger: logging.Logger,
+                 component_pool: ComponentPool,
+                 event_publisher: EventPublisher,
+                 action_publisher: ActionPublisher):
+        super().__init__(logger=logger,
+                         component_pool=component_pool,
+                         event_publisher=event_publisher,
+                         action_publisher=action_publisher)
 
     def initialise(self, **kwargs) -> bool:
         return True
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
-
         for entity_uid, transform in self.component_pool.transform_3d_components.items():
-
 
             # TODO: Add the _dirty_flag check to avoid unecessary updates
             transform.local_matrix = mat4.compute_transform(position=transform.position,
                                                             rotation_rad=transform.rotation,
-                                                            scale=transform.scale)
-
-            pass
+                                                            scale=transform.scale[0])
 
         # ================= Process actions =================
-        if not self.select_action():
+
+        self.select_next_action()
+        if self.current_action is None:
             return True
 
         return True

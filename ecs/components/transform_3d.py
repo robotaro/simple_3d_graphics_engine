@@ -27,4 +27,4 @@ class Transform3D(Component):
 
         self.position = kwargs.get("position", (0.0, 0.0, 0.0))
         self.rotation = kwargs.get("rotation", (0.0, 0.0, 0.0))
-        self.scale = kwargs.get("rotation", (1.0, 1.0, 1.0))
+        self.scale = kwargs.get("scale", (1.0, 1.0, 1.0))
