@@ -334,7 +334,7 @@ class RenderSystem(System):
             moderngl.ONE)
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
-        program["view_matrix"].write(camera_transform.local_matrix.T.tobytes())
+        program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
 
         camera_component.upload_uniforms(
             program=program,
@@ -357,7 +357,7 @@ class RenderSystem(System):
         for index, (uid, dir_light_component) in enumerate(self.component_pool.directional_light_components.items()):
             light_transform = self.component_pool.transform_3d_components[uid]
 
-            program[f"directional_lights[{index}].direction"] = tuple(light_transform.local_matrix[:3, 2])
+            program[f"directional_lights[{index}].direction"] = tuple(light_transform.world_matrix[:3, 2])
             program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
             program[f"directional_lights[{index}].specular"] = dir_light_component.specular
             program[f"directional_lights[{index}].strength"] = dir_light_component.strength
@@ -378,7 +378,7 @@ class RenderSystem(System):
 
             # Upload uniforms
             program["entity_id"].value = uid
-            program["model_matrix"].write(mesh_transform.local_matrix.T.tobytes())
+            program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
             program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
             program["directional_lights_enabled"].value = self._directional_lights_enabled
             program["point_lights_enabled"].value = self._point_lights_enabled
@@ -425,8 +425,8 @@ class RenderSystem(System):
         camera_component.upload_uniforms(program=program,
                                          window_width=self.buffer_size[0],
                                          window_height=self.buffer_size[1])
-        program["view_matrix"].write(camera_transform.local_matrix.T.tobytes())
-        program["model_matrix"].write(renderable_transform.local_matrix.T.tobytes())
+        program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
+        program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
 
         # Render
         mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
@@ -491,8 +491,8 @@ class RenderSystem(System):
             mesh_transform = component_pool.transform_3d_components[entity_uid]
             light_transform = component_pool.transform_3d_components[dir_light_uid]
 
-            program["view_matrix"].write(light_transform.local_matrix.T.tobytes())
-            program["model_matrix"].write(mesh_transform.local_matrix.T.tobytes())
+            program["view_matrix"].write(light_transform.world_matrix.T.tobytes())
+            program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
 
             mesh_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(moderngl.TRIANGLES)
 

@@ -48,7 +48,7 @@ class GizmoSystem(System):
                     continue
 
                 # TODO: This needs to be changed to world matrix once the transform system is in place!
-                view_matrix = self.component_pool.transform_3d_components[entity_camera_id].local_matrix
+                view_matrix = self.component_pool.transform_3d_components[entity_camera_id].world_matrix
                 projection_matrix = camera_component.get_projection_matrix(
                     window_width=self.window_size[0],
                     window_height=self.window_size[1],
@@ -72,7 +72,7 @@ class GizmoSystem(System):
                         collision = intersection_3d.intersect_boolean_ray_sphere(
                             ray_origin=ray_origin,
                             ray_direction=ray_direction,
-                            sphere_origin=collider_transform.local_matrix[:3, 3].flatten(),
+                            sphere_origin=collider_transform.world_matrix[:3, 3].flatten(),
                             sphere_radius=collider_component.radius)
 
                     material = self.component_pool.material_components[entity_entity_id]

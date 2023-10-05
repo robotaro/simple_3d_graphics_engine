@@ -156,17 +156,17 @@ class InputControlSystem(System):
 
             # Translate
             if self.move_forward:
-                transform.position -= input_control.speed * input_control.forward
+                transform.move(-input_control.speed * input_control.forward)
             if self.move_back:
-                transform.position += input_control.speed * input_control.forward
+                transform.move(input_control.speed * input_control.forward)
             if self.move_left:
-                transform.position -= input_control.speed * input_control.right
+                transform.move(-input_control.speed * input_control.right)
             if self.move_right:
-                transform.position += input_control.speed * input_control.right
+                transform.move(input_control.speed * input_control.right)
             if self.move_up:
-                transform.position += input_control.speed * np.array((0, 1, 0), np.float32)
+                transform.move(input_control.speed * np.array((0, 1, 0), np.float32))
             if self.move_down:
-                transform.position -= input_control.speed * np.array((0, 1, 0), np.float32)
+                transform.move(input_control.speed * np.array((0, -1, 0), np.float32))
 
             # Update camera vectors
             """input_control.forward[0] = np.cos(input_control.yaw) * np.cos(input_control.pitch)

@@ -264,12 +264,14 @@ class ImguiSystem(System):
         transform = self.component_pool.transform_3d_components.get(self.selected_entity_uid, None)
         if transform:
             imgui.text(f"Transform")
-            _, transform.position = imgui.drag_float3("Position",
+            value_updated, transform.position = imgui.drag_float3("Position",
                                                       *transform.position,
                                                       constants.IMGUI_DRAG_FLOAT_PRECISION)
-            _, transform.rotation = imgui.drag_float3("Rotation",
+            transform.dirty |= value_updated
+            value_updated, transform.rotation = imgui.drag_float3("Rotation",
                                                       *transform.rotation,
                                                       constants.IMGUI_DRAG_FLOAT_PRECISION)
+            transform.dirty |= value_updated
 
             imgui.spacing()
 
