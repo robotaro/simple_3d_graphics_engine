@@ -192,7 +192,7 @@ void main() {
                     directional_lights[i].matrix,
                     directional_lights[i].shadow_map,
                     nl);
-                
+
                 shadow = clamp(shadow, 0.0, 1.0);
                 dir_light *= (1.0 - shadow);
             }

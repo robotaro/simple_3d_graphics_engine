@@ -186,13 +186,13 @@ class ComponentPool:
             if component_soup.name == constants.COMPONENT_NAME_TRANSFORM_3D:
                 position_str = component_soup.attrs.get("position", "0 0 0")
 
-                in_degrees = True if "rotation_deg" in component_soup.attrs else False
-                rotation_str = component_soup.attrs.get("rotation_deg" if in_degrees else "rotation", "0 0 0")
+                rotation_in_degrees = True if "rotation_deg" in component_soup.attrs else False
+                rotation_str = component_soup.attrs.get("rotation_deg" if rotation_in_degrees else "rotation", "0 0 0")
 
                 position = utils_string.string2float_tuple(position_str)
                 rotation = utils_string.string2float_tuple(rotation_str)
 
-                if in_degrees:
+                if rotation_in_degrees:
                     deg2rad = np.pi / 180.0
                     rotation = (rotation[0] * deg2rad, rotation[1] * deg2rad, rotation[2] * deg2rad)
 
@@ -200,8 +200,7 @@ class ComponentPool:
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
                     position=position,
-                    rotation=rotation
-                )
+                    rotation=rotation)
                 continue
 
             # Transform 2D

@@ -371,7 +371,7 @@ class RenderSystem(System):
                 continue
 
             # Set entity ID
-            program[constants.SHADER_UNIFORM_ENTITY_ID] = uid
+            program["entity_id"] = uid
             mesh_transform = component_pool.transform_3d_components[uid]
 
             material = component_pool.material_components.get(uid, None)
@@ -390,7 +390,8 @@ class RenderSystem(System):
             if material is not None:
                 program["material.diffuse"].value = material.diffuse
                 program["material.specular"].value = material.specular
-                program["material.shininess_factor"] = material.shininess_factor
+                #program["color_source"] = material.color_source
+                #program["lighting_mode"] = material.lighting_mode
 
             # Render the vao at the end
             mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)

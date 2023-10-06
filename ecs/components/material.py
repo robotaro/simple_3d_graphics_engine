@@ -19,6 +19,10 @@ class Material(Component):
         self.metalic_factor = kwargs.get("metalic_factor", 0.0)
         self.roughness_factor = kwargs.get("roughness_factor", 1.0)
 
+        # Render modes
+        self.color_source = constants.RENDER_MODE_COLOR_SOURCE_SINGLE
+        self.lighting_mode = constants.RENDER_MODE_LIGHTING_LIT
+
         # Transparency
         self.alpha = kwargs.get("alpha", 1.0)
 

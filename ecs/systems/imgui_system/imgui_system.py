@@ -259,7 +259,6 @@ class ImguiSystem(System):
             imgui.text(f"Camera")
             _, camera.perspective = imgui.checkbox("Perspective", camera.perspective)
 
-
         # [ Transform 3D ]
         transform = self.component_pool.transform_3d_components.get(self.selected_entity_uid, None)
         if transform:
@@ -279,17 +278,26 @@ class ImguiSystem(System):
         material = self.component_pool.material_components.get(self.selected_entity_uid, None)
         if material:
             imgui.text(f"Material")
-            a, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
-            b, material.specular = imgui.color_edit3("Specular", *material.specular)
-            c, material.shininess_factor = imgui.drag_float("Shininess Factor",
+            _, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
+            _, material.specular = imgui.color_edit3("Specular", *material.specular)
+            _, material.shininess_factor = imgui.drag_float("Shininess Factor",
                                                             material.shininess_factor,
                                                             0.05,
                                                             0.0,
                                                             32.0,
-                                                            "%.3f",)
+                                                            "%.3f")
+            _, material.color_source = imgui.slider_int(
+                "Color Source",
+                material.color_source,
+                min_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE,
+                max_value=constants.RENDER_MODE_COLOR_SOURCE_UV)
+            _, material.lighting_mode = imgui.slider_int(
+                "Lighting Mode",
+                material.lighting_mode,
+                min_value=constants.RENDER_MODE_LIGHTING_SOLID,
+                max_value=constants.RENDER_MODE_LIGHTING_LIT)
 
             imgui.spacing()
 
         # draw text label inside of current window
-
         imgui.end()

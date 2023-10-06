@@ -29,11 +29,9 @@ class TransformSystem(System):
 
         for entity_uid, transform in self.component_pool.transform_3d_components.items():
 
-            # TODO: add recursive calls to calculate transform
             if not transform.dirty:
                 continue
 
-            # TODO: Add the _dirty_flag check to avoid unecessary updates
             transform.world_matrix = mat4.compute_transform(position=transform.position,
                                                             rotation_rad=transform.rotation,
                                                             scale=transform.scale[0])
