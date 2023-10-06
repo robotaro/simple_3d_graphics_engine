@@ -390,8 +390,9 @@ class RenderSystem(System):
             if material is not None:
                 program["material.diffuse"].value = material.diffuse
                 program["material.specular"].value = material.specular
-                #program["color_source"] = material.color_source
-                #program["lighting_mode"] = material.lighting_mode
+                program["material.shininess_factor"] = material.shininess_factor
+                program["color_source"] = material.color_source
+                program["lighting_mode"] = material.lighting_mode
 
             # Render the vao at the end
             mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
