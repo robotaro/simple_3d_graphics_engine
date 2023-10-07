@@ -20,8 +20,8 @@ class Material(Component):
         self.roughness_factor = kwargs.get("roughness_factor", 1.0)
 
         # Render modes
-        self.color_source = constants.RENDER_MODE_COLOR_SOURCE_SINGLE
-        self.lighting_mode = constants.RENDER_MODE_LIGHTING_LIT
+        self.color_source = kwargs.get("color_source", constants.RENDER_MODE_COLOR_SOURCE_SINGLE)
+        self.lighting_mode = kwargs.get("lighting_mode", constants.RENDER_MODE_COLOR_SOURCE_SINGLE)
 
         # Transparency
         self.alpha = kwargs.get("alpha", 1.0)

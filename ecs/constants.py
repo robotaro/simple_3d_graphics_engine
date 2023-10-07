@@ -164,7 +164,8 @@ VIEWPORT_INDEX_HEIGHT = 3
 #                                Render System
 # =============================================================================
 
-RENDER_SYSTEM_DEFAULT_UP_VECTOR = (0.0, 1.0, 0.0)
+RENDER_SYSTEM_UP_VECTOR = (0.0, 1.0, 0.0)
+RENDER_SYSTEM_BACKGROUND_COLOR = (0.21176, 0.21176, 0.21176)
 
 SHADER_PROGRAM_FORWARD_PASS = "forward_pass"
 SHADER_PROGRAM_SELECTED_ENTITY_PASS = "selected_entity_pass"
@@ -185,9 +186,18 @@ SHADER_INPUT_UV = "in_uv"
 RENDER_MODE_COLOR_SOURCE_SINGLE = 0
 RENDER_MODE_COLOR_SOURCE_BUFFER = 1
 RENDER_MODE_COLOR_SOURCE_UV = 2
+COLOR_SOURCE_MAP = {
+    "single": RENDER_MODE_COLOR_SOURCE_SINGLE,
+    "buffer": RENDER_MODE_COLOR_SOURCE_BUFFER,
+    "uv": RENDER_MODE_COLOR_SOURCE_UV
+}
 
 RENDER_MODE_LIGHTING_SOLID = 0
 RENDER_MODE_LIGHTING_LIT = 1
+LIGHTING_MODE_MAP = {
+    "solid": RENDER_MODE_LIGHTING_SOLID,
+    "lit": RENDER_MODE_LIGHTING_LIT
+}
 
 # Font Library
 FONT_VBO_BUFFER_RESERVE = 4096
@@ -208,6 +218,12 @@ DIRECTIONAL_LIGHT_SIZE = (2048, 2048)
 # =============================================================================
 
 TRANSFORM_SYSTEM_MAX_NUM_TRANSFORMS = 256
+
+# =============================================================================
+#                                  Math
+# =============================================================================
+
+DEG2RAD = 3.14159265358979 / 180.0
 
 # =============================================================================
 #                              Component Pool

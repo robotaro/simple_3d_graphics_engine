@@ -193,8 +193,9 @@ class ComponentPool:
                 rotation = utils_string.string2float_tuple(rotation_str)
 
                 if rotation_in_degrees:
-                    deg2rad = np.pi / 180.0
-                    rotation = (rotation[0] * deg2rad, rotation[1] * deg2rad, rotation[2] * deg2rad)
+                    rotation = (rotation[0] * constants.DEG2RAD,
+                                rotation[1] * constants.DEG2RAD,
+                                rotation[2] * constants.DEG2RAD)
 
                 self.add_component(
                     entity_uid=entity_uid,
@@ -282,9 +283,13 @@ class ComponentPool:
 
                 diffuse_str = component_soup.attrs.get("diffuse", ".75 .75 .75")
                 specular_str = component_soup.attrs.get("ambient", "1.0 1.0 1.0")
+                color_source_str = component_soup.attrs.get("color_source", "single")
+                lighting_mode_str = component_soup.attrs.get("lighting_mode", "lit")
 
                 diffuse = constants.MATERIAL_COLORS.get(diffuse_str, utils_string.string2float_tuple(diffuse_str))
                 specular = constants.MATERIAL_COLORS.get(specular_str, utils_string.string2float_tuple(specular_str))
+                color_source = constants.COLOR_SOURCE_MAP[color_source_str]
+                lighting_mode = constants.LIGHTING_MODE_MAP[lighting_mode_str]
 
                 shininess_factor = float(component_soup.attrs.get("shininess_factor", "32.0"))
                 metallic_factor = float(component_soup.attrs.get("metallic_factor", "1.0"))
@@ -297,7 +302,9 @@ class ComponentPool:
                     specular=specular,
                     shininess_factor=shininess_factor,
                     metallic_factor=metallic_factor,
-                    roughness_factor=roughness_factor)
+                    roughness_factor=roughness_factor,
+                    color_source=color_source,
+                    lighting_mode=lighting_mode)
                 continue
 
             # Input Control

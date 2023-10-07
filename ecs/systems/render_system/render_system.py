@@ -317,9 +317,7 @@ class RenderSystem(System):
 
         # Clear context (you need to use the use() first to bind it!)
         self.ctx.clear(
-            red=1,
-            green=1,
-            blue=1,
+            color=constants.RENDER_SYSTEM_BACKGROUND_COLOR,
             alpha=1.0,
             depth=1.0,
             viewport=camera_component.viewport_pixels)
@@ -507,7 +505,7 @@ class RenderSystem(System):
         """
 
         self.ctx.screen.use()
-        self.ctx.screen.clear(red=1, green=1, blue=1)  # TODO: Check if this line is necessary
+        self.ctx.screen.clear()
         self.ctx.disable(moderngl.DEPTH_TEST)
 
         self.forward_pass_texture_color.use(location=0)
