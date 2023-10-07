@@ -61,7 +61,7 @@ class Editor:
         self.vertical_sync = vertical_sync
 
         # Core Variables
-        self.component_pool = ComponentPool(logger=self.logger)  #s Must be created before systems
+        self.component_pool = ComponentPool(logger=self.logger)  # Must be created before systems
         self.event_publisher = EventPublisher(logger=self.logger)  # Must be created before systems
         self.action_publisher = ActionPublisher(logger=self.logger)  # Must be created before systems
 
@@ -323,7 +323,6 @@ class Editor:
 
         # And finally add the new system to the roster
         self.systems.append(new_system)
-
 
     def load_scene(self, scene_xml_fpath: str):
         self.component_pool.load_scene(scene_xml_fpath=scene_xml_fpath)

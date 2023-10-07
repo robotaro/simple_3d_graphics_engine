@@ -12,6 +12,7 @@ class Material(Component):
 
         # Colors
         self.diffuse = kwargs.get("diffuse", (0.85, 0.85, 0.85))
+        self.diffuse_highlight = kwargs.get("diffuse_highlight", (0.95, 0.95, 0.95))
         self.specular = kwargs.get("specular", (1.0, 1.0, 1.0))
 
         # Factors

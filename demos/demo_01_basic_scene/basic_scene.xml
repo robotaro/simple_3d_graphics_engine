@@ -14,7 +14,7 @@
 
     <entity name="Main Camera" >
         <camera viewport_ratio="0 0 1 1" perspective="true"/>
-        <transform_3d position="-0.5 0.5 2.8"/>
+        <transform_3d position="-0.5 0.5 5"/>
         <input_control/>
     </entity>
 
