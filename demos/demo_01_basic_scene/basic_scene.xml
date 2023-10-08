@@ -34,7 +34,7 @@
         <mesh shape="icosphere" radius="0.5" subdivisions="4"/>
         <collider shape="sphere" radius="0.5"/>
         <transform_3d position="2 0 2"/>
-        <material diffuse="tab10_red" shininess_factor="32.0"/>
+        <material diffuse="tab10_red" diffuse_highlight="tab10_orange" shininess_factor="32.0"/>
     </entity>
 
     <entity name="Red Cylinder" >

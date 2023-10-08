@@ -16,7 +16,9 @@ class GizmoSystem(System):
 
     __slots__ = [
         "entity_ray_intersection_list",
-        "window_size"
+        "window_size",
+        "selected_entity_uid",
+        "selected_entity_init_distance_to_cam"
     ]
 
     def __init__(self, logger: logging.Logger,
@@ -31,6 +33,10 @@ class GizmoSystem(System):
         self.window_size = None
         self.entity_ray_intersection_list = []
 
+        # DEBUG
+        self.selected_entity_uid = None
+        self.selected_entity_init_distance_to_cam = None
+
     def initialise(self, **kwargs) -> bool:
         return True
 
@@ -40,22 +46,20 @@ class GizmoSystem(System):
             self.window_size = event_data
 
         if event_type == constants.EVENT_ENTITY_SELECTED:
-            pass
+            self.selected_entity_uid = event_data[0]
 
         if event_type == constants.EVENT_MOUSE_MOVE and self.window_size is not None:
 
             for entity_camera_id, camera_component in self.component_pool.camera_components.items():
 
-                # Check if mouse is inside viewporta
+                # Check if mouse is inside viewports
                 if not camera_component.is_inside_viewport(coord_pixels=event_data):
                     continue
 
-                # TODO: This needs to be changed to world matrix once the transform system is in place!
                 view_matrix = self.component_pool.transform_3d_components[entity_camera_id].world_matrix
                 projection_matrix = camera_component.get_projection_matrix(
                     window_width=self.window_size[0],
-                    window_height=self.window_size[1],
-                )
+                    window_height=self.window_size[1])
 
                 viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=event_data)
                 if viewport_coord_norm is None:
@@ -79,10 +83,9 @@ class GizmoSystem(System):
                             sphere_radius=collider_component.radius)
 
                     material = self.component_pool.material_components[entity_entity_id]
-                    if collision:
-                        material.diffuse = constants.MATERIAL_COLORS["tab10_green"]
-                    else:
-                        material.diffuse = constants.MATERIAL_COLORS["tab10_red"]
+
+                    # TODO: Consider "state variables" inside each component, that CAN be changed by events
+                    material.is_highlighted = collision
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
