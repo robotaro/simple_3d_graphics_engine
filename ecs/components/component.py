@@ -115,7 +115,7 @@ class Component:
     @staticmethod
     def dict2int(input_dict: Any, key: Any, default_value: int) -> int:
 
-        if not isinstance(input_dict, int):
+        if not isinstance(input_dict, dict):
             return default_value
 
         if key not in input_dict:
@@ -126,7 +126,7 @@ class Component:
     @staticmethod
     def dict2float(input_dict: Any, key: Any, default_value: float) -> float:
 
-        if not isinstance(input_dict, float):
+        if not isinstance(input_dict, dict):
             return default_value
 
         if key not in input_dict:
