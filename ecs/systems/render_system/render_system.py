@@ -230,7 +230,7 @@ class RenderSystem(System):
 
                 self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
 
-                self.event_publisher.publish(event_type=constants.EVENT_ACTION_ENTITY_SELECTED,
+                self.event_publisher.publish(event_type=constants.EVENT_ENTITY_SELECTED,
                                              event_data=(self.selected_entity_id,),
                                              sender=self)
 
@@ -253,7 +253,7 @@ class RenderSystem(System):
             if glfw.KEY_5 == key_value:
                 self._shadows_enabled = not self._shadows_enabled
 
-        if event_type == constants.EVENT_ACTION_ENTITY_SELECTED:
+        if event_type == constants.EVENT_ENTITY_SELECTED:
             # Other systems may change the selected entity, so this should be reflected by the render system
             self.selected_entity_id = event_data[0]
 

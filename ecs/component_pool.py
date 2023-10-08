@@ -182,6 +182,9 @@ class ComponentPool:
 
         for component_soup in entity_soup.find_all():
 
+            component_type = None
+            component_parameters = {}
+
             # Transform 3D
             if component_soup.name == constants.COMPONENT_NAME_TRANSFORM_3D:
                 position_str = component_soup.attrs.get("position", "0 0 0")
@@ -265,17 +268,16 @@ class ComponentPool:
 
             # Camera
             if component_soup.name == constants.COMPONENT_NAME_CAMERA:
-                viewport_ratio_str = component_soup.attrs.get("viewport_ratio", "0.0 0.0 1.0 1.0")
-                perspective_str = component_soup.attrs.get("perspective", "true")
 
-                viewport_ratio = utils_string.string2int_tuple(viewport_ratio_str)
-                perspective = utils_string.str2bool(perspective_str)
+                component_parameters = {
+                    "viewport_ratio": component_soup.attrs.get("viewport_ratio", "0.0 0.0 1.0 1.0"),
+                    "perspective": component_soup.attrs.get("perspective", "true")
+                }
 
                 self.add_component(
                     entity_uid=entity_uid,
                     component_type=constants.COMPONENT_TYPE_CAMERA,
-                    viewport_ratio=viewport_ratio,
-                    perspective=perspective)
+                    parameters=component_parameters)
                 continue
 
             # Material
@@ -351,8 +353,8 @@ class ComponentPool:
                 position_str = component_soup.attrs.get("position", "22.0 16.0 50.0")
                 color_str = component_soup.attrs.get("color", "1.0 1.0 1.0")
 
-                position = utils_string.string2float_tuple(position_str)
-                color = utils_string.string2float_tuple(color_str)
+                position = Component.string2tuple_float(position_str, default_value=)
+                color = Component.string2tuple_float(color_str)
 
                 self.add_component(
                     entity_uid=entity_uid,
@@ -374,6 +376,9 @@ class ComponentPool:
                     shape=shape_str,
                     radius=radius)
                 continue
+
+
+
 
             # If you got here, it means the component you selected is not supported :(
             entity_name = entity_soup.attrs.get("name", "")

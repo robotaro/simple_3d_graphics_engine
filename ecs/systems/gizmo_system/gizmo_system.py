@@ -39,11 +39,14 @@ class GizmoSystem(System):
         if event_type == constants.EVENT_WINDOW_FRAMEBUFFER_SIZE:
             self.window_size = event_data
 
+        if event_type == constants.EVENT_ENTITY_SELECTED:
+            pass
+
         if event_type == constants.EVENT_MOUSE_MOVE and self.window_size is not None:
 
             for entity_camera_id, camera_component in self.component_pool.camera_components.items():
 
-                # Check if mouse is inside viewport
+                # Check if mouse is inside viewporta
                 if not camera_component.is_inside_viewport(coord_pixels=event_data):
                     continue
 

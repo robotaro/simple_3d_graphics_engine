@@ -90,7 +90,7 @@ class ImguiSystem(System):
         # TODO: Find out whether I really need "on_event" callbacks if the
         #       "self.imgui_renderer.process_inputs()" gets all mouse and keyboard inputs
 
-        if event_type == constants.EVENT_ACTION_ENTITY_SELECTED and event_data[0] >= constants.COMPONENT_POOL_STARTING_ID_COUNTER:
+        if event_type == constants.EVENT_ENTITY_SELECTED and event_data[0] >= constants.COMPONENT_POOL_STARTING_ID_COUNTER:
             self.select_entity(entity_uid=event_data[0])
 
         if event_type == constants.EVENT_KEYBOARD_PRESS:
@@ -110,7 +110,7 @@ class ImguiSystem(System):
         if entity is not None:
             self.selected_entity_name = entity.name
         self.selected_entity_components = self.component_pool.get_all_components(entity_uid=entity_uid)
-        self.event_publisher.publish(event_type=constants.EVENT_ACTION_ENTITY_SELECTED,
+        self.event_publisher.publish(event_type=constants.EVENT_ENTITY_SELECTED,
                                      event_data=(entity_uid,),
                                      sender=self)
 

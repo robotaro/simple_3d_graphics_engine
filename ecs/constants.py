@@ -45,40 +45,38 @@ DEFAULT_SYSTEMS = [
 IMGUI_DRAG_FLOAT_PRECISION = 1e-2
 
 # =============================================================================
-#                               Event types
+#                               Events
 # =============================================================================
 
-# Keyboard
+# Types
 EVENT_KEYBOARD_PRESS = 1            # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_RELEASE = 2          # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_REPEAT = 3           # args: (key, scancode, mods) <int, int, int>
 
-EVENT_INDEX_KEYBOARD_KEY = 0
-EVENT_INDEX_KEYBOARD_SCANCODE = 1
-EVENT_INDEX_KEYBOARD_MODS = 2
-
-# Mouse
 EVENT_MOUSE_BUTTON_ENABLED = 10
 EVENT_MOUSE_BUTTON_DISABLED = 11
 EVENT_MOUSE_BUTTON_PRESS = 12        # args: (button, mods, x, y) <int, int, int, int>
 EVENT_MOUSE_BUTTON_RELEASE = 13      # args: (button, mods, x, y) <int, int, int, int>
+EVENT_MOUSE_MOVE = 14                # args: (x, y) <float, float>
+EVENT_MOUSE_SCROLL = 15              # args: (offset_x, offset_y) <float, float>
+
+# Indices
+EVENT_INDEX_KEYBOARD_KEY = 0
+EVENT_INDEX_KEYBOARD_SCANCODE = 1
+EVENT_INDEX_KEYBOARD_MODS = 2
 
 EVENT_INDEX_MOUSE_BUTTON_BUTTON = 0
 EVENT_INDEX_MOUSE_BUTTON_MODS = 1
 EVENT_INDEX_MOUSE_BUTTON_X = 2
 EVENT_INDEX_MOUSE_BUTTON_Y = 3
-
-EVENT_MOUSE_MOVE = 14                # args: (x, y) <float, float>
 EVENT_INDEX_MOUSE_MOVE_X = 0
 EVENT_INDEX_MOUSE_MOVE_Y = 1
-
-EVENT_MOUSE_SCROLL = 15              # args: (offset_x, offset_y) <float, float>
 EVENT_INDEX_MOUSE_SCROLL_X = 0
 EVENT_INDEX_MOUSE_SCROLL_Y = 1
 
-# Actions
 EVENT_EXIT_APPLICATION = 20
-EVENT_ACTION_ENTITY_SELECTED = 21
+EVENT_ENTITY_SELECTED = 21
+EVENT_ENTITY_DESELECTED = 22
 
 # Window
 EVENT_WINDOW_SIZE = 30                # args: (width, height) <int, int>
@@ -87,36 +85,36 @@ EVENT_WINDOW_DROP_FILES = 32            # args: (filepath, ...) <int, ...>  # TO
 
 # Default subscribed events
 SUBSCRIBED_EVENTS_RENDER_SYSTEM = [
-    EVENT_ACTION_ENTITY_SELECTED,
+    EVENT_ENTITY_SELECTED,
     EVENT_MOUSE_BUTTON_ENABLED,
     EVENT_MOUSE_BUTTON_DISABLED,
     EVENT_MOUSE_BUTTON_PRESS,
     EVENT_KEYBOARD_PRESS,
-    EVENT_WINDOW_FRAMEBUFFER_SIZE
-]
+    EVENT_WINDOW_FRAMEBUFFER_SIZE]
+
 SUBSCRIBED_EVENTS_IMGUI_SYSTEM = [
-    EVENT_ACTION_ENTITY_SELECTED,
-    EVENT_KEYBOARD_PRESS
-]
+    EVENT_ENTITY_SELECTED,
+    EVENT_KEYBOARD_PRESS]
+
 SUBSCRIBED_EVENTS_INPUT_CONTROL_SYSTEM = [
     EVENT_MOUSE_SCROLL,
     EVENT_MOUSE_MOVE,
     EVENT_KEYBOARD_PRESS,
-    EVENT_KEYBOARD_RELEASE
-]
+    EVENT_KEYBOARD_RELEASE]
+
 SUBSCRIBED_EVENTS_GIZMO_SYSTEM = [
     EVENT_MOUSE_SCROLL,
     EVENT_MOUSE_MOVE,
     EVENT_KEYBOARD_PRESS,
     EVENT_KEYBOARD_RELEASE,
-    EVENT_WINDOW_FRAMEBUFFER_SIZE
-]
+    EVENT_WINDOW_FRAMEBUFFER_SIZE]
+
 SUBSCRIBED_EVENTS_TRANSFORM_SYSTEM = [
 
 ]
 
 # =============================================================================
-#                               Action types
+#                                Actions
 # =============================================================================
 ACTION_TRANSFORM_LOOK_AT = 0
 

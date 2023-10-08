@@ -1,4 +1,5 @@
-from ecs.utilities import utils_string
+from ecs.components.component import Component
+
 
 
 def test_string2float_tuple():
@@ -15,7 +16,7 @@ def test_string2float_tuple():
     ]
 
     for test, target in zip(test, target):
-        result = utils_string.string2float_tuple(input_string=test)
+        result = Component.string2tuple_float(input_value=test, default_value=(0.0, 0.0, 0.0))
         assert target == result
 
 
@@ -33,5 +34,5 @@ def test_string2int_tuple():
     ]
 
     for test, target in zip(test, target):
-        result = utils_string.string2int_tuple(input_string=test)
+        result = Component.string2tuple_int(input_value=test, default_value=(0.0, 0.0, 0.0))
         assert target == result

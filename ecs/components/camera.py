@@ -4,7 +4,7 @@ from typing import Union
 
 from ecs import constants
 from ecs.components.component import Component
-from ecs.utilities import utils_camera
+from ecs.utilities import utils_camera, utils_string
 
 
 class Camera(Component):
@@ -21,23 +21,27 @@ class Camera(Component):
         "perspective"
     ]
 
-    def __init__(self, **kwargs):
-        super().__init__()
+    def __init__(self, parameters: dict):
 
-        self.z_near = kwargs.get("z_near", constants.CAMERA_Z_NEAR)
-        self.z_far = kwargs.get("z_far", constants.CAMERA_Z_FAR)
+        if parameters is None:
+            parameters = {}
+
+        super().__init__(parameters=parameters)
+
+        self.z_near = self.dict2float(input_dict=parameters, key="z_near", default_value=constants.CAMERA_Z_NEAR)
+        self.z_far = self.dict2float(input_dict=parameters, key="z_far", default_value=constants.CAMERA_Z_FAR)
 
         # Perspective variables
         self.y_fov_deg = constants.CAMERA_FOV_DEG
 
         # Orthographic variables
         self.orthographic_scale = 1.0
-
-        self.viewport_ratio = kwargs.get("viewport_ratio", constants.CAMERA_VIEWPORT_RATIO)
+        self.viewport_ratio = self.dict2tuple_float(input_dict=parameters, key="viewport_ratio",
+                                                    default_value=(0.0, 0.0, 1.0, 1.0))
         self.viewport_pixels = None
 
         # Flags
-        self.perspective = kwargs.get("perspective", True)
+        self.perspective = self.dict2bool(input_dict=parameters, key="perspective", default_value=True)
 
     def upload_uniforms(self, program: moderngl.Program, window_width: int, window_height: int):
         proj_matrix_bytes = self.get_projection_matrix(window_width=window_width,

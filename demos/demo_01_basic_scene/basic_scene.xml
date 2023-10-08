@@ -37,7 +37,6 @@
         <material diffuse="tab10_red" shininess_factor="32.0"/>
     </entity>
 
-
     <entity name="Red Cylinder" >
         <mesh shape="cylinder" radius="0.1"/>
         <transform_3d position="-2 0 2" rotation_deg="0 0 90"/>
@@ -55,7 +54,6 @@
         <transform_3d position="-2 0 2" rotation_deg="90 0 0"/>
         <material diffuse="blue" shininess_factor="32.0"/>
     </entity>
-
 
     <entity name="Floor" >
         <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
