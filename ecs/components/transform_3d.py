@@ -1,5 +1,6 @@
 import numpy as np
 
+from ecs import constants
 from ecs.components.component import Component
 
 
@@ -13,17 +14,24 @@ class Transform3D(Component):
         "position",
         "rotation",
         "scale",
+        "degrees",
         "dirty"
     ]
 
-    def __init__(self, **kwargs):
-        super().__init__()
+    def __init__(self, parameters: dict):
+        super().__init__(parameters=parameters)
+
+        self.position = Component.dict2tuple_float(input_dict=parameters, key="position", default_value=(0.0, 0.0, 0.0))
+        self.rotation = Component.dict2tuple_float(input_dict=parameters, key="rotation", default_value=(0.0, 0.0, 0.0))
+        self.scale = Component.dict2tuple_float(input_dict=parameters, key="scale", default_value=(1.0, 1.0, 1.0))
+        self.degrees = Component.dict2bool(input_dict=parameters, key="degrees", default_value=False)
+
+        if self.degrees:
+            self.rotation = (self.rotation[0] * constants.DEG2RAD,
+                             self.rotation[1] * constants.DEG2RAD,
+                             self.rotation[2] * constants.DEG2RAD)
 
         self.world_matrix = np.eye(4, dtype=np.float32)
-
-        self.position = kwargs.get("position", (0.0, 0.0, 0.0))
-        self.rotation = kwargs.get("rotation", (0.0, 0.0, 0.0))
-        self.scale = kwargs.get("scale", (1.0, 1.0, 1.0))
         self.dirty = True
 
     def move(self, delta_position: np.array):

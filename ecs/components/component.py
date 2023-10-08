@@ -155,3 +155,35 @@ class Component:
             return default_value
 
         return Component.string2tuple_int(input_value=input_dict[key], default_value=default_value)
+
+    @staticmethod
+    def dict2string(input_dict: Any, key: Any, default_value: str) -> str:
+
+        if not isinstance(input_dict, dict):
+            return default_value
+
+        if key not in input_dict:
+            return default_value
+
+        if not isinstance(input_dict[key], str):
+            return default_value
+
+        return input_dict[key]
+
+    @staticmethod
+    def dict2map(input_dict: Any, key: Any, map: dict, default_value: Any) -> Any:
+
+        """
+        Finds a value inside dictionary and uses that value as the key for another dictionay
+        """
+
+        if not isinstance(input_dict, dict):
+            return default_value
+
+        if key not in input_dict:
+            return default_value
+
+        if not isinstance(map, dict):
+            raise TypeError("[ERROR] Inpup 'map' must be a dictionary")
+
+        return map.get(input_dict[key], default_value)

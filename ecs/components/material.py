@@ -6,26 +6,36 @@ class Material(Component):
 
     _type = constants.COMPONENT_TYPE_MESH  # TODO: I think I don't need to set the type as I can use the class itself
 
-    def __init__(self, **kwargs):
+    def __init__(self, parameters: dict):
         
-        super().__init__()
+        super().__init__(parameters=parameters)
 
         # Colors
-        self.diffuse = kwargs.get("diffuse", (0.85, 0.85, 0.85))
-        self.diffuse_highlight = kwargs.get("diffuse_highlight", (0.95, 0.95, 0.95))
-        self.specular = kwargs.get("specular", (1.0, 1.0, 1.0))
+        self.diffuse = Component.dict2tuple_float(input_dict=parameters,
+                                                  key="diffuse",
+                                                  default_value=(0.85, 0.85, 0.85))
+        self.diffuse_highlight = Component.dict2tuple_float(input_dict=parameters,
+                                                            key="diffuse_highlight",
+                                                            default_value=(0.95, 0.95, 0.95))
+        self.specular = Component.dict2tuple_float(input_dict=parameters,
+                                                   key="specular",
+                                                   default_value=(1.0, 1.0, 1.0))
 
         # Factors
-        self.shininess_factor = kwargs.get("shininess_factor", 32.0)
-        self.metalic_factor = kwargs.get("metalic_factor", 0.0)
-        self.roughness_factor = kwargs.get("roughness_factor", 1.0)
+        self.shininess_factor = Component.dict2float(input_dict=parameters, key="shininess_factor", default_value=32.0)
+        self.metalic_factor = Component.dict2float(input_dict=parameters, key="metalic_factor", default_value=0.0)
+        self.roughness_factor = Component.dict2float(input_dict=parameters, key="roughness_factor", default_value=1.0)
 
         # Render modes
-        self.color_source = kwargs.get("color_source", constants.RENDER_MODE_COLOR_SOURCE_SINGLE)
-        self.lighting_mode = kwargs.get("lighting_mode", constants.RENDER_MODE_COLOR_SOURCE_SINGLE)
+        self.color_source = Component.dict2map(input_dict=parameters, key="color_source",
+                                               map=constants.COLOR_SOURCE_MAP,
+                                               default_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE)
+        self.lighting_mode = Component.dict2map(input_dict=parameters, key="lighting_mode",
+                                               map=constants.LIGHTING_MODE_MAP,
+                                               default_value=constants.RENDER_MODE_LIGHTING_LIT)
 
         # Transparency
-        self.alpha = kwargs.get("alpha", 1.0)
+        self.alpha = Component.dict2float(input_dict=parameters, key="alpha", default_value=1.0)
 
     def is_transparent(self) -> bool:
         return self.alpha == 1.0

@@ -22,9 +22,9 @@ class Mesh(Component):
         "visible"
     ]
 
-    def __init__(self, **kwargs):
+    def __init__(self, parameters: dict):
 
-        super().__init__()
+        super().__init__(parameters=parameters)
 
         # RAM Vertex data
         self.vertices = None
@@ -41,8 +41,7 @@ class Mesh(Component):
         self.vbo_uvs = None
         self.ibo_faces = None
 
-        # Generate external data
-        self.generate_shape(**kwargs)
+        self.generate_shape()
 
         # Flags
         self.visible = True
@@ -127,11 +126,9 @@ class Mesh(Component):
 
         # TODO: Consider the case where the number of vertices changes and so the number of faces"""
 
-    def generate_shape(self, **kwargs) -> None:
+    def generate_shape(self) -> None:
 
-        shape = kwargs.get(constants.COMPONENT_ARG_MESH_SHAPE, None)
-        fpath = kwargs.get(constants.COMPONENT_ARG_MESH_FPATH, None)
-
+        shape = self.parameters.get(constants.COMPONENT_ARG_MESH_SHAPE, None)
         if shape is None:
             return
 
@@ -139,34 +136,39 @@ class Mesh(Component):
         v, n, u, f = None, None, None, None
 
         if shape == constants.MESH_SHAPE_BOX:
-            width = kwargs.get("width", 1.0)
-            height = kwargs.get("height", 1.0)
-            depth = kwargs.get("depth", 1.0)
+            width = Component.dict2float(input_dict=self.parameters, key="width", default_value=1.0)
+            height = Component.dict2float(input_dict=self.parameters, key="height", default_value=1.0)
+            depth = Component.dict2float(input_dict=self.parameters, key="depth", default_value=1.0)
             v, n, u, f = utils_mesh_3d.create_box(width=width, height=height, depth=depth)
 
         if shape == constants.MESH_SHAPE_ICOSPHERE:
-            radius = kwargs.get("radius", 1.0)
-            subdivisions = kwargs.get("subdivisions", 3)
+            radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
+            subdivisions = Component.dict2int(input_dict=self.parameters, key="subdivisions", default_value=3)
             v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
 
         if shape == constants.MESH_SHAPE_CAPSULE:
-            radius = kwargs.get("radius", 1.0)
-            subdivisions = kwargs.get("subdivisions", 3)
+            radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
+            subdivisions = Component.dict2int(input_dict=self.parameters, key="subdivisions", default_value=3)
             v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
 
         if shape == constants.MESH_SHAPE_CYLINDER:
-            point_a = kwargs.get("point_a", (0, 0, 0))
-            point_b = kwargs.get("point_b", (0, 1, 0))
-            radius = kwargs.get("radius", 0.5)
-            sections = kwargs.get("sections", 32)
+            point_a = Component.dict2tuple_float(input_dict=self.parameters,
+                                                 key="point_a",
+                                                 default_value=(0.0, 0.0, 0.0))
+            point_b = Component.dict2tuple_float(input_dict=self.parameters,
+                                                 key="point_a",
+                                                 default_value=(0.0, 1.0, 0.0))
+            radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
+            sections = Component.dict2int(input_dict=self.parameters, key="sections", default_value=32)
 
             v, n, u, f = utils_mesh_3d.create_cylinder(point_a=point_a, point_b=point_b,
                                                        sections=sections, radius=radius)
 
         if shape == constants.MESH_SHAPE_FROM_OBJ:
+            fpath = self.parameters.get(constants.COMPONENT_ARG_MESH_FPATH, None)
             if fpath is None:
                 raise KeyError("[ERROR] Missing argument 'fpath' in order to load OBJ file")
-            v, n, u, f = utils_mesh_3d.from_obj(fpath=kwargs["fpath"])
+            v, n, u, f = utils_mesh_3d.from_obj(fpath=self.parameters["fpath"])
 
         self.vertices = v
         self.normals = n

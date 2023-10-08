@@ -20,13 +20,15 @@ class Collider(Component):
         "radius"
     ]
 
-    def __init__(self, **kwargs):
-        super().__init__()
+    def __init__(self, parameters: dict):
+        super().__init__(parameters=parameters)
 
-        self.shape = kwargs.get("shape", "sphere")
+        self.shape = Component.dict2string(input_dict=parameters, key="shape", default_value="sphere")
+
+        # All shapes parameters
+        self.radius = Component.dict2float(input_dict=parameters, key="roughness_factor", default_value=0.5)
+
         self.layer = 0
-
-        self.radius = kwargs.get("radius", 0.5)
 
     def ray_intersection_boolean(self, ray_origin: np.array, ray_direction: np.array) -> bool:
 
