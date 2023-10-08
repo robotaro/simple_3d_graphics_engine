@@ -1,6 +1,7 @@
-from typing import Any
+from typing import Any, Union
 
-from ecs.utilities import utils_string
+from ecs import constants
+
 
 
 class Component:
@@ -171,7 +172,7 @@ class Component:
         return input_dict[key]
 
     @staticmethod
-    def dict2map(input_dict: Any, key: Any, map: dict, default_value: Any) -> Any:
+    def dict2map(input_dict: Any, key: Any, map_dict: dict, default_value: Any) -> Any:
 
         """
         Finds a value inside dictionary and uses that value as the key for another dictionay
@@ -183,7 +184,30 @@ class Component:
         if key not in input_dict:
             return default_value
 
-        if not isinstance(map, dict):
-            raise TypeError("[ERROR] Inpup 'map' must be a dictionary")
+        if not isinstance(map_dict, dict):
+            raise TypeError("[ERROR] Input 'map' must be a dictionary")
 
-        return map.get(input_dict[key], default_value)
+        return map_dict.get(input_dict[key], default_value)
+
+    @staticmethod
+    def dict2color(input_dict: Any, key: str, default_value: Union[str, tuple]) -> Any:
+
+        """
+        Special case of the map where the respective float values of colors are returned
+        """
+
+        # Convert default value to its respective color value to be used in case the key is missing
+        if default_value in constants.MATERIAL_COLORS:
+            default_value = constants.MATERIAL_COLORS[default_value]
+
+        if not isinstance(input_dict, dict):
+            return default_value
+
+        if key not in input_dict:
+            return default_value
+
+        if input_dict[key] in constants.MATERIAL_COLORS:
+            return constants.MATERIAL_COLORS[input_dict[key]]
+
+        return Component.string2tuple_float(input_value=input_dict[key], default_value=default_value)
+

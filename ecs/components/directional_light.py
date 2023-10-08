@@ -23,12 +23,8 @@ class DirectionalLight(Component):
         super().__init__(parameters=parameters)
 
         # Colors
-        self.diffuse = Component.dict2tuple_float(input_dict=parameters,
-                                                  key="diffuse",
-                                                  default_value=(0.85, 0.85, 0.85))
-        self.specular = Component.dict2tuple_float(input_dict=parameters,
-                                                   key="specular",
-                                                   default_value=(1.0, 1.0, 1.0))
+        self.diffuse = Component.dict2color(input_dict=parameters, key="diffuse", default_value=(0.85, 0.85, 0.85))
+        self.specular = Component.dict2color(input_dict=parameters, key="specular", default_value=(1.0, 1.0, 1.0))
 
         # Modifiers
         self.strength = Component.dict2float(input_dict=parameters, key="strength", default_value=1.0)
