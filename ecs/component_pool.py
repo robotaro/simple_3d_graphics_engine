@@ -169,7 +169,7 @@ class ComponentPool:
             if ui_soup is None:
                 raise ValueError(f"[ERROR] Could not find root 'scene' element")
 
-            for entity_soup in root_soup.find_all("entity", recursive=False):
+            for entity_soup in root_soup.find_all("entity"):  # DO NOT ADD recursive=False!!!!
 
                 entity_name = entity_soup.attrs.get("name", "unamed_entity")
                 entity_uid = self.create_entity(name=entity_name)
