@@ -85,7 +85,7 @@ class GizmoSystem(System):
                     material = self.component_pool.material_components[entity_entity_id]
 
                     # TODO: Consider "state variables" inside each component, that CAN be changed by events
-                    material.is_highlighted = collision
+                    material.state_highlighted = collision
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 

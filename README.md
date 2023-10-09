@@ -7,11 +7,12 @@ Maybe check the following projects for inspiration:
 
 ## Important Notes
 - Events 
-  - DO NOT modify components
+  - DO NOT modify components main data, ONLY state data
+    - State data is akin to boolean and intergers
   - Cannot be stacked
-  - work immediatly across systems
+  - work immediately across systems
 - Actions: 
-  - DO modify components
+  - DO modify components. All data, including state data
   - Only happens during update
   - May be immediate or over time
   - Can be queued up by systems

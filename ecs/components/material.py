@@ -17,7 +17,7 @@ class Material(Component):
         "color_source",
         "lighting_mode",
         "alpha",
-        "is_highlighted"
+        "state_highlighted"
     ]
 
     def __init__(self, parameters: dict):
@@ -46,7 +46,7 @@ class Material(Component):
         self.alpha = Component.dict2float(input_dict=parameters, key="alpha", default_value=1.0)
 
         # State Variables - Can be changed by events
-        self.is_highlighted = False
+        self.state_highlighted = False
 
     def is_transparent(self) -> bool:
         return self.alpha == 1.0

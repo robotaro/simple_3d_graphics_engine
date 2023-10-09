@@ -20,9 +20,15 @@ from ecs.utilities import utils_string
 
 class Entity:
 
-    def __init__(self, name=""):
+    __slots__ = [
+        "name",
+        "parent_entity",
+        "children_entities"
+    ]
+
+    def __init__(self, name="", parent=None):
         self.name = name
-        self.parent_entity = None
+        self.parent_entity = parent
         self.children_entities = []
 
     @property
@@ -163,7 +169,7 @@ class ComponentPool:
             if ui_soup is None:
                 raise ValueError(f"[ERROR] Could not find root 'scene' element")
 
-            for entity_soup in root_soup.find_all("entity"):
+            for entity_soup in root_soup.find_all("entity", recursive=False):
 
                 entity_name = entity_soup.attrs.get("name", "unamed_entity")
                 entity_uid = self.create_entity(name=entity_name)

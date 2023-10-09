@@ -386,7 +386,7 @@ class RenderSystem(System):
             # TODO: Technically, you only need to upload the material once since it doesn't change.
             #       The program will keep its variable states!
             if material is not None:
-                program["material.diffuse"].value = material.diffuse_highlight if material.is_highlighted else material.diffuse
+                program["material.diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
                 program["material.specular"].value = material.specular
                 program["material.shininess_factor"] = material.shininess_factor
                 program["color_source"] = material.color_source
