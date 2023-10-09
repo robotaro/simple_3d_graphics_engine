@@ -1,3 +1,4 @@
+import os
 import time
 import glfw
 import signal
@@ -17,7 +18,7 @@ from ecs.systems.input_control_system.input_control_system import InputControlSy
 from ecs.event_publisher import EventPublisher
 from ecs.action_publisher import ActionPublisher
 from ecs.component_pool import ComponentPool
-from ecs.utilities import utils_logging
+from ecs.utilities import utils_logging, utils_xml2scene
 
 # Debug
 import cProfile, pstats, io
@@ -325,7 +326,23 @@ class Editor:
         self.systems.append(new_system)
 
     def load_scene(self, scene_xml_fpath: str):
-        self.component_pool.load_scene(scene_xml_fpath=scene_xml_fpath)
+
+        # Check if path is absolute
+        fpath = None
+        if os.path.isfile(scene_xml_fpath):
+            fpath = scene_xml_fpath
+
+        if fpath is None:
+            # Assume it is a relative path from the working directory/root directory
+            clean_scene_xml_fpath = scene_xml_fpath.replace("\\", os.sep).replace("/", os.sep)
+            fpath = os.path.join(constants.ROOT_DIR, clean_scene_xml_fpath)
+
+        scene_dict = utils_xml2scene.load_scene_from_xml(xml_fpath=fpath)
+
+        for entity_blueprint in scene_dict["scene"]["entity"]:
+            self.component_pool.add_entity(entity_blueprint=entity_blueprint)
+
+        g = 0
 
     def initialise_components(self):
 

@@ -27,8 +27,6 @@ Pillow==10.0.0
 av==10.0.0
 
 # Custom UI
-beautifulsoup4==4.12.2
-lxml==4.9.2
 freetype-py==2.3.0
 
 # ImGUI

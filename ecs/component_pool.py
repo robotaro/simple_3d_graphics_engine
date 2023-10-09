@@ -1,7 +1,4 @@
 import logging
-import os
-import numpy as np
-from bs4 import BeautifulSoup
 
 from ecs import constants
 from ecs.components.component import Component
@@ -14,8 +11,6 @@ from ecs.components.input_control import InputControl
 from ecs.components.text_2d import Text2D
 from ecs.components.point_light import PointLight
 from ecs.components.directional_light import DirectionalLight
-
-from ecs.utilities import utils_string
 
 
 class Entity:
@@ -90,11 +85,24 @@ class ComponentPool:
         # This variable is a temporary solution to keep track of all entities added during the xml scene loading
         self.entity_uids_to_be_initiliased = []
 
-    def create_entity(self, name="") -> int:
-        uid = self.entity_uid_counter
-        self.entities[uid] = Entity(name=name)
-        self.entity_uid_counter += 1
-        return uid
+    def add_entity(self, entity_blueprint: dict) -> None:
+
+        entity_name = entity_blueprint.get("name", "unamed_entity")
+        entity_uid = self._create_entity(name=entity_name)
+
+        self.entity_uids_to_be_initiliased.append(entity_uid)
+
+        for component in entity_blueprint["components"]:
+
+            component_type = constants.COMPONENT_MAP.get(component["name"], None)
+            if component_type is None:
+                self.logger.error(f"Component {component['name']} is not supported.")
+                continue
+
+            self.add_component(entity_uid=entity_uid,
+                               component_type=component_type,
+                               parameters=component["parameters"])
+
 
     def add_component(self, entity_uid: int, component_type: int, **kwargs):
         component_pool = self.component_storage_map.get(component_type, None)
@@ -144,49 +152,8 @@ class ComponentPool:
     def get_entities_using_component(self, component_type: int) -> list:
         return list(self.component_storage_map[component_type].keys())
 
-    # ================================================================================
-    #                           Scene Loading Functions
-    # ================================================================================
-
-    def load_scene(self, scene_xml_fpath: str):
-
-        # Check if path is absolute
-        fpath = None
-        if os.path.isfile(scene_xml_fpath):
-            fpath = scene_xml_fpath
-
-        if fpath is None:
-            # Assume it is a relative path from the working directory/root directory
-            clean_scene_xml_fpath = scene_xml_fpath.replace("\\", os.sep).replace("/", os.sep)
-            fpath = os.path.join(constants.ROOT_DIR, clean_scene_xml_fpath)
-
-        # Load UI window blueprint
-        with open(fpath) as file:
-            root_soup = BeautifulSoup(file.read(), features="lxml")
-
-            # Find window root node - there should be only one
-            ui_soup = root_soup.find("scene")
-            if ui_soup is None:
-                raise ValueError(f"[ERROR] Could not find root 'scene' element")
-
-            for entity_soup in root_soup.find_all("entity"):  # DO NOT ADD recursive=False!!!!
-
-                entity_name = entity_soup.attrs.get("name", "unamed_entity")
-                entity_uid = self.create_entity(name=entity_name)
-
-                self.entity_uids_to_be_initiliased.append(entity_uid)
-                self._add_entity_components(entity_uid=entity_uid, entity_soup=entity_soup)
-
-    def _add_entity_components(self, entity_uid: int, entity_soup: BeautifulSoup) -> None:
-        """
-        This function uses the Beautifulsoup element provided to add all the components the current entity
-        """
-
-        for component_soup in entity_soup.find_all():
-
-            component_type = constants.COMPONENT_MAP.get(component_soup.name, None)
-            if component_type is None:
-                self.logger.error(f"Component {component_soup.name} is not supported.")
-                continue
-
-            self.add_component(entity_uid=entity_uid, component_type=component_type, parameters=component_soup.attrs)
+    def _create_entity(self, name="") -> int:
+        uid = self.entity_uid_counter
+        self.entities[uid] = Entity(name=name)
+        self.entity_uid_counter += 1
+        return uid

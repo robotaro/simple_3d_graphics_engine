@@ -37,22 +37,25 @@
         <material diffuse="tab10_red" diffuse_highlight="tab10_orange" shininess_factor="32.0"/>
     </entity>
 
-    <entity name="Red Cylinder" >
-        <mesh shape="cylinder" radius="0.1"/>
+    <entity name="Gizmo">
         <transform_3d position="-2 0 2" rotation="0 0 90" degrees="true"/>
-        <material diffuse="red" shininess_factor="32.0"/>
-    </entity>
+        <entity name="Red Cylinder" >
+            <mesh shape="cylinder" radius="0.1"/>
+            <transform_3d position="-2 0 2" rotation="0 0 90" degrees="true"/>
+            <material diffuse="red" shininess_factor="32.0"/>
+        </entity>
 
-    <entity name="Green Cylinder" >
-        <mesh shape="cylinder" radius="0.1"/>
-        <transform_3d position="-2 0 2" rotation="0 0 0"  degrees="true"/>
-        <material diffuse="green" shininess_factor="32.0"/>
-    </entity>
+        <entity name="Green Cylinder" >
+            <mesh shape="cylinder" radius="0.1"/>
+            <transform_3d position="-2 0 2" rotation="0 0 0"  degrees="true"/>
+            <material diffuse="green" shininess_factor="32.0"/>
+        </entity>
 
-    <entity name="Blue Cylinder" >
-        <mesh shape="cylinder" radius="0.1"/>
-        <transform_3d position="-2 0 2" rotation="90 0 0" degrees="true"/>
-        <material diffuse="blue" shininess_factor="32.0"/>
+        <entity name="Blue Cylinder" >
+            <mesh shape="cylinder" radius="0.1"/>
+            <transform_3d position="-2 0 2" rotation="90 0 0" degrees="true"/>
+            <material diffuse="blue" shininess_factor="32.0"/>
+        </entity>
     </entity>
 
     <entity name="Floor" >

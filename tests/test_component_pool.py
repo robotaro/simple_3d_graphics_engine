@@ -25,9 +25,9 @@ def test_create_entity():
     logger = logging.getLogger('test_logger')
     pool = ComponentPool(logger=logger)
 
-    new_entity_uid_1 = pool.create_entity()
-    new_entity_uid_2 = pool.create_entity()
-    new_entity_uid_3 = pool.create_entity()
+    new_entity_uid_1 = pool._create_entity()
+    new_entity_uid_2 = pool._create_entity()
+    new_entity_uid_3 = pool._create_entity()
 
     assert new_entity_uid_1 == constants.COMPONENT_POOL_STARTING_ID_COUNTER
     assert new_entity_uid_2 == constants.COMPONENT_POOL_STARTING_ID_COUNTER + 1
@@ -39,7 +39,7 @@ def test_add_and_remove_components():
     logger = logging.getLogger('test_logger')
     pool = ComponentPool(logger=logger)
 
-    entity_uid = pool.create_entity()
+    entity_uid = pool._create_entity()
 
     # Add Components
     new_transform = pool.add_component(entity_uid=entity_uid,
