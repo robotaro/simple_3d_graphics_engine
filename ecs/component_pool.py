@@ -27,7 +27,7 @@ class Entity:
         self.children_entities = []
 
     @property
-    def is_subentity(self):
+    def has_parent(self):
         return self.parent_entity is not None
 
 
@@ -85,10 +85,14 @@ class ComponentPool:
         # This variable is a temporary solution to keep track of all entities added during the xml scene loading
         self.entity_uids_to_be_initiliased = []
 
-    def add_entity(self, entity_blueprint: dict) -> None:
+    def add_entity(self, entity_blueprint: dict, parent_entity_uid=None) -> None:
 
         entity_name = entity_blueprint.get("name", "unamed_entity")
-        entity_uid = self._create_entity(name=entity_name)
+        entity_uid = self._create_entity(name=entity_name, parent_uid=parent_entity_uid)
+
+        if "entity" in entity_blueprint:
+            for sub_entity_blueprint in entity_blueprint["entity"]:
+                self.add_entity(entity_blueprint=sub_entity_blueprint, parent_entity_uid=entity_uid)
 
         self.entity_uids_to_be_initiliased.append(entity_uid)
 
@@ -103,8 +107,7 @@ class ComponentPool:
                                component_type=component_type,
                                parameters=component["parameters"])
 
-
-    def add_component(self, entity_uid: int, component_type: int, **kwargs):
+    def add_component(self, entity_uid: int, component_type: int, parameters: dict):
         component_pool = self.component_storage_map.get(component_type, None)
 
         # Safety
@@ -113,12 +116,12 @@ class ComponentPool:
         if entity_uid in component_pool:
             raise TypeError(f"[ERROR] Component type '{component_type}' already exists in component pool")
 
-        component_pool[entity_uid] = ComponentPool.COMPONENT_CLASS_MAP[component_type](**kwargs)
+        component_pool[entity_uid] = ComponentPool.COMPONENT_CLASS_MAP[component_type](parameters=parameters)
         return component_pool[entity_uid]
 
     def remove_component(self, entity_uid: int, component_type: str):
 
-        if self.entities[entity_uid].is_sub_entity:
+        if self.entities[entity_uid].has_parent:
             raise Exception("[ERROR] Tried to remove sub-component directly")
         component_pool = self.component_storage_map.get(component_type, None)
 
@@ -141,7 +144,7 @@ class ComponentPool:
         if component is not None:
             return component
 
-        if entity.is_sub_entity():
+        if entity.has_parent:
             return self.get_component(entity_uid=entity_uid.parent_entity)
 
         raise TypeError(f"[ERROR] Component type '{component_type}' not supported")
@@ -152,8 +155,8 @@ class ComponentPool:
     def get_entities_using_component(self, component_type: int) -> list:
         return list(self.component_storage_map[component_type].keys())
 
-    def _create_entity(self, name="") -> int:
+    def _create_entity(self, name="", parent_uid=None) -> int:
         uid = self.entity_uid_counter
-        self.entities[uid] = Entity(name=name)
+        self.entities[uid] = Entity(name=name, parent=parent_uid)
         self.entity_uid_counter += 1
         return uid

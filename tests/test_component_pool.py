@@ -41,11 +41,15 @@ def test_add_and_remove_components():
 
     entity_uid = pool._create_entity()
 
+    parameters = {}
+
     # Add Components
     new_transform = pool.add_component(entity_uid=entity_uid,
-                                       component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+                                       component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
+                                       parameters=parameters)
     new_mesh = pool.add_component(entity_uid=entity_uid,
-                                  component_type=constants.COMPONENT_TYPE_MESH)
+                                  component_type=constants.COMPONENT_TYPE_MESH,
+                                  parameters=parameters)
 
     assert isinstance(new_transform, Transform3D)
     assert isinstance(new_mesh, Mesh)
@@ -61,8 +65,8 @@ def test_add_and_remove_components():
 
     # Get Single Component
     result_component = pool.get_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-    target_transform = Transform3D()
-    np.testing.assert_array_equal(result_component.local_matrix, target_transform.local_matrix)  # Mesh and transforms
+    target_transform = Transform3D(parameters=parameters)
+    np.testing.assert_array_equal(result_component.world_matrix, target_transform.world_matrix)  # Mesh and transforms
     # TODO: Check types in more detail
 
     # Remove Component

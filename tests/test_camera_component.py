@@ -3,7 +3,9 @@ from ecs.components.camera import Camera
 
 def test_update_viewport():
 
-    camera = Camera(viewport_ratio=(0.25, 0.25, 0.5, 0.5))
+    params = {"viewport_ratio": (0.25, 0.25, 0.5, 0.5)}
+
+    camera = Camera(parameters=params)
     assert camera.viewport_pixels is None
 
     camera.update_viewport(window_size=(1600, 900))
@@ -14,7 +16,9 @@ def test_update_viewport():
 
 def test_is_inside_viewport():
 
-    camera = Camera(viewport_ratio=(0.25, 0.25, 0.5, 0.5))
+    params = {"viewport_ratio": (0.25, 0.25, 0.5, 0.5)}
+
+    camera = Camera(parameters=params)
 
     camera.update_viewport(window_size=(800, 600))
 
@@ -37,7 +41,9 @@ def test_is_inside_viewport():
 
 def test_get_viewport_coordinates():
 
-    camera = Camera(viewport_ratio=(0.25, 0.25, 0.5, 0.5))
+    params = {"viewport_ratio": (0.25, 0.25, 0.5, 0.5)}
+
+    camera = Camera(parameters=params)
 
     result = camera.get_viewport_coordinates(screen_coord_pixels=(400, 300))
     assert result is None
