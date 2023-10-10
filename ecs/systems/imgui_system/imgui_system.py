@@ -50,7 +50,7 @@ class ImguiSystem(System):
     #                         System Core functions
     # =========================================================================
 
-    def initialise(self) -> bool:
+    def initialise(self, parameters: dict) -> bool:
 
         # Step 1) Create ImGUI context first
         imgui.create_context()

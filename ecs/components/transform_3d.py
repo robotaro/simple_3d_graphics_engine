@@ -9,8 +9,8 @@ class Transform3D(Component):
     _type = "transform"
 
     __slots__ = [
-        "world_matrix",
         "local_matrix",
+        "world_matrix",
         "position",
         "rotation",
         "scale",
@@ -31,6 +31,7 @@ class Transform3D(Component):
                              self.rotation[1] * constants.DEG2RAD,
                              self.rotation[2] * constants.DEG2RAD)
 
+        self.local_matrix = np.eye(4, dtype=np.float32)
         self.world_matrix = np.eye(4, dtype=np.float32)
         self.dirty = True
 

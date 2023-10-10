@@ -342,8 +342,6 @@ class Editor:
         for entity_blueprint in scene_dict["scene"]["entity"]:
             self.component_pool.add_entity(entity_blueprint=entity_blueprint)
 
-        g = 0
-
     def initialise_components(self):
 
         # TODO: This is SORT OF a hack. Please think of a way to make this universal
@@ -376,7 +374,7 @@ class Editor:
 
         # Initialise systems
         for system in self.systems:
-            if not system.initialise():
+            if not system.initialise(parameters={}):  # TODO: Replace these with real parameters
                 raise Exception(f"[ERROR] System {system._type} failed to initialise")
 
         self.initialise_components()
@@ -411,7 +409,7 @@ class Editor:
             profiler.disable()
             string_stream = io.StringIO()
             sortby = SortKey.CUMULATIVE
-            ps = pstats.Stats(profiler, stream=s).sort_stats(sortby)
+            ps = pstats.Stats(profiler, stream=string_stream).sort_stats(sortby)
             ps.print_stats()
             profiling_result = string_stream.getvalue()
 

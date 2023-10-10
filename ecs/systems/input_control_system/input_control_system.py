@@ -57,7 +57,7 @@ class InputControlSystem(System):
         self.pan_left = False
         self.pan_right = False
 
-    def initialise(self, **kwargs) -> bool:
+    def initialise(self, parameters: dict) -> bool:
         return True
 
     def on_event(self, event_type: int, event_data: tuple):

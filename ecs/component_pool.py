@@ -18,18 +18,18 @@ class Entity:
 
     __slots__ = [
         "name",
-        "parent_entity",
-        "children_entities"
+        "parent_uid",
+        "children_uids"
     ]
 
     def __init__(self, name="", parent=None):
         self.name = name
-        self.parent_entity = parent
-        self.children_entities = []
+        self.parent_uid = parent
+        self.children_uids = []
 
     @property
     def has_parent(self):
-        return self.parent_entity is not None
+        return self.parent_uid is not None
 
 
 class ComponentPool:
@@ -120,7 +120,7 @@ class ComponentPool:
         component_pool[entity_uid] = ComponentPool.COMPONENT_CLASS_MAP[component_type](parameters=parameters)
         return component_pool[entity_uid]
 
-    def remove_component(self, entity_uid: int, component_type: str):
+    def remove_component(self, entity_uid: int, component_type: int):
 
         if self.entities[entity_uid].has_parent:
             raise Exception("[ERROR] Tried to remove sub-component directly")
@@ -133,20 +133,19 @@ class ComponentPool:
         component_pool[entity_uid].release()
         component_pool.pop(entity_uid)
 
-    def get_component(self, entity_uid: int, component_type: str) -> Union[Component, None]:
+    def get_component(self, entity_uid: int, component_type: int) -> Union[Component, None]:
 
-        entity = self.entities.get(entity_uid, None)
+        entity = self.entities[entity_uid]
         if entity is None:
             raise TypeError(f"[ERROR] Entity ID '{entity}' not present")
 
-        component_pool = self.component_storage_map.get(component_type, None)
+        selected_component_pool = self.component_storage_map[component_type]
 
-        component = component_pool.get(entity_uid, None)
-        if component is not None:
-            return component
+        if entity_uid in selected_component_pool:
+            return selected_component_pool[entity_uid]
 
         if entity.has_parent:
-            return self.get_component(entity_uid=entity_uid.parent_entity)
+            return self.get_component(entity_uid=entity.parent_uid, component_type=component_type)
 
         return None
 

@@ -37,7 +37,7 @@ class GizmoSystem(System):
         self.selected_entity_uid = None
         self.selected_entity_init_distance_to_cam = None
 
-    def initialise(self, **kwargs) -> bool:
+    def initialise(self, parameters: dict) -> bool:
         return True
 
     def on_event(self, event_type: int, event_data: tuple):

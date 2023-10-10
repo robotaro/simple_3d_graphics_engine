@@ -130,7 +130,7 @@ class RenderSystem(System):
     #                         System Core functions
     # =========================================================================
 
-    def initialise(self, **kwargs):
+    def initialise(self, parameters: dict):
 
         # Fragment picking
         self.picker_program = self.shader_program_library["fragment_picking"]
@@ -341,9 +341,9 @@ class RenderSystem(System):
 
         # Lights
         program["num_point_lights"].value = len(self.component_pool.point_light_components)
-        for index, (uid, point_light_component) in enumerate(self.component_pool.point_light_components.items()):
+        for index, (mesh_entity_uid, point_light_component) in enumerate(self.component_pool.point_light_components.items()):
 
-            light_transform = self.component_pool.transform_3d_components[uid]
+            light_transform = self.component_pool.transform_3d_components[mesh_entity_uid]
 
             program[f"point_lights[{index}].position"] = light_transform.position
             program[f"point_lights[{index}].diffuse"] = point_light_component.diffuse
@@ -352,8 +352,8 @@ class RenderSystem(System):
             program[f"point_lights[{index}].enabled"] = point_light_component.enabled
 
         program["num_directional_lights"].value = len(self.component_pool.directional_light_components)
-        for index, (uid, dir_light_component) in enumerate(self.component_pool.directional_light_components.items()):
-            light_transform = self.component_pool.transform_3d_components[uid]
+        for index, (mesh_entity_uid, dir_light_component) in enumerate(self.component_pool.directional_light_components.items()):
+            light_transform = self.component_pool.transform_3d_components[mesh_entity_uid]
 
             program[f"directional_lights[{index}].direction"] = tuple(light_transform.world_matrix[:3, 2])
             program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
@@ -363,19 +363,19 @@ class RenderSystem(System):
             program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
 
         # Renderables
-        for uid, mesh_component in component_pool.mesh_components.items():
+        for mesh_entity_uid, mesh_component in component_pool.mesh_components.items():
 
             if not mesh_component.visible:
                 continue
 
-            # Set entity ID
-            program["entity_id"] = uid
-            mesh_transform = component_pool.transform_3d_components[uid]
+            mesh_transform = component_pool.get_component(entity_uid=mesh_entity_uid,
+                                                          component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
-            material = component_pool.material_components.get(uid, None)
+            material = component_pool.material_components.get(mesh_entity_uid, None)
 
             # Upload uniforms
-            program["entity_id"].value = uid
+            program["entity_id"] = mesh_entity_uid
+            program["entity_id"].value = mesh_entity_uid
             program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
             program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
             program["directional_lights_enabled"].value = self._directional_lights_enabled
@@ -409,13 +409,15 @@ class RenderSystem(System):
         if selected_entity_uid is None or selected_entity_uid <= 1:
             return
 
-        # Safety checks before we go any further!
-        renderable_transform = component_pool.transform_3d_components.get(selected_entity_uid, None)
-        if renderable_transform is None:
+        mesh_component = self.component_pool.get_component(entity_uid=selected_entity_uid,
+                                                           component_type=constants.COMPONENT_TYPE_MESH)
+        if mesh_component is None:
             return
 
-        mesh_component = component_pool.mesh_components.get(selected_entity_uid, None)
-        if mesh_component is None:
+        # Safety checks before we go any further!
+        renderable_transform = self.component_pool.get_component(entity_uid=selected_entity_uid,
+                                                                 component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        if renderable_transform is None:
             return
 
         camera_transform = component_pool.transform_3d_components[camera_uid]
@@ -480,16 +482,18 @@ class RenderSystem(System):
         if dir_light_uid is None:
             return
 
-        for entity_uid, mesh_component in component_pool.mesh_components.items():
+        for mesh_entity_uid, mesh_component in component_pool.mesh_components.items():
 
-            material = component_pool.material_components[entity_uid]
+            material = component_pool.material_components[mesh_entity_uid]
 
             # TODO: IF you forget to declare the material in the xml, you are fucked. Make sure a default material
             if not mesh_component.visible and not material.is_transparent():
                 continue
 
-            mesh_transform = component_pool.transform_3d_components[entity_uid]
-            light_transform = component_pool.transform_3d_components[dir_light_uid]
+            mesh_transform = component_pool.get_component(entity_uid=mesh_entity_uid,
+                                                          component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+            light_transform = component_pool.get_component(entity_uid=dir_light_uid,
+                                                           component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
             program["view_matrix"].write(light_transform.world_matrix.T.tobytes())
             program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())

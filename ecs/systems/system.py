@@ -48,7 +48,7 @@ class System:
         if self.current_action is None and len(self.action_queue) > 0:
             self.current_action = self.action_queue.pop()
 
-    def initialise(self, **kwargs) -> bool:
+    def initialise(self, parameters: dict) -> bool:
         return True
 
     def update(self,
