@@ -1,4 +1,5 @@
 import logging
+from typing import Union
 
 from ecs import constants
 from ecs.components.component import Component
@@ -132,7 +133,7 @@ class ComponentPool:
         component_pool[entity_uid].release()
         component_pool.pop(entity_uid)
 
-    def get_component(self, entity_uid: int, component_type: str) -> Component:
+    def get_component(self, entity_uid: int, component_type: str) -> Union[Component, None]:
 
         entity = self.entities.get(entity_uid, None)
         if entity is None:
@@ -147,7 +148,7 @@ class ComponentPool:
         if entity.has_parent:
             return self.get_component(entity_uid=entity_uid.parent_entity)
 
-        raise TypeError(f"[ERROR] Component type '{component_type}' not supported")
+        return None
 
     def get_all_components(self, entity_uid: int) -> list:
         return [storage[entity_uid] for _, storage in self.component_storage_map.items() if entity_uid in storage]
