@@ -38,7 +38,7 @@
     </entity>
 
     <entity name="Gizmo">
-        <transform_3d position="-2 0 2" rotation="0 0 90" degrees="true"/>
+        <transform_3d position="-2 0 2" degrees="true"/>
         <entity name="Red Cylinder" >
             <mesh shape="cylinder" radius="0.1"/>
             <transform_3d rotation="0 0 90" degrees="true"/>

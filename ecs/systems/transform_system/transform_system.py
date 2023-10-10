@@ -58,6 +58,7 @@ class TransformSystem(System):
                 transform.world_matrix = transform.local_matrix
                 continue
 
+            # TODO: Think of a way to minimise unecessary updates. Probably do it when we move to DOD
             parent_transform = self.component_pool.transform_3d_components[entity.parent_uid]
             transform.world_matrix = parent_transform.world_matrix @ transform.local_matrix
 
@@ -79,6 +80,8 @@ class TransformSystem(System):
             #uid_map[entity_uid] = index
             temp_update_order.append((entity_uid, entity.parent_uid if entity.parent_uid is not None else -1))
 
+        # TODO: REMOVE BLOODY SHUFFLE AND ORGANISE THIS!!
+
         # DEBUG
         random.seed(42)
         random.shuffle(temp_update_order)
@@ -86,7 +89,7 @@ class TransformSystem(System):
             uid2index[entity_uid] = index
 
         order_array = np.array(temp_update_order, dtype=np.int32)
-        print(order_array)
+
 
         # Sort list so that no child is updated before its parent
         for index in range(order_array.shape[0]):
@@ -112,10 +115,6 @@ class TransformSystem(System):
                 uid2index[entity_uid] = parent_index
                 uid2index[parent_uid] = index
                 break
-
-            print("")
-        print(order_array)
-        print(uid2index)
 
         # Now we can get rid of the map
         self.entity_uid_update_order = order_array[:, 0].tolist()
