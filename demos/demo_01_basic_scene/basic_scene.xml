@@ -64,10 +64,4 @@
         <material diffuse="0.75 0.75 0.75" shininess_factor="32.0"/>
     </entity>
 
-    <entity name="Sample text" >
-        <text_2d font_name="Consolas.ttf" >
-            This is a sample text
-        </text_2d>
-    </entity>
-
 </scene>

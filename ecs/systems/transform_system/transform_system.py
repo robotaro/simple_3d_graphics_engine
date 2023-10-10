@@ -11,6 +11,7 @@ from ecs.math import mat4
 # DEBUG
 import random
 
+
 class TransformSystem(System):
 
     _type = "transform_system"
@@ -42,17 +43,17 @@ class TransformSystem(System):
             self.recreate_transform_tree()
             self.update_tree = False
 
-        for entity_uid, transform in self.component_pool.transform_3d_components.items():
-
-            if not transform.dirty:
-                continue
-            transform.dirty = False
+        for entity_uid in self.entity_uid_update_order:
 
             entity = self.component_pool.entities[entity_uid]
+            transform = self.component_pool.transform_3d_components[entity_uid]
 
-            transform.local_matrix = mat4.compute_transform(position=transform.position,
-                                                            rotation_rad=transform.rotation,
-                                                            scale=transform.scale[0])
+            if transform.dirty:
+                transform.local_matrix = mat4.compute_transform(position=transform.position,
+                                                                rotation_rad=transform.rotation,
+                                                                scale=transform.scale[0])
+                transform.dirty = False
+
             if entity.parent_uid is None:
                 transform.world_matrix = transform.local_matrix
                 continue

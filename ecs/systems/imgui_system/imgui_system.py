@@ -264,12 +264,12 @@ class ImguiSystem(System):
         if transform:
             imgui.text(f"Transform")
             value_updated, transform.position = imgui.drag_float3("Position",
-                                                      *transform.position,
-                                                      constants.IMGUI_DRAG_FLOAT_PRECISION)
+                                                                  *transform.position,
+                                                                  constants.IMGUI_DRAG_FLOAT_PRECISION)
             transform.dirty |= value_updated
             value_updated, transform.rotation = imgui.drag_float3("Rotation",
-                                                      *transform.rotation,
-                                                      constants.IMGUI_DRAG_FLOAT_PRECISION)
+                                                                  *transform.rotation,
+                                                                  constants.IMGUI_DRAG_FLOAT_PRECISION)
             transform.dirty |= value_updated
 
             imgui.spacing()
