@@ -1,49 +1,67 @@
 <scene>
 
-    <entity name="Point Light 1" >
+    <entity name="Point Light 1">
         <point_light diffuse="1.0 1.0 1.0"/>
         <transform_3d position="2.0 2.0 2.0"/>
         <mesh shape="icosphere" radius="0.2" subdivisions="4"/>
-        <renderable/>
+        <material diffuse="1.0 1.0 1.0" shininess_factor="32.0" lighting_mode="solid"/>
     </entity>
 
-    <entity name="Directional Light 1" >
+    <entity name="Directional Light 1">
         <directional_light diffuse="1.0 1.0 1.0"/>
-        <transform_3d position="2.0 2.0 2.0"/>
+        <transform_3d position="2.0 2.0 2.0" rotation="-45 90 0" degrees="true"/>
     </entity>
 
-    <!-- Viewports should be set in terms of ratios. This is a more versatile solution for resizing windows -->
-    <entity name="Main Camera" >
-        <camera viewport_norm="0 0 1 1" perspective="true"/>
-        <transform_3d position="-0.5 0.5 2.8"/>
+    <entity name="Main Camera">
+        <camera viewport_ratio="0 0 1 1" perspective="true"/>
+        <transform_3d position="-0.5 0.5 5"/>
         <input_control/>
     </entity>
 
-    <entity name="Dragon 1" >
+    <entity name="Dragon 1">
         <mesh shape="obj" fpath="models/dragon.obj"/>
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
         <transform_3d/>
-        <renderable/>
     </entity>
 
-    <entity name="Dragon 2" >
+    <entity name="Dragon 2">
         <mesh shape="obj" fpath="models/dragon.obj"/>
         <transform_3d position="-1 0 -1"/>
         <material diffuse="0.2 .3 0.8" shininess_factor="32.0"/>
-        <renderable/>
     </entity>
 
-    <entity name="Floor" >
+    <entity name="Red Sphere">
+        <mesh shape="icosphere" radius="0.5" subdivisions="4"/>
+        <collider shape="sphere" radius="0.5"/>
+        <transform_3d position="2 0 2"/>
+        <material diffuse="tab10_red" diffuse_highlight="tab10_orange" shininess_factor="32.0"/>
+    </entity>
+
+    <entity name="Gizmo">
+        <transform_3d position="-2 0 2" degrees="true"/>
+        <entity name="Red Cylinder">
+            <mesh shape="cylinder" radius="0.03"/>
+            <transform_3d rotation="0 0 90" degrees="true"/>
+            <material diffuse="red" shininess_factor="32.0" lighting_mode="solid"/>
+        </entity>
+
+        <entity name="Green Cylinder">
+            <mesh shape="cylinder" radius="0.03"/>
+            <transform_3d rotation="0 0 0"  degrees="true"/>
+            <material diffuse="green" shininess_factor="32.0" lighting_mode="solid"/>
+        </entity>
+
+        <entity name="Blue Cylinder">
+            <mesh shape="cylinder" radius="0.03"/>
+            <transform_3d rotation="90 0 0" degrees="true"/>
+            <material diffuse="blue" shininess_factor="32.0" lighting_mode="solid"/>
+        </entity>
+    </entity>
+
+    <entity name="Floor">
         <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
         <transform_3d position="0 -0.5 0"/>
-        <material albedo="0.75 0.75 0.75" shininess_factor="32.0"/>
-        <renderable/>
-    </entity>w
-
-    <entity name="Sample text" >
-        <text_2d font_name="Consolas.ttf" >
-            This is a sample text
-        </text_2d>
+        <material diffuse="0.75 0.75 0.75" shininess_factor="32.0"/>
     </entity>
 
 </scene>

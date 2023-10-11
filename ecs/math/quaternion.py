@@ -1,9 +1,9 @@
-from numba import jit
+from numba import njit
 import numpy as np
 
 SLERP_DOT_THRESHOLD = 0.9995
 
-@jit(nopython=True)
+@njit
 def mat3_to_quat(mat3, output_quat):
     """
     [ Robust method ]
@@ -40,7 +40,7 @@ def mat3_to_quat(mat3, output_quat):
         output_quat[2] = (mat3[1, 2] + mat3[2, 1]) / S
         output_quat[3] = 0.25 * S
 
-@jit(nopython=True)
+@njit
 def quat_to_mat3(quat, output_mat3):
 
     """
@@ -67,7 +67,7 @@ def quat_to_mat3(quat, output_mat3):
     output_mat3[1, 2] = 2 * qy * qz - 2 * qx * qw
     output_mat3[2, 2] = 1 - 2 * qx * qx - 2 * qy * qy
 
-@jit(nopython=True)
+@njit
 def slerp_quat(quat_a, quat_b, t_value):
 
     """

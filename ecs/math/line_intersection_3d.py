@@ -1,6 +1,35 @@
 import numpy as np
-from numba import jit, njit, float32
+from numba import jit, float32
 
+@jit(nopython=True, cache=True)
+def intersect_ray_sphere(ray_origin: np.array,
+                         ray_direction: np.array,
+                         sphere_position: np.array,
+                         sphere_radius: float) -> bool:
+
+    """
+    Formula from:
+    https://viclw17.github.io/2018/07/16/raytracing-ray-sphere-intersection/#:~:text=When%20the%20ray%20and%20sphere,equations%20and%20solving%20for%20t.
+
+    This function only tests if there is an intersection, not where it occurs specifically. This will need to be
+    implemented
+
+    :param ray_origin: Numpy array (3,) <float32>
+    :param ray_direction: Numpy array (3,) <float32>
+    :param sphere_position: Numpy array (3,) <float32>
+    :param sphere_radius: float
+    :return: bool
+    """
+
+    oc = ray_origin - sphere_position
+    a = np.dot(ray_direction, ray_direction)
+    b = 2 * np.dot(oc, ray_direction)
+    c = np.dot(oc, oc) - sphere_radius * sphere_radius
+    discriminant = b*b - 4*a*c
+    if discriminant < 0:
+        return False
+    else:
+        return True
 
 @jit(nopython=True, cache=True)
 def intersect_ray_plane(plane_origin: np.array,

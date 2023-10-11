@@ -1,3 +1,5 @@
+import logging
+
 import pytest
 import numpy as np
 
@@ -9,22 +11,23 @@ from ecs.components.mesh import Mesh
 
 def test_constructor():
 
-    pool = ComponentPool()
+    logger = logging.getLogger('test_logger')
+    pool = ComponentPool(logger=logger)
     assert pool.entity_uid_counter == constants.COMPONENT_POOL_STARTING_ID_COUNTER
     assert pool.entities == {}
     assert pool.transform_3d_components == {}
     assert pool.mesh_components == {}
-    assert pool.renderable_components == {}
     assert pool.camera_components == {}
 
 
 def test_create_entity():
 
-    pool = ComponentPool()
+    logger = logging.getLogger('test_logger')
+    pool = ComponentPool(logger=logger)
 
-    new_entity_uid_1 = pool.create_entity()
-    new_entity_uid_2 = pool.create_entity()
-    new_entity_uid_3 = pool.create_entity()
+    new_entity_uid_1 = pool._create_entity()
+    new_entity_uid_2 = pool._create_entity()
+    new_entity_uid_3 = pool._create_entity()
 
     assert new_entity_uid_1 == constants.COMPONENT_POOL_STARTING_ID_COUNTER
     assert new_entity_uid_2 == constants.COMPONENT_POOL_STARTING_ID_COUNTER + 1
@@ -33,15 +36,20 @@ def test_create_entity():
 
 def test_add_and_remove_components():
 
-    pool = ComponentPool()
+    logger = logging.getLogger('test_logger')
+    pool = ComponentPool(logger=logger)
 
-    entity_uid = pool.create_entity()
+    entity_uid = pool._create_entity()
+
+    parameters = {}
 
     # Add Components
     new_transform = pool.add_component(entity_uid=entity_uid,
-                                       component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+                                       component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
+                                       parameters=parameters)
     new_mesh = pool.add_component(entity_uid=entity_uid,
-                                  component_type=constants.COMPONENT_TYPE_MESH)
+                                  component_type=constants.COMPONENT_TYPE_MESH,
+                                  parameters=parameters)
 
     assert isinstance(new_transform, Transform3D)
     assert isinstance(new_mesh, Mesh)
@@ -57,8 +65,8 @@ def test_add_and_remove_components():
 
     # Get Single Component
     result_component = pool.get_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-    target_transform = Transform3D()
-    np.testing.assert_array_equal(result_component.local_matrix, target_transform.local_matrix)  # Mesh and transforms
+    target_transform = Transform3D(parameters=parameters)
+    np.testing.assert_array_equal(result_component.world_matrix, target_transform.world_matrix)  # Mesh and transforms
     # TODO: Check types in more detail
 
     # Remove Component

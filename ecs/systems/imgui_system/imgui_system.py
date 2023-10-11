@@ -1,11 +1,14 @@
 import glfw
 import moderngl
 import imgui
+import logging
 from imgui.integrations.glfw import GlfwRenderer
 
 from ecs import constants
 from ecs.systems.system import System
 from ecs.component_pool import ComponentPool
+from ecs.event_publisher import EventPublisher
+from ecs.action_publisher import ActionPublisher
 
 
 class ImguiSystem(System):
@@ -22,10 +25,16 @@ class ImguiSystem(System):
 
     _type = "imgui_system"
 
-    def __init__(self, **kwargs):
-        super().__init__(logger=kwargs["logger"],
-                         component_pool=kwargs["component_pool"],
-                         event_publisher=kwargs["event_publisher"])
+    def __init__(self,
+                 logger: logging.Logger,
+                 component_pool: ComponentPool,
+                 event_publisher: EventPublisher,
+                 action_publisher: ActionPublisher,
+                 **kwargs):
+        super().__init__(logger=logger,
+                         component_pool=component_pool,
+                         event_publisher=event_publisher,
+                         action_publisher=action_publisher)
 
         self.window_glfw = kwargs["window_glfw"]
         self.imgui_renderer = None
@@ -41,7 +50,7 @@ class ImguiSystem(System):
     #                         System Core functions
     # =========================================================================
 
-    def initialise(self) -> bool:
+    def initialise(self, parameters: dict) -> bool:
 
         # Step 1) Create ImGUI context first
         imgui.create_context()
@@ -81,7 +90,7 @@ class ImguiSystem(System):
         # TODO: Find out whether I really need "on_event" callbacks if the
         #       "self.imgui_renderer.process_inputs()" gets all mouse and keyboard inputs
 
-        if event_type == constants.EVENT_ACTION_ENTITY_SELECTED and event_data[0] >= constants.COMPONENT_POOL_STARTING_ID_COUNTER:
+        if event_type == constants.EVENT_ENTITY_SELECTED and event_data[0] >= constants.COMPONENT_POOL_STARTING_ID_COUNTER:
             self.select_entity(entity_uid=event_data[0])
 
         if event_type == constants.EVENT_KEYBOARD_PRESS:
@@ -101,7 +110,7 @@ class ImguiSystem(System):
         if entity is not None:
             self.selected_entity_name = entity.name
         self.selected_entity_components = self.component_pool.get_all_components(entity_uid=entity_uid)
-        self.event_publisher.publish(event_type=constants.EVENT_ACTION_ENTITY_SELECTED,
+        self.event_publisher.publish(event_type=constants.EVENT_ENTITY_SELECTED,
                                      event_data=(entity_uid,),
                                      sender=self)
 
@@ -244,16 +253,24 @@ class ImguiSystem(System):
 
             imgui.spacing()
 
+        # [ Camera ]
+        camera = self.component_pool.camera_components.get(self.selected_entity_uid, None)
+        if camera:
+            imgui.text(f"Camera")
+            _, camera.perspective = imgui.checkbox("Perspective", camera.perspective)
+
         # [ Transform 3D ]
         transform = self.component_pool.transform_3d_components.get(self.selected_entity_uid, None)
         if transform:
             imgui.text(f"Transform")
-            _, transform.position = imgui.drag_float3("Position",
-                                                      *transform.position,
-                                                      constants.IMGUI_DRAG_FLOAT_PRECISION)
-            _, transform.rotation = imgui.drag_float3("Rotation",
-                                                      *transform.rotation,
-                                                      constants.IMGUI_DRAG_FLOAT_PRECISION)
+            value_updated, transform.position = imgui.drag_float3("Position",
+                                                                  *transform.position,
+                                                                  constants.IMGUI_DRAG_FLOAT_PRECISION)
+            transform.dirty |= value_updated
+            value_updated, transform.rotation = imgui.drag_float3("Rotation",
+                                                                  *transform.rotation,
+                                                                  constants.IMGUI_DRAG_FLOAT_PRECISION)
+            transform.dirty |= value_updated
 
             imgui.spacing()
 
@@ -261,17 +278,26 @@ class ImguiSystem(System):
         material = self.component_pool.material_components.get(self.selected_entity_uid, None)
         if material:
             imgui.text(f"Material")
-            a, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
-            b, material.specular = imgui.color_edit3("Specular", *material.specular)
-            c, material.shininess_factor = imgui.drag_float("Shininess Factor",
+            _, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
+            _, material.specular = imgui.color_edit3("Specular", *material.specular)
+            _, material.shininess_factor = imgui.drag_float("Shininess Factor",
                                                             material.shininess_factor,
                                                             0.05,
                                                             0.0,
                                                             32.0,
-                                                            "%.3f",)
+                                                            "%.3f")
+            _, material.color_source = imgui.slider_int(
+                "Color Source",
+                material.color_source,
+                min_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE,
+                max_value=constants.RENDER_MODE_COLOR_SOURCE_UV)
+            _, material.lighting_mode = imgui.slider_int(
+                "Lighting Mode",
+                material.lighting_mode,
+                min_value=constants.RENDER_MODE_LIGHTING_SOLID,
+                max_value=constants.RENDER_MODE_LIGHTING_LIT)
 
             imgui.spacing()
 
         # draw text label inside of current window
-
         imgui.end()

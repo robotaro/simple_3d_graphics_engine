@@ -27,6 +27,9 @@ uniform mat4 view_matrix;
 uniform mat4 model_matrix;
 uniform mat4 dir_light_view_matrix;
 
+uniform int color_source = 0;
+uniform int lighting_mode = 1;
+
 uniform GlobalAmbient global = GlobalAmbient(
     vec3(0.0, 1.0, 0.0),
     vec3(1.0, 1.0, 1.0),
@@ -60,6 +63,7 @@ void main() {
     v_world_position = (model_matrix * vec4(v_local_position, 1.0)).xyz;
     v_world_normal = mat3(transpose(inverse(model_matrix))) * in_normal;  // World normal
     v_view_position = view_matrix[3].xyz;
+    v_material = material;
 
     // Make sure global ambient direction is unit length
     vec3 hemisphere_light_direction = normalize(hemisphere_light_direction);
@@ -67,11 +71,14 @@ void main() {
     // Calculate cosine of angle between global ambient direction and normal
     float cos_theta = dot(hemisphere_light_direction, v_world_normal);
 
+    vec3 base_color = vec3(0.0);
+    if (color_source == 0){
+        base_color = material.diffuse;
+    }
+
     // Calculate global ambient colour
     float alpha = 0.5 + (0.5 * cos_theta);
-    v_ambient_color = alpha * global.top * material.diffuse + (1.0 - alpha) * global.bottom * material.diffuse;
-
-    v_material = material;
+    v_ambient_color = alpha * global.top * base_color + (1.0 - alpha) * global.bottom * base_color;
 
     gl_Position = projection_matrix * inverse(view_matrix) * model_matrix * vec4(v_local_position, 1.0);;
 }
@@ -136,6 +143,9 @@ uniform bool directional_lights_enabled = true;
 uniform bool gamma_correction_enabled = true;
 uniform bool shadows_enabled = false;
 
+uniform int color_source = 0;
+uniform int lighting_mode = 1;
+
 uniform mat4 model_matrix;
 uniform bool temp_flag = true;
 
@@ -151,8 +161,8 @@ uniform int num_directional_lights = 0;
 uniform PointLight point_lights[MAX_POINT_LIGHTS];
 uniform DirectionalLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
 
-vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir);
-vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir);
+vec3 calculate_directional_light(DirectionalLight light, vec3 material_color, vec3 normal, vec3 viewDir);
+vec3 calculate_point_light(PointLight light, vec3 normal, vec3 material_color, vec3 fragPos, vec3 viewDir);
 //float shadow_calculation(sampler2DShadow shadow_map, vec4 frag_pos_light_space, vec3 light_dir, vec3 normal);
 float shadow_calculation(mat4 light_view_projection_matrix, sampler2D shadow_map, float normal);
 
@@ -163,26 +173,35 @@ void main() {
 
     vec3 color_rgb = vec3(0.0);
 
+    vec3 base_color = vec3(0.0);
+    if (color_source == 0){
+        base_color = v_material.diffuse;
+    }
+
+    if (lighting_mode == 0){
+        color_rgb = base_color;
+    }
+
     // Ambient Lighting
-    if (ambient_hemisphere_light_enabled)
+    if (ambient_hemisphere_light_enabled && lighting_mode == 1)
         color_rgb += v_ambient_color;
 
     // Point lights
-    if (point_lights_enabled)
+    if (point_lights_enabled && lighting_mode == 1)
         for(int i = 0; i < num_point_lights; i++)
         {
             if(!point_lights[i].enabled) continue;
-            color_rgb += calculate_point_light(point_lights[i], normal, v_world_position, view_direction);
+            color_rgb += calculate_point_light(point_lights[i], base_color, normal, v_world_position, view_direction);
         }
 
     // Directional lighting
-    if (directional_lights_enabled)
+    if (directional_lights_enabled && lighting_mode == 1)
         for(int i = 0; i < num_directional_lights; i++)
         {
             if (!directional_lights[i].enabled) continue;
 
             // Light
-            vec3 dir_light = calculate_directional_light(directional_lights[i], normal, view_direction);
+            vec3 dir_light = calculate_directional_light(directional_lights[i], base_color, normal, view_direction);
 
             // Shadow
             if (shadows_enabled)
@@ -192,7 +211,7 @@ void main() {
                     directional_lights[i].matrix,
                     directional_lights[i].shadow_map,
                     nl);
-                
+
                 shadow = clamp(shadow, 0.0, 1.0);
                 dir_light *= (1.0 - shadow);
             }
@@ -201,7 +220,7 @@ void main() {
         }
 
     // Gamma correction
-    if (gamma_correction_enabled)
+    if (gamma_correction_enabled && lighting_mode == 1)
         color_rgb = pow(color_rgb, vec3(1.0 / gamma));
 
     out_fragment_color = vec4(color_rgb, 1.0);
@@ -210,7 +229,7 @@ void main() {
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
 
-vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewDir)
+vec3 calculate_directional_light(DirectionalLight light, vec3 material_color, vec3 normal, vec3 viewDir)
 {
     vec3 lightDir = normalize(-light.direction);
 
@@ -222,13 +241,13 @@ vec3 calculate_directional_light(DirectionalLight light, vec3 normal, vec3 viewD
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), v_material.shininess_factor);
 
     // Combine results
-    vec3 diffuse  = light.diffuse * diff * v_material.diffuse;
+    vec3 diffuse  = light.diffuse * diff * material_color;
     vec3 specular = light.specular * spec * v_material.specular;
 
     return diffuse + specular;
 }
 
-vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 calculate_point_light(PointLight light, vec3 material_color, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     // Direction
     vec3 lightDir = normalize(light.position - fragPos);
@@ -247,7 +266,7 @@ vec3 calculate_point_light(PointLight light, vec3 normal, vec3 fragPos, vec3 vie
                                light.attenuation_coeffs.b * (distance * distance));
 
     // combine results
-    vec3 diffuse  = light.diffuse  * diff * v_material.diffuse;
+    vec3 diffuse  = light.diffuse  * diff * material_color;
     vec3 specular = light.specular * spec * v_material.specular;
     diffuse  *= attenuation;
     specular *= attenuation;

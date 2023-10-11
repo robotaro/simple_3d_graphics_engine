@@ -5,6 +5,18 @@ This is an attempt to simplify the core functions of t
 
 Maybe check the following projects for inspiration:
 
+## Important Notes
+- Events 
+  - DO NOT modify components main data, ONLY state data
+    - State data is akin to boolean and intergers
+  - Cannot be stacked
+  - work immediately across systems
+- Actions: 
+  - DO modify components. All data, including state data
+  - Only happens during update
+  - May be immediate or over time
+  - Can be queued up by systems
+
 https://github.com/ubuntunux/PyEngine3D
 
 ## High Performance Computing Sources
@@ -19,14 +31,19 @@ https://github.com/ubuntunux/PyEngine3D
 
 
 ## Python 3D graphics sources
-https://github.com/eth-ait/aitviewer
-https://github.com/mmatl/pyrender
-https://github.com/pygfx/pygfx
-https://github.com/3b1b/manim
-https://github.com/eliemichel/Python3dViewer
+- https://github.com/eth-ait/aitviewer
+- https://github.com/mmatl/pyrender
+- https://github.com/pygfx/pygfx
+- https://github.com/3b1b/manim
+- https://github.com/eliemichel/Python3dViewer
+- https://github.com/ubuntunux/PyEngine3D
 
 # Camera math and depth conversion
 https://stackoverflow.com/questions/7777913/how-to-render-depth-linearly-in-modern-opengl-with-gl-fragcoord-z-in-fragment-sh
+
+# 2D rendering to consider
+- Use GLSL smoothstep for anti-alias effect when drawing 2D shapes using only the frament shader
+- Use this for the 2D editor interface: https://www.shadertoy.com/view/fst3DH
 
 
 ## Insights on current engine inner workings

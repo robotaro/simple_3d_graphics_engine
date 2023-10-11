@@ -18,30 +18,34 @@ class DirectionalLight(Component):
         "enabled"
     ]
 
-    def __init__(self, **kwargs):
+    def __init__(self, parameters: dict):
         
-        super().__init__()
+        super().__init__(parameters=parameters)
 
         # Colors
-        self.diffuse = kwargs.get("diffuse", (1.0, 1.0, 1.0))
-        self.specular = kwargs.get("specular", (1.0, 1.0, 1.0))
+        self.diffuse = Component.dict2color(input_dict=parameters, key="diffuse", default_value=(0.85, 0.85, 0.85))
+        self.specular = Component.dict2color(input_dict=parameters, key="specular", default_value=(1.0, 1.0, 1.0))
 
         # Modifiers
-        self.strength = kwargs.get("strength", 1.0)
+        self.strength = Component.dict2float(input_dict=parameters, key="strength", default_value=1.0)
 
         # Moderngl variables
         self.shadow_texture = None
 
         # Flags
-        self.shadow_enabled = kwargs.get("shadow_enabled", True)
-        self.enabled = kwargs.get("enabled", True)
+        self.shadow_enabled = Component.dict2bool(input_dict=parameters, key="shadow_enabled", default_value=True)
+        self.enabled = Component.dict2bool(input_dict=parameters, key="enabled", default_value=True)
 
-    def initialise_on_gpu(self, ctx: moderngl.Context) -> None:
+    def initialise(self, **kwargs) -> None:
 
-        if self.gpu_initialised:
+        if self.initialised:
             return
 
+        ctx = kwargs["ctx"]
+
         self.shadow_texture = ctx.depth_texture(size=constants.DIRECTIONAL_LIGHT_SIZE)
+
+        self.initialised = True
 
     def release(self):
 
