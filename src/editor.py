@@ -234,7 +234,12 @@ class Editor:
     #                         Per Frame Update Functions
     # ========================================================================
 
-    def _update_inputs(self):
+    def _update_inputs(self) -> None:
+
+        """
+        Internal function designed to update mouse button states
+        :return:
+        """
 
         # Mouse Inputs
         for button in constants.MOUSE_BUTTONS:
@@ -249,6 +254,15 @@ class Editor:
             constants.MOUSE_SCROLL_POSITION]
 
     def create_system(self, system_type: str, subscribed_events: Union[List[int], None] = None) -> bool:
+
+        """
+        Creates and appends a new system to the editor. Systems are responsible for processing the data stored
+        in the components and the order by which systems are run is the order by which they are created
+
+        :param system_type: str, Type of the system
+        :param subscribed_events: List of events this system will be listening to
+        :return: bool, TRUE if systems was successfully created
+        """
 
         new_system = None
 
@@ -356,14 +370,16 @@ class Editor:
                 component.release()
 
     def publish_startup_events(self):
-        """
-        Publish all the events that will help the systems setup before we start running the application :)
-        """
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_SIZE,
                                      event_data=self.buffer_size,
                                      sender=self)
 
     def run(self, profiling_enabled=False) -> str:
+        """
+
+        :param profiling_enabled: bool,
+        :return:
+        """
 
         profiling_result = ""
 

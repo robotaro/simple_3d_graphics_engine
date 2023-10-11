@@ -1,4 +1,9 @@
+import sys
+import os
 import sphinx_rtd_theme
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -16,7 +21,7 @@ release = 'N/A'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['sphinx.ext.autodoc']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon', 'sphinx.ext.coverage', 'sphinx.ext.viewcode']
 
 templates_path = ['_templates']
 exclude_patterns = []
