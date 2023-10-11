@@ -10,9 +10,9 @@ from ecs.math import intersection_3d
 from ecs.utilities import utils_camera
 
 
-class GizmoSystem(System):
+class Gizmo3DSystem(System):
 
-    _type = "gizmo_system"
+    _type = "gizmo_3d_system"
 
     __slots__ = [
         "entity_ray_intersection_list",

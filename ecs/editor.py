@@ -12,7 +12,7 @@ from typing import List, Union
 from ecs import constants
 from ecs.systems.render_system.render_system import RenderSystem
 from ecs.systems.imgui_system.imgui_system import ImguiSystem
-from ecs.systems.gizmo_system.gizmo_system import GizmoSystem
+from ecs.systems.gizmo_3d_system.gizmo_3d_system import Gizmo3DSystem
 from ecs.systems.transform_system.transform_system import TransformSystem
 from ecs.systems.input_control_system.input_control_system import InputControlSystem
 from ecs.event_publisher import EventPublisher
@@ -289,8 +289,8 @@ class Editor:
             if subscribed_events is None:
                 subscribed_events = constants.SUBSCRIBED_EVENTS_INPUT_CONTROL_SYSTEM
 
-        if system_type == GizmoSystem._type:
-            new_system = GizmoSystem(
+        if system_type == Gizmo3DSystem._type:
+            new_system = Gizmo3DSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
