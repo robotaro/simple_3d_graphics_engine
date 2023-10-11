@@ -21,27 +21,23 @@ class Camera(Component):
         "perspective"
     ]
 
-    def __init__(self, parameters: dict):
+    def __init__(self, parameters, system_owned=False):
+        super().__init__(parameters=parameters, system_owned=system_owned)
 
-        if parameters is None:
-            parameters = {}
-
-        super().__init__(parameters=parameters)
-
-        self.z_near = self.dict2float(input_dict=parameters, key="z_near", default_value=constants.CAMERA_Z_NEAR)
-        self.z_far = self.dict2float(input_dict=parameters, key="z_far", default_value=constants.CAMERA_Z_FAR)
+        self.z_near = self.dict2float(input_dict=self.parameters, key="z_near", default_value=constants.CAMERA_Z_NEAR)
+        self.z_far = self.dict2float(input_dict=self.parameters, key="z_far", default_value=constants.CAMERA_Z_FAR)
 
         # Perspective variables
         self.y_fov_deg = constants.CAMERA_FOV_DEG
 
         # Orthographic variables
         self.orthographic_scale = 1.0
-        self.viewport_ratio = self.dict2tuple_float(input_dict=parameters, key="viewport_ratio",
+        self.viewport_ratio = self.dict2tuple_float(input_dict=self.parameters, key="viewport_ratio",
                                                     default_value=(0.0, 0.0, 1.0, 1.0))
         self.viewport_pixels = None
 
         # Flags
-        self.perspective = self.dict2bool(input_dict=parameters, key="perspective", default_value=True)
+        self.perspective = self.dict2bool(input_dict=self.parameters, key="perspective", default_value=True)
 
     def upload_uniforms(self, program: moderngl.Program, window_width: int, window_height: int):
         proj_matrix_bytes = self.get_projection_matrix(window_width=window_width,

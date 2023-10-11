@@ -61,15 +61,18 @@ class RenderSystem(System):
         "_shadows_enabled"
     ]
 
-    def __init__(self, logger: logging.Logger,
+    def __init__(self,
+                 logger: logging.Logger,
                  component_pool: ComponentPool,
                  event_publisher: EventPublisher,
                  action_publisher: ActionPublisher,
+                 parameters: dict,
                  **kwargs):
         super().__init__(logger=logger,
-             component_pool=component_pool,
-             event_publisher=event_publisher,
-             action_publisher=action_publisher)
+                         component_pool=component_pool,
+                         event_publisher=event_publisher,
+                         action_publisher=action_publisher,
+                         parameters=parameters)
 
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
@@ -129,7 +132,7 @@ class RenderSystem(System):
     #                         System Core functions
     # =========================================================================
 
-    def initialise(self, parameters: dict):
+    def initialise(self):
 
         # Fragment picking
         self.picker_program = self.shader_program_library["fragment_picking"]

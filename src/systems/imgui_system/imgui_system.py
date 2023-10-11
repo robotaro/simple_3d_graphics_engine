@@ -25,16 +25,17 @@ class ImguiSystem(System):
 
     _type = "imgui_system"
 
-    def __init__(self,
-                 logger: logging.Logger,
+    def __init__(self, logger: logging.Logger,
                  component_pool: ComponentPool,
                  event_publisher: EventPublisher,
                  action_publisher: ActionPublisher,
+                 parameters: dict,
                  **kwargs):
         super().__init__(logger=logger,
                          component_pool=component_pool,
                          event_publisher=event_publisher,
-                         action_publisher=action_publisher)
+                         action_publisher=action_publisher,
+                         parameters=parameters)
 
         self.window_glfw = kwargs["window_glfw"]
         self.imgui_renderer = None
@@ -50,7 +51,7 @@ class ImguiSystem(System):
     #                         System Core functions
     # =========================================================================
 
-    def initialise(self, parameters: dict) -> bool:
+    def initialise(self) -> bool:
 
         # Step 1) Create ImGUI context first
         imgui.create_context()

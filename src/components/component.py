@@ -9,11 +9,14 @@ class Component:
 
     __slots__ = [
         "parameters",
-        "initialised"
+        "initialised",
+        "system_owned"
     ]
 
-    def __init__(self, parameters: dict):
-        self.parameters = parameters
+    def __init__(self, parameters: dict, system_owned=False):
+
+        self.parameters = parameters if parameters is not None else {}
+        self.system_owned = system_owned
         self.initialised = False
 
     def initialise(self, **kwargs):

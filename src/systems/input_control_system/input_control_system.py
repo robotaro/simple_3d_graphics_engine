@@ -31,14 +31,18 @@ class InputControlSystem(System):
         "pan_right"
     ]
 
-    def __init__(self, logger: logging.Logger,
+    def __init__(self,
+                 logger: logging.Logger,
                  component_pool: ComponentPool,
                  event_publisher: EventPublisher,
-                 action_publisher: ActionPublisher):
+                 action_publisher: ActionPublisher,
+                 parameters: dict,
+                 **kwargs):
         super().__init__(logger=logger,
                          component_pool=component_pool,
                          event_publisher=event_publisher,
-                         action_publisher=action_publisher)
+                         action_publisher=action_publisher,
+                         parameters=parameters)
 
         self.mouse_x_past = None
         self.mouse_y_past = None
@@ -57,7 +61,7 @@ class InputControlSystem(System):
         self.pan_left = False
         self.pan_right = False
 
-    def initialise(self, parameters: dict) -> bool:
+    def initialise(self) -> bool:
         return True
 
     def on_event(self, event_type: int, event_data: tuple):

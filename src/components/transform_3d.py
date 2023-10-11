@@ -18,13 +18,13 @@ class Transform3D(Component):
         "dirty"
     ]
 
-    def __init__(self, parameters: dict):
-        super().__init__(parameters=parameters)
+    def __init__(self, parameters, system_owned=False):
+        super().__init__(parameters=parameters, system_owned=system_owned)
 
-        self.position = Component.dict2tuple_float(input_dict=parameters, key="position", default_value=(0.0, 0.0, 0.0))
-        self.rotation = Component.dict2tuple_float(input_dict=parameters, key="rotation", default_value=(0.0, 0.0, 0.0))
-        self.scale = Component.dict2tuple_float(input_dict=parameters, key="scale", default_value=(1.0, 1.0, 1.0))
-        self.degrees = Component.dict2bool(input_dict=parameters, key="degrees", default_value=False)
+        self.position = Component.dict2tuple_float(input_dict=self.parameters, key="position", default_value=(0.0, 0.0, 0.0))
+        self.rotation = Component.dict2tuple_float(input_dict=self.parameters, key="rotation", default_value=(0.0, 0.0, 0.0))
+        self.scale = Component.dict2tuple_float(input_dict=self.parameters, key="scale", default_value=(1.0, 1.0, 1.0))
+        self.degrees = Component.dict2bool(input_dict=self.parameters, key="degrees", default_value=False)
 
         if self.degrees:
             self.rotation = (self.rotation[0] * constants.DEG2RAD,

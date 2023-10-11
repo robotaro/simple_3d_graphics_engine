@@ -24,16 +24,18 @@ class TransformSystem(System):
     def __init__(self, logger: logging.Logger,
                  component_pool: ComponentPool,
                  event_publisher: EventPublisher,
-                 action_publisher: ActionPublisher):
+                 action_publisher: ActionPublisher,
+                 parameters: dict):
         super().__init__(logger=logger,
                          component_pool=component_pool,
                          event_publisher=event_publisher,
-                         action_publisher=action_publisher)
+                         action_publisher=action_publisher,
+                         parameters=parameters)
 
         self.entity_uid_update_order = []  # Ordered as a DAG
         self.update_tree = True
 
-    def initialise(self, parameters: dict) -> bool:
+    def initialise(self) -> bool:
         return True
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:

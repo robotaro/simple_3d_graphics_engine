@@ -24,11 +24,14 @@ class Gizmo3DSystem(System):
     def __init__(self, logger: logging.Logger,
                  component_pool: ComponentPool,
                  event_publisher: EventPublisher,
-                 action_publisher: ActionPublisher):
+                 action_publisher: ActionPublisher,
+                 parameters: dict,
+                 **kwargs):
         super().__init__(logger=logger,
                          component_pool=component_pool,
                          event_publisher=event_publisher,
-                         action_publisher=action_publisher)
+                         action_publisher=action_publisher,
+                         parameters=parameters)
 
         self.window_size = None
         self.entity_ray_intersection_list = []
@@ -37,7 +40,17 @@ class Gizmo3DSystem(System):
         self.selected_entity_uid = None
         self.selected_entity_init_distance_to_cam = None
 
-    def initialise(self, parameters: dict) -> bool:
+    def initialise(self) -> bool:
+        """
+        Initialises the Gizmo3D system using the parameters given
+
+        :param parameters:
+            * Example parameter 1
+        :return:
+        """
+
+        # Create Gizmo entity here
+
         return True
 
     def on_event(self, event_type: int, event_data: tuple):

@@ -21,14 +21,14 @@ class InputControl(Component):
         "max_tilt"
     ]
 
-    def __init__(self, parameters: dict):
-        super().__init__(parameters=parameters)
+    def __init__(self, parameters, system_owned=False):
+        super().__init__(parameters=parameters, system_owned=system_owned)
 
         self.active = True
-        self.mouse_sensitivity = Component.dict2float(input_dict=parameters,
+        self.mouse_sensitivity = Component.dict2float(input_dict=self.parameters,
                                                       key="mouse_sensitivity",
                                                       default_value=0.01)
-        self.speed = Component.dict2float(input_dict=parameters, key="speed", default_value=0.1)
+        self.speed = Component.dict2float(input_dict=self.parameters, key="speed", default_value=0.1)
         self.max_tilt = 0.4
         self.pitch = 0.0
         self.yaw = 0.0

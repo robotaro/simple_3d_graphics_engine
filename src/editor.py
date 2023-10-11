@@ -253,7 +253,7 @@ class Editor:
         self.mouse_state[constants.MOUSE_SCROLL_POSITION_LAST_FRAME] = self.mouse_state[
             constants.MOUSE_SCROLL_POSITION]
 
-    def create_system(self, system_type: str, subscribed_events: Union[List[int], None] = None) -> bool:
+    def create_system(self, system_type: str, subscribed_events: Union[List[int], None] = None, parameters=None) -> bool:
 
         """
         Creates and appends a new system to the editor. Systems are responsible for processing the data stored
@@ -265,6 +265,8 @@ class Editor:
         """
 
         new_system = None
+        if parameters is None:
+            parameters = {}
 
         if system_type == RenderSystem._type:
             new_system = RenderSystem(
@@ -273,7 +275,8 @@ class Editor:
                 event_publisher=self.event_publisher,
                 action_publisher=self.action_publisher,
                 context=self.ctx,
-                buffer_size=self.buffer_size)
+                buffer_size=self.buffer_size,
+                parameters=parameters)
 
             # Set default events to subscribe too
             if subscribed_events is None:
@@ -285,7 +288,8 @@ class Editor:
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
                 action_publisher=self.action_publisher,
-                window_glfw=self.window_glfw)
+                window_glfw=self.window_glfw,
+                parameters=parameters)
 
             # Set default events to subscribe too
             if subscribed_events is None:
@@ -296,7 +300,8 @@ class Editor:
                 logger=self.logger,
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
-                action_publisher=self.action_publisher)
+                action_publisher=self.action_publisher,
+                parameters=parameters)
 
             # Set default events to subscribe too
             if subscribed_events is None:
@@ -307,7 +312,8 @@ class Editor:
                 logger=self.logger,
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
-                action_publisher=self.action_publisher)
+                action_publisher=self.action_publisher,
+                parameters=parameters)
 
             # Set default events to subscribe too
             if subscribed_events is None:
@@ -318,7 +324,8 @@ class Editor:
                 logger=self.logger,
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
-                action_publisher=self.action_publisher)
+                action_publisher=self.action_publisher,
+                parameters=parameters)
 
             # Set default events to subscribe too
             if subscribed_events is None:
@@ -389,7 +396,7 @@ class Editor:
 
         # Initialise systems
         for system in self.systems:
-            if not system.initialise(parameters={}):  # TODO: Replace these with real parameters
+            if not system.initialise():
                 raise Exception(f"[ERROR] System {system._type} failed to initialise")
 
         self.initialise_components()

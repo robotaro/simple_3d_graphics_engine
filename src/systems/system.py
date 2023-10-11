@@ -16,21 +16,26 @@ class System:
         "component_pool",
         "action_queue",
         "current_action",
+        "parameters",
         "runtime"
     ]
 
     _type = "base_system"
 
-    def __init__(self, logger: logging.Logger,
+    def __init__(self,
+                 logger: logging.Logger,
                  component_pool: ComponentPool,
                  event_publisher: EventPublisher,
-                 action_publisher: ActionPublisher):
+                 action_publisher: ActionPublisher,
+                 parameters: dict):
+
         self.logger = logger
         self.event_publisher = event_publisher
         self.action_publisher = action_publisher
         self.action_queue = deque()
         self.current_action = None
         self.component_pool = component_pool
+        self.parameters = parameters
         self.runtime = 0.0
 
     def on_event(self, event_type: int, event_data: tuple):
@@ -48,7 +53,7 @@ class System:
         if self.current_action is None and len(self.action_queue) > 0:
             self.current_action = self.action_queue.pop()
 
-    def initialise(self, parameters: dict) -> bool:
+    def initialise(self) -> bool:
         return True
 
     def update(self,

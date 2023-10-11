@@ -20,30 +20,29 @@ class Material(Component):
         "state_highlighted"
     ]
 
-    def __init__(self, parameters: dict):
-        
-        super().__init__(parameters=parameters)
+    def __init__(self, parameters, system_owned=False):
+        super().__init__(parameters=parameters, system_owned=system_owned)
 
         # Colors
-        self.diffuse = Component.dict2color(input_dict=parameters, key="diffuse", default_value=(0.85, 0.85, 0.85))
-        self.diffuse_highlight = Component.dict2color(input_dict=parameters,
+        self.diffuse = Component.dict2color(input_dict=self.parameters, key="diffuse", default_value=(0.85, 0.85, 0.85))
+        self.diffuse_highlight = Component.dict2color(input_dict=self.parameters,
                                                       key="diffuse_highlight",
                                                       default_value=(0.95, 0.95, 0.95))
-        self.specular = Component.dict2color(input_dict=parameters,
+        self.specular = Component.dict2color(input_dict=self.parameters,
                                              key="specular",
                                              default_value=(1.0, 1.0, 1.0))
-        self.shininess_factor = Component.dict2float(input_dict=parameters, key="shininess_factor", default_value=32.0)
-        self.metalic_factor = Component.dict2float(input_dict=parameters, key="metalic_factor", default_value=0.0)
-        self.roughness_factor = Component.dict2float(input_dict=parameters, key="roughness_factor", default_value=1.0)
+        self.shininess_factor = Component.dict2float(input_dict=self.parameters, key="shininess_factor", default_value=32.0)
+        self.metalic_factor = Component.dict2float(input_dict=self.parameters, key="metalic_factor", default_value=0.0)
+        self.roughness_factor = Component.dict2float(input_dict=self.parameters, key="roughness_factor", default_value=1.0)
 
         # Render modes
-        self.color_source = Component.dict2map(input_dict=parameters, key="color_source",
+        self.color_source = Component.dict2map(input_dict=self.parameters, key="color_source",
                                                map_dict=constants.COLOR_SOURCE_MAP,
                                                default_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE)
-        self.lighting_mode = Component.dict2map(input_dict=parameters, key="lighting_mode",
+        self.lighting_mode = Component.dict2map(input_dict=self.parameters, key="lighting_mode",
                                                 map_dict=constants.LIGHTING_MODE_MAP,
                                                 default_value=constants.RENDER_MODE_LIGHTING_LIT)
-        self.alpha = Component.dict2float(input_dict=parameters, key="alpha", default_value=1.0)
+        self.alpha = Component.dict2float(input_dict=self.parameters, key="alpha", default_value=1.0)
 
         # State Variables - Can be changed by events
         self.state_highlighted = False

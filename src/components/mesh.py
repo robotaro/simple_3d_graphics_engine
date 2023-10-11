@@ -22,9 +22,8 @@ class Mesh(Component):
         "visible"
     ]
 
-    def __init__(self, parameters: dict):
-
-        super().__init__(parameters=parameters)
+    def __init__(self, parameters, system_owned=False):
+        super().__init__(parameters=parameters, system_owned=system_owned)
 
         # RAM Vertex data
         self.vertices = None

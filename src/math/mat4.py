@@ -56,7 +56,7 @@ def compute_transform(position: tuple, rotation_rad: tuple, scale=1.0, order='xy
 
     return transform
 
-@njit
+@njit(cache=True)
 def compute_transform_not_so_useful(pos: tuple, rot: tuple, scale: float):
     # TODO: refactor this to simplify scale!
 
@@ -150,7 +150,7 @@ def perspective_projection(fovy_rad: float, aspect: float, near: float, far: flo
     :param fovy_rad: Vertical view angle in radians
     :param aspect: aspect ratio of the screen (width / height)
     :param near: Closest point that can be rendered inside the view frustum
-    :param far: Furthest spoint that can be render inside the view frustum
+    :param far: Furthest point that can be render inside the view frustum
     :return: numpy ndarray (4, 4) <float32>
     """
 

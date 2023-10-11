@@ -108,7 +108,7 @@ class ComponentPool:
                                component_type=component_type,
                                parameters=component["parameters"])
 
-    def add_component(self, entity_uid: int, component_type: int, parameters: dict):
+    def add_component(self, entity_uid: int, component_type: int, parameters: dict, owner_system=None):
         component_pool = self.component_storage_map.get(component_type, None)
 
         # Safety
@@ -120,18 +120,22 @@ class ComponentPool:
         component_pool[entity_uid] = ComponentPool.COMPONENT_CLASS_MAP[component_type](parameters=parameters)
         return component_pool[entity_uid]
 
-    def remove_component(self, entity_uid: int, component_type: int):
+    def remove_component(self, entity_uid: int, component_type: int) -> bool:
 
         if self.entities[entity_uid].has_parent:
-            raise Exception("[ERROR] Tried to remove sub-component directly")
+            self.logger.warning(f"ComponentPool | remove_component() | Entity {entity_uid} has a parent")
+            return False
+
         component_pool = self.component_storage_map.get(component_type, None)
 
         # Safety
         if component_pool is None:
-            return
+            self.logger.warning(f"ComponentPool | remove_component() | Component type {component_type} is not supported")
+            return False
 
         component_pool[entity_uid].release()
         component_pool.pop(entity_uid)
+        return True
 
     def get_component(self, entity_uid: int, component_type: int) -> Union[Component, None]:
 
