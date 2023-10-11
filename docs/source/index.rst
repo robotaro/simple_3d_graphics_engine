@@ -2,7 +2,7 @@
 Sample
 ======================
 
-This is a demo site for |theme_display|, generated as part of
+This is a demo site for, generated as part of
 `Sphinx Themes Gallery <https://sphinx-themes.org>`_.
 
 .. important::
@@ -15,11 +15,7 @@ Quickstart
 
 1. Install this theme:
 
-   .. theme-install::
-
 2. Set the following in your existing Sphinx documentation's ``conf.py`` file:
-
-   .. theme-configuration::
 
 3. Build your Sphinx documentation with the new theme! [1]_
 
@@ -27,13 +23,11 @@ Quickstart
 Documentation
 =============
 
-|theme_documentation_message|
-
 
 Exploration
 ===========
 
-The :doc:`kitchen-sink/index` section contains pages that contains basically
+The section contains pages that contains basically
 everything that you can with Sphinx "out-of-the-box".
 
 .. toctree::
@@ -73,9 +67,9 @@ sort of site navigation that's necessary for "real" documentation.
 
     placeholder-three
     placeholder-four
-    Sphinx Theme Gallery <https://sphinx-themes.org>
+    apidocs
 
-Some pages like :doc:`placeholder-three` are declared in a "hidden"
+Some pages like are declared in a "hidden"
 toctree, and thus would not be visible above. However, they are still a
 part of the overall site hierarchy and some themes may choose to present
 them to the user in the site navigation.

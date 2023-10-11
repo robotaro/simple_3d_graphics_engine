@@ -1,0 +1,39 @@
+
+forward_pass:
+  vertex_shader: "forward_pass.glsl"
+  fragment_shader: "forward_pass.glsl"
+
+selected_entity_pass:
+  vertex_shader: "selected_entity.glsl"
+  fragment_shader: "selected_entity.glsl"
+
+text_2d:
+  vertex_shader: "text_2d.glsl"
+  geometry_shader: "text_2d.glsl"
+  fragment_shader: "text_2d.glsl"
+  input_texture_location:
+    font_texture: 0
+
+fragment_picking:
+  vertex_shader: "fragment_picking.glsl"
+  varying:
+    - "out_obj_id"
+    - "out_tri_id"
+    - "out_instance_id"
+  input_texture_location:
+    entity_info_texture: 0
+
+screen_quad:
+  vertex_shader: "screen_quad.glsl"
+  fragment_shader: "screen_quad.glsl"
+  input_texture_location:
+    color_texture: 0
+    normal_texture: 1
+    viewpos_texture: 2
+    entity_info_texture: 3
+    selection_texture: 4
+    depth_texture: 5
+
+shadow_mapping:
+  vertex_shader: "shadow_mapping.glsl"
+  fragment_shader: "shadow_mapping.glsl"

@@ -1,4 +1,3 @@
-from ecs import constants
 from ecs.editor import Editor
 
 
