@@ -3,10 +3,10 @@ import logging
 import pytest
 import numpy as np
 
-from ecs import constants
-from ecs.component_pool import ComponentPool
-from ecs.components.transform_3d import Transform3D
-from ecs.components.mesh import Mesh
+from src import constants
+from src.component_pool import ComponentPool
+from src.components.transform_3d import Transform3D
+from src.components.mesh import Mesh
 
 
 def test_constructor():

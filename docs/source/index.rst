@@ -10,8 +10,10 @@ This is a demo site for, generated as part of
     This sample documentation was generated on |today|, and is rebuilt weekly.
 
 
-Quickstart
+Module contents
 ==========
+
+.. automodule:: ecs.
 
 1. Install this theme:
 
@@ -33,8 +35,6 @@ everything that you can with Sphinx "out-of-the-box".
 .. toctree::
     :titlesonly:
 
-    kitchen-sink/index
-
 Browsing through that section should give you a good idea of how stuff looks
 in this theme.
 
@@ -55,19 +55,10 @@ sort of site navigation that's necessary for "real" documentation.
     :caption: This is a caption
     :titlesonly:
 
-    placeholder-one
-    placeholder-two
-    really-long-title
-    long-page
-    External Link <https://www.sphinx-doc.org>
-
 .. toctree::
     :hidden:
     :caption: Additional "hidden" Pages
 
-    placeholder-three
-    placeholder-four
-    apidocs
 
 Some pages like are declared in a "hidden"
 toctree, and thus would not be visible above. However, they are still a

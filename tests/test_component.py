@@ -1,4 +1,5 @@
-from ecs.components.component import Component
+from src.components.component import Component
+
 
 def test_string2tuple_float():
 

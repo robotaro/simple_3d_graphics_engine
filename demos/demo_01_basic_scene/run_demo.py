@@ -1,4 +1,4 @@
-from ecs.editor import Editor
+from src.editor import Editor
 
 
 def main():

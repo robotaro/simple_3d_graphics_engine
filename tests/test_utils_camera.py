@@ -1,6 +1,6 @@
 import numpy as np
 
-from ecs.utilities import utils_camera
+from src.utilities import utils_camera
 
 
 def test_screen_to_world_ray():

@@ -1,4 +1,4 @@
-from ecs.components.camera import Camera
+from src.components.camera import Camera
 
 
 def test_update_viewport():

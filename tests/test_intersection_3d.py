@@ -1,5 +1,5 @@
 import numpy as np
-from ecs.math import intersection_3d
+from src.math import intersection_3d
 
 
 def test_intersect_boolean_ray_sphere():

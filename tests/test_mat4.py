@@ -1,6 +1,6 @@
 import numpy as np
 
-from ecs.math import mat4
+from src.math import mat4
 
 
 def test_perspective_projection():
