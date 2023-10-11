@@ -34,7 +34,6 @@ class TransformSystem(System):
         self.update_tree = True
 
     def initialise(self, parameters: dict) -> bool:
-
         return True
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
@@ -77,29 +76,18 @@ class TransformSystem(System):
         # Populate list out-of-order
         uid2index = {}
         for index, (entity_uid, entity) in enumerate(self.component_pool.entities.items()):
-            #uid_map[entity_uid] = index
-            temp_update_order.append((entity_uid, entity.parent_uid if entity.parent_uid is not None else -1))
-
-        # TODO: REMOVE BLOODY SHUFFLE AND ORGANISE THIS!!
-
-        # DEBUG
-        random.seed(42)
-        random.shuffle(temp_update_order)
-        for index, (entity_uid, entity) in enumerate(temp_update_order):
             uid2index[entity_uid] = index
+            temp_update_order.append((entity_uid, entity.parent_uid if entity.parent_uid is not None else -1))
 
         order_array = np.array(temp_update_order, dtype=np.int32)
 
-
         # Sort list so that no child is updated before its parent
         for index in range(order_array.shape[0]):
-            print(f"[{index}] ", end="")
 
             entity_uid = order_array[index, 0]
             parent_uid = order_array[index, 1]
 
             if parent_uid == -1:
-                print(f" parent is -1")
                 continue
 
             # Ir parent comes after the child, swap them
@@ -107,7 +95,6 @@ class TransformSystem(System):
 
                 parent_index = uid2index[parent_uid]
 
-                print(f" ({order_array[index, 0]}, {order_array[index, 1]}) <-> ({order_array[parent_index, 0]}, {order_array[parent_index, 1]})")
                 temp = order_array[index, :].copy()
                 order_array[index, :] = order_array[parent_index, :].copy()
                 order_array[parent_index, :] = temp

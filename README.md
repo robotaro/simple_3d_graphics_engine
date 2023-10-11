@@ -41,6 +41,10 @@ https://github.com/ubuntunux/PyEngine3D
 # Camera math and depth conversion
 https://stackoverflow.com/questions/7777913/how-to-render-depth-linearly-in-modern-opengl-with-gl-fragcoord-z-in-fragment-sh
 
+# 2D rendering to consider
+- Use GLSL smoothstep for anti-alias effect when drawing 2D shapes using only the frament shader
+- Use this for the 2D editor interface: https://www.shadertoy.com/view/fst3DH
+
 
 ## Insights on current engine inner workings
 - WHen node's translation/rotation/scale is changed via
