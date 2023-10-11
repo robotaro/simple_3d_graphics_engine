@@ -28,7 +28,7 @@ class EventPublisher:
             constants.EVENT_WINDOW_SIZE: [],
             constants.EVENT_WINDOW_FRAMEBUFFER_SIZE: [],
             constants.EVENT_WINDOW_DROP_FILES: [],
-            constants.EVENT_ACTION_ENTITY_SELECTED: []
+            constants.EVENT_ENTITY_SELECTED: []
         }
 
     def subscribe(self, event_type: int, listener):

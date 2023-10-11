@@ -27,8 +27,6 @@ Pillow==10.0.0
 av==10.0.0
 
 # Custom UI
-beautifulsoup4==4.12.2
-lxml==4.9.2
 freetype-py==2.3.0
 
 # ImGUI
@@ -39,8 +37,9 @@ PyOpenGL==3.1.7
 pytest==7.3.1
 flake8==6.0.0
 
-# [DEBUG]
+# [Debugging and Profiling]
 matplotlib==3.6.2
+CProfileV==1.0.7
 
 # [ Aitviewer Integration ]
 scipy==1.10.1

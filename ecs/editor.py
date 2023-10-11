@@ -1,5 +1,7 @@
+import os
 import time
 import glfw
+import signal
 
 import moderngl
 import numpy as np
@@ -10,10 +12,17 @@ from typing import List, Union
 from ecs import constants
 from ecs.systems.render_system.render_system import RenderSystem
 from ecs.systems.imgui_system.imgui_system import ImguiSystem
+from ecs.systems.gizmo_system.gizmo_system import GizmoSystem
+from ecs.systems.transform_system.transform_system import TransformSystem
 from ecs.systems.input_control_system.input_control_system import InputControlSystem
 from ecs.event_publisher import EventPublisher
+from ecs.action_publisher import ActionPublisher
 from ecs.component_pool import ComponentPool
-from ecs.utilities import utils_logging
+from ecs.utilities import utils_logging, utils_xml2scene
+
+# Debug
+import cProfile, pstats, io
+from pstats import SortKey
 
 
 class Editor:
@@ -36,12 +45,14 @@ class Editor:
                  "camera_components",
                  "systems",
                  "component_pool",
-                 "event_publisher")
+                 "event_publisher",
+                 "action_publisher",
+                 "close_application")
 
     def __init__(self,
                  window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
                  window_title="New Editor",
-                 systems: Union[List[str], None] = None,
+                 system_types=constants.DEFAULT_SYSTEMS,
                  vertical_sync=True):
 
         self.logger = utils_logging.get_project_logger()
@@ -51,9 +62,9 @@ class Editor:
         self.vertical_sync = vertical_sync
 
         # Core Variables
-        self.systems = []
-        self.component_pool = ComponentPool(logger=self.logger)
-        self.event_publisher = EventPublisher(logger=self.logger)
+        self.component_pool = ComponentPool(logger=self.logger)  # Must be created before systems
+        self.event_publisher = EventPublisher(logger=self.logger)  # Must be created before systems
+        self.action_publisher = ActionPublisher(logger=self.logger)  # Must be created before systems
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -108,13 +119,19 @@ class Editor:
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
 
-        # If not systems are specified, stick with the default ones
-        if systems is None:
-            systems = constants.DEFAULT_SYSTEMS_DECLARATION
-
-        # Create systems
-        for system_type in systems:
+        # Systems - Need to be created after everything else has been created
+        self.systems = []
+        for system_type in system_types:
             self.create_system(system_type=system_type)
+
+        # Flags
+        self.close_application = False
+
+        signal.signal(signal.SIGINT, self.callback_signal_handler)
+
+    def callback_signal_handler(self, signum, frame):
+        self.logger.debug("Signal received : Closing editor now")
+        self.close_application = True
 
     # ========================================================================
     #                           Input State Functions
@@ -191,7 +208,7 @@ class Editor:
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_SIZE,
                                      event_data=(width, height),
                                      sender=self)
-        # TODO: Why doesn't window resize get called? Instead, only frambuffer is called
+        # TODO: Why doesn't window resize get called? Instead, only framebuffer is called
         self.window_size = (width, height)
 
     def _glfw_callback_framebuffer_size(self, glfw_window, width, height):
@@ -199,7 +216,7 @@ class Editor:
                                      event_data=(width, height),
                                      sender=self)
 
-        # IMPORTANT: You need to update the final screen framebuffer viewport in toder to render to the whole window!
+        # IMPORTANT: You need to update the final screen framebuffer viewport in order to render to the whole window!
         self.ctx.viewport = (0, 0, width, height)
         self.buffer_size = (width, height)
 
@@ -241,6 +258,7 @@ class Editor:
                 logger=self.logger,
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher,
                 context=self.ctx,
                 buffer_size=self.buffer_size)
 
@@ -253,6 +271,7 @@ class Editor:
                 logger=self.logger,
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher,
                 window_glfw=self.window_glfw)
 
             # Set default events to subscribe too
@@ -263,12 +282,34 @@ class Editor:
             new_system = InputControlSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
-                event_publisher=self.event_publisher
-            )
+                event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher)
 
             # Set default events to subscribe too
             if subscribed_events is None:
                 subscribed_events = constants.SUBSCRIBED_EVENTS_INPUT_CONTROL_SYSTEM
+
+        if system_type == GizmoSystem._type:
+            new_system = GizmoSystem(
+                logger=self.logger,
+                component_pool=self.component_pool,
+                event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher)
+
+            # Set default events to subscribe too
+            if subscribed_events is None:
+                subscribed_events = constants.SUBSCRIBED_EVENTS_GIZMO_SYSTEM
+
+        if system_type == TransformSystem._type:
+            new_system = TransformSystem(
+                logger=self.logger,
+                component_pool=self.component_pool,
+                event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher)
+
+            # Set default events to subscribe too
+            if subscribed_events is None:
+                subscribed_events = constants.SUBSCRIBED_EVENTS_TRANSFORM_SYSTEM
 
         if new_system is None:
             self.logger.error(f"Failed to create system {system_type}")
@@ -285,12 +326,26 @@ class Editor:
         self.systems.append(new_system)
 
     def load_scene(self, scene_xml_fpath: str):
-        self.component_pool.load_scene(scene_xml_fpath=scene_xml_fpath)
+
+        # Check if path is absolute
+        fpath = None
+        if os.path.isfile(scene_xml_fpath):
+            fpath = scene_xml_fpath
+
+        if fpath is None:
+            # Assume it is a relative path from the working directory/root directory
+            clean_scene_xml_fpath = scene_xml_fpath.replace("\\", os.sep).replace("/", os.sep)
+            fpath = os.path.join(constants.ROOT_DIR, clean_scene_xml_fpath)
+
+        scene_dict = utils_xml2scene.load_scene_from_xml(xml_fpath=fpath)
+
+        for entity_blueprint in scene_dict["scene"]["entity"]:
+            self.component_pool.add_entity(entity_blueprint=entity_blueprint)
 
     def initialise_components(self):
 
         # TODO: This is SORT OF a hack. Please think of a way to make this universal
-        render_system = [system for system in self.systems if system._type == constants.SYSTEM_NAME_RENDER][0]
+        render_system = [system for system in self.systems if isinstance(system, RenderSystem)][0]
 
         for component_id, components in self.component_pool.component_storage_map.items():
             for entity_uid, component in components.items():
@@ -301,19 +356,34 @@ class Editor:
             for entity_uid, component in components.items():
                 component.release()
 
-    def run(self):
+    def publish_startup_events(self):
+        """
+        Publish all the events that will help the systems setup before we start running the application :)
+        """
+        self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_SIZE,
+                                     event_data=self.buffer_size,
+                                     sender=self)
+
+    def run(self, profiling_enabled=False) -> str:
+
+        profiling_result = ""
+
+        if profiling_enabled:
+            profiler = cProfile.Profile()
+            profiler.enable()
 
         # Initialise systems
         for system in self.systems:
-            if not system.initialise():
+            if not system.initialise(parameters={}):  # TODO: Replace these with real parameters
                 raise Exception(f"[ERROR] System {system._type} failed to initialise")
 
         self.initialise_components()
+        self.publish_startup_events()
 
         # Update systems - Main Loop
-        exit_application_now = False
+        self.close_application = False
         timestamp_past = time.perf_counter()
-        while not glfw.window_should_close(self.window_glfw) and not exit_application_now:
+        while not glfw.window_should_close(self.window_glfw) and not self.close_application:
 
             glfw.poll_events()
 
@@ -324,9 +394,8 @@ class Editor:
 
             # Update All systems in order
             for system in self.systems:
-                if not system.update(elapsed_time=elapsed_time,
-                                     context=self.ctx):
-                    exit_application_now = True
+                if not system.update(elapsed_time=elapsed_time, context=self.ctx):
+                    self.close_application = True
                     break
 
             # Still swap these even if you have to exit application?
@@ -335,3 +404,13 @@ class Editor:
         # Shutdown systems
         for system in self.systems:
             system.shutdown()
+
+        if profiling_enabled:
+            profiler.disable()
+            string_stream = io.StringIO()
+            sortby = SortKey.CUMULATIVE
+            ps = pstats.Stats(profiler, stream=string_stream).sort_stats(sortby)
+            ps.print_stats()
+            profiling_result = string_stream.getvalue()
+
+        return profiling_result

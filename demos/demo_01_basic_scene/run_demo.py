@@ -1,8 +1,6 @@
 from ecs import constants
 from ecs.editor import Editor
 
-import os
-
 
 def main():
 

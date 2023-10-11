@@ -17,18 +17,25 @@ SHADERS_DIRECTORY = os.path.join(ECS_DIR, "shaders")
 # =============================================================================
 
 DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)  # (1280, 720)
+
+SYSTEM_NAME_TRANSFORM = "transform_system"
 SYSTEM_NAME_RENDER = "render_system"
 SYSTEM_NAME_IMGUI = "imgui_system"
 SYSTEM_NAME_INPUT_CONTROL = "input_control_system"
+SYSTEM_NAME_GIZMO = "gizmo_system"
+
 AVAILABLE_SYSTEMS = [
     SYSTEM_NAME_RENDER,
     SYSTEM_NAME_IMGUI,
     SYSTEM_NAME_INPUT_CONTROL
 ]
-DEFAULT_SYSTEMS_DECLARATION = [
+
+DEFAULT_SYSTEMS = [
     SYSTEM_NAME_INPUT_CONTROL,
+    SYSTEM_NAME_GIZMO,
+    SYSTEM_NAME_TRANSFORM,  # Must go BEFORE render system to read the transforms before they are shown!
     SYSTEM_NAME_RENDER,
-    SYSTEM_NAME_IMGUI
+    SYSTEM_NAME_IMGUI  # Must come AFTER the render system to add the GUI to the final render
 ]
 
 # =============================================================================
@@ -38,40 +45,38 @@ DEFAULT_SYSTEMS_DECLARATION = [
 IMGUI_DRAG_FLOAT_PRECISION = 1e-2
 
 # =============================================================================
-#                               Event types
+#                               Events
 # =============================================================================
 
-# Keyboard
+# Types
 EVENT_KEYBOARD_PRESS = 1            # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_RELEASE = 2          # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_REPEAT = 3           # args: (key, scancode, mods) <int, int, int>
 
-EVENT_INDEX_KEYBOARD_KEY = 0
-EVENT_INDEX_KEYBOARD_SCANCODE = 1
-EVENT_INDEX_KEYBOARD_MODS = 2
-
-# Mouse
 EVENT_MOUSE_BUTTON_ENABLED = 10
 EVENT_MOUSE_BUTTON_DISABLED = 11
 EVENT_MOUSE_BUTTON_PRESS = 12        # args: (button, mods, x, y) <int, int, int, int>
 EVENT_MOUSE_BUTTON_RELEASE = 13      # args: (button, mods, x, y) <int, int, int, int>
+EVENT_MOUSE_MOVE = 14                # args: (x, y) <float, float>
+EVENT_MOUSE_SCROLL = 15              # args: (offset_x, offset_y) <float, float>
+
+# Indices
+EVENT_INDEX_KEYBOARD_KEY = 0
+EVENT_INDEX_KEYBOARD_SCANCODE = 1
+EVENT_INDEX_KEYBOARD_MODS = 2
 
 EVENT_INDEX_MOUSE_BUTTON_BUTTON = 0
 EVENT_INDEX_MOUSE_BUTTON_MODS = 1
 EVENT_INDEX_MOUSE_BUTTON_X = 2
 EVENT_INDEX_MOUSE_BUTTON_Y = 3
-
-EVENT_MOUSE_MOVE = 14                # args: (x, y) <float, float>
 EVENT_INDEX_MOUSE_MOVE_X = 0
 EVENT_INDEX_MOUSE_MOVE_Y = 1
-
-EVENT_MOUSE_SCROLL = 15              # args: (offset_x, offset_y) <float, float>
 EVENT_INDEX_MOUSE_SCROLL_X = 0
 EVENT_INDEX_MOUSE_SCROLL_Y = 1
 
-# Actions
 EVENT_EXIT_APPLICATION = 20
-EVENT_ACTION_ENTITY_SELECTED = 21
+EVENT_ENTITY_SELECTED = 21
+EVENT_ENTITY_DESELECTED = 22
 
 # Window
 EVENT_WINDOW_SIZE = 30                # args: (width, height) <int, int>
@@ -80,23 +85,38 @@ EVENT_WINDOW_DROP_FILES = 32            # args: (filepath, ...) <int, ...>  # TO
 
 # Default subscribed events
 SUBSCRIBED_EVENTS_RENDER_SYSTEM = [
-    EVENT_ACTION_ENTITY_SELECTED,
+    EVENT_ENTITY_SELECTED,
     EVENT_MOUSE_BUTTON_ENABLED,
     EVENT_MOUSE_BUTTON_DISABLED,
     EVENT_MOUSE_BUTTON_PRESS,
     EVENT_KEYBOARD_PRESS,
-    EVENT_WINDOW_FRAMEBUFFER_SIZE
-]
+    EVENT_WINDOW_FRAMEBUFFER_SIZE]
+
 SUBSCRIBED_EVENTS_IMGUI_SYSTEM = [
-    EVENT_ACTION_ENTITY_SELECTED,
-    EVENT_KEYBOARD_PRESS
-]
+    EVENT_ENTITY_SELECTED,
+    EVENT_KEYBOARD_PRESS]
+
 SUBSCRIBED_EVENTS_INPUT_CONTROL_SYSTEM = [
     EVENT_MOUSE_SCROLL,
     EVENT_MOUSE_MOVE,
     EVENT_KEYBOARD_PRESS,
-    EVENT_KEYBOARD_RELEASE
+    EVENT_KEYBOARD_RELEASE]
+
+SUBSCRIBED_EVENTS_GIZMO_SYSTEM = [
+    EVENT_MOUSE_SCROLL,
+    EVENT_MOUSE_MOVE,
+    EVENT_KEYBOARD_PRESS,
+    EVENT_KEYBOARD_RELEASE,
+    EVENT_WINDOW_FRAMEBUFFER_SIZE]
+
+SUBSCRIBED_EVENTS_TRANSFORM_SYSTEM = [
+
 ]
+
+# =============================================================================
+#                                Actions
+# =============================================================================
+ACTION_TRANSFORM_LOOK_AT = 0
 
 # =============================================================================
 #                              GLFW Types
@@ -106,7 +126,7 @@ SUBSCRIBED_EVENTS_INPUT_CONTROL_SYSTEM = [
 CAMERA_FOV_DEG = 45
 CAMERA_Z_NEAR = 0.01
 CAMERA_Z_FAR = 1000.0
-CAMERA_VIEWPORT_NORM = (0.0, 0.0, 1.0, 1.0)
+CAMERA_VIEWPORT_RATIO = (0.0, 0.0, 1.0, 1.0)
 CAMERA_ZOOM_SPEED = 0.05
 
 # Mouse Input
@@ -142,13 +162,8 @@ VIEWPORT_INDEX_HEIGHT = 3
 #                                Render System
 # =============================================================================
 
-RENDER_SYSTEM_DEFAULT_UP_VECTOR = (0.0, 1.0, 0.0)
-
-RENDER_3D_SYSTEM_MODE_FINAL = 0
-RENDER_3D_SYSTEM_MODE_NORMAL = 1
-RENDER_3D_SYSTEM_MODE_DEPTH = 2
-RENDER_3D_SYSTEM_MODE_ENTITY_ID = 3
-RENDER_3D_SYSTEM_MODE_INSTANCE_ID = 4
+RENDER_SYSTEM_UP_VECTOR = (0.0, 1.0, 0.0)
+RENDER_SYSTEM_BACKGROUND_COLOR = (0.21176, 0.21176, 0.21176)
 
 SHADER_PROGRAM_FORWARD_PASS = "forward_pass"
 SHADER_PROGRAM_SELECTED_ENTITY_PASS = "selected_entity_pass"
@@ -166,8 +181,21 @@ SHADER_INPUT_NORMAL = "in_normal"
 SHADER_INPUT_COLOR = "in_color"
 SHADER_INPUT_UV = "in_uv"
 
-# Uniforms
-SHADER_UNIFORM_ENTITY_ID = "entity_id"
+RENDER_MODE_COLOR_SOURCE_SINGLE = 0
+RENDER_MODE_COLOR_SOURCE_BUFFER = 1
+RENDER_MODE_COLOR_SOURCE_UV = 2
+COLOR_SOURCE_MAP = {
+    "single": RENDER_MODE_COLOR_SOURCE_SINGLE,
+    "buffer": RENDER_MODE_COLOR_SOURCE_BUFFER,
+    "uv": RENDER_MODE_COLOR_SOURCE_UV
+}
+
+RENDER_MODE_LIGHTING_SOLID = 0
+RENDER_MODE_LIGHTING_LIT = 1
+LIGHTING_MODE_MAP = {
+    "solid": RENDER_MODE_LIGHTING_SOLID,
+    "lit": RENDER_MODE_LIGHTING_LIT
+}
 
 # Font Library
 FONT_VBO_BUFFER_RESERVE = 4096
@@ -190,6 +218,12 @@ DIRECTIONAL_LIGHT_SIZE = (2048, 2048)
 TRANSFORM_SYSTEM_MAX_NUM_TRANSFORMS = 256
 
 # =============================================================================
+#                                  Math
+# =============================================================================
+
+DEG2RAD = 3.14159265358979 / 180.0
+
+# =============================================================================
 #                              Component Pool
 # =============================================================================
 
@@ -206,6 +240,7 @@ COMPONENT_TYPE_TEXT_2D = 6
 COMPONENT_TYPE_DIRECTIONAL_LIGHT = 7
 COMPONENT_TYPE_SPOT_LIGHT = 8
 COMPONENT_TYPE_POINT_LIGHT = 9
+COMPONENT_TYPE_COLLIDER = 10
 
 # Component Names (For loading from XML)
 COMPONENT_NAME_TRANSFORM_3D = "transform_3d"
@@ -218,16 +253,98 @@ COMPONENT_NAME_TEXT_2D = "text_2d"
 COMPONENT_NAME_DIRECTIONAL_LIGHT = "directional_light"
 COMPONENT_NAME_SPOT_LIGHT = "spot_light"
 COMPONENT_NAME_POINT_LIGHT = "point_light"
+COMPONENT_NAME_COLLIDER = "collider"
+
+COMPONENT_MAP = {
+    COMPONENT_NAME_TRANSFORM_3D: COMPONENT_TYPE_TRANSFORM_3D,
+    COMPONENT_NAME_TRANSFORM_2D: COMPONENT_TYPE_TRANSFORM_2D,
+    COMPONENT_NAME_MESH: COMPONENT_TYPE_MESH,
+    COMPONENT_NAME_CAMERA: COMPONENT_TYPE_CAMERA,
+    COMPONENT_NAME_MATERIAL: COMPONENT_TYPE_MATERIAL,
+    COMPONENT_NAME_INPUT_CONTROL: COMPONENT_TYPE_INPUT_CONTROL,
+    COMPONENT_NAME_TEXT_2D: COMPONENT_TYPE_TEXT_2D,
+    COMPONENT_NAME_DIRECTIONAL_LIGHT: COMPONENT_TYPE_DIRECTIONAL_LIGHT,
+    COMPONENT_NAME_SPOT_LIGHT: COMPONENT_TYPE_SPOT_LIGHT,
+    COMPONENT_NAME_POINT_LIGHT: COMPONENT_TYPE_POINT_LIGHT,
+    COMPONENT_NAME_COLLIDER: COMPONENT_TYPE_COLLIDER,
+}
 
 # Mesh Component Arguments
 COMPONENT_ARG_MESH_SHAPE = "shape"
 COMPONENT_ARG_MESH_FPATH = "fpath"
 
 MESH_SHAPE_BOX = "box"
-MESH_SHAPE_SPHERE = "sphere"
 MESH_SHAPE_ICOSPHERE = "icosphere"
+MESH_SHAPE_CAPSULE = "capsule"
 MESH_SHAPE_CYLINDER = "cylinder"
 MESH_SHAPE_FROM_OBJ = "obj"  # TODO: Kinda of a hack. You need to add argument "fpath"
+
+COLLIDER_SHAPE_SPHERE = "sphere"
+COLLIDER_SHAPE_CAPSULE = "capsule"
+COLLIDER_SHAPE_PLANE = "plane"
+
+# =============================================================================
+#                               Materials
+# =============================================================================
+
+MATERIAL_COLOR_BLACK = (0.0, 0.0, 0.0)
+MATERIAL_COLOR_WHITE = (1.0, 1.0, 1.0)
+MATERIAL_COLOR_RED = (1.0, 0.0, 0.0)
+MATERIAL_COLOR_LIME = (0.0, 1.0, 0.0)
+MATERIAL_COLOR_BLUE = (0.0, 0.0, 1.0)
+MATERIAL_COLOR_YELLOW = (1.0, 1.0, 0.0)
+MATERIAL_COLOR_CYAN = (0.0, 1.0, 1.0)  # Also known as Aqua
+MATERIAL_COLOR_MAGENTA = (1.0, 0.0, 1.0)  # Also known as Fuchsia
+MATERIAL_COLOR_SILVER = (192.0 / 255.0, 192.0 / 255.0, 192.0 / 255.0)
+MATERIAL_COLOR_GRAY = (128.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0)
+MATERIAL_COLOR_MAROON = (128.0 / 255.0, 0.0, 0.0)
+MATERIAL_COLOR_OLIVE = (128.0 / 255.0, 128.0 / 255.0, 0.0)
+MATERIAL_COLOR_GREEN = (0.0, 128.0 / 255.0, 0.0)
+MATERIAL_COLOR_PURPLE = (128.0 / 255.0, 0.0, 128.0 / 255.0)
+MATERIAL_COLOR_TEAL = (0.0, 128.0 / 255.0, 128.0 / 255.0)
+MATERIAL_COLOR_NAVY = (0.0, 0.0, 128.0 / 255.0)
+
+
+# From: https://stackoverflow.com/questions/64369710/what-are-the-hex-codes-of-matplotlib-tab10-palette
+MATERIAL_COLOR_TAB10_BLUE = (31 / 255.0, 119 / 255.0, 180 / 255.0)  # #1f77b4
+MATERIAL_COLOR_TAB10_ORANGE = (255 / 255.0, 127 / 255.0, 14 / 255.0)  # #ff7f0e
+MATERIAL_COLOR_TAB10_GREEN = (44 / 255.0, 160 / 255.0, 44 / 255.0)  # #2ca02c
+MATERIAL_COLOR_TAB10_RED = (214 / 255.0, 39 / 255.0, 40 / 255.0)  #d62728
+MATERIAL_COLOR_TAB10_PURPLE = (148 / 255.0, 103 / 255.0, 189 / 255.0)  # #9467bd
+MATERIAL_COLOR_TAB10_BROWN = (140 / 255.0, 86 / 255.0, 75 / 255.0)  # #8c564b
+MATERIAL_COLOR_TAB10_PINK = (227 / 255.0, 119 / 255.0, 194 / 255.0)  # #e377c2
+MATERIAL_COLOR_TAB10_GRAY = (127 / 255.0, 127 / 255.0, 127 / 255.0)  # #7f7f7f
+MATERIAL_COLOR_TAB10_OLIVE = (188 / 255.0, 189 / 255.0, 34 / 255.0)  # #bcbd22
+MATERIAL_COLOR_TAB10_CYAN = (23 / 255.0, 190 / 255.0, 207 / 255.0)  #17becf
+
+MATERIAL_COLORS = {
+    "black": MATERIAL_COLOR_BLACK,
+    "white": MATERIAL_COLOR_WHITE,
+    "red": MATERIAL_COLOR_RED,
+    "lime": MATERIAL_COLOR_LIME,
+    "blue": MATERIAL_COLOR_BLUE,
+    "yellow": MATERIAL_COLOR_YELLOW,
+    "cyan": MATERIAL_COLOR_CYAN,  # Also known as Aqua
+    "magenta": MATERIAL_COLOR_MAGENTA,  # Also known as Fuchsia
+    "silver": MATERIAL_COLOR_SILVER,
+    "gray": MATERIAL_COLOR_GRAY,
+    "maroon": MATERIAL_COLOR_MAROON,
+    "olive": MATERIAL_COLOR_OLIVE,
+    "green": MATERIAL_COLOR_GREEN,
+    "purple": MATERIAL_COLOR_PURPLE,
+    "teal": MATERIAL_COLOR_TEAL,
+    "navy": MATERIAL_COLOR_NAVY,
+    "tab10_blue": MATERIAL_COLOR_TAB10_BLUE,
+    "tab10_orange": MATERIAL_COLOR_TAB10_ORANGE,
+    "tab10_green": MATERIAL_COLOR_TAB10_GREEN,
+    "tab10_red": MATERIAL_COLOR_TAB10_RED,
+    "tab10_purple": MATERIAL_COLOR_TAB10_PURPLE,
+    "tab10_brown": MATERIAL_COLOR_TAB10_BROWN,
+    "tab10_pink": MATERIAL_COLOR_TAB10_PINK,
+    "tab10_gray": MATERIAL_COLOR_TAB10_GRAY,
+    "tab10_olive": MATERIAL_COLOR_TAB10_OLIVE,
+    "tab10_cyan": MATERIAL_COLOR_TAB10_CYAN
+}
 
 # =============================================================================
 #                               Transforms

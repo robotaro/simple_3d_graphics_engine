@@ -2,43 +2,40 @@ import numpy as np
 from numba import njit
 
 
-def _transform_vector(transform, vector):
-    """Apply affine transformation (4-by-4 matrix) to a 3D vector."""
-    return (transform @ np.concatenate([vector, np.array([1])]))[:3]
+@njit(cache=True)
+def screen_to_world_ray(viewport_coord_norm: tuple,
+                        view_matrix: np.ndarray,
+                        projection_matrix: np.ndarray):
 
-
-def _transform_direction(transform, vector):
-    """Apply affine transformation (4-by-4 matrix) to a 3D directon."""
-    return (transform @ np.concatenate([vector, np.array([0])]))[:3]
-
-def normalize(x):
-    return x / np.linalg.norm(x)
-
-
-def look_at(position, target, up):
-    """
-    Create an affine transformation that locates the camera at `position`, s.t. it looks at `target`.
-    :param position: The 3D position of the camera in world coordinates.
-    :param target: The 3D target where the camera should look at in world coordinates.
-    :param up: The vector that is considered to be up in world coordinates.
-    :return: Returns the 4-by-4 affine transform that transforms a point in world space into the camera space, i.e.
-      it returns the inverse of the camera's 6D pose matrix. Assumes right-multiplication, i.e. x' = [R|t] * x.
     """
 
-    forward = normalize(position - target)  # forward actually points in the other direction than `target` is.
-    right = normalize(np.cross(up, forward))
-    camera_up = np.cross(forward, right)
+    :param viewport_coord_norm: tuple, (x, y) <float, float> Ranges between -1 and 1
+    :param view_matrix: np.ndarray (4, 4) <float32> position and orientation of camera in space
+    :param projection_matrix: (4, 4) <float32> perspective matrix
 
-    # We directly create the inverse matrix (i.e. world2cam) because this is typically how look-at is define.
-    rot = np.eye(4)
-    rot[0, :3] = right
-    rot[1, :3] = camera_up
-    rot[2, :3] = forward
+    :return:
+    """
 
-    trans = np.eye(4)
-    trans[:3, 3] = -position
+    # Create a 4D homogeneous clip space coordinate
+    clip_coordinates = np.array([viewport_coord_norm[0], viewport_coord_norm[1], -1.0, 1.0], dtype=np.float32)
 
-    return rot @ trans
+    # Inverse the projection matrix to get the view coordinates
+    inv_projection_matrix = np.linalg.inv(projection_matrix)
+    eye_coordinates = np.dot(inv_projection_matrix, clip_coordinates)
+    eye_coordinates = np.array([eye_coordinates[0], eye_coordinates[1], -1.0, 0.0], dtype=np.float32)
+
+    # Inverse the view matrix to get the world coordinates
+    world_coordinates = np.dot(view_matrix, eye_coordinates)
+
+    # Extract the ray's origin from the inverted view matrix
+    ray_origin = view_matrix[:, 3][:3]
+
+    # Normalize the world coordinates to get the ray direction
+    ray_direction = world_coordinates[:3]
+    ray_direction[1] = -ray_direction[1]  # TODO: FIND OUT WHY THE Y-AXIS IS REVERSED!!!!!! VERY IMPORTANT!!!a
+    ray_direction /= np.linalg.norm(ray_direction)
+
+    return ray_direction, ray_origin
 
 
 def orthographic_projection(scale_x: float, scale_y: float, z_near: float, z_far: float):
@@ -71,3 +68,36 @@ def perspective_projection(fov_rad: float, aspect_ratio: float, z_near: float, z
         projection[2, 3] = (2 * f * n) / (n - f)
 
     return projection
+
+"""
+
+@njit
+def screen_to_world_ray(screen_coords_normalised: tuple,
+                        view_matrix: np.ndarray,
+                        projection_matrix: np.ndarray,
+                        output_ray_origin: np.array,
+                        output_ray_direction: np.array):
+                        
+    # :param output_ray_origin: np.array (3,) <float32> origin of ray matching the camera's view matrix
+    #     :param output_ray_direction: np.array (3,) <float32> direction of ray
+
+    # Create a 4D homogeneous clip space coordinate
+    clip_coordinates = np.array([screen_coords_normalised[0], screen_coords_normalised[1], -1.0, 1.0])
+
+    # Inverse the projection matrix to get the view coordinates
+    inv_projection_matrix = np.linalg.inv(projection_matrix)
+    eye_coordinates = np.dot(inv_projection_matrix, clip_coordinates)
+    eye_coordinates = np.array([eye_coordinates[0], eye_coordinates[1], -1.0, 0.0])
+
+    # Inverse the view matrix to get the world coordinates
+    inv_view_matrix = np.linalg.inv(view_matrix)
+    world_coordinates = np.dot(inv_view_matrix, eye_coordinates)
+
+    # Extract the ray's origin from the inverted view matrix
+    output_ray_origin = inv_view_matrix[:, 3][:3]
+
+    # Normalize the world coordinates to get the ray direction
+    output_ray_direction = world_coordinates[:3]
+    output_ray_direction /= np.linalg.norm(output_ray_direction)
+
+"""
