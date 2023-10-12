@@ -15,6 +15,7 @@ from src.systems.imgui_system.imgui_system import ImguiSystem
 from src.systems.gizmo_3d_system.gizmo_3d_system import Gizmo3DSystem
 from src.systems.transform_system.transform_system import TransformSystem
 from src.systems.input_control_system.input_control_system import InputControlSystem
+from src.systems.import_system.import_system import ImportSystem
 from src.event_publisher import EventPublisher
 from src.action_publisher import ActionPublisher
 from src.component_pool import ComponentPool
@@ -275,9 +276,9 @@ class Editor:
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
                 action_publisher=self.action_publisher,
+                parameters=parameters,
                 context=self.ctx,
-                buffer_size=self.buffer_size,
-                parameters=parameters)
+                buffer_size=self.buffer_size)
 
             # Set default events to subscribe too
             if subscribed_events is None:
@@ -289,8 +290,8 @@ class Editor:
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
                 action_publisher=self.action_publisher,
-                window_glfw=self.window_glfw,
-                parameters=parameters)
+                parameters=parameters,
+                window_glfw=self.window_glfw)
 
             # Set default events to subscribe too
             if subscribed_events is None:
@@ -330,7 +331,19 @@ class Editor:
 
             # Set default events to subscribe too
             if subscribed_events is None:
-                subscribed_events = constants.SUBSCRIBED_EVENTS_TRANSFORM_SYSTEM
+                subscribed_events = []
+
+        if system_type == ImportSystem._type:
+            new_system = ImportSystem(
+                logger=self.logger,
+                component_pool=self.component_pool,
+                event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher,
+                parameters=parameters)
+
+            # Set default events to subscribe too
+            if subscribed_events is None:
+                subscribed_events = constants.SUBSCRIBED_EVENTS_IMPORT_SYSTEM
 
         if new_system is None:
             self.logger.error(f"Failed to create system {system_type}")
