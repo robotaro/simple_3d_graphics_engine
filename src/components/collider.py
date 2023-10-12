@@ -17,8 +17,8 @@ class Collider(Component):
         "radius"
     ]
 
-    def __init__(self, parameters: dict):
-        super().__init__(parameters=parameters)
+    def __init__(self, parameters, system_owned=False):
+        super().__init__(parameters=parameters, system_owned=system_owned)
 
         self.shape = Component.dict2string(input_dict=parameters, key="shape", default_value="sphere")
 

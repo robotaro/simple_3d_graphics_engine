@@ -209,7 +209,15 @@ class ImguiSystem(System):
 
         flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP
 
+        # ======================================================================
+        #                 List all available entities in the scene
+        # ======================================================================
+
         for entity_uid, entity in self.component_pool.entities.items():
+
+            # Do not show any entities created and managed by the systems. They are required for them to work.
+            if entity.system_owned:
+                continue
 
             # Draw the selectable item
             (opened, selected) = imgui.selectable(entity.name, selected=False, flags=flags)
@@ -229,9 +237,13 @@ class ImguiSystem(System):
         imgui.text(f"[ Entity ] {self.selected_entity_name}")
         imgui.spacing()
 
+        # ======================================================================
+        #            List all components of the currently selected entity
+        # ======================================================================
+
         # [ Point Light ]
         point_light = self.component_pool.point_light_components.get(self.selected_entity_uid, None)
-        if point_light:
+        if point_light and not point_light.system_owned:
             imgui.text(f"Colors")
             _, point_light.diffuse = imgui.drag_float3("Diffuse Color",
                                                        *point_light.diffuse,
@@ -256,13 +268,13 @@ class ImguiSystem(System):
 
         # [ Camera ]
         camera = self.component_pool.camera_components.get(self.selected_entity_uid, None)
-        if camera:
+        if camera and not camera.system_owned:
             imgui.text(f"Camera")
             _, camera.perspective = imgui.checkbox("Perspective", camera.perspective)
 
         # [ Transform 3D ]
         transform = self.component_pool.transform_3d_components.get(self.selected_entity_uid, None)
-        if transform:
+        if transform and not transform.system_owned:
             imgui.text(f"Transform")
             value_updated, transform.position = imgui.drag_float3("Position",
                                                                   *transform.position,
@@ -277,7 +289,7 @@ class ImguiSystem(System):
 
         # [ Material]
         material = self.component_pool.material_components.get(self.selected_entity_uid, None)
-        if material:
+        if material and not material.system_owned:
             imgui.text(f"Material")
             _, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
             _, material.specular = imgui.color_edit3("Specular", *material.specular)

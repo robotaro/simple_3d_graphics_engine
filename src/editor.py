@@ -1,3 +1,4 @@
+import json
 import os
 import time
 import glfw
@@ -357,9 +358,8 @@ class Editor:
             clean_scene_xml_fpath = scene_xml_fpath.replace("\\", os.sep).replace("/", os.sep)
             fpath = os.path.join(constants.ROOT_DIR, clean_scene_xml_fpath)
 
-        scene_dict = utils_xml2scene.load_scene_from_xml(xml_fpath=fpath)
-
-        for entity_blueprint in scene_dict["scene"]["entity"]:
+        scene_blueprint = utils_xml2scene.load_scene_from_xml(xml_fpath=fpath)
+        for entity_blueprint in scene_blueprint["scene"]["entity"]:
             self.component_pool.add_entity(entity_blueprint=entity_blueprint)
 
     def initialise_components(self):

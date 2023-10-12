@@ -37,27 +37,6 @@
         <material diffuse="tab10_red" diffuse_highlight="tab10_orange" shininess_factor="32.0"/>
     </entity>
 
-    <entity name="Gizmo">
-        <transform_3d position="-2 0 2" degrees="true"/>
-        <entity name="Red Cylinder">
-            <mesh shape="cylinder" radius="0.03"/>
-            <transform_3d rotation="0 0 90" degrees="true"/>
-            <material diffuse="red" shininess_factor="32.0" lighting_mode="solid"/>
-        </entity>
-
-        <entity name="Green Cylinder">
-            <mesh shape="cylinder" radius="0.03"/>
-            <transform_3d rotation="0 0 0"  degrees="true"/>
-            <material diffuse="green" shininess_factor="32.0" lighting_mode="solid"/>
-        </entity>
-
-        <entity name="Blue Cylinder">
-            <mesh shape="cylinder" radius="0.03"/>
-            <transform_3d rotation="90 0 0" degrees="true"/>
-            <material diffuse="blue" shininess_factor="32.0" lighting_mode="solid"/>
-        </entity>
-    </entity>
-
     <entity name="Floor">
         <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
         <transform_3d position="0 -0.5 0"/>
