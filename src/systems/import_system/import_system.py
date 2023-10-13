@@ -74,8 +74,6 @@ class ImportSystem(System):
                 new_loading_task.start()
                 self.loading_tasks.append(new_loading_task)
 
-        g = 0
-
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
         """
         At Each update, the progress of each loading task (thread) is checked and published

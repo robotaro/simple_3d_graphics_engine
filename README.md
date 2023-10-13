@@ -1,9 +1,9 @@
 # Simple 3D Graphics Engine
 A simple 3D graphics engine designed to serve as a tool for proof-of-concept algorithms
 
-This is an attempt to simplify the core functions of t
+![main_printscreen.PNG](docs%2Fimages%2Fmain_printscreen.PNG)
 
-Maybe check the following projects for inspiration:
+Documentation will be sparse and updated when major milestones are reached.
 
 ## Important Notes
 - Events 
