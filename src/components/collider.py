@@ -9,7 +9,7 @@ class Collider(Component):
     Colliders are components that will allow collision tobe detected between
     """
 
-    _type = "collision_body"
+    _type = "collider"
 
     __slots__ = [
         "shape",

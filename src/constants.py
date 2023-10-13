@@ -50,6 +50,14 @@ DEFAULT_SYSTEMS = [
 IMGUI_DRAG_FLOAT_PRECISION = 1e-2
 
 # =============================================================================
+#                             Gizmo 3D System
+# =============================================================================
+
+GIZMO_3D_SYSTEM_X_AXIS_NAME = "x_axis"
+GIZMO_3D_SYSTEM_Y_AXIS_NAME = "y_axis"
+GIZMO_3D_SYSTEM_Z_AXIS_NAME = "z_axis"
+
+# =============================================================================
 #                               Events
 # =============================================================================
 
@@ -246,10 +254,10 @@ COMPONENT_TYPE_DIRECTIONAL_LIGHT = 7
 COMPONENT_TYPE_SPOT_LIGHT = 8
 COMPONENT_TYPE_POINT_LIGHT = 9
 COMPONENT_TYPE_COLLIDER = 10
+COMPONENT_TYPE_GIZMO_3D = 11
 
 # Component Names (For loading from XML)
 COMPONENT_NAME_TRANSFORM_3D = "transform_3d"
-COMPONENT_NAME_TRANSFORM_2D = "transform_2d"
 COMPONENT_NAME_MESH = "mesh"
 COMPONENT_NAME_CAMERA = "camera"
 COMPONENT_NAME_MATERIAL = "material"
@@ -259,10 +267,10 @@ COMPONENT_NAME_DIRECTIONAL_LIGHT = "directional_light"
 COMPONENT_NAME_SPOT_LIGHT = "spot_light"
 COMPONENT_NAME_POINT_LIGHT = "point_light"
 COMPONENT_NAME_COLLIDER = "collider"
+COMPONENT_NAME_GIZMO_3D = "gizmo_3d"
 
 COMPONENT_MAP = {
     COMPONENT_NAME_TRANSFORM_3D: COMPONENT_TYPE_TRANSFORM_3D,
-    COMPONENT_NAME_TRANSFORM_2D: COMPONENT_TYPE_TRANSFORM_2D,
     COMPONENT_NAME_MESH: COMPONENT_TYPE_MESH,
     COMPONENT_NAME_CAMERA: COMPONENT_TYPE_CAMERA,
     COMPONENT_NAME_MATERIAL: COMPONENT_TYPE_MATERIAL,
@@ -272,6 +280,7 @@ COMPONENT_MAP = {
     COMPONENT_NAME_SPOT_LIGHT: COMPONENT_TYPE_SPOT_LIGHT,
     COMPONENT_NAME_POINT_LIGHT: COMPONENT_TYPE_POINT_LIGHT,
     COMPONENT_NAME_COLLIDER: COMPONENT_TYPE_COLLIDER,
+    COMPONENT_NAME_GIZMO_3D: COMPONENT_TYPE_GIZMO_3D
 }
 
 # Mesh Component Arguments

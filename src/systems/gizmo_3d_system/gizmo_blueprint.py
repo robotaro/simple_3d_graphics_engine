@@ -1,5 +1,5 @@
 
-GIZMO_BLUEPRINT = {
+GIZMO_3D_RIG_BLUEPRINT = {
     "name": "Gizmo",
     "components": [
         {
@@ -8,11 +8,15 @@ GIZMO_BLUEPRINT = {
                 "position": "-2 0 2",
                 "degrees": "true"
             }
+        },
+        {
+            "name": "gizmo_3d",
+            "parameters": {}
         }
     ],
     "entity": [
         {
-            "name": "Red Cylinder",
+            "name": "x_axis",
             "components": [
                 {
                     "name": "mesh",
@@ -39,7 +43,7 @@ GIZMO_BLUEPRINT = {
             ]
         },
         {
-            "name": "Green Cylinder",
+            "name": "y_axis",
             "components": [
                 {
                     "name": "mesh",
@@ -66,7 +70,7 @@ GIZMO_BLUEPRINT = {
             ]
         },
         {
-            "name": "Blue Cylinder",
+            "name": "z_axis",
             "components": [
                 {
                     "name": "mesh",

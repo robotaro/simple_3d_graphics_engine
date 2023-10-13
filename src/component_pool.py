@@ -12,6 +12,7 @@ from src.components.input_control import InputControl
 from src.components.text_2d import Text2D
 from src.components.point_light import PointLight
 from src.components.directional_light import DirectionalLight
+from src.components.gizmo_3d import Gizmo3D
 
 
 class Entity:
@@ -46,6 +47,7 @@ class ComponentPool:
         constants.COMPONENT_TYPE_POINT_LIGHT: PointLight,
         constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT: DirectionalLight,
         constants.COMPONENT_TYPE_COLLIDER: Collider,
+        constants.COMPONENT_TYPE_GIZMO_3D: Gizmo3D,
     }
 
     def __init__(self, logger: logging.Logger):
@@ -70,6 +72,7 @@ class ComponentPool:
         self.spot_light_components = {}
         self.point_light_components = {}
         self.collider_components = {}
+        self.gizmo_3d_components = {}
 
         self.component_storage_map = {
             constants.COMPONENT_TYPE_TRANSFORM_3D: self.transform_3d_components,
@@ -83,6 +86,7 @@ class ComponentPool:
             constants.COMPONENT_TYPE_SPOT_LIGHT: self.spot_light_components,
             constants.COMPONENT_TYPE_POINT_LIGHT: self.point_light_components,
             constants.COMPONENT_TYPE_COLLIDER: self.collider_components,
+            constants.COMPONENT_TYPE_GIZMO_3D: self.gizmo_3d_components,
         }
 
         # This variable is a temporary solution to keep track of all entities added during the xml scene loading
@@ -93,14 +97,21 @@ class ComponentPool:
         entity_name = entity_blueprint.get("name", "unamed_entity")
         entity_uid = self._create_entity(name=entity_name, parent_uid=parent_entity_uid, system_owned=system_owned)
 
+        # Add children first, if any
         if "entity" in entity_blueprint:
             for sub_entity_blueprint in entity_blueprint["entity"]:
-                self.add_entity(entity_blueprint=sub_entity_blueprint,
+
+                # Recursively go into child's blueprint to create it
+                child_uid = self.add_entity(entity_blueprint=sub_entity_blueprint,
                                 parent_entity_uid=entity_uid,
                                 system_owned=system_owned)
 
+                # And once you are back, add this child to its parent
+                self.entities[entity_uid].children_uids.append(child_uid)
+
         self.entity_uids_to_be_initiliased.append(entity_uid)
 
+        # And add components after
         for component in entity_blueprint["components"]:
 
             component_type = constants.COMPONENT_MAP.get(component["name"], None)
@@ -120,9 +131,9 @@ class ComponentPool:
 
         # Safety
         if component_pool is None:
-            raise TypeError(f"[ERROR] Component type '{component_type}' not supported")
+            raise KeyError(f"[ERROR] Component type '{component_type}' not supported")
         if entity_uid in component_pool:
-            raise TypeError(f"[ERROR] Component type '{component_type}' already exists in component pool")
+            raise KeyError(f"[ERROR] Component type '{component_type}' already exists in component pool")
 
         component_pool[entity_uid] = ComponentPool.COMPONENT_CLASS_MAP[component_type](parameters=parameters,
                                                                                        system_owned=system_owned)
@@ -145,11 +156,19 @@ class ComponentPool:
         component_pool.pop(entity_uid)
         return True
 
+    def get_entity(self, entity_uid: int) -> Union[Entity, None]:
+
+        entity = self.entities.get(entity_uid, None)
+        if entity is None:
+            raise KeyError(f"[ERROR] Entity ID '{entity}' not present")
+
+        return entity
+
     def get_component(self, entity_uid: int, component_type: int) -> Union[Component, None]:
 
-        entity = self.entities[entity_uid]
+        entity = self.entities.get(entity_uid, None)
         if entity is None:
-            raise TypeError(f"[ERROR] Entity ID '{entity}' not present")
+            raise KeyError(f"[ERROR] Entity ID '{entity}' not present")
 
         selected_component_pool = self.component_storage_map[component_type]
 
@@ -160,6 +179,14 @@ class ComponentPool:
             return self.get_component(entity_uid=entity.parent_uid, component_type=component_type)
 
         return None
+
+    def get_children_uids(self, entity_uid: int) -> []:
+
+        entity = self.entities.get(entity_uid, None)
+        if entity is None:
+            raise KeyError(f"[ERROR] Entity ID '{entity}' not present")
+
+        return self.entities[entity_uid].children_uids
 
     def get_all_components(self, entity_uid: int) -> list:
         return [storage[entity_uid] for _, storage in self.component_storage_map.items() if entity_uid in storage]

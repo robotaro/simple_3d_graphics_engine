@@ -8,7 +8,7 @@ from src.component_pool import ComponentPool
 from src.math import intersection_3d
 from src.utilities import utils_camera
 from src.systems.system import System
-from src.systems.gizmo_3d_system.gizmo_blueprint import GIZMO_BLUEPRINT
+from src.systems.gizmo_3d_system.gizmo_blueprint import GIZMO_3D_RIG_BLUEPRINT
 
 
 class Gizmo3DSystem(System):
@@ -18,7 +18,7 @@ class Gizmo3DSystem(System):
     __slots__ = [
         "entity_ray_intersection_list",
         "window_size",
-        "gizmo_entity_uid",
+        "gizmo_3d_rig_entity_uid",
         "selected_entity_uid",
         "selected_entity_init_distance_to_cam"]
 
@@ -37,7 +37,7 @@ class Gizmo3DSystem(System):
 
         self.window_size = None
         self.entity_ray_intersection_list = []
-        self.gizmo_entity_uid = None
+        self.gizmo_3d_rig_entity_uid = None
 
         # DEBUG
         self.selected_entity_uid = None
@@ -53,9 +53,22 @@ class Gizmo3DSystem(System):
         """
 
         # Create Gizmo entity here
-        self.gizmo_entity_uid = self.component_pool.add_entity(
-            entity_blueprint=GIZMO_BLUEPRINT,
+        self.gizmo_3d_rig_entity_uid = self.component_pool.add_entity(
+            entity_blueprint=GIZMO_3D_RIG_BLUEPRINT,
             system_owned=True)
+
+        # look for 3 specific entities by name to make sure the axes can be represented correctly
+        for entity_uid, gizmo_3d in self.component_pool.gizmo_3d_components.items():
+            children_uids = self.component_pool.get_children_uids(entity_uid=entity_uid)
+
+            gizmo_3d.x_axis_child_entity_uid = [uid for uid in children_uids
+                if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_X_AXIS_NAME][0]
+            gizmo_3d.y_axis_child_entity_uid = [uid for uid in children_uids
+                if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_Y_AXIS_NAME][0]
+            gizmo_3d.z_axis_child_entity_uid = [uid for uid in children_uids
+                if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_Z_AXIS_NAME][0]
+
+        # TODO: Continue from here!!!
 
         return True
 

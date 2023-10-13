@@ -1,5 +1,4 @@
 import logging
-import threading
 import os.path
 
 import moderngl

@@ -19,4 +19,4 @@ class LoadingTask(threading.Thread):
 
         except Exception as e:
             self.task_crashed = True
-            print(f"Failed to load file {self.file_path}: {str(e)}")
+            print(f"Failed to load file {self.fpath}: {str(e)}")
