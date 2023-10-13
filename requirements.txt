@@ -12,7 +12,8 @@ glfw==2.5.5
 numpy==1.21.6
 
 # Geometry Libraries
-trimesh==3.22.3
+trimesh==3.22.3  # 3D geometry operations
+triangle==20230923 # 2D triangulation
 
 # General IO
 PyYAML==6.0  # Consider this over omegaconf==2.3.0?
@@ -26,8 +27,8 @@ Pillow==10.0.0
 
 # Video Loading
 av==10.0.0
-
-# Custom UI
+you
+# Font rendering
 freetype-py==2.3.0
 
 # ImGUI
@@ -41,6 +42,3 @@ flake8==6.0.0
 # [Debugging and Profiling]
 matplotlib==3.6.2
 CProfileV==1.0.7
-
-# [ Aitviewer Integration ]
-scipy==1.10.1
