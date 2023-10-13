@@ -1,7 +1,7 @@
 # Simple 3D Graphics Engine
 A simple 3D graphics engine designed to serve as a tool for proof-of-concept algorithms
 
-![main_printscreen.PNG](docs%2Fimages%2Fmain_printscreen.PNG)
+![main_printscreen.PNG](./docs/images/main_printscreen.PNG)
 
 Documentation will be sparse and updated when major milestones are reached.
 
