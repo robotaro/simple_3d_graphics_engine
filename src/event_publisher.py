@@ -23,6 +23,7 @@ class EventPublisher:
             constants.EVENT_MOUSE_BUTTON_DISABLED: [],
             constants.EVENT_MOUSE_BUTTON_PRESS: [],
             constants.EVENT_MOUSE_BUTTON_RELEASE: [],
+            constants.EVENT_MOUSE_DOUBLE_CLICK: [],
             constants.EVENT_MOUSE_MOVE: [],
             constants.EVENT_MOUSE_SCROLL: [],
             constants.EVENT_WINDOW_SIZE: [],

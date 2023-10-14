@@ -17,6 +17,7 @@ SHADERS_DIRECTORY = os.path.join(ECS_DIR, "shaders")
 # =============================================================================
 
 DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)  # (1280, 720)
+DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD = 0.5  # in seconds - Windows default is 500ms
 
 SYSTEM_NAME_TRANSFORM = "transform_system"
 SYSTEM_NAME_RENDER = "render_system"
@@ -72,6 +73,7 @@ EVENT_MOUSE_BUTTON_PRESS = 12        # args: (button, mods, x, y) <int, int, int
 EVENT_MOUSE_BUTTON_RELEASE = 13      # args: (button, mods, x, y) <int, int, int, int>
 EVENT_MOUSE_MOVE = 14                # args: (x, y) <float, float>
 EVENT_MOUSE_SCROLL = 15              # args: (offset_x, offset_y) <float, float>
+EVENT_MOUSE_DOUBLE_CLICK = 16  # TODO: Implement this!!!
 
 # Indices
 EVENT_INDEX_KEYBOARD_KEY = 0
@@ -339,7 +341,9 @@ MATERIAL_COLORS = {
     "blue": MATERIAL_COLOR_BLUE,
     "yellow": MATERIAL_COLOR_YELLOW,
     "cyan": MATERIAL_COLOR_CYAN,  # Also known as Aqua
+    "aqua": MATERIAL_COLOR_CYAN,  # Also known as Cyan
     "magenta": MATERIAL_COLOR_MAGENTA,  # Also known as Fuchsia
+    "fuchsia": MATERIAL_COLOR_MAGENTA,  # Also known as Magenta
     "silver": MATERIAL_COLOR_SILVER,
     "gray": MATERIAL_COLOR_GRAY,
     "maroon": MATERIAL_COLOR_MAROON,

@@ -38,6 +38,7 @@ class Editor:
                  "vertical_sync",
                  "mouse_state",
                  "keyboard_state",
+                 "mouse_press_last_timestamp",
                  "window_glfw",
                  "monitor_gltf",
                  "ctx",
@@ -70,6 +71,7 @@ class Editor:
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
         self.keyboard_state = self.initialise_keyboard_state()
+        self.mouse_press_last_timestamp = time.perf_counter()
 
         if not glfw.init():
             raise ValueError("[ERROR] Failed to initialize GLFW")
@@ -186,6 +188,18 @@ class Editor:
                                          event_data=(button, mods, *mouse_pos),
                                          sender=self)
             self.mouse_state[button] = constants.BUTTON_PRESSED
+
+            # Double click detection
+            mouse_press_timestamp = time.perf_counter()
+            time_between_clicks = mouse_press_timestamp - self.mouse_press_last_timestamp
+            self.mouse_press_last_timestamp = mouse_press_timestamp
+            if time_between_clicks < constants.DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD:
+                self.event_publisher.publish(event_type=constants.EVENT_MOUSE_DOUBLE_CLICK,
+                                             event_data=(button, mods, *mouse_pos),
+                                             sender=self)
+
+                # Three consecutive clicks may trigger two double clicks, so we reset the timestamp after a double click
+                self.mouse_press_last_timestamp = 0
 
         if action == glfw.RELEASE:
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_RELEASE,

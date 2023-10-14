@@ -27,7 +27,7 @@ Pillow==10.0.0
 
 # Video Loading
 av==10.0.0
-you
+
 # Font rendering
 freetype-py==2.3.0
 
