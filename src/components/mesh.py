@@ -19,6 +19,7 @@ class Mesh(Component):
         "vbo_colors",
         "vbo_uvs",
         "ibo_faces",
+        "layer",
         "visible"]
 
     def __init__(self, parameters, system_owned=False):
@@ -39,15 +40,15 @@ class Mesh(Component):
         self.vbo_uvs = None
         self.ibo_faces = None
 
-        self.generate_shape()
-
-        # Flags
+        self.layer = Component.dict2int(input_dict=self.parameters, key="layer", default_value=0)
         self.visible = Component.dict2bool(input_dict=self.parameters, key="visible", default_value=True)
-        
+
     def initialise(self, **kwargs):
 
         if self.initialised:
             return
+
+        self.generate_shape()
 
         ctx = kwargs["ctx"]
         shader_library = kwargs["shader_library"]

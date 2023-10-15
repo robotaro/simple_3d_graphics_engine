@@ -347,7 +347,7 @@ class RenderSystem(System):
             window_width=self.buffer_size[0],
             window_height=self.buffer_size[1])
 
-        # Lights
+        # Point Lights
         program["num_point_lights"].value = len(self.component_pool.point_light_components)
         for index, (mesh_entity_uid, point_light_component) in enumerate(self.component_pool.point_light_components.items()):
 
@@ -359,6 +359,7 @@ class RenderSystem(System):
             program[f"point_lights[{index}].attenuation_coeffs"] = point_light_component.attenuation_coeffs
             program[f"point_lights[{index}].enabled"] = point_light_component.enabled
 
+        # Directional Lights
         program["num_directional_lights"].value = len(self.component_pool.directional_light_components)
         for index, (mesh_entity_uid, dir_light_component) in enumerate(self.component_pool.directional_light_components.items()):
             light_transform = self.component_pool.transform_3d_components[mesh_entity_uid]
@@ -370,40 +371,50 @@ class RenderSystem(System):
             program[f"directional_lights[{index}].shadow_enabled"] = dir_light_component.shadow_enabled
             program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
 
-        # Renderables
-        for mesh_entity_uid, mesh_component in component_pool.mesh_components.items():
+        # Layers
+        for current_layer in constants.RENDER_SYSTERM_LAYERS:
 
-            if not mesh_component.visible:
-                continue
+            for mesh_entity_uid, mesh_component in component_pool.mesh_components.items():
 
-            mesh_transform = component_pool.get_component(entity_uid=mesh_entity_uid,
-                                                          component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+                if not mesh_component.visible or mesh_component.layer != current_layer:
+                    continue
 
-            material = component_pool.material_components.get(mesh_entity_uid, None)
+                # TODO: Continue from here
+                if current_layer == constants.RENDER_SYSTEM_LAYER_GIZMO_3D:
+                    self.forward_pass_framebuffer.depth_mask = False
+                else:
+                    self.forward_pass_framebuffer.depth_mask = True
 
-            # Upload uniforms
-            program["entity_id"] = mesh_entity_uid
-            program["entity_id"].value = mesh_entity_uid
-            program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
-            program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
-            program["directional_lights_enabled"].value = self._directional_lights_enabled
-            program["point_lights_enabled"].value = self._point_lights_enabled
-            program["gamma_correction_enabled"].value = self._gamma_correction_enabled
-            program["shadows_enabled"].value = self._shadows_enabled
+                mesh_transform = component_pool.get_component(entity_uid=mesh_entity_uid,
+                                                              component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
-            # TODO: Technically, you only need to upload the material once since it doesn't change.
-            #       The program will keep its variable states!
-            if material is not None:
-                program["material.diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
-                program["material.specular"].value = material.specular
-                program["material.shininess_factor"] = material.shininess_factor
-                program["color_source"] = material.color_source
-                program["lighting_mode"] = material.lighting_mode
+                material = component_pool.material_components.get(mesh_entity_uid, None)
 
-            # Render the vao at the end
-            mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
+                # Upload uniforms
+                program["entity_id"] = mesh_entity_uid
+                program["entity_id"].value = mesh_entity_uid
+                program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
+                program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
+                program["directional_lights_enabled"].value = self._directional_lights_enabled
+                program["point_lights_enabled"].value = self._point_lights_enabled
+                program["gamma_correction_enabled"].value = self._gamma_correction_enabled
+                program["shadows_enabled"].value = self._shadows_enabled
 
-            # Stage: Draw transparent objects back to front
+                # TODO: Technically, you only need to upload the material once since it doesn't change.
+                #       The program will keep its variable states!
+                if material is not None:
+                    program["material.diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
+                    program["material.specular"].value = material.specular
+                    program["material.shininess_factor"] = material.shininess_factor
+                    program["color_source"] = material.color_source
+                    program["lighting_mode"] = material.lighting_mode
+
+                # Render the vao at the end
+                mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
+
+                # Stage: Draw transparent objects back to front
+
+
 
     def render_selection_pass(self, component_pool: ComponentPool, camera_uid: int, selected_entity_uid: int):
 
@@ -481,13 +492,13 @@ class RenderSystem(System):
         program = self.shader_program_library[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS]
 
         # Find which directional light, if any creates shadows
-        dir_light_uid = None
+        directional_light_uid = None
         for uid, directional_light in component_pool.directional_light_components.items():
             if directional_light.shadow_enabled:
-                dir_light_uid = uid
+                directional_light_uid = uid
                 break
 
-        if dir_light_uid is None:
+        if directional_light_uid is None:
             return
 
         for mesh_entity_uid, mesh_component in component_pool.mesh_components.items():
@@ -500,7 +511,7 @@ class RenderSystem(System):
 
             mesh_transform = component_pool.get_component(entity_uid=mesh_entity_uid,
                                                           component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-            light_transform = component_pool.get_component(entity_uid=dir_light_uid,
+            light_transform = component_pool.get_component(entity_uid=directional_light_uid,
                                                            component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
             program["view_matrix"].write(light_transform.world_matrix.T.tobytes())

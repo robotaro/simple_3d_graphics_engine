@@ -23,7 +23,8 @@ GIZMO_3D_RIG_BLUEPRINT = {
                     "parameters": {
                         "shape": "cylinder",
                         "radius": "0.03",
-                        "visible": "false"
+                        "visible": "false",
+                        "layer": "1"
                     }
                 },
                 {
@@ -51,7 +52,8 @@ GIZMO_3D_RIG_BLUEPRINT = {
                     "parameters": {
                         "shape": "cylinder",
                         "radius": "0.03",
-                        "visible": "false"
+                        "visible": "false",
+                        "layer": "1"
                     }
                 },
                 {
@@ -79,7 +81,8 @@ GIZMO_3D_RIG_BLUEPRINT = {
                     "parameters": {
                         "shape": "cylinder",
                         "radius": "0.03",
-                        "visible": "false"
+                        "visible": "false",
+                        "layer": "1"
                     }
                 },
                 {

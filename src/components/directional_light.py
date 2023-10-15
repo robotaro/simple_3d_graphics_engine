@@ -38,7 +38,7 @@ class DirectionalLight(Component):
 
         ctx = kwargs["ctx"]
 
-        self.shadow_texture = ctx.depth_texture(size=constants.DIRECTIONAL_LIGHT_SIZE)
+        self.shadow_texture = ctx.depth_texture(size=constants.DIRECTIONAL_LIGHT_TEXTURE_SIZE)
 
         self.initialised = True
 
