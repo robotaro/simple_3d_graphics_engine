@@ -19,8 +19,7 @@ class Mesh(Component):
         "vbo_colors",
         "vbo_uvs",
         "ibo_faces",
-        "visible"
-    ]
+        "visible"]
 
     def __init__(self, parameters, system_owned=False):
         super().__init__(parameters=parameters, system_owned=system_owned)
@@ -43,7 +42,7 @@ class Mesh(Component):
         self.generate_shape()
 
         # Flags
-        self.visible = True
+        self.visible = Component.dict2bool(input_dict=self.parameters, key="visible", default_value=True)
         
     def initialise(self, **kwargs):
 

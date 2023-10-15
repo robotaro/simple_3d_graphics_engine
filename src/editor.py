@@ -296,7 +296,13 @@ class Editor:
 
             # Set default events to subscribe too
             if subscribed_events is None:
-                subscribed_events = constants.SUBSCRIBED_EVENTS_RENDER_SYSTEM
+                subscribed_events = [
+                    constants.EVENT_ENTITY_SELECTED,
+                    constants.EVENT_MOUSE_BUTTON_ENABLED,
+                    constants.EVENT_MOUSE_BUTTON_DISABLED,
+                    constants.EVENT_MOUSE_BUTTON_PRESS,
+                    constants.EVENT_KEYBOARD_PRESS,
+                    constants.EVENT_WINDOW_FRAMEBUFFER_SIZE]
 
         if system_type == ImguiSystem._type:
             new_system = ImguiSystem(
@@ -309,7 +315,9 @@ class Editor:
 
             # Set default events to subscribe too
             if subscribed_events is None:
-                subscribed_events = constants.SUBSCRIBED_EVENTS_IMGUI_SYSTEM
+                subscribed_events = [
+                    constants.EVENT_ENTITY_SELECTED,
+                    constants.EVENT_KEYBOARD_PRESS]
 
         if system_type == InputControlSystem._type:
             new_system = InputControlSystem(
@@ -321,7 +329,11 @@ class Editor:
 
             # Set default events to subscribe too
             if subscribed_events is None:
-                subscribed_events = constants.SUBSCRIBED_EVENTS_INPUT_CONTROL_SYSTEM
+                subscribed_events = [
+                    constants.EVENT_MOUSE_SCROLL,
+                    constants.EVENT_MOUSE_MOVE,
+                    constants.EVENT_KEYBOARD_PRESS,
+                    constants.EVENT_KEYBOARD_RELEASE]
 
         if system_type == Gizmo3DSystem._type:
             new_system = Gizmo3DSystem(
@@ -333,7 +345,14 @@ class Editor:
 
             # Set default events to subscribe too
             if subscribed_events is None:
-                subscribed_events = constants.SUBSCRIBED_EVENTS_GIZMO_SYSTEM
+                subscribed_events = [
+                    constants.EVENT_MOUSE_SCROLL,
+                    constants.EVENT_MOUSE_MOVE,
+                    constants.EVENT_KEYBOARD_PRESS,
+                    constants.EVENT_KEYBOARD_RELEASE,
+                    constants.EVENT_ENTITY_SELECTED,
+                    constants.EVENT_ENTITY_DESELECTED,
+                    constants.EVENT_WINDOW_FRAMEBUFFER_SIZE]
 
         if system_type == TransformSystem._type:
             new_system = TransformSystem(
@@ -357,7 +376,8 @@ class Editor:
 
             # Set default events to subscribe too
             if subscribed_events is None:
-                subscribed_events = constants.SUBSCRIBED_EVENTS_IMPORT_SYSTEM
+                subscribed_events = [
+                    constants.EVENT_WINDOW_DROP_FILES]
 
         if new_system is None:
             self.logger.error(f"Failed to create system {system_type}")

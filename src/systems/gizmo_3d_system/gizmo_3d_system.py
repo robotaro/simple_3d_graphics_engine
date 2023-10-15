@@ -61,12 +61,12 @@ class Gizmo3DSystem(System):
         for entity_uid, gizmo_3d in self.component_pool.gizmo_3d_components.items():
             children_uids = self.component_pool.get_children_uids(entity_uid=entity_uid)
 
-            gizmo_3d.x_axis_child_entity_uid = [uid for uid in children_uids
-                if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_X_AXIS_NAME][0]
-            gizmo_3d.y_axis_child_entity_uid = [uid for uid in children_uids
-                if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_Y_AXIS_NAME][0]
-            gizmo_3d.z_axis_child_entity_uid = [uid for uid in children_uids
-                if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_Z_AXIS_NAME][0]
+            gizmo_3d.x_axis_entity_uid = [uid for uid in children_uids
+                                          if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_X_AXIS_NAME][0]
+            gizmo_3d.y_axis_entity_uid = [uid for uid in children_uids
+                                          if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_Y_AXIS_NAME][0]
+            gizmo_3d.z_axis_entity_uid = [uid for uid in children_uids
+                                          if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_Z_AXIS_NAME][0]
 
         # TODO: Continue from here!!!
 
@@ -79,6 +79,9 @@ class Gizmo3DSystem(System):
 
         if event_type == constants.EVENT_ENTITY_SELECTED:
             self.selected_entity_uid = event_data[0]
+
+        if event_type == constants.EVENT_ENTITY_DESELECTED:
+            self.selected_entity_uid = None
 
         if event_type == constants.EVENT_MOUSE_MOVE and self.window_size is not None:
 
@@ -121,8 +124,23 @@ class Gizmo3DSystem(System):
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
-        for entity_uid, transform in self.component_pool.transform_3d_components.items():
+        gizmo = self.component_pool.gizmo_3d_components[self.gizmo_3d_rig_entity_uid]
 
-            pass
+        if self.selected_entity_uid is None:
+            self.component_pool.mesh_components[gizmo.x_axis_entity_uid].visible = False
+            self.component_pool.mesh_components[gizmo.y_axis_entity_uid].visible = False
+            self.component_pool.mesh_components[gizmo.z_axis_entity_uid].visible = False
+            return True
+
+        self.component_pool.mesh_components[gizmo.x_axis_entity_uid].visible = True
+        self.component_pool.mesh_components[gizmo.y_axis_entity_uid].visible = True
+        self.component_pool.mesh_components[gizmo.z_axis_entity_uid].visible = True
+
+        selected_transform = self.component_pool.transform_3d_components[self.selected_entity_uid]
+        gizmo_transform = self.component_pool.transform_3d_components[self.gizmo_3d_rig_entity_uid]
+
+        gizmo_transform.position = selected_transform.position
+        gizmo_transform.rotation = selected_transform.rotation
+        gizmo_transform.dirty = True
 
         return True

@@ -7,9 +7,9 @@ class Gizmo3D(Component):
 
     __slots__ = [
         "mode",
-        "x_axis_child_entity_uid",
-        "y_axis_child_entity_uid",
-        "z_axis_child_entity_uid",
+        "x_axis_entity_uid",
+        "y_axis_entity_uid",
+        "z_axis_entity_uid",
         "selected_axis",
         "active"
     ]
@@ -19,7 +19,7 @@ class Gizmo3D(Component):
 
         self.mode = Component.dict2int(input_dict=parameters, key="mode", default_value=0)
         self.selected_axis = None
-        self.x_axis_child_entity_uid = None
-        self.y_axis_child_entity_uid = None
-        self.z_axis_child_entity_uid = None
+        self.x_axis_entity_uid = None
+        self.y_axis_entity_uid = None
+        self.z_axis_entity_uid = None
         self.active = False

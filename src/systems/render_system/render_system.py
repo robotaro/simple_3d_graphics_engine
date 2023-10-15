@@ -232,6 +232,12 @@ class RenderSystem(System):
 
                 self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
 
+                if self.selected_entity_id < constants.COMPONENT_POOL_STARTING_ID_COUNTER:
+                    self.event_publisher.publish(event_type=constants.EVENT_ENTITY_DESELECTED,
+                                                 event_data=(None,),
+                                                 sender=self)
+                    return
+
                 self.event_publisher.publish(event_type=constants.EVENT_ENTITY_SELECTED,
                                              event_data=(self.selected_entity_id,),
                                              sender=self)

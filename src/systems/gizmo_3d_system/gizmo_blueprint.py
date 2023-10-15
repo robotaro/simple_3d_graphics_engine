@@ -22,7 +22,8 @@ GIZMO_3D_RIG_BLUEPRINT = {
                     "name": "mesh",
                     "parameters": {
                         "shape": "cylinder",
-                        "radius": "0.03"
+                        "radius": "0.03",
+                        "visible": "false"
                     }
                 },
                 {
@@ -49,7 +50,8 @@ GIZMO_3D_RIG_BLUEPRINT = {
                     "name": "mesh",
                     "parameters": {
                         "shape": "cylinder",
-                        "radius": "0.03"
+                        "radius": "0.03",
+                        "visible": "false"
                     }
                 },
                 {
@@ -76,7 +78,8 @@ GIZMO_3D_RIG_BLUEPRINT = {
                     "name": "mesh",
                     "parameters": {
                         "shape": "cylinder",
-                        "radius": "0.03"
+                        "radius": "0.03",
+                        "visible": "false"
                     }
                 },
                 {
