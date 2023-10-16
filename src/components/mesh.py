@@ -172,11 +172,13 @@ class Mesh(Component):
 
             _, mesh_extension = os.path.splitext(fpath)
 
+            scale = Component.dict2float(input_dict=self.parameters, key="scale", default_value=1.0)
+
             if mesh_extension == ".obj":
-                v, n, u, f = utils_mesh_3d.from_obj(fpath=fpath)
+                v, n, u, f = utils_mesh_3d.from_obj(fpath=fpath, scale=scale)
 
             if mesh_extension in [".gltf", ".glb"]:
-                v, n, u, f = utils_mesh_3d.from_gltf(fpath=fpath)
+                v, n, u, f = utils_mesh_3d.from_gltf(fpath=fpath, scale=scale)
 
         self.vertices = v
         self.normals = n
