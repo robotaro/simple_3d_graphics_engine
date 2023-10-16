@@ -275,6 +275,7 @@ MESH_SHAPE_ICOSPHERE = "icosphere"
 MESH_SHAPE_CAPSULE = "capsule"
 MESH_SHAPE_CYLINDER = "cylinder"
 MESH_SHAPE_FROM_OBJ = "obj"  # TODO: Kinda of a hack. You need to add argument "fpath"
+MESH_SHAPE_FROM_GLTF = "dae"
 
 COLLIDER_SHAPE_SPHERE = "sphere"
 COLLIDER_SHAPE_CAPSULE = "capsule"

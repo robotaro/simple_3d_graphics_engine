@@ -1,3 +1,5 @@
+import os
+
 from src import constants
 from src.components.component import Component
 from src.utilities import utils_mesh_3d
@@ -128,46 +130,53 @@ class Mesh(Component):
     def generate_shape(self) -> None:
 
         shape = self.parameters.get(constants.COMPONENT_ARG_MESH_SHAPE, None)
-        if shape is None:
-            return
+        fpath = self.parameters.get(constants.COMPONENT_ARG_MESH_FPATH, None)
+
+        if shape is not None and fpath is not None:
+            raise KeyError("Both shape and fpath have been specified! You either specify the shape or the mesh.")
 
         # To avoid warnings
         v, n, u, f = None, None, None, None
 
-        if shape == constants.MESH_SHAPE_BOX:
-            width = Component.dict2float(input_dict=self.parameters, key="width", default_value=1.0)
-            height = Component.dict2float(input_dict=self.parameters, key="height", default_value=1.0)
-            depth = Component.dict2float(input_dict=self.parameters, key="depth", default_value=1.0)
-            v, n, u, f = utils_mesh_3d.create_box(width=width, height=height, depth=depth)
+        if shape is not None:
+            if shape == constants.MESH_SHAPE_BOX:
+                width = Component.dict2float(input_dict=self.parameters, key="width", default_value=1.0)
+                height = Component.dict2float(input_dict=self.parameters, key="height", default_value=1.0)
+                depth = Component.dict2float(input_dict=self.parameters, key="depth", default_value=1.0)
+                v, n, u, f = utils_mesh_3d.create_box(width=width, height=height, depth=depth)
 
-        if shape == constants.MESH_SHAPE_ICOSPHERE:
-            radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
-            subdivisions = Component.dict2int(input_dict=self.parameters, key="subdivisions", default_value=3)
-            v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
+            if shape == constants.MESH_SHAPE_ICOSPHERE:
+                radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
+                subdivisions = Component.dict2int(input_dict=self.parameters, key="subdivisions", default_value=3)
+                v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
 
-        if shape == constants.MESH_SHAPE_CAPSULE:
-            radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
-            subdivisions = Component.dict2int(input_dict=self.parameters, key="subdivisions", default_value=3)
-            v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
+            if shape == constants.MESH_SHAPE_CAPSULE:
+                radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
+                subdivisions = Component.dict2int(input_dict=self.parameters, key="subdivisions", default_value=3)
+                v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
 
-        if shape == constants.MESH_SHAPE_CYLINDER:
-            point_a = Component.dict2tuple_float(input_dict=self.parameters,
-                                                 key="point_a",
-                                                 default_value=(0.0, 0.0, 0.0))
-            point_b = Component.dict2tuple_float(input_dict=self.parameters,
-                                                 key="point_a",
-                                                 default_value=(0.0, 1.0, 0.0))
-            radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
-            sections = Component.dict2int(input_dict=self.parameters, key="sections", default_value=32)
+            if shape == constants.MESH_SHAPE_CYLINDER:
+                point_a = Component.dict2tuple_float(input_dict=self.parameters,
+                                                     key="point_a",
+                                                     default_value=(0.0, 0.0, 0.0))
+                point_b = Component.dict2tuple_float(input_dict=self.parameters,
+                                                     key="point_a",
+                                                     default_value=(0.0, 1.0, 0.0))
+                radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
+                sections = Component.dict2int(input_dict=self.parameters, key="sections", default_value=32)
 
-            v, n, u, f = utils_mesh_3d.create_cylinder(point_a=point_a, point_b=point_b,
-                                                       sections=sections, radius=radius)
+                v, n, u, f = utils_mesh_3d.create_cylinder(point_a=point_a, point_b=point_b,
+                                                           sections=sections, radius=radius)
 
-        if shape == constants.MESH_SHAPE_FROM_OBJ:
-            fpath = self.parameters.get(constants.COMPONENT_ARG_MESH_FPATH, None)
-            if fpath is None:
-                raise KeyError("[ERROR] Missing argument 'fpath' in order to load OBJ file")
-            v, n, u, f = utils_mesh_3d.from_obj(fpath=self.parameters["fpath"])
+        if fpath is not None:
+
+            _, mesh_extension = os.path.splitext(fpath)
+
+            if mesh_extension == ".obj":
+                v, n, u, f = utils_mesh_3d.from_obj(fpath=fpath)
+
+            if mesh_extension in [".gltf", ".glb"]:
+                v, n, u, f = utils_mesh_3d.from_gltf(fpath=fpath)
 
         self.vertices = v
         self.normals = n

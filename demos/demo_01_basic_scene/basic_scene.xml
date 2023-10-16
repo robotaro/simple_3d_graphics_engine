@@ -19,13 +19,13 @@
     </entity>
 
     <entity name="Dragon 1">
-        <mesh shape="obj" fpath="models/dragon.obj"/>
+        <mesh fpath="models/dragon.obj"/>
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
         <transform_3d/>
     </entity>
 
     <entity name="Dragon 2">
-        <mesh shape="obj" fpath="models/dragon.obj"/>
+        <mesh fpath="models/dragon.obj"/>
         <transform_3d position="-1 0 -1"/>
         <material diffuse="0.2 .3 0.8" shininess_factor="32.0"/>
     </entity>

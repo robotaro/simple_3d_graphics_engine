@@ -381,9 +381,11 @@ class RenderSystem(System):
 
                 # TODO: Continue from here
                 if current_layer == constants.RENDER_SYSTEM_LAYER_GIZMO_3D:
-                    self.forward_pass_framebuffer.depth_mask = False
-                else:
+                    self.forward_pass_framebuffer.color_mask = False, False, False, False
                     self.forward_pass_framebuffer.depth_mask = True
+                    self.forward_pass_framebuffer.clear(depth=1.0)
+                    self.forward_pass_framebuffer.depth_mask = False
+                    self.forward_pass_framebuffer.color_mask = True, True, True, True
 
                 mesh_transform = component_pool.get_component(entity_uid=mesh_entity_uid,
                                                               component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)

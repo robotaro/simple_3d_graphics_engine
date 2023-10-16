@@ -77,6 +77,25 @@ def from_obj(fpath: str) -> tuple:
 
     return vertices, normals, uvs, indices
 
+def from_gltf(fpath: str) -> tuple:
+
+    # First try the fpath as a relative path from RESOURCES, and if it not there, assume fpath is an absolute path
+    os_compatible_fpath = fpath.replace("\\", os.sep).replace("/", os.sep)
+    new_fpath = os.path.join(constants.RESOURCES_DIR, os_compatible_fpath)
+    if os.path.isfile(new_fpath):
+        mesh = trimesh.load(new_fpath)
+    else:
+        mesh = trimesh.load(fpath)
+
+    vertices = np.array(mesh.vertices, dtype=np.float32)
+    normals = np.array(mesh.vertex_normals, dtype=np.float32)
+    uvs = None
+    if "uv" in mesh.visual.__dict__:
+        uvs = np.array(mesh.visual.uv, dtype=np.float32)
+    indices = np.array(mesh.faces, dtype=np.int32)
+
+    return vertices, normals, uvs, indices
+
 
 def convert_faces_to_triangles(vertices, uvs, faces):
     """
