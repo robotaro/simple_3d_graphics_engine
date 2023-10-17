@@ -80,6 +80,14 @@ def from_obj(fpath: str, scale=1.0) -> tuple:
 
 def from_gltf(fpath: str, scale=1.0) -> tuple:
 
+    """
+    Loads a GLTF/GLB file and combines all meshes into one.
+
+    :param fpath:
+    :param scale:
+    :return:
+    """
+
     # First try the fpath as a relative path from RESOURCES, and if it not there, assume fpath is an absolute path
     os_compatible_fpath = fpath.replace("\\", os.sep).replace("/", os.sep)
     new_fpath = os.path.join(constants.RESOURCES_DIR, os_compatible_fpath)
@@ -90,28 +98,26 @@ def from_gltf(fpath: str, scale=1.0) -> tuple:
 
     meshes = list(scene.geometry.values())
 
-    # Combine all meshes into one. For now
-    vertices = np.concatenate([mesh.vertices for mesh in meshes], axis=0) * scale
-    normals = np.concatenate([mesh.vertex_normals for mesh in meshes], axis=0)
+    # Combine all meshes into one. For now.
+    vertices = np.concatenate([mesh.vertices for mesh in meshes], axis=0, dtype=np.float32) * scale
+    normals = np.concatenate([mesh.vertex_normals for mesh in meshes], axis=0, dtype=np.float32)
+
     faces_list = []
     sum_num_faces = 0
     for mesh in meshes:
         faces_list.append(mesh.faces + sum_num_faces)
-        print(sum_num_faces)
         sum_num_faces += mesh.vertices.shape[0]
     indices = np.concatenate(faces_list, axis=0)
 
-    return vertices, normals, None, indices
+    uvs = None
+    uv_list = []
+    for mesh in meshes:
+        if "uv" in mesh.visual.__dict__:
+            uv_list.append(mesh.visual.uv)
+    if len(uv_list) > 0:
+        uvs = np.concatenate([uv for uv in uv_list], axis=0, dtype=np.float32)
 
-
-def trimesh_join_meshes(tri_meshes: list) -> trimesh.Trimesh:
-
-    """
-    Combines a list of trimesh meshes into one
-    :param tri_meshes:
-    :return:
-    """
-
+    return vertices, normals, uvs, indices
 
 
 def convert_faces_to_triangles(vertices, uvs, faces):
