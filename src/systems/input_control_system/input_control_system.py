@@ -151,8 +151,6 @@ class InputControlSystem(System):
 
             transform = self.component_pool.transform_3d_components[entity_uid]
 
-            # TODO: Investigate why the directions seem to be reversed...
-
             # Rotate
             input_control.yaw += self.mouse_dx * input_control.mouse_sensitivity
             input_control.pitch -= self.mouse_dy * input_control.mouse_sensitivity

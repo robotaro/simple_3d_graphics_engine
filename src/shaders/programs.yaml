@@ -3,6 +3,10 @@ forward_pass:
   vertex_shader: "forward_pass.glsl"
   fragment_shader: "forward_pass.glsl"
 
+overlay_pass:
+  vertex_shader: "overlay_pass.glsl"
+  fragment_shader: "overlay_pass.glsl"
+
 selected_entity_pass:
   vertex_shader: "selected_entity.glsl"
   fragment_shader: "selected_entity.glsl"

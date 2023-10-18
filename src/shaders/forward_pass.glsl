@@ -147,7 +147,6 @@ uniform int color_source = 0;
 uniform int lighting_mode = 1;
 
 uniform mat4 model_matrix;
-uniform bool temp_flag = true;
 
 uniform float gamma = 2.2;
 

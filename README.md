@@ -56,6 +56,11 @@ the setter, it sets the translation to None, and if None
 when requested via a getter, it recalculates it just in time.
 This is a flexible solution, but not a very efficient one.
 
+## Optimisation TODOs:
+- If a component/system does not handle any graphics, make it 100% Numba-complient
+- Reduce number of uniform variable access. Maybe Uniform Array Object?
+- Separate meshes by layer in list/array so we don't have to go over all objects. Alternatively, consider multi-layed meshes
+
 ## Linux installation
 
 If you are getting this error when you try creating a context (most likely from moderngl.create_context()):
