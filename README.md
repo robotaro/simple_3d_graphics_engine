@@ -48,7 +48,7 @@ https://codetabs.com/count-loc/count-loc-online.html
 # 2D rendering to consider
 - Use GLSL smoothstep for anti-alias effect when drawing 2D shapes using only the frament shader
 - Use this for the 2D editor interface: https://www.shadertoy.com/view/fst3DH
-
+- 
 
 ## Insights on current engine inner workings
 - WHen node's translation/rotation/scale is changed via
@@ -88,25 +88,3 @@ And reboot again
 ```commandline
 sudo reboot
 ```
-
-## Widget TODOs
-
-### Column
-- [ ] Add something here
-
-### Row
-- [x] fix width
-- [ ] Draw background
-
-### Text Field
-- [ ] Allocate memory for text (use max length)
-
-### Text Multi-line Field
-- [ ] Allocate memory for text (use max length)
-- [ ] Implement rendering on multiple lines
-- [ ] Read about real-time text editing  
-
-### Button
-- [ ] Change text on buttons dynamically
-- [x] Draw background
-

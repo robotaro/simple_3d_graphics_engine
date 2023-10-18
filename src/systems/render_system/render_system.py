@@ -38,6 +38,9 @@ class RenderSystem(System):
         "forward_pass_texture_entity_info",
         "forward_pass_texture_depth",
         "forward_pass_framebuffer",
+        "overlay_pass_texture_color",
+        "overlay_pass_texture_depth",
+        "overlay_pass_framebuffer",
         "selection_pass_texture_color",
         "selection_pass_texture_depth",
         "selection_pass_framebuffer",
@@ -93,6 +96,11 @@ class RenderSystem(System):
         self.forward_pass_texture_entity_info = None
         self.forward_pass_texture_depth = None
         self.forward_pass_framebuffer = None
+
+        # Overlay Pass
+        self.overlay_pass_texture_color = None
+        self.overlay_pass_texture_depth = None
+        self.overlay_pass_framebuffer = None
 
         # Selection Pass
         self.selection_pass_texture_color = None
@@ -171,7 +179,13 @@ class RenderSystem(System):
         safe_release(self.forward_pass_texture_entity_info)
         safe_release(self.forward_pass_texture_depth)
         safe_release(self.forward_pass_framebuffer)
+
+        safe_release(self.overlay_pass_texture_color)
+        safe_release(self.overlay_pass_texture_depth)
+        safe_release(self.overlay_pass_framebuffer)
+
         safe_release(self.selection_pass_texture_color)
+        safe_release(self.selection_pass_texture_depth)
         safe_release(self.selection_pass_framebuffer)
 
         # Forward Pass
@@ -188,6 +202,13 @@ class RenderSystem(System):
                 self.forward_pass_texture_viewpos,
                 self.forward_pass_texture_entity_info],
             depth_attachment=self.forward_pass_texture_depth)
+
+        # Overlay Pass
+        self.overlay_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
+        self.overlay_pass_texture_depth = self.ctx.depth_texture(size=window_size)
+        self.overlay_pass_framebuffer = self.ctx.framebuffer(
+            color_attachments=[self.overlay_pass_texture_color],
+            depth_attachment=self.overlay_pass_texture_depth)
 
         # Selection Pass
         self.selection_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')

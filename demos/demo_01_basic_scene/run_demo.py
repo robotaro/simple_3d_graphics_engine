@@ -3,7 +3,7 @@ from src.editor import Editor
 
 def main():
 
-    editor = Editor(window_title="Basic Scene Demo")
+    editor = Editor(window_title="Basic Scene Demo", vertical_sync=False)
 
     editor.load_scene(scene_xml_fpath="demos/demo_01_basic_scene/basic_scene.xml")
 

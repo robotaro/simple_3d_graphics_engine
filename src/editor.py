@@ -49,7 +49,7 @@ class Editor:
                  "component_pool",
                  "event_publisher",
                  "action_publisher",
-                 "close_application")
+                 "close_application",)
 
     def __init__(self,
                  window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
@@ -428,14 +428,23 @@ class Editor:
                                      event_data=self.buffer_size,
                                      sender=self)
 
-    def run(self, profiling_enabled=False) -> str:
+    def run(self, profiling_enabled=False, title_fps=False) -> str:
         """
+        Main function to run the application. Currently holds a few debugging variables but it will
+        be cleaner in the future.
 
         :param profiling_enabled: bool,
+        :param title_fps: bool, if TRUE, it wil change the title of the window for the average FPS
         :return:
         """
 
+        # Throw-away constants
+        TITLE_UPDATE_NUM_FRAMES = 1000
+
+        # Initialisation variables
         profiling_result = ""
+        update_counter = 0
+        update_period_sum = 0.0
 
         if profiling_enabled:
             profiler = cProfile.Profile()
@@ -458,8 +467,17 @@ class Editor:
 
             # Measure time
             timestamp = time.perf_counter()
-            elapsed_time = timestamp_past - timestamp
+            elapsed_time = timestamp - timestamp_past
             timestamp_past = timestamp
+
+            # DEBUG - update title fps value
+            update_period_sum += elapsed_time
+            update_counter += 1
+            if update_counter >= TITLE_UPDATE_NUM_FRAMES:
+                glfw.set_window_title(window=self.window_glfw,
+                                      title=f"FPS: {update_counter / update_period_sum:.1f}")
+                update_period_sum = 0
+                update_counter = 0
 
             # Update All systems in order
             for system in self.systems:

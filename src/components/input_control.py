@@ -28,7 +28,7 @@ class InputControl(Component):
         self.mouse_sensitivity = Component.dict2float(input_dict=self.parameters,
                                                       key="mouse_sensitivity",
                                                       default_value=0.01)
-        self.speed = Component.dict2float(input_dict=self.parameters, key="speed", default_value=0.1)
+        self.speed = Component.dict2float(input_dict=self.parameters, key="speed", default_value=1.0)
         self.max_tilt = 0.4
         self.pitch = 0.0
         self.yaw = 0.0
