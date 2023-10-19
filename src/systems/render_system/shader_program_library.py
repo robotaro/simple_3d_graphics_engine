@@ -11,11 +11,27 @@ from src.utilities import utils_io
 
 @dataclass
 class ShaderBlueprint:
+    """
+    The blueprint will contain source code for all types of shader. But each is activated when you generate
+    the final source code for each type. This will add a directive "#define" with the type of shader being used
+    """
     label: str
     source_code_lines: list
+    input_textures: list
     version: int
     contains_main: bool
     includes: list
+
+
+@dataclass
+class ProgramBlueprint:
+    label: str
+    vertex_shader: str
+    fragment_shader: str
+    geometry_shader: str
+    varyings: list
+    input_texture_locations: dict
+    extra_definitions: dict  # TODO Check this
 
 
 class ShaderProgramLibrary:
@@ -35,14 +51,16 @@ class ShaderProgramLibrary:
         self.context = context
         self.logger = logger if logger is not None else logging.Logger
         self.shader_directory = shader_directory
+        self.shader_programs_yaml_fpath = shader_programs_yaml_fpath
 
         # Core variables
         self.shader_blueprints = {}
+        self.program_blueprints = {}
         self.programs = {}
 
         # Initialise in the constructor, for simplicity
         self.load_shaders()
-        self.compile_programs(yaml_fpath=shader_programs_yaml_fpath)
+        self.compile_programs()
 
     def __getitem__(self, program_id: str):
         if program_id not in self.programs:
@@ -50,23 +68,46 @@ class ShaderProgramLibrary:
         return self.programs.get(program_id, None)
 
     def load_shaders(self) -> None:
+        """
+        This is a rather general function that loads all shader files and program definitions located in the
+        same directory. Once those are loaded, shader blueprints and program blueprints are created, and the
+        final source code for the shaders can be compiled into each program listed in the YAML file
+        :return:
+        """
 
-        # Step 1) List all .glsl files in the directory
+        # Step 1) Create shader blueprints from the GLSL files
         relative_glsl_fpaths = utils_io.list_filepaths(directory=self.shader_directory,
                                                        extension=constants.SHADER_LIBRARY_FILE_EXTENSION)
-
-        # Step 2) For each glsl filepath, create a new shader entry and loa its respective code
         for relative_fpath in relative_glsl_fpaths:
 
-            new_shader = self._load_shader_file(relative_glsl_fpath=relative_fpath)
-            if new_shader is None:
+            new_shader_blueprint = self.create_shader_blueprint(relative_glsl_fpath=relative_fpath)
+            if new_shader_blueprint is None:
                 continue
 
-            self.shader_blueprints[new_shader.label] = new_shader
+            self.shader_blueprints[new_shader_blueprint.label] = new_shader_blueprint
 
-        # Step 3) Solve shader dependencies
+        # Step 2) Solve shader dependencies AFTER all shaders have been loaded (who includes who and whatnot)
         for key, shader in self.shader_blueprints.items():
             self._solve_shader_dependencies(shader_key=key)
+
+        # Step 3) Create program blueprints from the YAML files - but in this case, there are many de
+        relative_yaml_fpaths = utils_io.list_filepaths(directory=self.shader_directory,
+                                                       extension=constants.SHADER_LIBRARY_PROGRAM_DEFINITION_EXTENSION)
+        for relative_fpath in relative_yaml_fpaths:
+
+            program_definitions = None
+            fpath = os.path.join(self.shader_directory, relative_fpath)
+            with open(fpath, 'r') as file:
+                program_definitions = yaml.safe_load(file)
+
+            for program_label, program_definition in program_definitions.items():
+                new_program_blueprint = self.create_program_blueprint(
+                    program_definition=program_definition,
+                    label=program_label)
+                if new_program_blueprint is None:
+                    continue
+
+                self.program_blueprints[program_label] = new_program_blueprint
 
     def shutdown(self):
         # After removing the vao release stage from all other parts of the pipeline, add them here
@@ -77,7 +118,18 @@ class ShaderProgramLibrary:
     #                           Internal Functions
     # =========================================================================
 
-    def _load_shader_file(self, relative_glsl_fpath: str) -> ShaderBlueprint:
+    def create_program_blueprint(self, program_definition: dict, label: str):
+        return ProgramBlueprint(
+            label=label,
+            vertex_shader=program_definition.get("vertex_shader", None),
+            fragment_shader=program_definition.get("fragment_shader", None),
+            geometry_shader=program_definition.get("geometry_shader", None),
+            varyings=program_definition.get(constants.SHADER_LIBRARY_YAML_KEY_VARYINGS, []),
+            input_texture_locations=program_definition.get(
+                constants.SHADER_LIBRARY_YAML_KEY_INPUT_TEXTURE_LOCATIONS, {}),
+            extra_definitions=program_definition.get(constants.SHADER_LIBRARY_YAML_KEY_EXTRA_DEFINITIONS, {}))
+
+    def create_shader_blueprint(self, relative_glsl_fpath: str) -> ShaderBlueprint:
 
         new_blueprint = None
         absolute_glsl_fpath = os.path.join(self.shader_directory, relative_glsl_fpath)
@@ -103,6 +155,16 @@ class ShaderProgramLibrary:
             # Contain mains
             contains_main = len([line for line in code_lines if "main()" in line]) > 0
 
+            # Find all expected input textures (uniform sampler2D)
+            all_uniforms_lines = [line.lower().strip() for line in code_lines if line.lower().strip().startswith("uniform")]
+            input_textures = []
+            for uniform_line in all_uniforms_lines:
+                parts = uniform_line.split()
+                if len(parts) < 3:
+                    continue
+                if parts[0] == "uniform" and parts[1] == "sampler2d":
+                    input_textures.append(parts[2].strip(";"))
+
             # Includes
             includes = [(index, line.replace("#include", "").strip()) for index, line in enumerate(code_lines)
                         if line.strip().startswith("#include")]
@@ -113,6 +175,7 @@ class ShaderProgramLibrary:
             new_blueprint = ShaderBlueprint(
                 label=label,
                 source_code_lines=code_lines,
+                input_textures=input_textures,
                 version=version,
                 contains_main=contains_main,
                 includes=includes_sorted_descending
@@ -120,11 +183,91 @@ class ShaderProgramLibrary:
 
         return new_blueprint
 
+    def compile_programs(self):
+        """
+        A program is compiled from a program blueprint, stored in the YAML file. The program blueprint requires
+        shader blueprints, created from a GLSL file.
+
+        Compiles all programs defined in the YAML definition file. The programs are compiled according to the
+        definitions from the YAML file, not purely based on their GLSL code. This gives us the flexibility to
+        tailor them to different usages.
+
+        :return: list, List of dictionaries containing the shader
+                 program that failed and its respective description
+        """
+
+        # If no YAML file has been specified, look for one in the shader directory
+        if len(self.program_blueprints) == 0:
+            raise Exception("[ERROR] There are no programs to be compiled. Please load their definitions form a .yaml file.")
+
+        # Compile each program according to their loaded shader blueprint
+        # (from GSLS) and their program definitions (from YAML)
+        for program_label, program_blueprint in self.program_blueprints.items():
+
+            # Generate source code for all individual shaders that will make into the final program
+            vertex_source = self.generate_shader_source_code(
+                program_blueprint=program_blueprint,
+                shader_blueprint=self.shader_blueprints.get(program_blueprint.vertex_shader, None),
+                shader_type=constants.SHADER_TYPE_VERTEX)
+
+            geometry_source = self.generate_shader_source_code(
+                program_blueprint=program_blueprint,
+                shader_blueprint=self.shader_blueprints.get(program_blueprint.geometry_shader, None),
+                shader_type=constants.SHADER_TYPE_GEOMETRY)
+
+            fragment_source = self.generate_shader_source_code(
+                program_blueprint=program_blueprint,
+                shader_blueprint=self.shader_blueprints.get(program_blueprint.fragment_shader, None),
+                shader_type=constants.SHADER_TYPE_FRAGMENT)
+
+            try:
+                # Compile the program
+                program = self.context.program(
+                    vertex_shader=vertex_source,
+                    geometry_shader=geometry_source,
+                    fragment_shader=fragment_source,
+                    varyings=program_blueprint.varyings)
+
+                # Assign uniform sampler2d locations, if defined
+                for sampler_name, sampler_location in program_blueprint.input_texture_locations.items():
+
+                    if not isinstance(sampler_location, int):
+                        raise Exception("[ERROR] Uniform Sampler2D location should be of type 'int'")
+
+                    if sampler_name not in program:
+                        raise Exception(f"[ERROR] Sampler '{sampler_name}' not declared in shader")
+
+                    program[sampler_name].value = sampler_location
+
+            except Exception as error:
+                # TODO: Sort out how you want this
+                raise Exception(f"[ERROR] Program '{key}' did not compile. "
+                                f"Here are the errors:\n\n[{key}]\n\n{error.args[0]}")
+
+            self.programs[program_label] = program
+
+    def generate_shader_source_code(self,
+                                    program_blueprint: ProgramBlueprint,
+                                    shader_blueprint: ShaderBlueprint,
+                                    shader_type: str) -> Union[str, None]:
+
+        if shader_blueprint is None:
+            return None
+
+        header_lines = []
+        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_VERSION} {shader_blueprint.version}\n"]
+        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_DEFINE} {shader_type.upper()}_SHADER\n"]
+        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_DEFINE} {definition}\n" for definition in
+                         program_blueprint.extra_definitions]
+
+        return "".join(header_lines + shader_blueprint.source_code_lines)
+
     def _solve_shader_dependencies(self, shader_key: str) -> None:
 
         """
-        This function replaces the "#include" directives with the respective code from another
-        GSLS shader file
+        This function replaces the "#include" directives with the respective code from another blueprint.
+        This is effectivelly inserting the code from one GSLS shader file into another :)
+
         :param shader_key: str, unique identifier used to represent a shader file in the directory
         :return: None (all data is modified in-place, in self.shaders)
         """
@@ -142,31 +285,10 @@ class ShaderProgramLibrary:
             b = line_index + 1
             shader.source_code_lines[a:b] = self.shader_blueprints[include_shader_key].source_code_lines
 
-    def _blueprint2source_code(self, blueprint: dict, shader_type: str) -> Union[str, None]:
-
-        if not isinstance(blueprint, dict):
-            raise TypeError(f"[ERROR] Shade blueprint needs to be dictionary")
-
-        extra_definitions = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_DEFINE, None)
-        varying = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_VARYING, None)
-
-        source = None
-        blueprint_key = f"{shader_type}_shader"
-        if blueprint_key in blueprint:
-            shader_name = blueprint[blueprint_key]
-            if shader_name not in self.shader_blueprints:
-                raise KeyError(f"[ERROR] Shader '{shader_name}' not found in shader library")
-            source = self._generate_source_code(
-                shader_key=shader_name,
-                shader_type=shader_type,
-                extra_definitions=extra_definitions)
-
-        return source
-
     def _generate_source_code(self,
                               shader_key: str,
                               shader_type: str,
-                              extra_definitions: Union[dict, None]  = None) -> str:
+                              extra_definitions: Union[dict, None] = None) -> str:
         """
         This function assembles all lines of code, including the extra definitions, into a single
         string to be used for shader compilation later on. The version of the shader is added to the
@@ -202,85 +324,4 @@ class ShaderProgramLibrary:
         :return: str, source code
         """
 
-        if shader_type not in constants.SHADER_LIBRARY_AVAILABLE_TYPES:
-            raise ValueError(f"[ERROR] Shader type '{shader_type}' not supported. "
-                             f"Shader type must be one of the following: {constants.SHADER_LIBRARY_AVAILABLE_TYPES}")
-
-        if extra_definitions is None:
-            extra_definitions = {}
-
-        shader = self.shader_blueprints[shader_key]
-
-        header_lines = []
-        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_VERSION} {shader.version}\n"]
-        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_DEFINE} {shader_type.upper()}_SHADER\n"]
-        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_DEFINE} {definition}\n" for definition in extra_definitions]
-
-        return "".join(header_lines + shader.source_code_lines)
-
-    def compile_programs(self, yaml_fpath: str):
-        """
-        Compiles all programs defined in the YAML definition file. The programs
-
-        :return: list, List of dictionaries containing the shader
-                 program that failed and its respective description
-        """
-
-        # If no YAML file has been specified, look for one in the shader directory
-        if len(yaml_fpath) == 0:
-            yaml_filenames = [filename for filename in os.listdir(self.shader_directory) if filename.endswith(".yaml")]
-            if len(yaml_filenames) == 0:
-                raise FileNotFoundError(f"[ERROR] No YAML shader program file definition found")
-            self.shader_programs_yaml_fpath = os.path.join(self.shader_directory, yaml_filenames[0])
-
-        yaml_dict = None
-        with open(self.shader_programs_yaml_fpath, 'r') as file:
-            yaml_dict = yaml.safe_load(file)
-
-        if yaml_dict is None:
-            yaml_dict = {}
-
-        for key, blueprint in yaml_dict.items():
-
-            if blueprint is None:
-                print(f"[WARNING] Entry '{key}' is invalid or incomplete")
-                continue
-
-            # Generate source code for all individual shaders that will make the final program
-            vertex_source = self._blueprint2source_code(shader_type=constants.SHADER_TYPE_VERTEX,
-                                                        blueprint=blueprint)
-            geometry_source = self._blueprint2source_code(shader_type=constants.SHADER_TYPE_GEOMETRY,
-                                                          blueprint=blueprint)
-            fragment_source = self._blueprint2source_code(shader_type=constants.SHADER_TYPE_FRAGMENT,
-                                                          blueprint=blueprint)
-
-            try:
-                # Compile the program
-                program = self.context.program(
-                    vertex_shader=vertex_source,
-                    geometry_shader=geometry_source,
-                    fragment_shader=fragment_source,
-                    varyings=blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_VARYING, []))
-
-                # Assign uniform sampler2d locations, if defined
-                uniform_samplers = blueprint.get(constants.SHADER_LIBRARY_YAML_KEY_INPUT_TEXTURE_LOCATION, {})
-                for sampler_name, sampler_location in uniform_samplers.items():
-
-                    if not isinstance(sampler_location, int):
-                        raise Exception("[ERROR] Uniform Sampler2D location should be of type 'int'")
-
-                    if sampler_name not in program:
-                        raise Exception(f"[ERROR] Sampler '{sampler_name}' not declared in shader")
-
-                    program[sampler_name].value = sampler_location
-
-            except Exception as error:
-                # TODO: Sort out how you want this
-                raise Exception(f"[ERROR] Program '{key}' did not compile. "
-                                f"Here are the errors:\n\n[{key}]\n\n{error.args[0]}")
-
-            self.programs[key] = program
-
-
-
-
+        pass

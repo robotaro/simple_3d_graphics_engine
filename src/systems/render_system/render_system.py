@@ -419,7 +419,8 @@ class RenderSystem(System):
                 program["color_source"] = material.color_source
                 program["lighting_mode"] = material.lighting_mode
 
-            # Render the vao at the end
+            # Render the mesh
+            # TODO: Change render types from triangles to whatever the mesh is set to!!!! No fixed-type rendering!
             mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
 
             # Stage: Draw transparent objects back to front
@@ -427,20 +428,22 @@ class RenderSystem(System):
     def render_overlay_pass(self, camera_uid: int):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
-        self.overlay_pass_framebuffer.use()
 
+        self.overlay_pass_framebuffer.use()
+        self.ctx.clear()
         camera_component = self.component_pool.camera_components[camera_uid]
         camera_component.update_viewport(window_size=self.buffer_size)
         camera_transform = self.component_pool.transform_3d_components[camera_uid]
 
         # Clear context (you need to use the use() first to bind it!)
-        self.ctx.clear(
-            color=constants.RENDER_SYSTEM_BACKGROUND_COLOR,
+        self.ctx.clear()
+        self.overlay_pass_framebuffer.clear(
+            color=(0.0, 1.0, 0.0),
             alpha=1.0,
             depth=1.0,
             viewport=camera_component.viewport_pixels)
 
-        program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
+        program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_PASS]
         program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
 
         camera_component.upload_uniforms(
@@ -450,8 +453,25 @@ class RenderSystem(System):
 
         for mesh_entity_uid, mesh_component in self.component_pool.mesh_components.items():
 
-            if not mesh_component.visible or mesh_component.layer != constants.RENDER_SYSTEM_LAYER_DEFAULT:
+            if not mesh_component.visible or mesh_component.layer != constants.RENDER_SYSTEM_LAYER_OVERLAY:
                 continue
+
+            mesh_transform = self.component_pool.get_component(entity_uid=mesh_entity_uid,
+                                                               component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
+            material = self.component_pool.material_components.get(mesh_entity_uid, None)
+
+            # Upload uniforms
+            program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
+
+            # TODO: Technically, you only need to upload the material once since it doesn't change.
+            #       The program will keep its variable states!
+            if material is not None:
+                program["color_diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
+
+            # Render the mesh
+            # TODO: Change render types from triangles to whatever the mesh is set to!!!! No fixed-type rendering!
+            mesh_component.vaos[constants.SHADER_PROGRAM_OVERLAY_PASS].render(moderngl.TRIANGLES)
 
     def render_selection_pass(self, camera_uid: int, selected_entity_uid: int):
 
@@ -573,7 +593,8 @@ class RenderSystem(System):
         self.forward_pass_texture_viewpos.use(location=2)
         self.forward_pass_texture_entity_info.use(location=3)
         self.selection_pass_texture_color.use(location=4)
-        self.forward_pass_texture_depth.use(location=5)
+        self.overlay_pass_texture_color.use(location=5)
+        self.forward_pass_texture_depth.use(location=6)
 
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture

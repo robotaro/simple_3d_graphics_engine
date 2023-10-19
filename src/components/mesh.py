@@ -42,8 +42,10 @@ class Mesh(Component):
         self.vbo_uvs = None
         self.ibo_faces = None
 
-        self.layer = Component.dict2int(input_dict=self.parameters, key="layer", default_value=0)
-        self.visible = Component.dict2bool(input_dict=self.parameters, key="visible", default_value=True)
+        self.layer = Component.dict2int(input_dict=self.parameters, key="layer",
+                                        default_value=constants.RENDER_SYSTEM_LAYER_DEFAULT)
+        self.visible = Component.dict2bool(input_dict=self.parameters, key="visible",
+                                           default_value=True)
 
     def initialise(self, **kwargs):
 
@@ -160,7 +162,7 @@ class Mesh(Component):
                                                      key="point_a",
                                                      default_value=(0.0, 0.0, 0.0))
                 point_b = Component.dict2tuple_float(input_dict=self.parameters,
-                                                     key="point_a",
+                                                     key="point_b",
                                                      default_value=(0.0, 1.0, 0.0))
                 radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
                 sections = Component.dict2int(input_dict=self.parameters, key="sections", default_value=32)
