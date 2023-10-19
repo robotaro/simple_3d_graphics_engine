@@ -204,21 +204,28 @@ class ShaderProgramLibrary:
         # (from GSLS) and their program definitions (from YAML)
         for program_label, program_blueprint in self.program_blueprints.items():
 
-            # Generate source code for all individual shaders that will make into the final program
+            vertex_blueprint = self.shader_blueprints.get(program_blueprint.vertex_shader, None)
             vertex_source = self.generate_shader_source_code(
                 program_blueprint=program_blueprint,
-                shader_blueprint=self.shader_blueprints.get(program_blueprint.vertex_shader, None),
+                shader_blueprint=vertex_blueprint,
                 shader_type=constants.SHADER_TYPE_VERTEX)
 
+            geometry_blueprint = self.shader_blueprints.get(program_blueprint.geometry_shader, None)
             geometry_source = self.generate_shader_source_code(
                 program_blueprint=program_blueprint,
-                shader_blueprint=self.shader_blueprints.get(program_blueprint.geometry_shader, None),
+                shader_blueprint=geometry_blueprint,
                 shader_type=constants.SHADER_TYPE_GEOMETRY)
 
+            fragment_blueprint = self.shader_blueprints.get(program_blueprint.fragment_shader, None)
             fragment_source = self.generate_shader_source_code(
                 program_blueprint=program_blueprint,
-                shader_blueprint=self.shader_blueprints.get(program_blueprint.fragment_shader, None),
+                shader_blueprint=fragment_blueprint,
                 shader_type=constants.SHADER_TYPE_FRAGMENT)
+
+            # TODO: Think of a more reliable way to ensure all textures are used
+            self.check_if_all_shader_texture_locations_are_used(
+                program_blueprint=program_blueprint,
+                shader_blueprint=fragment_blueprint)
 
             try:
                 # Compile the program
@@ -241,54 +248,33 @@ class ShaderProgramLibrary:
 
             except Exception as error:
                 # TODO: Sort out how you want this
-                raise Exception(f"[ERROR] Program '{key}' did not compile. "
-                                f"Here are the errors:\n\n[{key}]\n\n{error.args[0]}")
+                raise Exception(f"[ERROR] Program '{program_label}' did not compile. "
+                                f"Here are the errors:\n\n[{program_label}]\n\n{error.args[0]}")
 
             self.programs[program_label] = program
+
+    def check_if_all_shader_texture_locations_are_used(self,
+                                                       program_blueprint: ProgramBlueprint,
+                                                       shader_blueprint: ShaderBlueprint) -> bool:
+        if shader_blueprint is None:
+            return False
+
+        all_locations_present = True
+        for input_texture in shader_blueprint.input_textures:
+            if input_texture not in program_blueprint.input_texture_locations:
+                self.logger.warning(f"[WARNING] Input texture '{input_texture}' from shader "
+                                    f"'{shader_blueprint.label}' not present in program '{program_blueprint.label}'. "
+                                    f"Please make sure to add this definition to the YAML file, under "
+                                    f"{constants.SHADER_LIBRARY_YAML_KEY_INPUT_TEXTURE_LOCATIONS} section of the "
+                                    f"respective program")
+                all_locations_present = False
+        return all_locations_present
 
     def generate_shader_source_code(self,
                                     program_blueprint: ProgramBlueprint,
                                     shader_blueprint: ShaderBlueprint,
                                     shader_type: str) -> Union[str, None]:
 
-        if shader_blueprint is None:
-            return None
-
-        header_lines = []
-        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_VERSION} {shader_blueprint.version}\n"]
-        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_DEFINE} {shader_type.upper()}_SHADER\n"]
-        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_DEFINE} {definition}\n" for definition in
-                         program_blueprint.extra_definitions]
-
-        return "".join(header_lines + shader_blueprint.source_code_lines)
-
-    def _solve_shader_dependencies(self, shader_key: str) -> None:
-
-        """
-        This function replaces the "#include" directives with the respective code from another blueprint.
-        This is effectivelly inserting the code from one GSLS shader file into another :)
-
-        :param shader_key: str, unique identifier used to represent a shader file in the directory
-        :return: None (all data is modified in-place, in self.shaders)
-        """
-
-        if shader_key not in self.shader_blueprints:
-            raise KeyError(f"[ERROR] Shader '{shader_key}' not present in the library")
-
-        shader = self.shader_blueprints[shader_key]
-
-        for (line_index, include_shader_key) in shader.includes:
-            self._solve_shader_dependencies(shader_key=include_shader_key)
-
-            # Replace include with code lines from dependency
-            a = line_index
-            b = line_index + 1
-            shader.source_code_lines[a:b] = self.shader_blueprints[include_shader_key].source_code_lines
-
-    def _generate_source_code(self,
-                              shader_key: str,
-                              shader_type: str,
-                              extra_definitions: Union[dict, None] = None) -> str:
         """
         This function assembles all lines of code, including the extra definitions, into a single
         string to be used for shader compilation later on. The version of the shader is added to the
@@ -324,4 +310,36 @@ class ShaderProgramLibrary:
         :return: str, source code
         """
 
-        pass
+        if shader_blueprint is None:
+            return None
+
+        header_lines = []
+        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_VERSION} {shader_blueprint.version}\n"]
+        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_DEFINE} {shader_type.upper()}_SHADER\n"]
+        header_lines += [f"{constants.SHADER_LIBRARY_DIRECTIVE_DEFINE} {definition}\n" for definition in
+                         program_blueprint.extra_definitions]
+
+        return "".join(header_lines + shader_blueprint.source_code_lines)
+
+    def _solve_shader_dependencies(self, shader_key: str) -> None:
+
+        """
+        This function replaces the "#include" directives with the respective code from another blueprint.
+        This is effectivelly inserting the code from one GSLS shader file into another :)
+
+        :param shader_key: str, unique identifier used to represent a shader file in the directory
+        :return: None (all data is modified in-place, in self.shaders)
+        """
+
+        if shader_key not in self.shader_blueprints:
+            raise KeyError(f"[ERROR] Shader '{shader_key}' not present in the library")
+
+        shader = self.shader_blueprints[shader_key]
+
+        for (line_index, include_shader_key) in shader.includes:
+            self._solve_shader_dependencies(shader_key=include_shader_key)
+
+            # Replace include with code lines from dependency
+            a = line_index
+            b = line_index + 1
+            shader.source_code_lines[a:b] = self.shader_blueprints[include_shader_key].source_code_lines

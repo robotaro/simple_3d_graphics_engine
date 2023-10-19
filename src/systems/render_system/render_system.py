@@ -430,15 +430,13 @@ class RenderSystem(System):
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
         self.overlay_pass_framebuffer.use()
-        self.ctx.clear()
         camera_component = self.component_pool.camera_components[camera_uid]
         camera_component.update_viewport(window_size=self.buffer_size)
         camera_transform = self.component_pool.transform_3d_components[camera_uid]
 
         # Clear context (you need to use the use() first to bind it!)
-        self.ctx.clear()
         self.overlay_pass_framebuffer.clear(
-            color=(0.0, 1.0, 0.0),
+            color=(0.0, 0.0, 0.0),
             alpha=1.0,
             depth=1.0,
             viewport=camera_component.viewport_pixels)
@@ -586,7 +584,7 @@ class RenderSystem(System):
 
         self.ctx.screen.use()
         self.ctx.screen.clear()
-        self.ctx.disable(moderngl.DEPTH_TEST)
+
 
         self.forward_pass_texture_color.use(location=0)
         self.forward_pass_texture_normal.use(location=1)

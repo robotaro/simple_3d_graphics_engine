@@ -292,6 +292,7 @@ class ImguiSystem(System):
         if material and not material.system_owned:
             imgui.text(f"Material")
             _, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
+            _, material.diffuse_highlight = imgui.color_edit3("Diffuse Highlight", *material.diffuse_highlight)
             _, material.specular = imgui.color_edit3("Specular", *material.specular)
             _, material.shininess_factor = imgui.drag_float("Shininess Factor",
                                                             material.shininess_factor,

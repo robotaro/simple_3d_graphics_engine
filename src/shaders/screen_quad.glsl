@@ -55,9 +55,12 @@ vec3 int_to_color(uint i) {
     return c * (1.0 / 255.0);
 }
 
+
 vec3 calculate_outline_color_rgb();
 float linearise_depth_perspective(float depthValue);
 float linearise_depth_orthographic(float depthValue);
+
+bool overlay_collision = texture(overlay_texture, uv).rgb != vec3(0.0, 0.0, 0.0);
 
 void main() {
 
@@ -66,8 +69,11 @@ void main() {
     // This is a simple DEBUG selection to help in understanding what each texture brings to the table
 
     if (selected_texture == 0) {
-        // Color
+        // Complete Scene
         color_rgb = calculate_outline_color_rgb();
+
+        // If this pixel is on the overlay, draw the overlay instead
+        color_rgb = overlay_collision ? texture(overlay_texture, uv).rgb : color_rgb;
 
     } else if (selected_texture == 1) {
         // Normal

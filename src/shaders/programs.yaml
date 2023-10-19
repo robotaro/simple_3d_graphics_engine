@@ -36,6 +36,7 @@ screen_quad:
     viewpos_texture: 2
     entity_info_texture: 3
     selection_texture: 4
+    overlay_texture: 5
     depth_texture: 6
 
 shadow_mapping:
