@@ -56,6 +56,19 @@ def compute_transform(position: tuple, rotation_rad: tuple, scale=1.0, order='xy
 
     return transform
 
+
+@njit(cache=True)
+def mul_vector3(in_mat4: np.ndarray, in_vec3: np.array):
+    return in_mat4 @ np.append(in_vec3, [1.0])[:3]
+
+
+@njit(cache=True)
+def fast_inverse(in_mat4: np.ndarray, out_mat4: np.ndarray):
+    # IMPORTANT: This matrix assumes out_mat4 was already initialised as eye(4)!!!
+    out_mat4[:3, :3] = np.linalg.inv(in_mat4[:3, :3])
+    out_mat4[:3, 3] = -out_mat4[:3, :3] @ in_mat4[:3, 3]
+
+
 @njit(cache=True)
 def compute_transform_not_so_useful(pos: tuple, rot: tuple, scale: float):
     # TODO: refactor this to simplify scale!

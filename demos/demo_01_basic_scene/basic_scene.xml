@@ -24,6 +24,12 @@
         <transform_3d position="0 0 0" rotation="-90 0 0" degrees="true"/>
     </entity>
 
+    <entity name="capsule">
+        <mesh shape="capsule" height="2" radius="0.5" count="16 8"/>
+        <material diffuse="gray" shininess_factor="32.0"/>
+        <transform_3d position="0 0 0" rotation="-90 0 0" degrees="true"/>
+    </entity>
+
     <entity name="Dragon 2">
         <mesh fpath="meshes/dragon.obj"/>
         <transform_3d position="-1 0 -1"/>

@@ -256,6 +256,18 @@ class ShaderProgramLibrary:
     def check_if_all_shader_texture_locations_are_used(self,
                                                        program_blueprint: ProgramBlueprint,
                                                        shader_blueprint: ShaderBlueprint) -> bool:
+        """
+        This function checks if every input texture originally declared in the .glsl file is being used by its
+        respective program. Granted, there will be EDGE CASES where the extra_definitions may disable some textures,
+        but most cases will be covered. This only raises a warning because of those edge cases.
+
+        # TODO: Consider the case where a program blueprint may use different shader blueprints, like taking the vertex
+        #       shader from one and the fragment shader from another.
+
+        :param program_blueprint: input program blueprint
+        :param shader_blueprint: input shader blueprint (it mai contain
+        :return:
+        """
         if shader_blueprint is None:
             return False
 

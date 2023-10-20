@@ -386,3 +386,16 @@ FONT_LIBRARY_COLUMN_INDEX_U_MAX = 6
 FONT_LIBRARY_COLUMN_INDEX_V_MAX = 7
 FONT_LIBRARY_COLUMN_INDEX_VERTICAL_OFFSET = 8
 FONT_LIBRARY_COLUMN_INDEX_HORIZONTAL_ADVANCE = 9
+
+# =============================================================================
+#                               Transforms
+# =============================================================================
+
+ROTATION_XYZ = 0
+ROTATION_XYZ = 0
+ROTATION_XYZ = 0
+ROTATION_XYZ = 0
+ROTATION_XYZ = 0
+ROTATION_XYZ = 0
+ROTATION_XYZ = 0
+ROTATION_XYZ = 0

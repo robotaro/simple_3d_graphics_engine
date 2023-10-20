@@ -47,9 +47,7 @@ class Gizmo3DSystem(System):
         """
         Initialises the Gizmo3D system using the parameters given
 
-        :param parameters:
-            * Example parameter 1
-        :return:
+        :return: bool, TRUE if all steps of initialisation succeeded
         """
 
         # Create Gizmo entity here
@@ -57,18 +55,25 @@ class Gizmo3DSystem(System):
             entity_blueprint=GIZMO_3D_RIG_BLUEPRINT,
             system_owned=True)
 
-        # look for 3 specific entities by name to make sure the axes can be represented correctly
+        # Find out which cylinder is what axis and store their UIDs
         for entity_uid, gizmo_3d in self.component_pool.gizmo_3d_components.items():
             children_uids = self.component_pool.get_children_uids(entity_uid=entity_uid)
 
-            gizmo_3d.x_axis_entity_uid = [uid for uid in children_uids
-                                          if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_X_AXIS_NAME][0]
-            gizmo_3d.y_axis_entity_uid = [uid for uid in children_uids
-                                          if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_Y_AXIS_NAME][0]
-            gizmo_3d.z_axis_entity_uid = [uid for uid in children_uids
-                                          if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_Z_AXIS_NAME][0]
+            for child_uid in children_uids:
 
-        # TODO: Continue from here!!!
+                entity_name = self.component_pool.get_entity(child_uid).name
+
+                if entity_name == constants.GIZMO_3D_SYSTEM_X_AXIS_NAME:
+                    gizmo_3d.x_axis_entity_uid = child_uid
+                    continue
+
+                if entity_name == constants.GIZMO_3D_SYSTEM_Y_AXIS_NAME:
+                    gizmo_3d.y_axis_entity_uid = child_uid
+                    continue
+
+                if entity_name == constants.GIZMO_3D_SYSTEM_Z_AXIS_NAME:
+                    gizmo_3d.z_axis_entity_uid = child_uid
+                    continue
 
         return True
 

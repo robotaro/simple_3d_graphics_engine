@@ -42,11 +42,9 @@ def create_cylinder(point_a: tuple, point_b:tuple, radius: float, sections: int)
     return new_vertices, new_normals, None, None
 
 
-def create_capsule(height: float, radius: float, count: int, offset_position: tuple, offset_rotation_deg: tuple) -> tuple:
+def create_capsule(height: float, radius: float, count: tuple) -> tuple:
 
     # Incomplete !!!
-
-    #transform = mat4.compute_transform(position=offset_position, rotation_rad=)
 
     result = trimesh.creation.capsule(height, radius, count, None)
 

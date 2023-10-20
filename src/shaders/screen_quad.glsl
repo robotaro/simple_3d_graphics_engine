@@ -60,7 +60,9 @@ vec3 calculate_outline_color_rgb();
 float linearise_depth_perspective(float depthValue);
 float linearise_depth_orthographic(float depthValue);
 
-bool overlay_collision = texture(overlay_texture, uv).rgb != vec3(0.0, 0.0, 0.0);
+vec3 overlay_color_rgb = texture(overlay_texture, uv).rgb;
+bool overlay_collision = overlay_color_rgb != vec3(0.0, 0.0, 0.0);
+float blending = 0.75;
 
 void main() {
 
@@ -69,30 +71,35 @@ void main() {
     // This is a simple DEBUG selection to help in understanding what each texture brings to the table
 
     if (selected_texture == 0) {
+
         // Complete Scene
         color_rgb = calculate_outline_color_rgb();
-
-        // If this pixel is on the overlay, draw the overlay instead
-        color_rgb = overlay_collision ? texture(overlay_texture, uv).rgb : color_rgb;
+        if (overlay_collision)
+            color_rgb = blending * overlay_color_rgb + (1.0 - blending) * color_rgb;
 
     } else if (selected_texture == 1) {
+
         // Normal
         color_rgb = texture(normal_texture, uv).rgb;
 
     } else if (selected_texture == 2) {
+
         // Viewpos
         color_rgb = texture(viewpos_texture, uv).xyz;
 
     } else if (selected_texture == 3) {
+
         // Entity ID
         uint id = floatBitsToUint(texture(entity_info_texture, uv).r);
         color_rgb = int_to_color(id);
 
     } else if (selected_texture == 4) {
+
         // Current Selection
         color_rgb = texture(selection_texture, uv).rgb;
 
     } else if (selected_texture == 5) {
+
         // Depth
         float depth = texture(depth_texture, uv).r;
         if (perspective_projection)
