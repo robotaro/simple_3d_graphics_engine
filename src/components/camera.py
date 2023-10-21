@@ -44,18 +44,10 @@ class Camera(Component):
 
     def update_viewport(self, window_size: tuple):
 
-        #x = int(self.viewport_ratio[0] * window_size[0])
-        #y = int(self.viewport_ratio[1] * window_size[1])
-        #width = window_size[0] - x
-        #height = window_size[1] - y
-        #self.viewport_pixels = (x, y, width, height)
-
         self.viewport_pixels = (int(self.viewport_ratio[0] * window_size[0]),
                                 int(self.viewport_ratio[1] * window_size[1]),
                                 int(self.viewport_ratio[2] * window_size[0]),
                                 int(self.viewport_ratio[3] * window_size[1]))
-
-        print(self.viewport_pixels)
 
     def is_inside_viewport(self, coord_pixels: tuple) -> bool:
         if self.viewport_pixels is None:
