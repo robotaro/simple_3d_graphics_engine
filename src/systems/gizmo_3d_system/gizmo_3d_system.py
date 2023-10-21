@@ -1,7 +1,9 @@
 import logging
 import moderngl
+import numpy as np
 
 from src import constants
+from src.math import mat4
 from src.event_publisher import EventPublisher
 from src.action_publisher import ActionPublisher
 from src.component_pool import ComponentPool
@@ -158,14 +160,26 @@ class Gizmo3DSystem(System):
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_id]
 
             # Get both gizmo's and selected entity's transforms
+            camera_transform_component = self.component_pool.transform_3d_components[camera_entity_id]
             selected_transform_component = self.component_pool.transform_3d_components[self.selected_entity_uid]
             gizmo_transform_component = self.component_pool.transform_3d_components[gizmo_3d_entity_uid]
+
+            # Calculate scale of gizmo
+            camera_position = np.array(camera_transform_component.position, dtype=np.float32)
+            object_position = np.array(selected_transform_component.position, dtype=np.float32)
+            hypothenuse = np.linalg.norm(camera_position - object_position)
+
+            inv_camera_transform = np.eye(4, dtype=np.float32)
+            mat4.fast_inverse(in_mat4=camera_transform_component.world_matrix, out_mat4=inv_camera_transform)
+            distance = -mat4.mul_vector3(in_mat4=inv_camera_transform, in_vec3=object_position)[2]
+            scale = hypothenuse * constants.GIZMO_3D_SCALE_COEFFICIENT
 
             # Put gizmo where the selected entity's is
             gizmo_transform_component.position = selected_transform_component.position
             gizmo_transform_component.rotation = selected_transform_component.rotation
-            gizmo_transform_component.dirty = True
+            gizmo_transform_component.scale = scale
 
+            gizmo_transform_component.dirty = True
 
         return True
 

@@ -106,16 +106,16 @@ def create_transform_xyz(position: np.array, rotation: np.array, scale: float):
     return transform
 
 
-@njit(cache=True)
 def mul_vector3(in_mat4: np.ndarray, in_vec3: np.array):
-    return in_mat4 @ np.append(in_vec3, [1.0])[:3]
+    return np.dot(in_mat4[:3, :3], in_vec3) +  in_mat4[:3, 3]
 
 
 @njit(cache=True)
 def fast_inverse(in_mat4: np.ndarray, out_mat4: np.ndarray):
     # IMPORTANT: This matrix assumes out_mat4 was already initialised as eye(4)!!!
-    out_mat4[:3, :3] = np.linalg.inv(in_mat4[:3, :3])
+    out_mat4[:3, :3] = np.linalg.inv(np.ascontiguousarray(in_mat4[:3, :3]))
     out_mat4[:3, 3] = -out_mat4[:3, :3] @ in_mat4[:3, 3]
+
 
 @njit(cache=True)
 def even_faster_inverse(in_mat4: np.ndarray, out_mat4: np.ndarray):

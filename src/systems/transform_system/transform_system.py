@@ -52,7 +52,7 @@ class TransformSystem(System):
             if transform.dirty:
                 transform.local_matrix = mat4.compute_transform(position=transform.position,
                                                                 rotation_rad=transform.rotation,
-                                                                scale=transform.scale[0])
+                                                                scale=transform.scale)
                 transform.dirty = False
 
             if entity.parent_uid is None:

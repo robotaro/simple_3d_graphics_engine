@@ -57,6 +57,7 @@ IMGUI_DRAG_FLOAT_PRECISION = 1e-2
 GIZMO_3D_SYSTEM_X_AXIS_NAME = "x_axis"
 GIZMO_3D_SYSTEM_Y_AXIS_NAME = "y_axis"
 GIZMO_3D_SYSTEM_Z_AXIS_NAME = "z_axis"
+GIZMO_3D_SCALE_COEFFICIENT = 0.05
 
 # =============================================================================
 #                               Events
