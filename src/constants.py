@@ -41,7 +41,7 @@ DEFAULT_SYSTEMS = [
     SYSTEM_NAME_GIZMO_3D,
     SYSTEM_NAME_TRANSFORM,  # Must go BEFORE render system to read the transforms before they are shown!
     SYSTEM_NAME_RENDER,
-    SYSTEM_NAME_IMGUI  # Must come AFTER the render system to add the GUI to the final render
+    #SYSTEM_NAME_IMGUI  # Must come AFTER the render system to add the GUI to the final render
 ]
 
 # =============================================================================
@@ -57,6 +57,7 @@ IMGUI_DRAG_FLOAT_PRECISION = 1e-2
 GIZMO_3D_SYSTEM_X_AXIS_NAME = "x_axis"
 GIZMO_3D_SYSTEM_Y_AXIS_NAME = "y_axis"
 GIZMO_3D_SYSTEM_Z_AXIS_NAME = "z_axis"
+GIZMO_3D_SCALE_COEFFICIENT = 0.05
 
 # =============================================================================
 #                               Events
@@ -67,8 +68,9 @@ EVENT_KEYBOARD_PRESS = 1            # args: (key, scancode, mods) <int, int, int
 EVENT_KEYBOARD_RELEASE = 2          # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_REPEAT = 3           # args: (key, scancode, mods) <int, int, int>
 
-EVENT_MOUSE_BUTTON_ENABLED = 10
-EVENT_MOUSE_BUTTON_DISABLED = 11
+# TODO: COntinue from here, change mouse button enable disable to entered UI and exited UI. Or something.
+EVENT_MOUSE_ENTER_UI = 10
+EVENT_MOUSE_LEAVE_UI = 11
 EVENT_MOUSE_BUTTON_PRESS = 12        # args: (button, mods, x, y) <int, int, int, int>
 EVENT_MOUSE_BUTTON_RELEASE = 13      # args: (button, mods, x, y) <int, int, int, int>
 EVENT_MOUSE_MOVE = 14                # args: (x, y) <float, float>
@@ -152,21 +154,16 @@ RENDER_SYSTEM_UP_VECTOR = (0.0, 1.0, 0.0)
 RENDER_SYSTEM_BACKGROUND_COLOR = (0.21176, 0.21176, 0.21176)
 
 RENDER_SYSTEM_LAYER_DEFAULT = 0
-RENDER_SYSTEM_LAYER_DEBUG = 1
-RENDER_SYSTEM_LAYER_GIZMO_3D = 2
-RENDER_SYSTEM_LAYER_SKELETON = 5
-RENDER_SYSTERM_LAYERS = [
-    RENDER_SYSTEM_LAYER_DEFAULT,
-    RENDER_SYSTEM_LAYER_DEBUG,
-    RENDER_SYSTEM_LAYER_GIZMO_3D
-]
+RENDER_SYSTEM_LAYER_OVERLAY = 1
 
 SHADER_PROGRAM_FORWARD_PASS = "forward_pass"
+SHADER_PROGRAM_OVERLAY_PASS = "overlay_pass"
 SHADER_PROGRAM_SELECTED_ENTITY_PASS = "selected_entity_pass"
 SHADER_PROGRAM_SHADOW_MAPPING_PASS = "shadow_mapping"
 SHADER_PROGRAM_TEXT_2D = "text_2d"
 SHADER_PASSES_LIST = [
     SHADER_PROGRAM_FORWARD_PASS,
+    SHADER_PROGRAM_OVERLAY_PASS,
     SHADER_PROGRAM_SELECTED_ENTITY_PASS,
     SHADER_PROGRAM_SHADOW_MAPPING_PASS
 ]
@@ -288,7 +285,7 @@ COLLIDER_SHAPE_PLANE = "plane"
 MATERIAL_COLOR_BLACK = (0.0, 0.0, 0.0)
 MATERIAL_COLOR_WHITE = (1.0, 1.0, 1.0)
 MATERIAL_COLOR_RED = (1.0, 0.0, 0.0)
-MATERIAL_COLOR_LIME = (0.0, 1.0, 0.0)
+MATERIAL_COLOR_GREEN = (0.0, 1.0, 0.0)
 MATERIAL_COLOR_BLUE = (0.0, 0.0, 1.0)
 MATERIAL_COLOR_YELLOW = (1.0, 1.0, 0.0)
 MATERIAL_COLOR_CYAN = (0.0, 1.0, 1.0)  # Also known as Aqua
@@ -297,7 +294,6 @@ MATERIAL_COLOR_SILVER = (192.0 / 255.0, 192.0 / 255.0, 192.0 / 255.0)
 MATERIAL_COLOR_GRAY = (128.0 / 255.0, 128.0 / 255.0, 128.0 / 255.0)
 MATERIAL_COLOR_MAROON = (128.0 / 255.0, 0.0, 0.0)
 MATERIAL_COLOR_OLIVE = (128.0 / 255.0, 128.0 / 255.0, 0.0)
-MATERIAL_COLOR_GREEN = (0.0, 128.0 / 255.0, 0.0)
 MATERIAL_COLOR_PURPLE = (128.0 / 255.0, 0.0, 128.0 / 255.0)
 MATERIAL_COLOR_TEAL = (0.0, 128.0 / 255.0, 128.0 / 255.0)
 MATERIAL_COLOR_NAVY = (0.0, 0.0, 128.0 / 255.0)
@@ -319,7 +315,7 @@ MATERIAL_COLORS = {
     "black": MATERIAL_COLOR_BLACK,
     "white": MATERIAL_COLOR_WHITE,
     "red": MATERIAL_COLOR_RED,
-    "lime": MATERIAL_COLOR_LIME,
+    "green": MATERIAL_COLOR_GREEN,
     "blue": MATERIAL_COLOR_BLUE,
     "yellow": MATERIAL_COLOR_YELLOW,
     "cyan": MATERIAL_COLOR_CYAN,  # Also known as Aqua
@@ -330,7 +326,6 @@ MATERIAL_COLORS = {
     "gray": MATERIAL_COLOR_GRAY,
     "maroon": MATERIAL_COLOR_MAROON,
     "olive": MATERIAL_COLOR_OLIVE,
-    "green": MATERIAL_COLOR_GREEN,
     "purple": MATERIAL_COLOR_PURPLE,
     "teal": MATERIAL_COLOR_TEAL,
     "navy": MATERIAL_COLOR_NAVY,
@@ -360,9 +355,11 @@ SHADER_TYPE_GEOMETRY = "geometry"
 SHADER_TYPE_FRAGMENT = "fragment"
 
 SHADER_LIBRARY_YAML_KEY_DEFINE = "define"  # For extra definitions
-SHADER_LIBRARY_YAML_KEY_VARYING = "varying"  # For varying variables (those who output to VBos rather than textures)
-SHADER_LIBRARY_YAML_KEY_INPUT_TEXTURE_LOCATION = "input_texture_location"
+SHADER_LIBRARY_YAML_KEY_VARYINGS = "varyings"  # For varying variables (those who output to VBos rather than textures)
+SHADER_LIBRARY_YAML_KEY_INPUT_TEXTURE_LOCATIONS = "input_texture_locations"
+SHADER_LIBRARY_YAML_KEY_EXTRA_DEFINITIONS = "extra_definitions"
 SHADER_LIBRARY_FILE_EXTENSION = ".glsl"
+SHADER_LIBRARY_PROGRAM_DEFINITION_EXTENSION = ".yaml"
 
 SHADER_LIBRARY_DIRECTIVE_VERSION = "#version"
 SHADER_LIBRARY_DIRECTIVE_DEFINE = "#define"
@@ -391,3 +388,9 @@ FONT_LIBRARY_COLUMN_INDEX_U_MAX = 6
 FONT_LIBRARY_COLUMN_INDEX_V_MAX = 7
 FONT_LIBRARY_COLUMN_INDEX_VERTICAL_OFFSET = 8
 FONT_LIBRARY_COLUMN_INDEX_HORIZONTAL_ADVANCE = 9
+
+# =============================================================================
+#                               Transforms
+# =============================================================================
+
+ROTATION_XYZ = 0

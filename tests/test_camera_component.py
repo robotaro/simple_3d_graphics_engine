@@ -9,7 +9,6 @@ def test_update_viewport():
     assert camera.viewport_pixels is None
 
     camera.update_viewport(window_size=(1600, 900))
-
     target_viewport_pixels = (400, 225, 800, 450)
     assert target_viewport_pixels == camera.viewport_pixels
 
@@ -25,7 +24,7 @@ def test_is_inside_viewport():
     test_conditions = [
         # Coords    Inside or not
         (100, 100,  False),
-        (700, 500, False),
+        (700, 500,  False),
         (-20, 0,    False),
         (400, 300,  True),
         (599, 449,  True),

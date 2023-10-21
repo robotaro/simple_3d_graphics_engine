@@ -1,5 +1,17 @@
 <scene>
 
+    <entity name="Main Camera">
+        <camera viewport_ratio="0 0 0.5 1" perspective="true"/>
+        <transform_3d position="-0.5 0.5 5"/>
+        <input_control speed="4.5"/>
+    </entity>
+
+    <entity name="Camera 2">
+        <camera viewport_ratio="0.5 0 0.5 1" perspective="true"/>
+        <transform_3d position="-0.5 0.5 10"/>
+        <input_control speed="4.5"/>
+    </entity>
+
     <entity name="Point Light 1">
         <point_light diffuse="1.0 1.0 1.0"/>
         <transform_3d position="2.0 2.0 2.0"/>
@@ -12,19 +24,19 @@
         <transform_3d position="2.0 2.0 2.0" rotation="-45 90 0" degrees="true"/>
     </entity>
 
-    <entity name="Main Camera">
-        <camera viewport_ratio="0 0 1 1" perspective="true"/>
-        <transform_3d position="-0.5 0.5 5"/>
-        <input_control speed="7.5"/>
-    </entity>
-
     <entity name="body">
         <mesh fpath="meshes/female_body_gesture_practice.glb" scale="2"/>
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
         <transform_3d position="0 0 0" rotation="-90 0 0" degrees="true"/>
     </entity>
 
-    <entity name="Dragon 2">
+    <entity name="capsule">
+        <mesh shape="capsule" height="1.5" radius="0.25" count="32 32"/>
+        <material diffuse="gray" shininess_factor="32.0"/>
+        <transform_3d position="-3 0 3" degrees="true"/>
+    </entity>
+
+    <entity name="Dragon">
         <mesh fpath="meshes/dragon.obj"/>
         <transform_3d position="-1 0 -1"/>
         <material diffuse="0.2 .3 0.8" shininess_factor="32.0"/>

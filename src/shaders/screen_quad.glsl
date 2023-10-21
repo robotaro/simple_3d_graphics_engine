@@ -16,12 +16,13 @@ void main() {
 
 in vec2 uv;
 
-// Input textures
+// Input textures - Remember to UPDATE THE PROGRAMS.YAML!!!!!!!!!
 uniform sampler2D color_texture;
 uniform sampler2D normal_texture;
 uniform sampler2D viewpos_texture;
 uniform sampler2D entity_info_texture;
 uniform sampler2D selection_texture;
+uniform sampler2D overlay_texture;
 uniform sampler2D depth_texture;
 
 // Other input uniforms
@@ -54,36 +55,51 @@ vec3 int_to_color(uint i) {
     return c * (1.0 / 255.0);
 }
 
-vec3 calculate_outline_color();
+
+vec3 calculate_outline_color_rgb();
 float linearise_depth_perspective(float depthValue);
 float linearise_depth_orthographic(float depthValue);
+
+vec3 overlay_color_rgb = texture(overlay_texture, uv).rgb;
+bool overlay_collision = overlay_color_rgb != vec3(0.0, 0.0, 0.0);
+float blending = 0.75;
 
 void main() {
 
     vec3 color_rgb;
 
+    // This is a simple DEBUG selection to help in understanding what each texture brings to the table
+
     if (selected_texture == 0) {
-        // Color
-        color_rgb = calculate_outline_color();
+
+        // Complete Scene
+        color_rgb = calculate_outline_color_rgb();
+        if (overlay_collision)
+            color_rgb = blending * overlay_color_rgb + (1.0 - blending) * color_rgb;
 
     } else if (selected_texture == 1) {
+
         // Normal
         color_rgb = texture(normal_texture, uv).rgb;
 
     } else if (selected_texture == 2) {
+
         // Viewpos
         color_rgb = texture(viewpos_texture, uv).xyz;
 
     } else if (selected_texture == 3) {
+
         // Entity ID
         uint id = floatBitsToUint(texture(entity_info_texture, uv).r);
         color_rgb = int_to_color(id);
 
     } else if (selected_texture == 4) {
+
         // Current Selection
         color_rgb = texture(selection_texture, uv).rgb;
 
     } else if (selected_texture == 5) {
+
         // Depth
         float depth = texture(depth_texture, uv).r;
         if (perspective_projection)
@@ -91,6 +107,11 @@ void main() {
         else
             depth = linearise_depth_orthographic(depth);
         color_rgb = vec3(depth);
+
+    } else if (selected_texture == 6) {
+
+        // Overlay
+        color_rgb = texture(overlay_texture, uv).rgb;
 
     }
 
@@ -110,7 +131,7 @@ float linearise_depth_orthographic(float depth_value) {
     return depth_value * (zFar - zNear) + zNear;
 }
 
-vec3 calculate_outline_color(){
+vec3 calculate_outline_color_rgb(){
 
     // TODO: Fix issue where outline roll over to the other edge of the screen
 

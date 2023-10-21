@@ -1,8 +1,12 @@
 import numpy as np
-from numba import njit
+from numba import njit, float32
+
+# ======================================================================================================================
+#                                                Ray / Sphere
+# ======================================================================================================================
 
 
-@njit()
+@njit(cache=True)
 def intersect_boolean_ray_sphere(ray_origin: np.array,
                                  ray_direction: np.array,
                                  sphere_origin: np.array,
@@ -33,7 +37,8 @@ def intersect_boolean_ray_sphere(ray_origin: np.array,
     discriminant = b * b - 4 * a * c
     return discriminant >= 0  # Return if at least one intersection exists
 
-@njit()
+
+@njit(cache=True)
 def intersect_distance_ray_sphere(ray_origin: np.array,
                                   ray_direction: np.array,
                                   sphere_origin: np.array,
@@ -66,7 +71,67 @@ def intersect_distance_ray_sphere(ray_origin: np.array,
         return -1.0
     return (-b - np.sqrt(discriminant)) / (2.0 * a)
 
+# ======================================================================================================================
+#                                                Ray / capsule
+# ======================================================================================================================
 
+
+@njit(float32(float32[:], float32[:], float32[:], float32[:], float32), cache=True)
+def intersect_ray_capsule(ray_origin, ray_direction, point_a, point_b, radius) -> float:
+    """
+    Original code from: https://iquilezles.org/articles/intersectors/
+
+    :param ray_origin: np.array, (3,) <float32>
+    :param ray_direction: np.array, (3,) <float32>
+    :param point_a: np.array, (3,) <float32>
+    :param point_b: np.array, (3,) <float32>
+    :param radius: <float32>
+    :return:
+    """
+
+    ba = point_b - point_a
+    oa = ray_origin - point_a
+
+    baba = np.dot(ba, ba)
+    bard = np.dot(ba, ray_direction)
+    baoa = np.dot(ba, oa)
+    rdoa = np.dot(ray_direction, oa)
+    oaoa = np.dot(oa, oa)
+
+    a = baba - bard * bard
+
+    # Edge-case-fix added by Me! If the ray passes through point A and B, a = 0 and it causes a division by zero.
+    if a == 0.0:
+        return -1
+
+    b = baba * rdoa - baoa * bard
+    c = baba * oaoa - baoa * baoa - radius * radius * baba
+
+    h = b * b - a * c
+
+    if h >= 0.0:
+        t = (-b - np.sqrt(h)) / a
+        y = baoa + t * bard
+
+        # body
+        if 0.0 < y < baba:
+            return t
+
+        # caps
+        oc = oa if y <= 0.0 else ray_origin - point_b
+        b = np.dot(ray_direction, oc)
+        c = np.dot(oc, oc) - radius * radius
+        h = b * b - c
+
+        if h > 0.0:
+            return -b - np.sqrt(h)
+    return -1.0
+
+# ======================================================================================================================
+#                                                Ray / capsule
+# ======================================================================================================================
+
+# UNTESTED
 @njit
 def ray_cylinder_intersection(ray_origin: np.array,
                               ray_direction: np.array,
@@ -93,6 +158,7 @@ def ray_cylinder_intersection(ray_origin: np.array,
 
     return False
 
+# UNTESTED
 @njit
 def ray_box_intersection(ray_origin, ray_direction, box_min, box_max):
     t_min = (box_min - ray_origin) / ray_direction

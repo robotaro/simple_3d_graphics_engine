@@ -39,12 +39,11 @@ class Camera(Component):
         # Flags
         self.perspective = self.dict2bool(input_dict=self.parameters, key="perspective", default_value=True)
 
-    def upload_uniforms(self, program: moderngl.Program, window_width: int, window_height: int):
-        proj_matrix_bytes = self.get_projection_matrix(window_width=window_width,
-                                                       window_height=window_height).T.tobytes()
-        program["projection_matrix"].write(proj_matrix_bytes)
+    def upload_uniforms(self, program: moderngl.Program):
+        program["projection_matrix"].write(self.get_projection_matrix().T.tobytes())
 
     def update_viewport(self, window_size: tuple):
+
         self.viewport_pixels = (int(self.viewport_ratio[0] * window_size[0]),
                                 int(self.viewport_ratio[1] * window_size[1]),
                                 int(self.viewport_ratio[2] * window_size[0]),
@@ -54,15 +53,15 @@ class Camera(Component):
         if self.viewport_pixels is None:
             return False
 
-        flag_x = self.viewport_pixels[0] <= coord_pixels[0] < self.viewport_pixels[2] + self.viewport_pixels[0]
-        flag_y = self.viewport_pixels[1] <= coord_pixels[1] < self.viewport_pixels[3] + self.viewport_pixels[1]
+        flag_x = self.viewport_pixels[0] <= coord_pixels[0] < (self.viewport_pixels[2] + self.viewport_pixels[0])
+        flag_y = self.viewport_pixels[1] <= coord_pixels[1] < (self.viewport_pixels[3] + self.viewport_pixels[1])
 
         return flag_x & flag_y
 
     def get_viewport_coordinates(self, screen_coord_pixels: tuple) -> Union[tuple, None]:
         """
         Returns a normalised coordinates withing the viewport of the camera. This will return
-        errouneous values if the input coordinates are outside the viewport in screen values
+        erroneous values if the input coordinates are outside the viewport in screen values
         """
         if self.viewport_pixels is None:
             return None
@@ -77,15 +76,13 @@ class Camera(Component):
 
         return x, y
 
-    def get_projection_matrix(self, window_width: int, window_height: int):
+    def get_projection_matrix(self):
 
-        nom = window_width * (self.viewport_ratio[2] - self.viewport_ratio[0])
-        den = window_height * (self.viewport_ratio[3] - self.viewport_ratio[1])
-        aspect_ratio = nom / den
+        aspect_ratio = self.viewport_pixels[2] / self.viewport_pixels[3]
 
         if self.perspective:
             return utils_camera.perspective_projection(
-                fov_rad=self.y_fov_deg * np.pi / 180.0,  # TODO: OPtimise deg2rad conversion
+                fov_rad=self.y_fov_deg * constants.DEG2RAD,
                 aspect_ratio=aspect_ratio,
                 z_near=self.z_near,
                 z_far=self.z_far)

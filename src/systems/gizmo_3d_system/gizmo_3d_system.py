@@ -1,5 +1,6 @@
 import logging
 import moderngl
+import numpy as np
 
 from src import constants
 from src.event_publisher import EventPublisher
@@ -18,9 +19,10 @@ class Gizmo3DSystem(System):
     __slots__ = [
         "entity_ray_intersection_list",
         "window_size",
-        "gizmo_3d_rig_entity_uid",
         "selected_entity_uid",
-        "selected_entity_init_distance_to_cam"]
+        "selected_entity_init_distance_to_cam",
+        "gizmo_selection_enabled",
+        "camera2gizmo_map"]
 
     def __init__(self, logger: logging.Logger,
                  component_pool: ComponentPool,
@@ -37,7 +39,8 @@ class Gizmo3DSystem(System):
 
         self.window_size = None
         self.entity_ray_intersection_list = []
-        self.gizmo_3d_rig_entity_uid = None
+        self.gizmo_selection_enabled = True
+        self.camera2gizmo_map = {}
 
         # DEBUG
         self.selected_entity_uid = None
@@ -47,28 +50,38 @@ class Gizmo3DSystem(System):
         """
         Initialises the Gizmo3D system using the parameters given
 
-        :param parameters:
-            * Example parameter 1
-        :return:
+        :return: bool, TRUE if all steps of initialisation succeeded
         """
 
-        # Create Gizmo entity here
-        self.gizmo_3d_rig_entity_uid = self.component_pool.add_entity(
-            entity_blueprint=GIZMO_3D_RIG_BLUEPRINT,
-            system_owned=True)
+        # Stage 1) For every camera, create a gizmo entity and associate their ids
+        for camera_entity_id, camera_component in self.component_pool.camera_components.items():
+            if camera_entity_id in self.camera2gizmo_map:
+                continue
 
-        # look for 3 specific entities by name to make sure the axes can be represented correctly
-        for entity_uid, gizmo_3d in self.component_pool.gizmo_3d_components.items():
-            children_uids = self.component_pool.get_children_uids(entity_uid=entity_uid)
+            self.camera2gizmo_map[camera_entity_id] = self.component_pool.add_entity(
+                entity_blueprint=GIZMO_3D_RIG_BLUEPRINT,
+                system_owned=True)
 
-            gizmo_3d.x_axis_entity_uid = [uid for uid in children_uids
-                                          if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_X_AXIS_NAME][0]
-            gizmo_3d.y_axis_entity_uid = [uid for uid in children_uids
-                                          if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_Y_AXIS_NAME][0]
-            gizmo_3d.z_axis_entity_uid = [uid for uid in children_uids
-                                          if self.component_pool.get_entity(uid).name == constants.GIZMO_3D_SYSTEM_Z_AXIS_NAME][0]
+        # Stage 2) For every gizmo3D, find out which meshes correspond to their respective axes
+        for gizmo_3d_entity_uid, gizmo_3d_component in self.component_pool.gizmo_3d_components.items():
 
-        # TODO: Continue from here!!!
+            children_uids = self.component_pool.get_children_uids(entity_uid=gizmo_3d_entity_uid)
+
+            for child_uid in children_uids:
+
+                entity_name = self.component_pool.get_entity(child_uid).name
+
+                if entity_name == constants.GIZMO_3D_SYSTEM_X_AXIS_NAME:
+                    gizmo_3d_component.x_axis_entity_uid = child_uid
+                    continue
+
+                if entity_name == constants.GIZMO_3D_SYSTEM_Y_AXIS_NAME:
+                    gizmo_3d_component.y_axis_entity_uid = child_uid
+                    continue
+
+                if entity_name == constants.GIZMO_3D_SYSTEM_Z_AXIS_NAME:
+                    gizmo_3d_component.z_axis_entity_uid = child_uid
+                    continue
 
         return True
 
@@ -79,11 +92,26 @@ class Gizmo3DSystem(System):
 
         if event_type == constants.EVENT_ENTITY_SELECTED:
             self.selected_entity_uid = event_data[0]
+            self.set_all_gizmo_3d_visibility(visible=True)
 
         if event_type == constants.EVENT_ENTITY_DESELECTED:
             self.selected_entity_uid = None
+            self.set_all_gizmo_3d_visibility(visible=False)
 
-        if event_type == constants.EVENT_MOUSE_MOVE and self.window_size is not None:
+        if event_type == constants.EVENT_MOUSE_LEAVE_UI:
+            self.gizmo_selection_enabled = True
+
+        if event_type == constants.EVENT_MOUSE_ENTER_UI:
+            # TODO: Deselect gizmo when you enter the UI? Maybe think about it
+            self.gizmo_selection_enabled = False
+
+        if event_type == constants.EVENT_MOUSE_MOVE:
+
+            if self.window_size is None:
+                return
+
+            if not self.gizmo_selection_enabled:
+                return
 
             for entity_camera_id, camera_component in self.component_pool.camera_components.items():
 
@@ -92,9 +120,7 @@ class Gizmo3DSystem(System):
                     continue
 
                 view_matrix = self.component_pool.transform_3d_components[entity_camera_id].world_matrix
-                projection_matrix = camera_component.get_projection_matrix(
-                    window_width=self.window_size[0],
-                    window_height=self.window_size[1])
+                projection_matrix = camera_component.get_projection_matrix()
 
                 viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=event_data)
                 if viewport_coord_norm is None:
@@ -124,23 +150,37 @@ class Gizmo3DSystem(System):
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
-        gizmo = self.component_pool.gizmo_3d_components[self.gizmo_3d_rig_entity_uid]
+        for camera_entity_id, camera_component in self.component_pool.camera_components.items():
 
-        if self.selected_entity_uid is None:
-            self.component_pool.mesh_components[gizmo.x_axis_entity_uid].visible = False
-            self.component_pool.mesh_components[gizmo.y_axis_entity_uid].visible = False
-            self.component_pool.mesh_components[gizmo.z_axis_entity_uid].visible = False
-            return True
+            if self.selected_entity_uid is None:
+                continue
 
-        self.component_pool.mesh_components[gizmo.x_axis_entity_uid].visible = True
-        self.component_pool.mesh_components[gizmo.y_axis_entity_uid].visible = True
-        self.component_pool.mesh_components[gizmo.z_axis_entity_uid].visible = True
+            # Find which gizmo is attached to this camera
+            gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_id]
 
-        selected_transform = self.component_pool.transform_3d_components[self.selected_entity_uid]
-        gizmo_transform = self.component_pool.transform_3d_components[self.gizmo_3d_rig_entity_uid]
+            # Get both gizmo's and selected entity's transforms
+            camera_transform_component = self.component_pool.transform_3d_components[camera_entity_id]
+            selected_transform_component = self.component_pool.transform_3d_components[self.selected_entity_uid]
+            gizmo_transform_component = self.component_pool.transform_3d_components[gizmo_3d_entity_uid]
+            scale = utils_camera.get_gizmo_scale(camera_transform=camera_transform_component.world_matrix,
+                                                 object_position=selected_transform_component.position)
 
-        gizmo_transform.position = selected_transform.position
-        gizmo_transform.rotation = selected_transform.rotation
-        gizmo_transform.dirty = True
+            # Put gizmo where the selected entity's is
+            gizmo_transform_component.position = selected_transform_component.position
+            gizmo_transform_component.rotation = selected_transform_component.rotation
+            gizmo_transform_component.scale = scale
+
+            gizmo_transform_component.dirty = True
 
         return True
+
+    def set_all_gizmo_3d_visibility(self, visible=True):
+
+        for camera_entity_id, camera_component in self.component_pool.camera_components.items():
+
+            gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_id]
+            gizmo_3d_component = self.component_pool.gizmo_3d_components[gizmo_3d_entity_uid]
+
+            self.component_pool.mesh_components[gizmo_3d_component.x_axis_entity_uid].visible = visible
+            self.component_pool.mesh_components[gizmo_3d_component.y_axis_entity_uid].visible = visible
+            self.component_pool.mesh_components[gizmo_3d_component.z_axis_entity_uid].visible = visible

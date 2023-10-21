@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from numba import njit, float32
 from src.math import mat3
 
 DEG2RAD = np.pi / 180.0
@@ -18,8 +18,6 @@ def compute_transform(position: tuple, rotation_rad: tuple, scale=1.0, order='xy
     :param order: string with the order of axes
     :return: numpy ndarray (3, 3) <float32>
     """
-
-    f = 8 + 6
 
     cx = np.cos(rotation_rad[0])
     sx = np.sin(rotation_rad[0])
@@ -56,11 +54,79 @@ def compute_transform(position: tuple, rotation_rad: tuple, scale=1.0, order='xy
 
     return transform
 
+
+@njit(float32[:, :](float32[:], float32[:], float32))
+def create_transform_xyz(position: np.array, rotation: np.array, scale: float):
+    """
+
+    WORK IN PROGRESS
+
+    :param position:
+    :param rotation:
+    :param scale:
+    :return:
+    """
+    alpha, beta, gamma = rotation
+
+    s_alpha = np.sin(alpha)
+    c_alpha = np.cos(alpha)
+    s_beta = np.sin(beta)
+    c_beta = np.cos(beta)
+    s_gamma = np.sin(gamma)
+    c_gamma = np.cos(gamma)
+
+    transform = np.eye(4, dtype=np.float32)
+
+    # Rotation and scale
+    """transform[0, 0] = cy * cz * scale
+    transform[1, 0] = -cy * sz * scale
+    transform[2, 0] = sy * scale
+    transform[0, 1] = sx * sy * cz + cx * sz * scale
+    transform[1, 1] = -sx * sy * sz + cx * cz * scale
+    transform[2, 1] = -sx * cy * scale
+    transform[0, 2] = -cx * sy * cz + sx * sz * scale
+    transform[1, 2] = cx * sy * sz + sx * cz * scale
+    transform[2, 2] = cx * cy * scale"""
+
+    transform[0, 0] = c_beta * c_alpha
+    transform[1, 0] = s_gamma * s_beta * c_alpha - c_gamma * s_alpha
+    transform[2, 0] = c_gamma * s_beta * c_alpha + s_gamma * s_alpha
+    transform[0, 1] = c_beta * s_alpha
+    transform[1, 1] = s_gamma * s_beta * s_alpha + c_gamma * c_alpha
+    transform[2, 1] = c_gamma * s_beta * s_alpha - s_gamma * c_alpha
+    transform[0, 2] = -s_beta
+    transform[1, 2] = s_gamma * c_beta
+    transform[2, 2] = c_gamma * c_beta
+
+    # Position
+    transform[0, 3] = position[0]
+    transform[1, 3] = position[1]
+    transform[2, 3] = position[2]
+
+    return transform
+
+
+def mul_vector3(in_mat4: np.ndarray, in_vec3: np.array):
+    return np.dot(in_mat4[:3, :3], in_vec3) +  in_mat4[:3, 3]
+
+
+@njit(cache=True)
+def fast_inverse(in_mat4: np.ndarray, out_mat4: np.ndarray):
+    # IMPORTANT: This matrix assumes out_mat4 was already initialised as eye(4)!!!
+    out_mat4[:3, :3] = np.linalg.inv(np.ascontiguousarray(in_mat4[:3, :3]))
+    out_mat4[:3, 3] = -out_mat4[:3, :3] @ in_mat4[:3, 3]
+
+
+@njit(cache=True)
+def even_faster_inverse(in_mat4: np.ndarray, out_mat4: np.ndarray):
+    # IMPORTANT: This matrix assumes out_mat4 was already initialised as eye(4)!!!
+    out_mat4[:3, :3] = in_mat4[:3, :3].T  # R.T == R^-1
+    out_mat4[:3, 3] = -out_mat4[:3, :3] @ in_mat4[:3, 3]
+
+
 @njit(cache=True)
 def compute_transform_not_so_useful(pos: tuple, rot: tuple, scale: float):
     # TODO: refactor this to simplify scale!
-
-    f = 8 + 6
 
     rotation = np.eye(4)
     rotation[:3, :3] = np.array(rot)

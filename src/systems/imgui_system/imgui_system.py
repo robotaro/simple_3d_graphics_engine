@@ -19,7 +19,7 @@ class ImguiSystem(System):
         "selected_entity_uid",
         "selected_entity_name",
         "selected_entity_components",
-        "pass_window_hover",
+        "past_window_hover",
         "_exit_popup_open"
     ]
 
@@ -42,7 +42,7 @@ class ImguiSystem(System):
         self.selected_entity_uid = -1
         self.selected_entity_name = ""
         self.selected_entity_components = []
-        self.pass_window_hover = False
+        self.past_window_hover = False
 
         # Flags
         self._exit_popup_open = False
@@ -119,16 +119,16 @@ class ImguiSystem(System):
         # Enable/Disable mouse buttons to other systems if it is hovering on any Imgui windows
         windows_hover = imgui.is_window_hovered(imgui.HOVERED_ANY_WINDOW)
 
-        if windows_hover and not self.pass_window_hover:
-            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_DISABLED,
-                                         event_data=None,
+        if windows_hover and not self.past_window_hover:
+            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_ENTER_UI,
+                                         event_data=(),
                                          sender=self)
 
-        if not windows_hover and self.pass_window_hover:
-            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_ENABLED,
-                                         event_data=None,
+        if not windows_hover and self.past_window_hover:
+            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_LEAVE_UI,
+                                         event_data=(),
                                          sender=self)
-        self.pass_window_hover = windows_hover
+        self.past_window_hover = windows_hover
 
     def gui_main_menu_bar(self):
 
@@ -292,6 +292,7 @@ class ImguiSystem(System):
         if material and not material.system_owned:
             imgui.text(f"Material")
             _, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
+            _, material.diffuse_highlight = imgui.color_edit3("Diffuse Highlight", *material.diffuse_highlight)
             _, material.specular = imgui.color_edit3("Specular", *material.specular)
             _, material.shininess_factor = imgui.drag_float("Shininess Factor",
                                                             material.shininess_factor,

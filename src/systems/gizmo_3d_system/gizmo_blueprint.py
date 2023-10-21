@@ -38,6 +38,7 @@ GIZMO_3D_RIG_BLUEPRINT = {
                     "name": "material",
                     "parameters": {
                         "diffuse": "red",
+                        "diffuse_highlight": "orange",
                         "shininess_factor": "32.0",
                         "lighting_mode": "solid"
                     }
@@ -67,6 +68,7 @@ GIZMO_3D_RIG_BLUEPRINT = {
                     "name": "material",
                     "parameters": {
                         "diffuse": "green",
+                        "diffuse_highlight": "yellow",
                         "shininess_factor": "32.0",
                         "lighting_mode": "solid"
                     }
@@ -96,6 +98,7 @@ GIZMO_3D_RIG_BLUEPRINT = {
                     "name": "material",
                     "parameters": {
                         "diffuse": "blue",
+                        "diffuse_highlight": "aqua",
                         "shininess_factor": "32.0",
                         "lighting_mode": "solid"
                     }

@@ -27,9 +27,9 @@ class Transform3D(Component):
         self.rotation = Component.dict2tuple_float(input_dict=self.parameters,
                                                    key="rotation",
                                                    default_value=(0.0, 0.0, 0.0))
-        self.scale = Component.dict2tuple_float(input_dict=self.parameters,
-                                                key="scale",
-                                                default_value=(1.0, 1.0, 1.0))
+        self.scale = Component.dict2float(input_dict=self.parameters,
+                                          key="scale",
+                                          default_value=1.0)
         self.degrees = Component.dict2bool(input_dict=self.parameters,
                                            key="degrees",
                                            default_value=False)

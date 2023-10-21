@@ -42,8 +42,10 @@ class Mesh(Component):
         self.vbo_uvs = None
         self.ibo_faces = None
 
-        self.layer = Component.dict2int(input_dict=self.parameters, key="layer", default_value=0)
-        self.visible = Component.dict2bool(input_dict=self.parameters, key="visible", default_value=True)
+        self.layer = Component.dict2int(input_dict=self.parameters, key="layer",
+                                        default_value=constants.RENDER_SYSTEM_LAYER_DEFAULT)
+        self.visible = Component.dict2bool(input_dict=self.parameters, key="visible",
+                                           default_value=True)
 
     def initialise(self, **kwargs):
 
@@ -151,16 +153,17 @@ class Mesh(Component):
                 v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
 
             if shape == constants.MESH_SHAPE_CAPSULE:
-                radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
-                subdivisions = Component.dict2int(input_dict=self.parameters, key="subdivisions", default_value=3)
-                v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
+                height = Component.dict2float(input_dict=self.parameters, key="height", default_value=1.0)
+                radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.25)
+                count = Component.dict2tuple_int(input_dict=self.parameters, key="count", default_value=(16, 16))
+                v, n, u, f = utils_mesh_3d.create_capsule(height=height, radius=radius, count=count)
 
             if shape == constants.MESH_SHAPE_CYLINDER:
                 point_a = Component.dict2tuple_float(input_dict=self.parameters,
                                                      key="point_a",
                                                      default_value=(0.0, 0.0, 0.0))
                 point_b = Component.dict2tuple_float(input_dict=self.parameters,
-                                                     key="point_a",
+                                                     key="point_b",
                                                      default_value=(0.0, 1.0, 0.0))
                 radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
                 sections = Component.dict2int(input_dict=self.parameters, key="sections", default_value=32)
