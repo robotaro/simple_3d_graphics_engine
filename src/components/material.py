@@ -31,9 +31,15 @@ class Material(Component):
         self.specular = Component.dict2color(input_dict=self.parameters,
                                              key="specular",
                                              default_value=(1.0, 1.0, 1.0))
-        self.shininess_factor = Component.dict2float(input_dict=self.parameters, key="shininess_factor", default_value=32.0)
-        self.metalic_factor = Component.dict2float(input_dict=self.parameters, key="metalic_factor", default_value=0.0)
-        self.roughness_factor = Component.dict2float(input_dict=self.parameters, key="roughness_factor", default_value=1.0)
+        self.shininess_factor = Component.dict2float(input_dict=self.parameters,
+                                                     key="shininess_factor",
+                                                     default_value=32.0)
+        self.metalic_factor = Component.dict2float(input_dict=self.parameters,
+                                                   key="metalic_factor",
+                                                   default_value=0.0)
+        self.roughness_factor = Component.dict2float(input_dict=self.parameters,
+                                                     key="roughness_factor",
+                                                     default_value=1.0)
 
         # Render modes
         self.color_source = Component.dict2map(input_dict=self.parameters, key="color_source",

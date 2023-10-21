@@ -13,6 +13,7 @@ from src.components.text_2d import Text2D
 from src.components.point_light import PointLight
 from src.components.directional_light import DirectionalLight
 from src.components.gizmo_3d import Gizmo3D
+from src.components.robot import Robot
 
 
 class Entity:
@@ -50,6 +51,7 @@ class ComponentPool:
         constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT: DirectionalLight,
         constants.COMPONENT_TYPE_COLLIDER: Collider,
         constants.COMPONENT_TYPE_GIZMO_3D: Gizmo3D,
+        constants.COMPONENT_TYPE_ROBOT: Robot,
     }
 
     def __init__(self, logger: logging.Logger):
@@ -75,6 +77,7 @@ class ComponentPool:
         self.point_light_components = {}
         self.collider_components = {}
         self.gizmo_3d_components = {}
+        self.robot_components = {}
 
         self.component_storage_map = {
             constants.COMPONENT_TYPE_TRANSFORM_3D: self.transform_3d_components,
@@ -89,6 +92,7 @@ class ComponentPool:
             constants.COMPONENT_TYPE_POINT_LIGHT: self.point_light_components,
             constants.COMPONENT_TYPE_COLLIDER: self.collider_components,
             constants.COMPONENT_TYPE_GIZMO_3D: self.gizmo_3d_components,
+            constants.COMPONENT_TYPE_ROBOT: self.robot_components,
         }
 
         # This variable is a temporary solution to keep track of all entities added during the xml scene loading
@@ -105,8 +109,8 @@ class ComponentPool:
 
                 # Recursively go into child's blueprint to create it
                 child_uid = self.add_entity(entity_blueprint=sub_entity_blueprint,
-                                parent_entity_uid=entity_uid,
-                                system_owned=system_owned)
+                                            parent_entity_uid=entity_uid,
+                                            system_owned=system_owned)
 
                 # And once you are back, add this child to its parent
                 self.entities[entity_uid].children_uids.append(child_uid)

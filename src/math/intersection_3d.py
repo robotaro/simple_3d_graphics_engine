@@ -76,7 +76,8 @@ def intersect_distance_ray_sphere(ray_origin: np.array,
 # ======================================================================================================================
 
 
-@njit(float32(float32[:], float32[:], float32[:], float32[:], float32), cache=True)
+# Check this for performance warning explanation for '::1': https://github.com/numba/numba/issues/8739
+@njit(float32(float32[::1], float32[::1], float32[::1], float32[::1], float32), cache=True)
 def intersect_ray_capsule(ray_origin, ray_direction, point_a, point_b, radius) -> float:
     """
     Original code from: https://iquilezles.org/articles/intersectors/

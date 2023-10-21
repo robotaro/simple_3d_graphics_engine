@@ -2,7 +2,7 @@ import os
 
 from src import constants
 from src.components.component import Component
-from src.utilities import utils_mesh_3d
+from src.utilities import utils_mesh_3d, utils_io
 
 
 class Mesh(Component):
@@ -140,6 +140,7 @@ class Mesh(Component):
         # To avoid warnings
         v, n, u, f = None, None, None, None
 
+        # Create a new mesh
         if shape is not None:
             if shape == constants.MESH_SHAPE_BOX:
                 width = Component.dict2float(input_dict=self.parameters, key="width", default_value=1.0)
@@ -171,17 +172,20 @@ class Mesh(Component):
                 v, n, u, f = utils_mesh_3d.create_cylinder(point_a=point_a, point_b=point_b,
                                                            sections=sections, radius=radius)
 
+        # Load an existing mesh file
         if fpath is not None:
 
-            _, mesh_extension = os.path.splitext(fpath)
+            valid_fpath = utils_io.validate_resource_filepath(fpath=fpath)
+
+            _, mesh_extension = os.path.splitext(valid_fpath)
 
             scale = Component.dict2float(input_dict=self.parameters, key="scale", default_value=1.0)
 
             if mesh_extension == ".obj":
-                v, n, u, f = utils_mesh_3d.from_obj(fpath=fpath, scale=scale)
+                v, n, u, f = utils_mesh_3d.from_obj(fpath=valid_fpath, scale=scale)
 
             if mesh_extension in [".gltf", ".glb"]:
-                v, n, u, f = utils_mesh_3d.from_gltf(fpath=fpath, scale=scale)
+                v, n, u, f = utils_mesh_3d.from_gltf(fpath=valid_fpath, scale=scale)
 
         self.vertices = v
         self.normals = n

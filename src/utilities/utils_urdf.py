@@ -18,7 +18,6 @@ KEY_COLOR = "color"
 KEY_AXIS = "axis"
 KEY_LIMIT = "limit"
 KEY_PARENT = "parent"
-KEY_PARENT = "parent"
 KEY_CHILD = "child"
 KEY_ORIGIN = "origin"
 
@@ -134,12 +133,3 @@ def parse_joint(joint) -> dict:
             joint_dict["child"] = child.attrib.get(KEY_LINK, "")
 
     return joint_dict
-
-
-
-if __name__ == "__main__":
-
-    fpath = r"D:\git_repositories\alexandrepv\simple_3d_graphics_engine\resources\urdf\ur10e\ur10e.urdf"
-    #fpath = r"D:\git_repositories\alexandrepv\simple_3d_graphics_engine\resources\urdf\allegro_hand\allegro_hand.urdf"
-    robot_blueprint = load_urdf(fpath=fpath)
-    g = 0
