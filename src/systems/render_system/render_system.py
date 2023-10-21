@@ -228,11 +228,13 @@ class RenderSystem(System):
             # TODO: Safe release all offscreen framebuffers and create new ones
             self.buffer_size = event_data
             self.create_framebuffers(window_size=self.buffer_size)
+            for _, camera_component in self.component_pool.camera_components.items():
+                camera_component.update_viewport(window_size=self.buffer_size)
 
-        if event_type == constants.EVENT_MOUSE_BUTTON_ENABLED:
+        if event_type == constants.EVENT_MOUSE_LEAVE_UI:
             self.entity_selection_enabled = True
 
-        if event_type == constants.EVENT_MOUSE_BUTTON_DISABLED:
+        if event_type == constants.EVENT_MOUSE_ENTER_UI:
             self.entity_selection_enabled = False
 
         if self.entity_selection_enabled:
@@ -296,6 +298,7 @@ class RenderSystem(System):
 
         # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
+
             self.render_forward_pass(camera_uid=camera_uid)
             self.render_overlay_pass(camera_uid=camera_uid)
             self.render_selection_pass(camera_uid=camera_uid, selected_entity_uid=self.selected_entity_id)
@@ -335,14 +338,17 @@ class RenderSystem(System):
     def render_forward_pass(self, camera_uid: int):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
-        self.forward_pass_framebuffer.use()
 
         camera_component = self.component_pool.camera_components[camera_uid]
         camera_component.update_viewport(window_size=self.buffer_size)
         camera_transform = self.component_pool.transform_3d_components[camera_uid]
 
-        # Clear context (you need to use the use() first to bind it!)
-        self.ctx.clear(
+        self.forward_pass_framebuffer.use()
+        self.forward_pass_framebuffer.viewport = camera_component.viewport_pixels
+
+        # TODO: FInd out how this viewport affects the location of the rendering. Clearing seems to also set the
+        #       viewport in a weird way...
+        self.forward_pass_framebuffer.clear(
             color=constants.RENDER_SYSTEM_BACKGROUND_COLOR,
             alpha=1.0,
             depth=1.0,
@@ -360,10 +366,7 @@ class RenderSystem(System):
         program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
         program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
 
-        camera_component.upload_uniforms(
-            program=program,
-            window_width=self.buffer_size[0],
-            window_height=self.buffer_size[1])
+        camera_component.upload_uniforms(program=program)
 
         # Point Lights
         program["num_point_lights"].value = len(self.component_pool.point_light_components)
@@ -429,10 +432,12 @@ class RenderSystem(System):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
-        self.overlay_pass_framebuffer.use()
         camera_component = self.component_pool.camera_components[camera_uid]
         camera_component.update_viewport(window_size=self.buffer_size)
         camera_transform = self.component_pool.transform_3d_components[camera_uid]
+
+        self.overlay_pass_framebuffer.use()
+        self.overlay_pass_framebuffer.viewport = camera_component.viewport_pixels
 
         # Clear context (you need to use the use() first to bind it!)
         self.overlay_pass_framebuffer.clear(
@@ -444,10 +449,7 @@ class RenderSystem(System):
         program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_PASS]
         program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
 
-        camera_component.upload_uniforms(
-            program=program,
-            window_width=self.buffer_size[0],
-            window_height=self.buffer_size[1])
+        camera_component.upload_uniforms(program=program)
 
         for mesh_entity_uid, mesh_component in self.component_pool.mesh_components.items():
 
@@ -474,10 +476,11 @@ class RenderSystem(System):
     def render_selection_pass(self, camera_uid: int, selected_entity_uid: int):
 
         # IMPORTANT: It uses the current bound framebuffer!
+        camera_component = self.component_pool.camera_components[camera_uid]
 
         self.selection_pass_framebuffer.use()
-        camera_component = self.component_pool.camera_components[camera_uid]
-        self.ctx.clear(depth=1.0, viewport=camera_component.viewport_pixels)
+        self.selection_pass_framebuffer.viewport = camera_component.viewport_pixels
+        self.selection_pass_framebuffer.clear(depth=1.0, viewport=camera_component.viewport_pixels)
 
         # TODO: Numbers between 0 and 1 are background colors, so we assume they are NULL selection
         if selected_entity_uid is None or selected_entity_uid <= 1:
@@ -498,9 +501,7 @@ class RenderSystem(System):
 
         # Upload uniforms
         program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
-        camera_component.upload_uniforms(program=program,
-                                         window_width=self.buffer_size[0],
-                                         window_height=self.buffer_size[1])
+        camera_component.upload_uniforms(program=program)
         program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
         program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
 

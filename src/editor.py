@@ -294,12 +294,11 @@ class Editor:
                 context=self.ctx,
                 buffer_size=self.buffer_size)
 
-            # Set default events to subscribe too
             if subscribed_events is None:
                 subscribed_events = [
                     constants.EVENT_ENTITY_SELECTED,
-                    constants.EVENT_MOUSE_BUTTON_ENABLED,
-                    constants.EVENT_MOUSE_BUTTON_DISABLED,
+                    constants.EVENT_MOUSE_ENTER_UI,
+                    constants.EVENT_MOUSE_LEAVE_UI,
                     constants.EVENT_MOUSE_BUTTON_PRESS,
                     constants.EVENT_KEYBOARD_PRESS,
                     constants.EVENT_WINDOW_FRAMEBUFFER_SIZE]
@@ -313,7 +312,6 @@ class Editor:
                 parameters=parameters,
                 window_glfw=self.window_glfw)
 
-            # Set default events to subscribe too
             if subscribed_events is None:
                 subscribed_events = [
                     constants.EVENT_ENTITY_SELECTED,
@@ -327,7 +325,6 @@ class Editor:
                 action_publisher=self.action_publisher,
                 parameters=parameters)
 
-            # Set default events to subscribe too
             if subscribed_events is None:
                 subscribed_events = [
                     constants.EVENT_MOUSE_SCROLL,
@@ -343,7 +340,6 @@ class Editor:
                 action_publisher=self.action_publisher,
                 parameters=parameters)
 
-            # Set default events to subscribe too
             if subscribed_events is None:
                 subscribed_events = [
                     constants.EVENT_MOUSE_SCROLL,
@@ -352,6 +348,8 @@ class Editor:
                     constants.EVENT_KEYBOARD_RELEASE,
                     constants.EVENT_ENTITY_SELECTED,
                     constants.EVENT_ENTITY_DESELECTED,
+                    constants.EVENT_MOUSE_ENTER_UI,
+                    constants.EVENT_MOUSE_LEAVE_UI,
                     constants.EVENT_WINDOW_FRAMEBUFFER_SIZE]
 
         if system_type == TransformSystem._type:
@@ -362,7 +360,6 @@ class Editor:
                 action_publisher=self.action_publisher,
                 parameters=parameters)
 
-            # Set default events to subscribe too
             if subscribed_events is None:
                 subscribed_events = []
 

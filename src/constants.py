@@ -41,7 +41,7 @@ DEFAULT_SYSTEMS = [
     SYSTEM_NAME_GIZMO_3D,
     SYSTEM_NAME_TRANSFORM,  # Must go BEFORE render system to read the transforms before they are shown!
     SYSTEM_NAME_RENDER,
-    SYSTEM_NAME_IMGUI  # Must come AFTER the render system to add the GUI to the final render
+    #SYSTEM_NAME_IMGUI  # Must come AFTER the render system to add the GUI to the final render
 ]
 
 # =============================================================================
@@ -67,8 +67,9 @@ EVENT_KEYBOARD_PRESS = 1            # args: (key, scancode, mods) <int, int, int
 EVENT_KEYBOARD_RELEASE = 2          # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_REPEAT = 3           # args: (key, scancode, mods) <int, int, int>
 
-EVENT_MOUSE_BUTTON_ENABLED = 10
-EVENT_MOUSE_BUTTON_DISABLED = 11
+# TODO: COntinue from here, change mouse button enable disable to entered UI and exited UI. Or something.
+EVENT_MOUSE_ENTER_UI = 10
+EVENT_MOUSE_LEAVE_UI = 11
 EVENT_MOUSE_BUTTON_PRESS = 12        # args: (button, mods, x, y) <int, int, int, int>
 EVENT_MOUSE_BUTTON_RELEASE = 13      # args: (button, mods, x, y) <int, int, int, int>
 EVENT_MOUSE_MOVE = 14                # args: (x, y) <float, float>
@@ -391,11 +392,4 @@ FONT_LIBRARY_COLUMN_INDEX_HORIZONTAL_ADVANCE = 9
 #                               Transforms
 # =============================================================================
 
-ROTATION_XYZ = 0
-ROTATION_XYZ = 0
-ROTATION_XYZ = 0
-ROTATION_XYZ = 0
-ROTATION_XYZ = 0
-ROTATION_XYZ = 0
-ROTATION_XYZ = 0
 ROTATION_XYZ = 0

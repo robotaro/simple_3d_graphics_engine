@@ -20,7 +20,8 @@ class Gizmo3DSystem(System):
         "window_size",
         "gizmo_3d_rig_entity_uid",
         "selected_entity_uid",
-        "selected_entity_init_distance_to_cam"]
+        "selected_entity_init_distance_to_cam",
+        "gizmo_selection_enabled"]
 
     def __init__(self, logger: logging.Logger,
                  component_pool: ComponentPool,
@@ -38,6 +39,7 @@ class Gizmo3DSystem(System):
         self.window_size = None
         self.entity_ray_intersection_list = []
         self.gizmo_3d_rig_entity_uid = None
+        self.gizmo_selection_enabled = True
 
         # DEBUG
         self.selected_entity_uid = None
@@ -88,7 +90,20 @@ class Gizmo3DSystem(System):
         if event_type == constants.EVENT_ENTITY_DESELECTED:
             self.selected_entity_uid = None
 
-        if event_type == constants.EVENT_MOUSE_MOVE and self.window_size is not None:
+        if event_type == constants.EVENT_MOUSE_LEAVE_UI:
+            self.gizmo_selection_enabled = True
+
+        if event_type == constants.EVENT_MOUSE_ENTER_UI:
+            # TODO: Deselect gizmo when you enter the UI? Maybe think about it
+            self.gizmo_selection_enabled = False
+
+        if event_type == constants.EVENT_MOUSE_MOVE:
+
+            if self.window_size is None:
+                return
+
+            if not self.gizmo_selection_enabled:
+                return
 
             for entity_camera_id, camera_component in self.component_pool.camera_components.items():
 
@@ -97,9 +112,7 @@ class Gizmo3DSystem(System):
                     continue
 
                 view_matrix = self.component_pool.transform_3d_components[entity_camera_id].world_matrix
-                projection_matrix = camera_component.get_projection_matrix(
-                    window_width=self.window_size[0],
-                    window_height=self.window_size[1])
+                projection_matrix = camera_component.get_projection_matrix()
 
                 viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=event_data)
                 if viewport_coord_norm is None:
@@ -147,5 +160,10 @@ class Gizmo3DSystem(System):
         gizmo_transform.position = selected_transform.position
         gizmo_transform.rotation = selected_transform.rotation
         gizmo_transform.dirty = True
+
+        for camera_entity_id, camera_component in self.component_pool.camera_components.items():
+            pass
+
+
 
         return True

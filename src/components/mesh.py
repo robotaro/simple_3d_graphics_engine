@@ -155,7 +155,7 @@ class Mesh(Component):
             if shape == constants.MESH_SHAPE_CAPSULE:
                 height = Component.dict2float(input_dict=self.parameters, key="height", default_value=1.0)
                 radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.25)
-                count = Component.dict2tuple_int(input_dict=self.parameters, key="count", default_value=(16, 8))
+                count = Component.dict2tuple_int(input_dict=self.parameters, key="count", default_value=(16, 16))
                 v, n, u, f = utils_mesh_3d.create_capsule(height=height, radius=radius, count=count)
 
             if shape == constants.MESH_SHAPE_CYLINDER:
