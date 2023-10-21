@@ -340,7 +340,6 @@ class RenderSystem(System):
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
         camera_component = self.component_pool.camera_components[camera_uid]
-        camera_component.update_viewport(window_size=self.buffer_size)
         camera_transform = self.component_pool.transform_3d_components[camera_uid]
 
         self.forward_pass_framebuffer.use()
@@ -433,7 +432,6 @@ class RenderSystem(System):
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
         camera_component = self.component_pool.camera_components[camera_uid]
-        camera_component.update_viewport(window_size=self.buffer_size)
         camera_transform = self.component_pool.transform_3d_components[camera_uid]
 
         self.overlay_pass_framebuffer.use()
@@ -510,6 +508,8 @@ class RenderSystem(System):
 
     def render_text_2d_pass(self, component_pool: ComponentPool):
 
+        # TODO: This function's code is old and won't probably work!
+
         if len(component_pool.text_2d_components) == 0:
             return
 
@@ -541,6 +541,8 @@ class RenderSystem(System):
             text_2d.vao.render(moderngl.POINTS)
 
     def render_shadow_mapping_pass(self, component_pool: ComponentPool):
+
+        # TODO: This function's code is old and won't probably work!
 
         self.shadow_map_framebuffer.clear()
         self.shadow_map_framebuffer.use()
@@ -585,7 +587,6 @@ class RenderSystem(System):
 
         self.ctx.screen.use()
         self.ctx.screen.clear()
-
 
         self.forward_pass_texture_color.use(location=0)
         self.forward_pass_texture_normal.use(location=1)
