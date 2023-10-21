@@ -1,6 +1,22 @@
 import numpy as np
-from numba import njit
+from numba import njit, float32
 
+from src import constants
+from src.math import mat4
+
+
+def get_gizmo_scale(camera_transform: np.ndarray, object_position: np.array) -> float:
+
+    # Calculate scale of gizmo
+    camera_position = camera_transform[:3, 3].flatten()
+    hypothenuse = np.linalg.norm(camera_position - object_position)
+
+    inv_camera_transform = np.eye(4, dtype=np.float32)
+    mat4.fast_inverse(in_mat4=camera_transform, out_mat4=inv_camera_transform)
+    distance = -mat4.mul_vector3(in_mat4=inv_camera_transform, in_vec3=object_position)[2]
+    scale = hypothenuse * constants.GIZMO_3D_SCALE_COEFFICIENT
+
+    return scale
 
 @njit(cache=True)
 def screen_to_world_ray(viewport_coord_norm: tuple,
