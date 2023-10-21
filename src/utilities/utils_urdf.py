@@ -1,4 +1,4 @@
-import os
+
 import xml.etree.ElementTree as ET
 
 from src.utilities import utils_string
@@ -22,14 +22,14 @@ KEY_CHILD = "child"
 KEY_ORIGIN = "origin"
 
 
-def load_urdf(fpath: str, root_name="robot") -> dict:
+def load_urdf(xml_fpath: str) -> dict:
     tree = None
-    with open(fpath, "r") as xml_file:
+    with open(xml_fpath, "r") as xml_file:
         xml_string = xml_file.read()
         tree = ET.fromstring(xml_string)
 
     if tree is None:
-        raise FileNotFoundError(f"[ERROR] File not found {fpath}")
+        raise FileNotFoundError(f"[ERROR] File not found {xml_fpath}")
 
     robot_blueprint = {"links": {}, "joints": {}}
 

@@ -18,6 +18,7 @@ def get_gizmo_scale(camera_transform: np.ndarray, object_position: np.array) -> 
 
     return scale
 
+
 @njit(cache=True)
 def screen_to_world_ray(viewport_coord_norm: tuple,
                         view_matrix: np.ndarray,

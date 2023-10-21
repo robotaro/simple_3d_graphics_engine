@@ -14,9 +14,7 @@
 
     <entity name="Robot">
         <transform_3d position="0 0.2 3"/>
-        <robot urdf_fpath="urdf/ur10e/ur10e.urdf"/>
-        <mesh fpath="mjcf\ur10e\assets\base_0.obj"/>
-        <material diffuse="gray" shininess_factor="32.0"/>
+        <robot mjcf_fpath="mjcf\ur10e\ur10e.xml"/>
     </entity>
 
     <entity name="Point Light 1">
