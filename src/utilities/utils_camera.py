@@ -1,7 +1,7 @@
 import numpy as np
-from numba import njit, float32
+from numba import njit
 
-from src import constants
+from src.core import constants
 from src.math import mat4
 
 

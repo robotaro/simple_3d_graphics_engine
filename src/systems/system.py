@@ -2,9 +2,9 @@ import logging
 import moderngl
 from collections import deque
 
-from src.component_pool import ComponentPool
-from src.event_publisher import EventPublisher
-from src.action_publisher import ActionPublisher
+from src.core.component_pool import ComponentPool
+from src.core.event_publisher import EventPublisher
+from src.core.action_publisher import ActionPublisher
 
 
 class System:

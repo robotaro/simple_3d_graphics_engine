@@ -2,14 +2,13 @@ import numpy as np
 import moderngl
 import logging
 
-from src.component_pool import ComponentPool
+from src.core.component_pool import ComponentPool
 from src.systems.system import System
-from src.event_publisher import EventPublisher
-from src.action_publisher import ActionPublisher
+from src.core.event_publisher import EventPublisher
+from src.core.action_publisher import ActionPublisher
 from src.math import mat4
 
 # DEBUG
-import random
 
 
 class TransformSystem(System):

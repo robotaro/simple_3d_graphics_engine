@@ -1,4 +1,3 @@
-import json
 import os
 import time
 import glfw
@@ -9,16 +8,16 @@ import numpy as np
 from typing import List, Union
 
 # Systems
-from src import constants
+from src.core import constants
 from src.systems.render_system.render_system import RenderSystem
 from src.systems.imgui_system.imgui_system import ImguiSystem
 from src.systems.gizmo_3d_system.gizmo_3d_system import Gizmo3DSystem
 from src.systems.transform_system.transform_system import TransformSystem
 from src.systems.input_control_system.input_control_system import InputControlSystem
 from src.systems.import_system.import_system import ImportSystem
-from src.event_publisher import EventPublisher
-from src.action_publisher import ActionPublisher
-from src.component_pool import ComponentPool
+from src.core.event_publisher import EventPublisher
+from src.core.action_publisher import ActionPublisher
+from src.core.component_pool import ComponentPool
 from src.utilities import utils_logging, utils_xml2scene
 
 # Debug

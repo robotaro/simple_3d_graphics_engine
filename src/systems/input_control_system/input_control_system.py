@@ -3,11 +3,11 @@ import moderngl
 import numpy as np
 import logging
 
-from src import constants
+from src.core import constants
 from src.systems.system import System
-from src.component_pool import ComponentPool
-from src.event_publisher import EventPublisher
-from src.action_publisher import ActionPublisher
+from src.core.component_pool import ComponentPool
+from src.core.event_publisher import EventPublisher
+from src.core.action_publisher import ActionPublisher
 
 
 class InputControlSystem(System):

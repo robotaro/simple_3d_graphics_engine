@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import yaml
 import moderngl
 
-from src import constants
+from src.core import constants
 from src.utilities import utils_io
 
 
@@ -43,7 +43,7 @@ class ShaderProgramLibrary:
 
     def __init__(self,
                  context: moderngl.Context,
-                 shader_directory=constants.SHADERS_DIRECTORY,
+                 shader_directory=constants.SHADERS_DIR,
                  shader_programs_yaml_fpath="",
                  logger: Union[logging.Logger, None]=None):
 
@@ -143,7 +143,7 @@ class ShaderProgramLibrary:
 
             # Get version - The final version will be the lowest version found!
             line_number_and_version_list = [(index, line) for index, line in enumerate(code_lines)
-                               if line.strip().startswith(constants.SHADER_LIBRARY_DIRECTIVE_VERSION)]
+                                            if line.strip().startswith(constants.SHADER_LIBRARY_DIRECTIVE_VERSION)]
 
             recovered_versions = set([int(line[1].replace("#version", "").strip())
                                   for line in line_number_and_version_list])

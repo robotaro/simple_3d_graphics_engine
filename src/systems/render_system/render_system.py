@@ -5,13 +5,13 @@ import numpy as np
 import struct
 import logging
 
-from src import constants
+from src.core import constants
 from src.systems.system import System
-from src.event_publisher import EventPublisher
-from src.action_publisher import ActionPublisher
+from src.core.event_publisher import EventPublisher
+from src.core.action_publisher import ActionPublisher
 from src.systems.render_system.shader_program_library import ShaderProgramLibrary
 from src.systems.render_system.font_library import FontLibrary
-from src.component_pool import ComponentPool
+from src.core.component_pool import ComponentPool
 from src.geometry_3d import ready_to_render
 from src.math import mat4
 

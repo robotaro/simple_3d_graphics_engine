@@ -3,8 +3,8 @@ import logging
 import pytest
 import numpy as np
 
-from src import constants
-from src.component_pool import ComponentPool
+from src.core import constants
+from src.core.component_pool import ComponentPool
 from src.components.transform_3d import Transform3D
 from src.components.mesh import Mesh
 

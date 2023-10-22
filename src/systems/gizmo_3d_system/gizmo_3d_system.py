@@ -2,10 +2,10 @@ import logging
 import moderngl
 import numpy as np
 
-from src import constants
-from src.event_publisher import EventPublisher
-from src.action_publisher import ActionPublisher
-from src.component_pool import ComponentPool
+from src.core import constants
+from src.core.event_publisher import EventPublisher
+from src.core.action_publisher import ActionPublisher
+from src.core.component_pool import ComponentPool
 from src.math import intersection_3d
 from src.utilities import utils_camera
 from src.systems.system import System

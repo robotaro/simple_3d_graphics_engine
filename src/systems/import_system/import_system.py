@@ -3,13 +3,15 @@ import os.path
 
 import moderngl
 
-from src import constants
+from src.core import constants
 from src.systems.system import System
-from src.event_publisher import EventPublisher
-from src.action_publisher import ActionPublisher
-from src.component_pool import ComponentPool
+from src.core.event_publisher import EventPublisher
+from src.core.action_publisher import ActionPublisher
+from src.core.component_pool import ComponentPool
 
+from src.systems.import_system.loading_task import FileDataInterface
 from src.systems.import_system.loading_task_obj import LoadingTaskObj
+from src.systems.import_system.loading_task_gltf import LoadingTaskGLTF
 
 
 class ImportSystem(System):
@@ -17,7 +19,9 @@ class ImportSystem(System):
     _type = "import_system"
 
     LOADING_TASK_CLASS = {
-        "obj": LoadingTaskObj
+        "obj": LoadingTaskObj,
+        "gltf": LoadingTaskGLTF,
+        "bin": LoadingTaskGLTF
     }
 
     __slots__ = [
@@ -27,7 +31,8 @@ class ImportSystem(System):
         "selected_entity_uid",
         "selected_entity_init_distance_to_cam",
         "loading_functions",
-        "loading_tasks"
+        "loading_tasks",
+        "file_interfaces"
     ]
 
     def __init__(self, logger: logging.Logger,
@@ -47,6 +52,7 @@ class ImportSystem(System):
         self.entity_ray_intersection_list = []
         self.gizmo_entity_uid = None
         self.loading_tasks = []
+        self.file_interfaces = {}
 
         # DEBUG
         self.selected_entity_uid = None
@@ -60,18 +66,26 @@ class ImportSystem(System):
 
         if event_type == constants.EVENT_WINDOW_DROP_FILES:
 
-            for fpath in event_data:
-                directory, filename = os.path.split(fpath)
-                filename_no_ext, extension = os.path.splitext(filename)
-                extension_clean = extension.lower().strip(".")
+            for absolute_fpath in event_data:
 
-                if extension_clean not in ImportSystem.LOADING_TASK_CLASS:
-                    self.logger.warning(f"Extension .{extension_clean} not supported")
+                directory, filename = os.path.split(absolute_fpath)
+                filename_no_ext, extension = os.path.splitext(filename)
+                extension_no_period = extension.lower().strip(".")
+
+                # Safety first
+                if extension_no_period not in ImportSystem.LOADING_TASK_CLASS:
+                    self.logger.warning(f"Extension .{extension_no_period} not supported")
                     continue
 
-                new_loading_task = ImportSystem.LOADING_TASK_CLASS[extension_clean](fpath=fpath)
+                # Now you can load the file
+                new_loading_task = ImportSystem.LOADING_TASK_CLASS[extension_no_period](fpath=absolute_fpath)
                 new_loading_task.start()
                 self.loading_tasks.append(new_loading_task)
+                self.logger.debug(f"Loading task created : {new_loading_task.fpath}")
+
+    def process_obj_data(self, file_interface: FileDataInterface):
+
+        pass
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
         """
@@ -85,19 +99,20 @@ class ImportSystem(System):
         # Check on each of the tasks' progress
         tasks_to_remove = []
         for loading_task in self.loading_tasks:
-            if not loading_task.is_alive():
+
+            if loading_task.task_completed:
+                self.file_interfaces[loading_task.fpath] = loading_task.file_data_interface.data
                 tasks_to_remove.append(loading_task)
-            else:
-                print(f"Loading file {loading_task.fpath}: {loading_task.task_progress}%")
-                if loading_task.task_completed:
-                    tasks_to_remove.append(loading_task)
-                if loading_task.task_crashed:
-                    print("Task Failed")
-                    tasks_to_remove.append(loading_task)
+                self.logger.debug(f"Loading task successfully : {loading_task.fpath}")
+
+            if loading_task.task_crashed:
+                self.logger.error(f"Loading task failed : {loading_task.fpath}")
+                tasks_to_remove.append(loading_task)
 
         # Remove any tasks that are complete or crashed
         for loading_task in tasks_to_remove:
             loading_task.join()
             self.loading_tasks.remove(loading_task)
+            self.logger.debug(f"Loading task removed : {loading_task.fpath}")
 
         return True

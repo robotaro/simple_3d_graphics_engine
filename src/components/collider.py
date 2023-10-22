@@ -13,7 +13,7 @@ class Collider(Component):
 
     __slots__ = [
         "shape",
-        "layer",
+        "collision_layer",
         "radius"
     ]
 
@@ -25,9 +25,9 @@ class Collider(Component):
         # All shapes parameters
         self.radius = Component.dict2float(input_dict=parameters, key="roughness_factor", default_value=0.5)
 
-        self.layer = 0
+        self.collision_layer = 0
 
-    def ray_intersection_boolean(self, ray_origin: np.array, ray_direction: np.array) -> bool:
+    def ray_intersection(self, ray_origin: np.array, ray_direction: np.array) -> float:
 
         pass
 

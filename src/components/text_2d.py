@@ -1,6 +1,6 @@
 import moderngl
 
-from src import constants
+from src.core import constants
 from src.components.component import Component
 from src.systems.render_system.shader_program_library import ShaderProgramLibrary
 from src.systems.render_system.font_library import FontLibrary

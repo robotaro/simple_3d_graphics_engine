@@ -1,5 +1,5 @@
 import os
-from src import constants
+from src.core import constants
 
 
 def validate_resource_filepath(fpath: str) -> str:

@@ -1,8 +1,7 @@
-import numpy as np
 import moderngl
 from typing import Union
 
-from src import constants
+from src.core import constants
 from src.components.component import Component
 from src.utilities import utils_camera
 

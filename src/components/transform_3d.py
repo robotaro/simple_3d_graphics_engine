@@ -1,6 +1,6 @@
 import numpy as np
 
-from src import constants
+from src.core import constants
 from src.components.component import Component
 
 

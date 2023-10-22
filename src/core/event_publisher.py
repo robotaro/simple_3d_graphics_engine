@@ -1,6 +1,6 @@
 import logging
 
-from src import constants
+from src.core import constants
 
 
 class EventPublisher:

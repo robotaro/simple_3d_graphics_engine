@@ -10,7 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-from src import constants
+from src.core import constants
+
 
 @dataclass
 class Font:

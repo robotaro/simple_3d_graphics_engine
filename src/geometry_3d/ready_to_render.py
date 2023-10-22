@@ -1,7 +1,7 @@
 import moderngl
 import numpy as np
 
-from src import constants
+from src.core import constants
 
 """
 These meshes are designed to be created with the taget program you have in mind, so

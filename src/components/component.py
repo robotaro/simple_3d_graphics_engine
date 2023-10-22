@@ -1,6 +1,6 @@
 from typing import Any, Union
 
-from src import constants
+from src.core import constants
 from src.utilities import utils_string
 
 

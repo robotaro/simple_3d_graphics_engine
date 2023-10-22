@@ -1,6 +1,6 @@
 import os
 
-from src import constants
+from src.core import constants
 from src.components.component import Component
 from src.utilities import utils_mesh_3d, utils_io
 

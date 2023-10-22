@@ -5,12 +5,12 @@ import numpy as np
 #                                Directories
 # =============================================================================
 
-ECS_DIR = os.path.dirname(__file__)
-ROOT_DIR = os.path.dirname(ECS_DIR)
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+SRC_DIR = os.path.join(ROOT_DIR, "src")
 RESOURCES_DIR = os.path.join(ROOT_DIR, "resources")
 FONTS_DIR = os.path.join(RESOURCES_DIR, "fonts")
 IMAGES_DIR = os.path.join(RESOURCES_DIR, "images")
-SHADERS_DIRECTORY = os.path.join(ECS_DIR, "shaders")
+SHADERS_DIR = os.path.join(SRC_DIR, "shaders")
 
 # =============================================================================
 #                                Editor

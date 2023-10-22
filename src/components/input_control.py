@@ -1,6 +1,5 @@
 import numpy as np
 
-from src import constants
 from src.components.component import Component
 
 

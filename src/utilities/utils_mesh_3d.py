@@ -2,7 +2,7 @@ import os
 import numpy as np
 import trimesh
 
-from src import constants
+from src.core import constants
 
 
 def create_box(width=1.0, height=1.0, depth=1.0):
@@ -59,12 +59,7 @@ def create_capsule(height: float, radius: float, count: tuple) -> tuple:
 def from_obj(fpath: str, scale=1.0) -> tuple:
 
     # First try the fpath as a relative path from RESOURCES, and if it not there, assume fpath is an absolute path
-    os_compatible_fpath = fpath.replace("\\", os.sep).replace("/", os.sep)
-    new_fpath = os.path.join(constants.RESOURCES_DIR, os_compatible_fpath)
-    if os.path.isfile(new_fpath):
-        mesh = trimesh.load(new_fpath)
-    else:
-        mesh = trimesh.load(fpath)
+    mesh = trimesh.load(fpath)
 
     vertices = np.array(mesh.vertices, dtype=np.float32)
     normals = np.array(mesh.vertex_normals, dtype=np.float32)

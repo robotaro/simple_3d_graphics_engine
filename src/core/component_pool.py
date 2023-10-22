@@ -1,7 +1,7 @@
 import logging
 from typing import Union
 
-from src import constants
+from src.core import constants
 from src.components.component import Component
 from src.components.transform_3d import Transform3D
 from src.components.collider import Collider
