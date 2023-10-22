@@ -57,7 +57,7 @@ IMGUI_DRAG_FLOAT_PRECISION = 1e-2
 GIZMO_3D_SYSTEM_X_AXIS_NAME = "x_axis"
 GIZMO_3D_SYSTEM_Y_AXIS_NAME = "y_axis"
 GIZMO_3D_SYSTEM_Z_AXIS_NAME = "z_axis"
-GIZMO_3D_SCALE_COEFFICIENT = 0.05
+GIZMO_3D_SCALE_COEFFICIENT = 0.1
 
 # =============================================================================
 #                               Events
@@ -68,14 +68,15 @@ EVENT_KEYBOARD_PRESS = 1            # args: (key, scancode, mods) <int, int, int
 EVENT_KEYBOARD_RELEASE = 2          # args: (key, scancode, mods) <int, int, int>
 EVENT_KEYBOARD_REPEAT = 3           # args: (key, scancode, mods) <int, int, int>
 
-# TODO: COntinue from here, change mouse button enable disable to entered UI and exited UI. Or something.
 EVENT_MOUSE_ENTER_UI = 10
 EVENT_MOUSE_LEAVE_UI = 11
 EVENT_MOUSE_BUTTON_PRESS = 12        # args: (button, mods, x, y) <int, int, int, int>
 EVENT_MOUSE_BUTTON_RELEASE = 13      # args: (button, mods, x, y) <int, int, int, int>
 EVENT_MOUSE_MOVE = 14                # args: (x, y) <float, float>
 EVENT_MOUSE_SCROLL = 15              # args: (offset_x, offset_y) <float, float>
-EVENT_MOUSE_DOUBLE_CLICK = 16  # TODO: Implement this!!!
+EVENT_MOUSE_DOUBLE_CLICK = 16
+EVENT_MOUSE_ENTER_GIZMO_3D = 17
+EVENT_MOUSE_LEAVE_GIZMO_3D = 18
 
 # Indices
 EVENT_INDEX_KEYBOARD_KEY = 0
@@ -99,7 +100,7 @@ EVENT_MULTIPLE_ENTITIES_SELECTED = 23
 # Window
 EVENT_WINDOW_SIZE = 30                # args: (width, height) <int, int>
 EVENT_WINDOW_FRAMEBUFFER_SIZE = 31    # args: (width, height) <int, int>
-EVENT_WINDOW_DROP_FILES = 32            # args: (filepath, ...) <int, ...>  # TODO: Check if this should be a
+EVENT_WINDOW_DROP_FILES = 32          # args: (filepath, ...) <str, ...>
 
 # =============================================================================
 #                                Actions

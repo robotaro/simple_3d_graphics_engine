@@ -58,6 +58,11 @@ class Camera(Component):
 
         return flag_x & flag_y
 
+    def get_ray(self, screen_coord_pixels: tuple) -> Union[tuple, None]:
+
+        if screen_coord_pixels is None:
+            return None
+
     def get_viewport_coordinates(self, screen_coord_pixels: tuple) -> Union[tuple, None]:
         """
         Returns a normalised coordinates withing the viewport of the camera. This will return

@@ -225,16 +225,21 @@ class RenderSystem(System):
     def on_event(self, event_type: int, event_data: tuple):
 
         if event_type == constants.EVENT_WINDOW_FRAMEBUFFER_SIZE:
-            # TODO: Safe release all offscreen framebuffers and create new ones
             self.buffer_size = event_data
             self.create_framebuffers(window_size=self.buffer_size)
             for _, camera_component in self.component_pool.camera_components.items():
                 camera_component.update_viewport(window_size=self.buffer_size)
 
+        if event_type == constants.EVENT_MOUSE_ENTER_UI:
+            self.entity_selection_enabled = False
+
         if event_type == constants.EVENT_MOUSE_LEAVE_UI:
             self.entity_selection_enabled = True
 
-        if event_type == constants.EVENT_MOUSE_ENTER_UI:
+        if event_type == constants.EVENT_MOUSE_ENTER_GIZMO_3D:
+            self.entity_selection_enabled = False
+
+        if event_type == constants.EVENT_MOUSE_LEAVE_GIZMO_3D:
             self.entity_selection_enabled = False
 
         if self.entity_selection_enabled:

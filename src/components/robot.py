@@ -28,5 +28,4 @@ class Robot(Component):
             self.mjcf_fpath = utils_io.validate_resource_filepath(fpath=self.mjcf_fpath)
             mjcf_blueprint = utils_mjcf.load_mjcf(xml_fpath=self.mjcf_fpath)
 
-        g = 0
 

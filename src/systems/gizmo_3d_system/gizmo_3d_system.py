@@ -22,7 +22,8 @@ class Gizmo3DSystem(System):
         "selected_entity_uid",
         "selected_entity_init_distance_to_cam",
         "gizmo_selection_enabled",
-        "camera2gizmo_map"]
+        "camera2gizmo_map",
+        "mouse_screen_position"]
 
     def __init__(self, logger: logging.Logger,
                  component_pool: ComponentPool,
@@ -41,6 +42,7 @@ class Gizmo3DSystem(System):
         self.entity_ray_intersection_list = []
         self.gizmo_selection_enabled = True
         self.camera2gizmo_map = {}
+        self.mouse_screen_position = (-1, -1)
 
         # DEBUG
         self.selected_entity_uid = None
@@ -106,47 +108,8 @@ class Gizmo3DSystem(System):
             self.gizmo_selection_enabled = False
 
         if event_type == constants.EVENT_MOUSE_MOVE:
-
-            if self.window_size is None:
-                return
-
-            if not self.gizmo_selection_enabled:
-                return
-
-            for entity_camera_id, camera_component in self.component_pool.camera_components.items():
-
-                # Check if mouse is inside viewports
-                if not camera_component.is_inside_viewport(coord_pixels=event_data):
-                    continue
-
-                view_matrix = self.component_pool.transform_3d_components[entity_camera_id].world_matrix
-                projection_matrix = camera_component.get_projection_matrix()
-
-                viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=event_data)
-                if viewport_coord_norm is None:
-                    continue
-
-                ray_direction, ray_origin = utils_camera.screen_to_world_ray(
-                    viewport_coord_norm=viewport_coord_norm,
-                    view_matrix=view_matrix,
-                    projection_matrix=projection_matrix)
-
-                for entity_entity_id, collider_component in self.component_pool.collider_components.items():
-
-                    collider_transform = self.component_pool.transform_3d_components[entity_entity_id]
-
-                    collision = False
-                    if collider_component.shape == "sphere":
-                        collision = intersection_3d.intersect_boolean_ray_sphere(
-                            ray_origin=ray_origin,
-                            ray_direction=ray_direction,
-                            sphere_origin=collider_transform.world_matrix[:3, 3].flatten(),
-                            sphere_radius=collider_component.radius)
-
-                    material = self.component_pool.material_components[entity_entity_id]
-
-                    # TODO: Consider "state variables" inside each component, that CAN be changed by events
-                    material.state_highlighted = collision
+            self.mouse_screen_position = event_data
+            self.mouse_move_highlight_demo(event_data=event_data)
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
@@ -163,7 +126,8 @@ class Gizmo3DSystem(System):
             selected_transform_component = self.component_pool.transform_3d_components[self.selected_entity_uid]
             gizmo_transform_component = self.component_pool.transform_3d_components[gizmo_3d_entity_uid]
             scale = utils_camera.get_gizmo_scale(camera_transform=camera_transform_component.world_matrix,
-                                                 object_position=selected_transform_component.position)
+                                                 object_position=np.array(selected_transform_component.position,
+                                                                          dtype=np.float32))
 
             # Put gizmo where the selected entity's is
             gizmo_transform_component.position = selected_transform_component.position
@@ -184,3 +148,63 @@ class Gizmo3DSystem(System):
             self.component_pool.mesh_components[gizmo_3d_component.x_axis_entity_uid].visible = visible
             self.component_pool.mesh_components[gizmo_3d_component.y_axis_entity_uid].visible = visible
             self.component_pool.mesh_components[gizmo_3d_component.z_axis_entity_uid].visible = visible
+
+    def perform_ray_axis_collision(self, camera_entity_uid: int) -> tuple:
+
+        camera_component = self.component_pool.camera_components[camera_entity_uid]
+        transform_component = self.component_pool.transform_3d_components[camera_entity_uid]
+
+        view_matrix = self.component_pool.transform_3d_components[camera_entity_uid].world_matrix
+        projection_matrix = camera_component.get_projection_matrix()
+
+        viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=self.mouse_screen_position)
+        if viewport_coord_norm is None:
+            return None, None
+
+        return utils_camera.screen_to_world_ray(
+            viewport_coord_norm=viewport_coord_norm,
+            view_matrix=view_matrix,
+            projection_matrix=projection_matrix)
+
+    def mouse_move_highlight_demo(self, event_data: tuple):
+        if self.window_size is None:
+            return
+
+        if not self.gizmo_selection_enabled:
+            return
+
+        for entity_camera_id, camera_component in self.component_pool.camera_components.items():
+
+            # Check if mouse is inside viewports
+            if not camera_component.is_inside_viewport(coord_pixels=event_data):
+                continue
+
+            view_matrix = self.component_pool.transform_3d_components[entity_camera_id].world_matrix
+            projection_matrix = camera_component.get_projection_matrix()
+
+            viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=event_data)
+            if viewport_coord_norm is None:
+                continue
+
+            ray_direction, ray_origin = utils_camera.screen_to_world_ray(
+                viewport_coord_norm=viewport_coord_norm,
+                view_matrix=view_matrix,
+                projection_matrix=projection_matrix)
+
+            for entity_entity_id, collider_component in self.component_pool.collider_components.items():
+
+                collider_transform = self.component_pool.transform_3d_components[entity_entity_id]
+
+                collision = False
+                if collider_component.shape == "sphere":
+                    collision = intersection_3d.intersect_boolean_ray_sphere(
+                        ray_origin=ray_origin,
+                        ray_direction=ray_direction,
+                        sphere_origin=collider_transform.world_matrix[:3, 3].flatten(),
+                        sphere_radius=collider_component.radius)
+
+                material = self.component_pool.material_components[entity_entity_id]
+
+                # TODO: Consider "state variables" inside each component, that CAN be changed by events
+                material.state_highlighted = collision
+

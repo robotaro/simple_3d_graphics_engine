@@ -151,7 +151,7 @@ def ray_cylinder_intersection(ray_origin: np.array,
     c = np.dot(ray_to_cylinder_start - np.dot(ray_to_cylinder_start, cylinder_axis) * cylinder_axis, ray_to_cylinder_start - np.dot(ray_to_cylinder_start, cylinder_axis) * cylinder_axis) - cylinder_radius**2
 
     # Calculate the discriminant
-    discriminant = b**2 - 4*a*c
+    discriminant = b ** 2 - 4 * a * c
 
     if discriminant >= 0:
         # At least one intersection point exists

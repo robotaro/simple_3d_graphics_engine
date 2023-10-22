@@ -88,15 +88,15 @@ def create_transform_xyz(position: np.array, rotation: np.array, scale: float):
     transform[1, 2] = cx * sy * sz + sx * cz * scale
     transform[2, 2] = cx * cy * scale"""
 
-    transform[0, 0] = c_beta * c_alpha
-    transform[1, 0] = s_gamma * s_beta * c_alpha - c_gamma * s_alpha
-    transform[2, 0] = c_gamma * s_beta * c_alpha + s_gamma * s_alpha
-    transform[0, 1] = c_beta * s_alpha
-    transform[1, 1] = s_gamma * s_beta * s_alpha + c_gamma * c_alpha
-    transform[2, 1] = c_gamma * s_beta * s_alpha - s_gamma * c_alpha
-    transform[0, 2] = -s_beta
-    transform[1, 2] = s_gamma * c_beta
-    transform[2, 2] = c_gamma * c_beta
+    transform[0, 0] = c_beta * c_alpha * scale
+    transform[1, 0] = s_gamma * s_beta * c_alpha - c_gamma * s_alpha * scale
+    transform[2, 0] = c_gamma * s_beta * c_alpha + s_gamma * s_alpha * scale
+    transform[0, 1] = c_beta * s_alpha * scale
+    transform[1, 1] = s_gamma * s_beta * s_alpha + c_gamma * c_alpha * scale
+    transform[2, 1] = c_gamma * s_beta * s_alpha - s_gamma * c_alpha * scale
+    transform[0, 2] = -s_beta * scale
+    transform[1, 2] = s_gamma * c_beta * scale
+    transform[2, 2] = c_gamma * c_beta * scale
 
     # Position
     transform[0, 3] = position[0]
@@ -106,8 +106,9 @@ def create_transform_xyz(position: np.array, rotation: np.array, scale: float):
     return transform
 
 
+@njit(cache=True)
 def mul_vector3(in_mat4: np.ndarray, in_vec3: np.array):
-    return np.dot(in_mat4[:3, :3], in_vec3) +  in_mat4[:3, 3]
+    return np.dot(in_mat4[:3, :3], in_vec3) + in_mat4[:3, 3]
 
 
 @njit(cache=True)
@@ -145,11 +146,6 @@ def create(position: np.array, rotation: mat3):
     mat[:3, :3] = rotation
     mat[:3, 3] = position
     return mat
-
-
-def mul_vector(tr_mat4: np.ndarray, vector3: np.array):
-
-    return np.matmul(tr_mat4[0:3, 0:3], vector3) + tr_mat4[:3, 3]
 
 
 def normalize(x):

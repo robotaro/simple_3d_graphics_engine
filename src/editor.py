@@ -299,6 +299,8 @@ class Editor:
                     constants.EVENT_ENTITY_SELECTED,
                     constants.EVENT_MOUSE_ENTER_UI,
                     constants.EVENT_MOUSE_LEAVE_UI,
+                    constants.EVENT_MOUSE_ENTER_GIZMO_3D,
+                    constants.EVENT_MOUSE_LEAVE_GIZMO_3D,
                     constants.EVENT_MOUSE_BUTTON_PRESS,
                     constants.EVENT_KEYBOARD_PRESS,
                     constants.EVENT_WINDOW_FRAMEBUFFER_SIZE]
