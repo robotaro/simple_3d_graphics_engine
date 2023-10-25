@@ -45,6 +45,17 @@ DEFAULT_SYSTEMS = [
 ]
 
 # =============================================================================
+#                                Datablocks
+# =============================================================================
+
+DATA_BLOCK_FORMAT_GENERIC = "generic"
+DATA_BLOCK_FORMAT_POSITION3 = "position3"
+DATA_BLOCK_FORMAT_ROTATION_QUAT = "rotation_quat"
+DATA_BLOCK_FORMAT_SCALE3 = "scale3"
+DATA_BLOCK_FORMAT_TRANSFORM44 = "transform44"
+DATA_BLOCK_FORMAT_NORMAL = "normal"
+
+# =============================================================================
 #                               Imgui System
 # =============================================================================
 

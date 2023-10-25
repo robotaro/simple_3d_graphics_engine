@@ -36,6 +36,12 @@
         <material diffuse="0.2 .3 0.8" shininess_factor="32.0"/>
     </entity>
 
+    <entity name="skeleton">
+        <mesh fpath="E:\Dropbox\Projects\Hentai Game Project\Research\Anatomy\3d models\skeleton.obj" scale="0.1"/>
+        <material/>
+        <transform_3d position="0 0 0" rotation="0 0 0" degrees="true"/>
+    </entity>
+
     <entity name="Red Sphere">
         <mesh shape="icosphere" radius="0.5" subdivisions="4"/>
         <collider shape="sphere" radius="0.5"/>

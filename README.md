@@ -58,6 +58,8 @@ the setter, it sets the translation to None, and if None
 when requested via a getter, it recalculates it just in time.
 This is a flexible solution, but not a very efficient one.
 
+## 
+
 ## Optimisation TODOs:
 - If a component/system does not handle any graphics, make it 100% Numba-complient
 - Reduce number of uniform variable access. Maybe Uniform Array Object?
