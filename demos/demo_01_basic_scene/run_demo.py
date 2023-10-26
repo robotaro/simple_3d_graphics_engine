@@ -1,4 +1,5 @@
 from src.core.editor import Editor
+import scalene
 
 
 def main():

@@ -43,3 +43,4 @@ flake8==6.0.0
 # [Debugging and Profiling]
 matplotlib==3.6.2
 CProfileV==1.0.7
+scalene==1.5.31.1

@@ -493,9 +493,9 @@ class Editor:
         if profiling_enabled:
             profiler.disable()
             string_stream = io.StringIO()
-            sortby = SortKey.CUMULATIVE
-            ps = pstats.Stats(profiler, stream=string_stream).sort_stats(sortby)
+            ps = pstats.Stats(profiler, stream=string_stream).sort_stats(SortKey.CUMULATIVE)
             ps.print_stats()
             profiling_result = string_stream.getvalue()
+            print(profiling_result)
 
         return profiling_result
