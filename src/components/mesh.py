@@ -2,7 +2,7 @@ import os
 
 from src.core import constants
 from src.components.component import Component
-from src.utilities import utils_mesh_3d, utils_io
+from src.utilities import utils_mesh_3d, utils_io, utils_gltf
 
 
 class Mesh(Component):
@@ -184,8 +184,14 @@ class Mesh(Component):
             if mesh_extension == ".obj":
                 v, n, u, f = utils_mesh_3d.from_obj(fpath=valid_fpath, scale=scale)
 
-            if mesh_extension in [".gltf", ".glb"]:
+            if mesh_extension == ".glb":
                 v, n, u, f = utils_mesh_3d.from_gltf(fpath=valid_fpath, scale=scale)
+
+            if mesh_extension == ".gltf":
+                meshes = utils_gltf.load_gltf_meshes(gltf_fpath=valid_fpath)
+                v = meshes[0]["positions"]
+                n = meshes[0]["normals"]
+                f = meshes[0]["indices"]
 
         self.vertices = v
         self.normals = n

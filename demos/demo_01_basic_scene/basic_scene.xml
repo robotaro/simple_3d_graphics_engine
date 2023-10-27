@@ -24,6 +24,12 @@
         <transform_3d position="-2 0 0" rotation="-90 0 0" degrees="true"/>
     </entity>
 
+    <entity name="braim_stem">
+        <mesh fpath="meshes/BrainStem.gltf" scale="1"/>
+        <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
+        <transform_3d position="0 0 0" rotation="-90 0 0" degrees="true"/>
+    </entity>
+
     <entity name="capsule">
         <mesh shape="capsule" height="1.5" radius="0.25" count="32 32"/>
         <material diffuse="gray" shininess_factor="32.0"/>
