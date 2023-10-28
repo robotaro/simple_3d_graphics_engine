@@ -14,6 +14,7 @@ from src.components.point_light import PointLight
 from src.components.directional_light import DirectionalLight
 from src.components.gizmo_3d import Gizmo3D
 from src.components.robot import Robot
+from src.components.debug_mesh import DebugMesh
 
 
 class Entity:
@@ -52,6 +53,7 @@ class ComponentPool:
         constants.COMPONENT_TYPE_COLLIDER: Collider,
         constants.COMPONENT_TYPE_GIZMO_3D: Gizmo3D,
         constants.COMPONENT_TYPE_ROBOT: Robot,
+        constants.COMPONENT_TYPE_DEBUG_MESH: DebugMesh,
     }
 
     def __init__(self, logger: logging.Logger):
@@ -78,6 +80,7 @@ class ComponentPool:
         self.collider_components = {}
         self.gizmo_3d_components = {}
         self.robot_components = {}
+        self.debug_mesh_components = {}
 
         self.component_storage_map = {
             constants.COMPONENT_TYPE_TRANSFORM_3D: self.transform_3d_components,
@@ -93,6 +96,7 @@ class ComponentPool:
             constants.COMPONENT_TYPE_COLLIDER: self.collider_components,
             constants.COMPONENT_TYPE_GIZMO_3D: self.gizmo_3d_components,
             constants.COMPONENT_TYPE_ROBOT: self.robot_components,
+            constants.COMPONENT_TYPE_DEBUG_MESH: self.debug_mesh_components,
         }
 
         # This variable is a temporary solution to keep track of all entities added during the xml scene loading

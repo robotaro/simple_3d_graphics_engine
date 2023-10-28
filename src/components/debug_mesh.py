@@ -15,7 +15,7 @@ class DebugMesh(Component):
         "colors",
         "vaos",
         "vbo_vertices",
-        "vbo_colors",
+        "vbo_intanced_positions",
         "mesh_type",
         "num_elements",
         "max_num_elements",
@@ -77,7 +77,7 @@ class DebugMesh(Component):
 
         # Create VBOs
         if self.vertices is not None:
-            self.vbo_vertices = ctx.buffer(self.vertices.astype("f4").tobytes())
+            self.vbo_intanced_positions = ctx.buffer(reserve=12 * self.max_num_elements)
             vbo_declaration_list.append((self.vbo_vertices, "3f", constants.SHADER_INPUT_VERTEX))
 
         # Create VAOs
@@ -95,7 +95,8 @@ class DebugMesh(Component):
         if not self.dirty or not self.initialised:
             return
 
-        self.vbo_vertices.write(self.vertices[:, self.num_elements].tobytes())
+        if self.num_elements > 0:
+            self.vbo_vertices.write(self.vertices[:, self.num_elements].tobytes())
 
     def update_new_number_of_elements(self, num_elements: int):
         """

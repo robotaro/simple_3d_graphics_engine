@@ -2,50 +2,57 @@
 
 #if defined VERTEX_SHADER
 
-in vec2 in_position;
-in vec2 in_transform;
-
-uniform mat4 projection_matrix;
-uniform mat4 view_matrix;
-uniform mat4 model_matrix;
-uniform int mesh_type = -1;
-
-out vec3 gs_world_position;
+in mat4 in_debug_transform;
+out mat4 gs_transform;
 
 void main() {
-    gs_world_position = (projection_matrix * inverse(view_matrix) * model_matrix * vec4(v_local_position, 1.0)).xyz;
+    gs_transform = in_debug_transform;
 }
-
 
 #elif defined GEOMETRY_SHADER
 
 layout (points) in;
-layout (lines, max_vertices = 6) out;
+layout (points, max_vertices = 6) out;
 
-in vec3 gs_transforms[];
+in mat4 gs_transforms[];
 
-out vec2 fragColor;
+uniform int mesh_type = 0;
+uniform mat4 projection_matrix;
+uniform mat4 view_matrix;
 
+out vec3 v_color;
 
 
 void main() {
 
-    vec3 transform = gs_transforms[0];
+    mat4 mvp = projection_matrix * inverse(view_matrix) * gs_transforms[gl_InvocationID];
 
-
-    mat4 modelViewProjection = projectionMatrix * viewMatrix * modelMatrix;
-    gl_Position = modelViewProjection * transforms[gl_InvocationID] * gl_in[0].gl_Position;
-    fragColor = vec3(1.0, 0.0, 0.0);  // Red axis
+    // X Axis (Red)
+    gl_Position = mvp * vec4(0, 0, 0, 1);
+    v_color = vec3(1.0, 0.0, 0.0);  // Red axis
     EmitVertex();
 
-    gl_Position = modelViewProjection * transforms[gl_InvocationID] * gl_in[0].gl_Position + vec4(0.0, 0.1, 0.0, 0.0);
-    fragColor = vec3(0.0, 1.0, 0.0);  // Green axis
+    gl_Position = mvp * vec4(1, 0, 0, 1);
+    v_color = vec3(1.0, 0.0, 0.0);  // Red axis
     EmitVertex();
 
-    gl_Position = modelViewProjection * transforms[gl_InvocationID] * gl_in[0].gl_Position;
-    fragColor = vec3(0.0, 0.0, 1.0);  // Blue axis
+    // Y Axis (Green)
+    gl_Position = mvp * vec4(0, 0, 0, 1);
+    v_color = vec3(0.0, 1.0, 0.0);  // Red axis
     EmitVertex();
-    EndPrimitive();
+
+    gl_Position = mvp * vec4(0, 1, 0, 1);
+    v_color = vec3(0.0, 1.0, 0.0);  // Red axis
+    EmitVertex();
+
+    // Z Axis (Blue)
+    gl_Position = mvp * vec4(0, 0, 0, 1);
+    v_color = vec3(0.0, 0.0, 1.0);  // Red axis
+    EmitVertex();
+
+    gl_Position = mvp * vec4(0, 0, 1, 1);
+    v_color = vec3(1.0, 0.0, 0.0);  // Red axis
+    EmitVertex();
 
 
     EndPrimitive();
@@ -56,12 +63,12 @@ void main() {
 
 uniform vec3 color = vec3(1.0, 1.0, 1.0);
 
+in vec3 v_color;
 out vec4 fragColor;
 
 void main()
 {
-    float texture_color = texture(font_texture, uv).r;
-    fragColor =  vec4(1.0, 1.0, 1.0, texture_color);
+    fragColor = vec4(v_color, 1.0);
 }
 
 #endif
