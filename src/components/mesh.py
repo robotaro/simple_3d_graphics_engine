@@ -21,6 +21,7 @@ class Mesh(Component):
         "vbo_colors",
         "vbo_uvs",
         "ibo_faces",
+        "render_mode",
         "layer",
         "visible"]
 
@@ -41,6 +42,11 @@ class Mesh(Component):
         self.vbo_colors = None
         self.vbo_uvs = None
         self.ibo_faces = None
+
+        self.render_mode = Component.dict2map(input_dict=self.parameters,
+                                              map_dict=constants.MESH_RENDER_MODES,
+                                              key="render_mode",
+                                              default_value=constants.MESH_RENDER_MODE_TRIANGLES)
 
         self.layer = Component.dict2int(input_dict=self.parameters, key="layer",
                                         default_value=constants.RENDER_SYSTEM_LAYER_DEFAULT)
@@ -188,7 +194,7 @@ class Mesh(Component):
                 v, n, u, f = utils_mesh_3d.from_gltf(fpath=valid_fpath, scale=scale)
 
             if mesh_extension == ".gltf":
-                meshes = utils_gltf.load_gltf_meshes(gltf_fpath=valid_fpath)
+                meshes = utils_gltf.debug_load_gltf_meshes(gltf_fpath=valid_fpath)
                 v = meshes[0]["positions"]
                 n = meshes[0]["normals"]
                 f = meshes[0]["indices"]

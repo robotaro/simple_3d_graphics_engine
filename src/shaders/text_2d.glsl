@@ -30,7 +30,7 @@ layout (triangle_strip, max_vertices = 4) out;
 
 uniform mat4 projection_matrix; // Your projection matrix
 
-// The inputs are expected to be arrays because you could prividing
+// The inputs are expected to be arrays because you could be providing
 // multiple points, like a line (2 points) and so on.
 // The POINTS rendering mode means this is a 1-element array, hence
 // the gs_position[0] :)

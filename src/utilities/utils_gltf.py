@@ -189,7 +189,7 @@ def load_meshes(header: dict, accessor_arrays: list) -> list:
     return meshes
 
 
-def load_gltf_meshes(gltf_fpath: str) -> list:
+def debug_load_gltf_meshes(gltf_fpath: str) -> list:
     header, data, _ = load_gltf_parts(gltf_fpath=gltf_fpath)
     accessor_arrays = extract_accessor_arrays(header=header, data=data)
     return load_meshes(header=header, accessor_arrays=accessor_arrays)

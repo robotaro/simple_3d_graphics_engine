@@ -80,7 +80,7 @@ void main() {
     float alpha = 0.5 + (0.5 * cos_theta);
     v_ambient_color = alpha * global.top * base_color + (1.0 - alpha) * global.bottom * base_color;
 
-    gl_Position = projection_matrix * inverse(view_matrix) * model_matrix * vec4(v_local_position, 1.0);;
+    gl_Position = projection_matrix * inverse(view_matrix) * model_matrix * vec4(v_local_position, 1.0);
 }
 
 #elif defined FRAGMENT_SHADER

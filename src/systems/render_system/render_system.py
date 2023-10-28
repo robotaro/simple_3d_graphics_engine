@@ -397,6 +397,14 @@ class RenderSystem(System):
             program[f"directional_lights[{index}].shadow_enabled"] = dir_light_component.shadow_enabled
             program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
 
+        # Meshes
+        self.render_meshes(program=program)
+
+        # Debug Meshes
+        self.render_debug_meshes(program=program)
+
+    def render_meshes(self, program: moderngl.Program):
+
         for mesh_entity_uid, mesh_component in self.component_pool.mesh_components.items():
 
             if not mesh_component.visible or mesh_component.layer != constants.RENDER_SYSTEM_LAYER_DEFAULT:
@@ -407,8 +415,7 @@ class RenderSystem(System):
 
             material = self.component_pool.material_components.get(mesh_entity_uid, None)
 
-            # Upload uniforms
-            program["entity_id"] = mesh_entity_uid
+            # Mesh uniforms
             program["entity_id"].value = mesh_entity_uid
             program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
             program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
@@ -420,17 +427,21 @@ class RenderSystem(System):
             # TODO: Technically, you only need to upload the material once since it doesn't change.
             #       The program will keep its variable states!
             if material is not None:
-                program["material.diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
+                program[
+                    "material.diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
                 program["material.specular"].value = material.specular
                 program["material.shininess_factor"] = material.shininess_factor
                 program["color_source"] = material.color_source
                 program["lighting_mode"] = material.lighting_mode
 
             # Render the mesh
-            # TODO: Change render types from triangles to whatever the mesh is set to!!!! No fixed-type rendering!
-            mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
+            mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(mesh_component.render_mode)
 
             # Stage: Draw transparent objects back to front
+
+    def render_debug_meshes(self, program: moderngl.Program):
+
+        pass
 
     def render_overlay_pass(self, camera_uid: int):
 
@@ -473,8 +484,7 @@ class RenderSystem(System):
                 program["color_diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
 
             # Render the mesh
-            # TODO: Change render types from triangles to whatever the mesh is set to!!!! No fixed-type rendering!
-            mesh_component.vaos[constants.SHADER_PROGRAM_OVERLAY_PASS].render(moderngl.TRIANGLES)
+            mesh_component.vaos[constants.SHADER_PROGRAM_OVERLAY_PASS].render(mesh_component.render_mode)
 
     def render_selection_pass(self, camera_uid: int, selected_entity_uid: int):
 
@@ -509,7 +519,7 @@ class RenderSystem(System):
         program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
 
         # Render
-        mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
+        mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(mesh_component.render_mode)
 
     def render_text_2d_pass(self, component_pool: ComponentPool):
 
@@ -580,7 +590,7 @@ class RenderSystem(System):
             program["view_matrix"].write(light_transform.world_matrix.T.tobytes())
             program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
 
-            mesh_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(moderngl.TRIANGLES)
+            mesh_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(mesh_component.render_mode)
 
     def render_screen_pass(self) -> None:
 
