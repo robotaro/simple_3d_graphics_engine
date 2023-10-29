@@ -3,6 +3,11 @@ forward_pass:
   vertex_shader: "forward_pass.glsl"
   fragment_shader: "forward_pass.glsl"
 
+debug_forward_pass:
+  vertex_shader: "debug_forward_pass.glsl"
+  geometry_shader: "debug_forward_pass.glsl"
+  fragment_shader: "debug_forward_pass.glsl"
+
 overlay_pass:
   vertex_shader: "overlay_pass.glsl"
   fragment_shader: "overlay_pass.glsl"
@@ -17,11 +22,6 @@ text_2d:
   fragment_shader: "text_2d.glsl"
   input_texture_locations:
     font_texture: 0
-
-debug_meshes:
-  vertex_shader: "debug_mesh.glsl"
-  geometry_shader: "debug_mesh.glsl"
-  fragment_shader: "debug_mesh.glsl"
 
 fragment_picking:
   vertex_shader: "fragment_picking.glsl"

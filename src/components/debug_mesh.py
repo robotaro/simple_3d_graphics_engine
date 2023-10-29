@@ -26,7 +26,7 @@ class DebugMesh(Component):
     def __init__(self, parameters, system_owned=False):
         super().__init__(parameters=parameters, system_owned=system_owned)
 
-
+        self.num_instances = 4
 
         # RAM Vertex data
         self.positions = None
@@ -60,7 +60,7 @@ class DebugMesh(Component):
                                            key="visible",
                                            default_value=True)
 
-        self.num_instances = 0
+
         self.dirty = True
 
     def initialise(self, **kwargs):
@@ -80,10 +80,8 @@ class DebugMesh(Component):
         vbo_declaration_list.append((self.vbo_intanced_positions, "3f/i", constants.SHADER_INPUT_VERTEX))
 
         # Create VAOs
-        for program_name in constants.SHADER_PASSES_LIST:
-
-            program = shader_library[program_name]
-            self.vaos[program_name] = ctx.vertex_array(program, vbo_declaration_list)
+        program = shader_library[constants.SHADER_PROGRAM_DEBUG_FORWARD_PASS]
+        self.vaos[constants.SHADER_PROGRAM_DEBUG_FORWARD_PASS] = ctx.vertex_array(program, vbo_declaration_list)
 
         self.initialised = True
 
@@ -95,7 +93,7 @@ class DebugMesh(Component):
             return
 
         if self.num_instances > 0:
-            self.vbo_vertices.write(self.vertices[:, self.num_instances].tobytes())
+            self.vbo_intanced_positions.write(self.positions[:, self.num_instances].tobytes())
 
     def update_new_number_of_elements(self, num_elements: int):
         """

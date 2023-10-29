@@ -216,7 +216,6 @@ class RenderSystem(System):
 
     def _release_all_framebuffers_and_textures(self):
 
-        # Release any previous existing textures and/or framebuffers
         def safe_release(mgl_object):
             if mgl_object is not None:
                 mgl_object.release()
@@ -227,6 +226,8 @@ class RenderSystem(System):
         safe_release(self.forward_pass_texture_entity_info)
         safe_release(self.forward_pass_texture_depth)
         safe_release(self.forward_pass_framebuffer)
+
+        safe_release(self.debug_forward_pass_framebuffer)
 
         safe_release(self.overlay_pass_texture_color)
         safe_release(self.overlay_pass_texture_depth)
@@ -254,7 +255,7 @@ class RenderSystem(System):
             self.entity_selection_enabled = False
 
         if event_type == constants.EVENT_MOUSE_LEAVE_GIZMO_3D:
-            self.entity_selection_enabled = False
+            self.entity_selection_enabled = True
 
         if self.entity_selection_enabled:
             if (event_type == constants.EVENT_MOUSE_BUTTON_PRESS and
@@ -319,6 +320,7 @@ class RenderSystem(System):
         for camera_uid in camera_entity_uids:
 
             self.render_forward_pass(camera_uid=camera_uid)
+            #self.render_debug_forward_pass(camera_uid=camera_uid)
             self.render_overlay_pass(camera_uid=camera_uid)
             self.render_selection_pass(camera_uid=camera_uid, selected_entity_uid=self.selected_entity_id)
 
@@ -406,13 +408,6 @@ class RenderSystem(System):
             program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
 
         # Meshes
-        self.render_meshes(program=program)
-
-        # Debug Meshes
-        #self.render_debug_meshes(program=program)
-
-    def render_meshes(self, program: moderngl.Program):
-
         for mesh_entity_uid, mesh_component in self.component_pool.mesh_components.items():
 
             if not mesh_component.visible or mesh_component.layer == constants.RENDER_SYSTEM_LAYER_OVERLAY:
@@ -443,20 +438,26 @@ class RenderSystem(System):
                 program["lighting_mode"] = material.lighting_mode
 
             # Render the mesh
-            mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(mesh_component.render_mode)
+            mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_FORWARD_PASS)
 
             # Stage: Draw transparent objects back to front
 
-    def render_debug_meshes(self, program: moderngl.Program):
+    def render_debug_forward_pass(self, camera_uid: int):
+
+        camera_component = self.component_pool.camera_components[camera_uid]
+        camera_transform = self.component_pool.transform_3d_components[camera_uid]
 
         for debug_mesh_entity_uid, debug_mesh_component in self.component_pool.debug_mesh_components.items():
 
-            if not debug_mesh_component.visible:
+            if not debug_mesh_component.visible or debug_mesh_component.num_instances == 0:
                 continue
 
-            # Render the mesh
-            debug_mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(
-                mode=moderngl.POINTS, instances=debug_mesh_component.num_instances)
+            program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
+            camera_component.upload_uniforms(program=program)
+            program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
+
+            debug_mesh_component.vaos[constants.SHADER_PROGRAM_DEBUG_FORWARD_PASS].render(
+                instances=debug_mesh_component.num_instances)
 
             # Stage: Draw transparent objects back to front
 

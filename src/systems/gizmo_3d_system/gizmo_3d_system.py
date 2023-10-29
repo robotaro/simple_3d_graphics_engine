@@ -85,6 +85,9 @@ class Gizmo3DSystem(System):
                     gizmo_3d_component.z_axis_entity_uid = child_uid
                     continue
 
+        # Step 3) Hide all gizmos before we begin
+        #self.set_all_gizmo_3d_visibility(visible=False)
+
         return True
 
     def on_event(self, event_type: int, event_data: tuple):
