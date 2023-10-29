@@ -38,6 +38,7 @@ class RenderSystem(System):
         "forward_pass_texture_entity_info",
         "forward_pass_texture_depth",
         "forward_pass_framebuffer",
+        "debug_forward_pass_framebuffer",
         "overlay_pass_texture_color",
         "overlay_pass_texture_depth",
         "overlay_pass_framebuffer",
@@ -96,6 +97,9 @@ class RenderSystem(System):
         self.forward_pass_texture_entity_info = None
         self.forward_pass_texture_depth = None
         self.forward_pass_framebuffer = None
+
+        # Debug Forward Pass
+        self.debug_forward_pass_framebuffer = None
 
         # Overlay Pass
         self.overlay_pass_texture_color = None
@@ -168,25 +172,7 @@ class RenderSystem(System):
 
     def create_framebuffers(self, window_size: tuple):
 
-        # Release any previous existing textures and/or framebuffers
-        def safe_release(mgl_object):
-            if mgl_object is not None:
-                mgl_object.release()
-
-        safe_release(self.forward_pass_texture_color)
-        safe_release(self.forward_pass_texture_normal)
-        safe_release(self.forward_pass_texture_viewpos)
-        safe_release(self.forward_pass_texture_entity_info)
-        safe_release(self.forward_pass_texture_depth)
-        safe_release(self.forward_pass_framebuffer)
-
-        safe_release(self.overlay_pass_texture_color)
-        safe_release(self.overlay_pass_texture_depth)
-        safe_release(self.overlay_pass_framebuffer)
-
-        safe_release(self.selection_pass_texture_color)
-        safe_release(self.selection_pass_texture_depth)
-        safe_release(self.selection_pass_framebuffer)
+        self._release_all_framebuffers_and_textures()
 
         # Forward Pass
         self.forward_pass_texture_color = self.ctx.texture(size=window_size, components=4)
@@ -201,6 +187,12 @@ class RenderSystem(System):
                 self.forward_pass_texture_normal,
                 self.forward_pass_texture_viewpos,
                 self.forward_pass_texture_entity_info],
+            depth_attachment=self.forward_pass_texture_depth)
+
+        # Debug Forward Pass
+        self.debug_forward_pass_framebuffer = self.ctx.framebuffer(
+            color_attachments=[
+                self.forward_pass_texture_color],
             depth_attachment=self.forward_pass_texture_depth)
 
         # Overlay Pass
@@ -221,6 +213,28 @@ class RenderSystem(System):
             depth_attachment=self.selection_pass_texture_depth)
 
         # Screen quads
+
+    def _release_all_framebuffers_and_textures(self):
+
+        # Release any previous existing textures and/or framebuffers
+        def safe_release(mgl_object):
+            if mgl_object is not None:
+                mgl_object.release()
+
+        safe_release(self.forward_pass_texture_color)
+        safe_release(self.forward_pass_texture_normal)
+        safe_release(self.forward_pass_texture_viewpos)
+        safe_release(self.forward_pass_texture_entity_info)
+        safe_release(self.forward_pass_texture_depth)
+        safe_release(self.forward_pass_framebuffer)
+
+        safe_release(self.overlay_pass_texture_color)
+        safe_release(self.overlay_pass_texture_depth)
+        safe_release(self.overlay_pass_framebuffer)
+
+        safe_release(self.selection_pass_texture_color)
+        safe_release(self.selection_pass_texture_depth)
+        safe_release(self.selection_pass_framebuffer)
 
     def on_event(self, event_type: int, event_data: tuple):
 
@@ -315,13 +329,7 @@ class RenderSystem(System):
 
     def shutdown(self):
 
-        # Release textures
-        for texture_name, texture_obj in self.textures.items():
-            texture_obj.release()
-
-        # Release Framebuffers
-        for frabuffer_name, framebuffer_obj in self.framebuffers.items():
-            framebuffer_obj.release()
+        self._release_all_framebuffers_and_textures()
 
         for quad_name, quad in self.quads.items():
             if quad["vbo_vertices"] is not None:
@@ -428,8 +436,7 @@ class RenderSystem(System):
             # TODO: Technically, you only need to upload the material once since it doesn't change.
             #       The program will keep its variable states!
             if material is not None:
-                program[
-                    "material.diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
+                program["material.diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
                 program["material.specular"].value = material.specular
                 program["material.shininess_factor"] = material.shininess_factor
                 program["color_source"] = material.color_source
@@ -447,33 +454,9 @@ class RenderSystem(System):
             if not debug_mesh_component.visible:
                 continue
 
-            mesh_transform = self.component_pool.get_component(entity_uid=debug_mesh_entity_uid,
-                                                               component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-
-            material = self.component_pool.material_components.get_component(entity_uid=debug_mesh_entity_uid,
-                                                               component_type=constants.COMPONENT_TYPE_MATERIAL)
-
-            """"# Mesh uniforms
-            program["entity_id"].value = mesh_entity_uid
-            program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
-            program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
-            program["directional_lights_enabled"].value = self._directional_lights_enabled
-            program["point_lights_enabled"].value = self._point_lights_enabled
-            program["gamma_correction_enabled"].value = self._gamma_correction_enabled
-            program["shadows_enabled"].value = self._shadows_enabled
-
-            # TODO: Technically, you only need to upload the material once since it doesn't change.
-            #       The program will keep its variable states!
-            if material is not None:
-                program[
-                    "material.diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
-                program["material.specular"].value = material.specular
-                program["material.shininess_factor"] = material.shininess_factor
-                program["color_source"] = material.color_source
-                program["lighting_mode"] = material.lighting_mode
-
             # Render the mesh
-            mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(mesh_component.render_mode)"""
+            debug_mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(
+                mode=moderngl.POINTS, instances=debug_mesh_component.num_instances)
 
             # Stage: Draw transparent objects back to front
 
@@ -554,7 +537,7 @@ class RenderSystem(System):
         program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
 
         # Render
-        mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(mesh_component.render_mode)
+        mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(mode=mesh_component.render_mode)
 
     def render_text_2d_pass(self, component_pool: ComponentPool):
 
@@ -588,7 +571,7 @@ class RenderSystem(System):
 
             # Rendering
             self.textures[text_2d.font_name].use(location=0)
-            text_2d.vao.render(moderngl.POINTS)
+            text_2d.vao.render(mode=moderngl.POINTS)
 
     def render_shadow_mapping_pass(self, component_pool: ComponentPool):
 

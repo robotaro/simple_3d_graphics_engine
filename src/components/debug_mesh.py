@@ -11,14 +11,12 @@ class DebugMesh(Component):
     _type = constants.COMPONENT_TYPE_MESH
 
     __slots__ = [
-        "vertices",
-        "colors",
         "vaos",
-        "vbo_vertices",
+        "positions",
         "vbo_intanced_positions",
         "mesh_type",
-        "num_elements",
-        "max_num_elements",
+        "num_instances",
+        "max_num_instances",
         "sphere_radius",
         "box_size_offset",
         "transform_size",
@@ -28,23 +26,23 @@ class DebugMesh(Component):
     def __init__(self, parameters, system_owned=False):
         super().__init__(parameters=parameters, system_owned=system_owned)
 
-        self.num_elements = 0  # Start with an empty array
+
 
         # RAM Vertex data
-        self.vertices = None
+        self.positions = None
 
         # GPU (VRAM) Vertex Data
         self.vaos = {}
-        self.vbo_vertices = None
+        self.vbo_intanced_positions = None
 
         self.mesh_type = Component.dict2map(input_dict=self.parameters,
                                             map_dict=constants.MESH_RENDER_MODES,
                                             key="render_mode",
                                             default_value=constants.MESH_RENDER_MODE_TRIANGLES)
 
-        self.max_num_elements = Component.dict2float(input_dict=self.parameters,
-                                                     key="max_num_elements",
-                                                     default_value=100)
+        self.max_num_instances = Component.dict2float(input_dict=self.parameters,
+                                                      key="max_num_instances",
+                                                      default_value=100)
 
         self.sphere_radius = Component.dict2float(input_dict=self.parameters,
                                                   key="sphere_radius",
@@ -61,6 +59,8 @@ class DebugMesh(Component):
         self.visible = Component.dict2bool(input_dict=self.parameters,
                                            key="visible",
                                            default_value=True)
+
+        self.num_instances = 0
         self.dirty = True
 
     def initialise(self, **kwargs):
@@ -73,12 +73,11 @@ class DebugMesh(Component):
         vbo_declaration_list = []
 
         # Allocate memory for debug data
-        self.vertices = np.zeros((self.max_num_elements, 3), dtype=np.float32)
+        self.positions = np.zeros((self.max_num_instances, 3), dtype=np.float32)
 
         # Create VBOs
-        if self.vertices is not None:
-            self.vbo_intanced_positions = ctx.buffer(reserve=12 * self.max_num_elements)
-            vbo_declaration_list.append((self.vbo_vertices, "3f", constants.SHADER_INPUT_VERTEX))
+        self.vbo_intanced_positions = ctx.buffer(reserve=12 * self.max_num_instances)
+        vbo_declaration_list.append((self.vbo_intanced_positions, "3f/i", constants.SHADER_INPUT_VERTEX))
 
         # Create VAOs
         for program_name in constants.SHADER_PASSES_LIST:
@@ -95,8 +94,8 @@ class DebugMesh(Component):
         if not self.dirty or not self.initialised:
             return
 
-        if self.num_elements > 0:
-            self.vbo_vertices.write(self.vertices[:, self.num_elements].tobytes())
+        if self.num_instances > 0:
+            self.vbo_vertices.write(self.vertices[:, self.num_instances].tobytes())
 
     def update_new_number_of_elements(self, num_elements: int):
         """
@@ -105,7 +104,7 @@ class DebugMesh(Component):
         :param num_elements:
         :return:
         """
-        self.num_elements = num_elements
+        self.num_instances = num_elements
         self.dirty = True
 
     def release(self):

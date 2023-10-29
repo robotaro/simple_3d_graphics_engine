@@ -56,6 +56,22 @@ class ComponentPool:
         constants.COMPONENT_TYPE_DEBUG_MESH: DebugMesh,
     }
 
+    COMPONENT_NAME_MAP = {
+        "transform_3d": constants.COMPONENT_TYPE_TRANSFORM_3D,
+        "mesh": constants.COMPONENT_TYPE_MESH,
+        "camera": constants.COMPONENT_TYPE_CAMERA,
+        "material": constants.COMPONENT_TYPE_MATERIAL,
+        "input_control": constants.COMPONENT_TYPE_INPUT_CONTROL,
+        "text_2d": constants.COMPONENT_TYPE_TEXT_2D,
+        "directional_light": constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT,
+        "spot_light": constants.COMPONENT_TYPE_SPOT_LIGHT,
+        "point_light": constants.COMPONENT_TYPE_POINT_LIGHT,
+        "collider": constants.COMPONENT_TYPE_COLLIDER,
+        "gizmo_3d": constants.COMPONENT_TYPE_GIZMO_3D,
+        "robot": constants.COMPONENT_TYPE_ROBOT,
+        "debug_mesh": constants.COMPONENT_TYPE_DEBUG_MESH
+    }
+
     def __init__(self, logger: logging.Logger):
 
         self.logger = logger
@@ -124,7 +140,7 @@ class ComponentPool:
         # And add components after
         for component in entity_blueprint["components"]:
 
-            component_type = constants.COMPONENT_MAP.get(component["name"], None)
+            component_type = ComponentPool.COMPONENT_NAME_MAP.get(component["name"], None)
             if component_type is None:
                 self.logger.error(f"Component {component['name']} is not supported.")
                 continue
