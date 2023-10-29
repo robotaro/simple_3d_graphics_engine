@@ -394,7 +394,7 @@ class RenderSystem(System):
             mesh_transform = self.component_pool.get_component(entity_uid=mesh_entity_uid,
                                                                component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
-            material = self.component_pool.get_component(entity_uid=mesh_entity_uid,
+            material_component = self.component_pool.get_component(entity_uid=mesh_entity_uid,
                                                          component_type=constants.COMPONENT_TYPE_MATERIAL)
 
             # Mesh uniforms
@@ -408,12 +408,8 @@ class RenderSystem(System):
 
             # TODO: Technically, you only need to upload the material once since it doesn't change.
             #       The program will keep its variable states!
-            if material is not None:
-                program["material.diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
-                program["material.specular"].value = material.specular
-                program["material.shininess_factor"] = material.shininess_factor
-                program["color_source"] = material.color_source
-                program["lighting_mode"] = material.lighting_mode
+            if material_component is not None:
+                material_component.upload_uniforms(program=program)
 
             # Render the mesh
             mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_FORWARD_PASS)
