@@ -382,30 +382,8 @@ class RenderSystem(System):
 
         camera_component.upload_uniforms(program=program)
 
-        # Point Lights
-        program["num_point_lights"].value = len(self.component_pool.point_light_components)
-        for index, (mesh_entity_uid, point_light_component) in enumerate(self.component_pool.point_light_components.items()):
-
-            light_transform = self.component_pool.transform_3d_components[mesh_entity_uid]
-
-            program[f"point_lights[{index}].position"] = light_transform.position
-            program[f"point_lights[{index}].diffuse"] = point_light_component.diffuse
-            program[f"point_lights[{index}].specular"] = point_light_component.specular
-            program[f"point_lights[{index}].attenuation_coeffs"] = point_light_component.attenuation_coeffs
-            program[f"point_lights[{index}].enabled"] = point_light_component.enabled
-
-        # Directional Lights
-        program["num_directional_lights"].value = len(self.component_pool.directional_light_components)
-        for index, (mesh_entity_uid, dir_light_component) in enumerate(self.component_pool.directional_light_components.items()):
-
-            light_transform = self.component_pool.transform_3d_components[mesh_entity_uid]
-
-            program[f"directional_lights[{index}].direction"] = tuple(light_transform.world_matrix[:3, 2])
-            program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
-            program[f"directional_lights[{index}].specular"] = dir_light_component.specular
-            program[f"directional_lights[{index}].strength"] = dir_light_component.strength
-            program[f"directional_lights[{index}].shadow_enabled"] = dir_light_component.shadow_enabled
-            program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
+        self.upload_uniforms_point_lights(program=program)
+        self.upload_uniforms_directional_lights(program=program)
 
         # Meshes
         for mesh_entity_uid, mesh_component in self.component_pool.mesh_components.items():
@@ -441,6 +419,33 @@ class RenderSystem(System):
             mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_FORWARD_PASS)
 
             # Stage: Draw transparent objects back to front
+
+    def upload_uniforms_point_lights(self, program: moderngl.Program):
+
+        program["num_point_lights"].value = len(self.component_pool.point_light_components)
+        for index, (mesh_entity_uid, point_light_component) in enumerate(
+                self.component_pool.point_light_components.items()):
+            light_transform = self.component_pool.transform_3d_components[mesh_entity_uid]
+
+            program[f"point_lights[{index}].position"] = light_transform.position
+            program[f"point_lights[{index}].diffuse"] = point_light_component.diffuse
+            program[f"point_lights[{index}].specular"] = point_light_component.specular
+            program[f"point_lights[{index}].attenuation_coeffs"] = point_light_component.attenuation_coeffs
+            program[f"point_lights[{index}].enabled"] = point_light_component.enabled
+
+    def upload_uniforms_directional_lights(self, program: moderngl.Program):
+
+        program["num_directional_lights"].value = len(self.component_pool.directional_light_components)
+        for index, (mesh_entity_uid, dir_light_component) in enumerate(
+                self.component_pool.directional_light_components.items()):
+            light_transform = self.component_pool.transform_3d_components[mesh_entity_uid]
+
+            program[f"directional_lights[{index}].direction"] = tuple(light_transform.world_matrix[:3, 2])
+            program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
+            program[f"directional_lights[{index}].specular"] = dir_light_component.specular
+            program[f"directional_lights[{index}].strength"] = dir_light_component.strength
+            program[f"directional_lights[{index}].shadow_enabled"] = dir_light_component.shadow_enabled
+            program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
 
     def render_debug_forward_pass(self, camera_uid: int):
 
