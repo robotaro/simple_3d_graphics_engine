@@ -251,62 +251,73 @@ class RenderSystem(System):
         if event_type == constants.EVENT_MOUSE_LEAVE_UI:
             self.entity_selection_enabled = True
 
-        if event_type == constants.EVENT_MOUSE_ENTER_GIZMO_3D:
+        if event_type == constants.EVENT_MOUSE_HOVER_GIZMO_3D:
+            self.logger.debug("Hovering gizmo!")
             self.entity_selection_enabled = False
 
         if event_type == constants.EVENT_MOUSE_LEAVE_GIZMO_3D:
+            self.logger.debug("Bye gizmo!")
             self.entity_selection_enabled = True
 
-        if self.entity_selection_enabled:
-            if (event_type == constants.EVENT_MOUSE_BUTTON_PRESS and
-                    event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] == glfw.MOUSE_BUTTON_LEFT):
-
-                # TODO: Move this to its own function!
-                # Pass the coordinate of the pixel you want to sample to the fragment picking shader
-                self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
-                self.forward_pass_texture_entity_info.use(location=0)
-
-                self.picker_vao.transform(
-                    self.picker_buffer,
-                    mode=moderngl.POINTS,
-                    vertices=1,
-                    first=0,
-                    instances=1)
-
-                self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
-
-                if self.selected_entity_id < constants.COMPONENT_POOL_STARTING_ID_COUNTER:
-                    self.event_publisher.publish(event_type=constants.EVENT_ENTITY_DESELECTED,
-                                                 event_data=(None,),
-                                                 sender=self)
-                    return
-
-                self.event_publisher.publish(event_type=constants.EVENT_ENTITY_SELECTED,
-                                             event_data=(self.selected_entity_id,),
-                                             sender=self)
+        if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:
+            self.process_entity_selection(event_data=event_data)
 
         if event_type == constants.EVENT_KEYBOARD_PRESS:
-
-            # Texture debugging modes
-            key_value = event_data[constants.EVENT_INDEX_KEYBOARD_KEY]
-            if glfw.KEY_F1 <= key_value <= glfw.KEY_F11:
-                self.fullscreen_selected_texture = key_value - glfw.KEY_F1
-
-            # Light debugging modes
-            if glfw.KEY_1 == key_value:
-                self._ambient_hemisphere_light_enabled = not self._ambient_hemisphere_light_enabled
-            if glfw.KEY_2 == key_value:
-                self._point_lights_enabled = not self._point_lights_enabled
-            if glfw.KEY_3 == key_value:
-                self._directional_lights_enabled = not self._directional_lights_enabled
-            if glfw.KEY_4 == key_value:
-                self._gamma_correction_enabled = not self._gamma_correction_enabled
-            if glfw.KEY_5 == key_value:
-                self._shadows_enabled = not self._shadows_enabled
+            self.process_keyboard_press(event_data=event_data)
 
         if event_type == constants.EVENT_ENTITY_SELECTED:
             # Other systems may change the selected entity, so this should be reflected by the render system
             self.selected_entity_id = event_data[0]
+
+    def process_entity_selection(self, event_data: tuple):
+        if not self.entity_selection_enabled:
+            return
+
+        if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != glfw.MOUSE_BUTTON_LEFT:
+            return
+
+        # TODO: Move this to its own function!
+        # Pass the coordinate of the pixel you want to sample to the fragment picking shader
+        self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
+        self.forward_pass_texture_entity_info.use(location=0)
+
+        self.picker_vao.transform(
+            self.picker_buffer,
+            mode=moderngl.POINTS,
+            vertices=1,
+            first=0,
+            instances=1)
+
+        self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
+
+        if self.selected_entity_id < constants.COMPONENT_POOL_STARTING_ID_COUNTER:
+            self.event_publisher.publish(event_type=constants.EVENT_ENTITY_DESELECTED,
+                                         event_data=(None,),
+                                         sender=self)
+            return
+
+        self.event_publisher.publish(event_type=constants.EVENT_ENTITY_SELECTED,
+                                     event_data=(self.selected_entity_id,),
+                                     sender=self)
+
+    def process_keyboard_press(self, event_data: tuple):
+
+        # Texture debugging modes
+        key_value = event_data[constants.EVENT_INDEX_KEYBOARD_KEY]
+        if glfw.KEY_F1 <= key_value <= glfw.KEY_F11:
+            self.fullscreen_selected_texture = key_value - glfw.KEY_F1
+
+        # Light debugging modes
+        if glfw.KEY_1 == key_value:
+            self._ambient_hemisphere_light_enabled = not self._ambient_hemisphere_light_enabled
+        if glfw.KEY_2 == key_value:
+            self._point_lights_enabled = not self._point_lights_enabled
+        if glfw.KEY_3 == key_value:
+            self._directional_lights_enabled = not self._directional_lights_enabled
+        if glfw.KEY_4 == key_value:
+            self._gamma_correction_enabled = not self._gamma_correction_enabled
+        if glfw.KEY_5 == key_value:
+            self._shadows_enabled = not self._shadows_enabled
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
@@ -378,14 +389,16 @@ class RenderSystem(System):
             moderngl.ONE)
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
+
+        # Setup camera
+        camera_component.upload_uniforms(program=program)
         program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
 
-        camera_component.upload_uniforms(program=program)
-
+        # Setup lights
         self.upload_uniforms_point_lights(program=program)
         self.upload_uniforms_directional_lights(program=program)
 
-        # Meshes
+        # Render meshes
         for mesh_entity_uid, mesh_component in self.component_pool.mesh_components.items():
 
             if not mesh_component.visible or mesh_component.layer == constants.RENDER_SYSTEM_LAYER_OVERLAY:
@@ -411,7 +424,6 @@ class RenderSystem(System):
             if material_component is not None:
                 material_component.upload_uniforms(program=program)
 
-            # Render the mesh
             mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_FORWARD_PASS)
 
             # Stage: Draw transparent objects back to front
@@ -457,8 +469,7 @@ class RenderSystem(System):
             camera_component.upload_uniforms(program=program)
             program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
 
-            debug_mesh_component.vaos[constants.SHADER_PROGRAM_DEBUG_FORWARD_PASS].render(
-                instances=debug_mesh_component.num_instances)
+            debug_mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_DEBUG_FORWARD_PASS)
 
             # Stage: Draw transparent objects back to front
 
@@ -480,10 +491,12 @@ class RenderSystem(System):
             viewport=camera_component.viewport_pixels)
 
         program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_PASS]
+
+        # Setup camera
+        camera_component.upload_uniforms(program=program)
         program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
 
-        camera_component.upload_uniforms(program=program)
-
+        # Render meshes
         for mesh_entity_uid, mesh_component in self.component_pool.mesh_components.items():
 
             if not mesh_component.visible or mesh_component.layer != constants.RENDER_SYSTEM_LAYER_OVERLAY:

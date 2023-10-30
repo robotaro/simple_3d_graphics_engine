@@ -68,7 +68,13 @@ IMGUI_DRAG_FLOAT_PRECISION = 1e-2
 GIZMO_3D_SYSTEM_X_AXIS_NAME = "x_axis"
 GIZMO_3D_SYSTEM_Y_AXIS_NAME = "y_axis"
 GIZMO_3D_SYSTEM_Z_AXIS_NAME = "z_axis"
+GIZMO_3D_AXES_NAME_ORDER = [
+    GIZMO_3D_SYSTEM_X_AXIS_NAME,
+    GIZMO_3D_SYSTEM_Y_AXIS_NAME,
+    GIZMO_3D_SYSTEM_Z_AXIS_NAME
+]
 GIZMO_3D_SCALE_COEFFICIENT = 0.1
+GIZMO_3D_AXES = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
 
 # =============================================================================
 #                               Events
@@ -86,8 +92,10 @@ EVENT_MOUSE_BUTTON_RELEASE = 13      # args: (button, mods, x, y) <int, int, int
 EVENT_MOUSE_MOVE = 14                # args: (x, y) <float, float>
 EVENT_MOUSE_SCROLL = 15              # args: (offset_x, offset_y) <float, float>
 EVENT_MOUSE_DOUBLE_CLICK = 16
-EVENT_MOUSE_ENTER_GIZMO_3D = 17
+EVENT_MOUSE_HOVER_GIZMO_3D = 17
 EVENT_MOUSE_LEAVE_GIZMO_3D = 18
+EVENT_MOUSE_GIZMO_3D_ACTIVATED = 19
+EVENT_MOUSE_GIZMO_3D_DEACTIVATED = 19
 
 # Indices
 EVENT_INDEX_KEYBOARD_KEY = 0
@@ -296,6 +304,7 @@ MATERIAL_COLOR_WHITE = (1.0, 1.0, 1.0)
 MATERIAL_COLOR_RED = (1.0, 0.0, 0.0)
 MATERIAL_COLOR_GREEN = (0.0, 1.0, 0.0)
 MATERIAL_COLOR_BLUE = (0.0, 0.0, 1.0)
+MATERIAL_COLOR_ORANGE = (1.0, 0.65, 0.0)
 MATERIAL_COLOR_YELLOW = (1.0, 1.0, 0.0)
 MATERIAL_COLOR_CYAN = (0.0, 1.0, 1.0)  # Also known as Aqua
 MATERIAL_COLOR_MAGENTA = (1.0, 0.0, 1.0)  # Also known as Fuchsia
@@ -326,6 +335,7 @@ MATERIAL_COLORS = {
     "red": MATERIAL_COLOR_RED,
     "green": MATERIAL_COLOR_GREEN,
     "blue": MATERIAL_COLOR_BLUE,
+    "orange": MATERIAL_COLOR_ORANGE,
     "yellow": MATERIAL_COLOR_YELLOW,
     "cyan": MATERIAL_COLOR_CYAN,  # Also known as Aqua
     "aqua": MATERIAL_COLOR_CYAN,  # Also known as Cyan

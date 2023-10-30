@@ -61,6 +61,9 @@ This is a flexible solution, but not a very efficient one.
 ## Shaders to study
 https://shadered.org/view?s=0xMVU6DEAe
 
+## ModernGL tips:
+- Valid formats for VBO: ['f', 'f1', 'f2', 'f4', 'f8', 'u', 'u1', 'u2', 'u4', 'i', 'i1', 'i2', 'i4', 'nf', 'nf1', 'nf2', 'nf4', 'nu', 'nu1', 'nu2', 'nu4', 'ni', 'ni1', 'ni2', 'ni4']
+
 ## Optimisation TODOs:
 - If a component/system does not handle any graphics, make it 100% Numba-complient
 - Reduce number of uniform variable access. Maybe Uniform Array Object?

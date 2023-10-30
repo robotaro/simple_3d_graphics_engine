@@ -128,6 +128,18 @@ def intersect_ray_capsule(ray_origin, ray_direction, point_a, point_b, radius) -
             return -b - np.sqrt(h)
     return -1.0
 
+# Check this for performance warning explanation for '::1': https://github.com/numba/numba/issues/8739
+@njit(cache=True)
+def intersect_ray_capsules(ray_origin, ray_direction, points_a, points_b, radius, output_distances):
+
+    for index in range(points_a.shape[0]):
+        output_distances[index] = intersect_ray_capsule(ray_origin,
+                                                        ray_direction,
+                                                        points_a[index, :],
+                                                        points_b[index, :],
+                                                        radius)
+
+
 # ======================================================================================================================
 #                                                Ray / capsule
 # ======================================================================================================================

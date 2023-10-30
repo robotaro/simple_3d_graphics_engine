@@ -82,6 +82,8 @@ class Camera(Component):
 
     def get_projection_matrix(self):
 
+        # TODO: [OPTIMIZE] This doesn't need to be recalculated every time. Only when the viewport changes!
+
         aspect_ratio = self.viewport_pixels[2] / self.viewport_pixels[3]
 
         if self.perspective:

@@ -28,7 +28,6 @@
         <mesh fpath="meshes/BrainStem.gltf" scale="1"/>
         <material diffuse="tab10_blue" shininess_factor="32.0"/>
         <transform_3d position="0 0 0" rotation="-90 0 0" degrees="true"/>
-        <debug_mesh />
     </entity>
 
     <entity name="capsule">

@@ -112,6 +112,12 @@ def mul_vector3(in_mat4: np.ndarray, in_vec3: np.array):
 
 
 @njit(cache=True)
+def mul_vectors3(in_mat4: np.ndarray, in_vec3_array: np.ndarray, out_vec3_array: np.ndarray):
+    for i in range(in_vec3_array.shape[0]):
+        out_vec3_array[i, :] = np.dot(in_mat4[:3, :3], in_vec3_array[i, :]) + in_mat4[:3, 3]
+
+
+@njit(cache=True)
 def fast_inverse(in_mat4: np.ndarray, out_mat4: np.ndarray):
     # IMPORTANT: This matrix assumes out_mat4 was already initialised as eye(4)!!!
     out_mat4[:3, :3] = np.linalg.inv(np.ascontiguousarray(in_mat4[:3, :3]))

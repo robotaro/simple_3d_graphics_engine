@@ -27,7 +27,7 @@ def test_screen_to_world_ray():
         target_ray_origin = np.array(conditions[2], dtype=np.float32)
 
         result_ray_direction, result_ray_origin = utils_camera.screen_to_world_ray(
-            view_matrix=view_matrix,
+            camera_matrix=view_matrix,
             projection_matrix=projection_matrix,
             viewport_coord_norm=viewport_coord)
 

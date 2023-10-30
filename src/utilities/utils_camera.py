@@ -19,13 +19,16 @@ def get_gizmo_scale(camera_transform: np.ndarray, object_position: np.array) -> 
 
 @njit(cache=True)
 def screen_to_world_ray(viewport_coord_norm: tuple,
-                        view_matrix: np.ndarray,
+                        camera_matrix: np.ndarray,
                         projection_matrix: np.ndarray):
 
     """
 
     :param viewport_coord_norm: tuple, (x, y) <float, float> Ranges between -1 and 1
-    :param view_matrix: np.ndarray (4, 4) <float32> position and orientation of camera in space
+    :param camera_matrix: np.ndarray (4, 4) <float32> Do NOT confuse this with the "view_matrix"!
+                          This is the transform of the camera in space, simply as you want the camera to be placed
+                          in the scene. the view_matrix is the INVERSE of the camera_matrix :)
+
     :param projection_matrix: (4, 4) <float32> perspective matrix
 
     :return:
@@ -40,13 +43,13 @@ def screen_to_world_ray(viewport_coord_norm: tuple,
     eye_coordinates = np.array([eye_coordinates[0], eye_coordinates[1], -1.0, 0.0], dtype=np.float32)
 
     # Inverse the view matrix to get the world coordinates
-    world_coordinates = np.dot(view_matrix, eye_coordinates)
+    world_coordinates = np.dot(camera_matrix, eye_coordinates)
 
     # Extract the ray's origin from the inverted view matrix
-    ray_origin = view_matrix[:, 3][:3]
+    ray_origin = np.ascontiguousarray(camera_matrix[:, 3][:3])  # When extracting vectors, they need to be continuous!
 
     # Normalize the world coordinates to get the ray direction
-    ray_direction = world_coordinates[:3]
+    ray_direction = np.ascontiguousarray(world_coordinates[:3])
     ray_direction[1] = -ray_direction[1]  # TODO: FIND OUT WHY THE Y-AXIS IS REVERSED!!!!!! VERY IMPORTANT!!!a
     ray_direction /= np.linalg.norm(ray_direction)
 

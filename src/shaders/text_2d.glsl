@@ -52,7 +52,7 @@ void emitVertexWithUV(vec2 position, vec2 uvCoords) {
 void main() {
 
     // Calculate the rectangle vertex position
-    vec2 position = gs_position[0];
+    vec2 position = gs_position[0].xy;
 
     // Emit the rectangle vertices with adjusted UV coordinates
     emitVertexWithUV(position, gs_uv_min[0]);
