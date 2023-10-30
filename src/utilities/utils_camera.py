@@ -23,6 +23,7 @@ def screen_to_world_ray(viewport_coord_norm: tuple,
                         projection_matrix: np.ndarray):
 
     """
+    Viewport coordinates are +1 to the right, -1 to the left, +1 up and -1 down. Zero at the centre for both axes
 
     :param viewport_coord_norm: tuple, (x, y) <float, float> Ranges between -1 and 1
     :param camera_matrix: np.ndarray (4, 4) <float32> Do NOT confuse this with the "view_matrix"!
@@ -50,7 +51,6 @@ def screen_to_world_ray(viewport_coord_norm: tuple,
 
     # Normalize the world coordinates to get the ray direction
     ray_direction = np.ascontiguousarray(world_coordinates[:3])
-    ray_direction[1] = -ray_direction[1]  # TODO: FIND OUT WHY THE Y-AXIS IS REVERSED!!!!!! VERY IMPORTANT!!!a
     ray_direction /= np.linalg.norm(ray_direction)
 
     return ray_direction, ray_origin

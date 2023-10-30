@@ -45,7 +45,7 @@ class Gizmo3DSystem(System):
         self.entity_ray_intersection_list = []
         self.gizmo_selection_enabled = True
         self.camera2gizmo_map = {}
-        self.mouse_screen_position = (-1, -1)
+        self.mouse_screen_position = (-1, -1)  # in Pixels
         self.axes_distances = np.array([-1, -1, -1], dtype=np.float32)
         self.gizmo_transformed_axes = np.eye(3, dtype=np.float32)
 
@@ -116,21 +116,30 @@ class Gizmo3DSystem(System):
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
-        for camera_entity_id, camera_component in self.component_pool.camera_components.items():
+        if self.selected_entity_uid is None:
+            return True
 
-            if self.selected_entity_uid is None:
-                continue
+        selected_transform_component = self.component_pool.transform_3d_components[self.selected_entity_uid]
+        selected_object_position = np.array(selected_transform_component.position, dtype=np.float32)
+
+        for camera_entity_id, camera_component in self.component_pool.camera_components.items():
 
             # Find which gizmo is attached to this camera
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_id]
+            gizmo_transform_component = self.component_pool.transform_3d_components[gizmo_3d_entity_uid]
 
             # Get both gizmo's and selected entity's transforms
             camera_transform_component = self.component_pool.transform_3d_components[camera_entity_id]
-            selected_transform_component = self.component_pool.transform_3d_components[self.selected_entity_uid]
-            gizmo_transform_component = self.component_pool.transform_3d_components[gizmo_3d_entity_uid]
             scale = utils_camera.get_gizmo_scale(camera_transform=camera_transform_component.world_matrix,
-                                                 object_position=np.array(selected_transform_component.position,
-                                                                          dtype=np.float32))
+                                                 object_position=selected_object_position)
+            # If gizmo is too lcose to camera, just ignore it
+            if scale < 0.01:
+                continue
+
+
+            # DEBUG
+            debug_camera_name = self.component_pool.entities[camera_entity_id].name
+            #print(f"{debug_camera_name} - {scale:.2f}")
 
             # Put gizmo where the selected entity's is
             gizmo_transform_component.position = selected_transform_component.position
@@ -138,7 +147,7 @@ class Gizmo3DSystem(System):
             gizmo_transform_component.scale = scale
             gizmo_transform_component.dirty = True
 
-            # Transform origin axes to gizmo's trnasofmr
+            # Transform origin axes to gizmo's transform
             mat4.mul_vectors3(in_mat4=gizmo_transform_component.world_matrix,
                               in_vec3_array=constants.GIZMO_3D_AXES,
                               out_vec3_array=self.gizmo_transformed_axes)
@@ -154,6 +163,11 @@ class Gizmo3DSystem(System):
                 viewport_coord_norm=viewport_coord_norm,
                 camera_matrix=camera_matrix,
                 projection_matrix=projection_matrix)
+
+
+            print(f"{debug_camera_name}: {self.mouse_screen_position} -> {viewport_coord_norm} : {ray_origin}, {ray_direction}")
+
+
 
             # TODO: Clean this silly code. Change the intersection function to accommodate for this
             points_a = np.array([gizmo_transform_component.position,

@@ -78,6 +78,12 @@ class Camera(Component):
         x = 2.0 * x - 1.0
         y = 2.0 * y - 1.0
 
+        if x < -1.0 or x > 1.0:
+            return None
+
+        if y < -1.0 or y > 1.0:
+            return None
+
         return x, y
 
     def get_projection_matrix(self):
