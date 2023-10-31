@@ -107,7 +107,7 @@ def create_transform_xyz(position: np.array, rotation: np.array, scale: float):
 
 
 @njit(cache=True)
-def mul_vector3(in_mat4: np.ndarray, in_vec3: np.array):
+def mul_vector3(in_mat4: np.ndarray, in_vec3: np.array) -> np.array:
     return np.dot(in_mat4[:3, :3], in_vec3) + in_mat4[:3, 3]
 
 

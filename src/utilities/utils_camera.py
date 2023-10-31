@@ -6,21 +6,54 @@ from src.math import mat4
 
 
 @njit(cache=True)
-def get_gizmo_scale(camera_transform: np.ndarray, object_position: np.array) -> float:
+def get_gizmo_scale(camera_matrix: np.ndarray, object_position: np.array) -> float:
 
-    inv_camera_transform = np.eye(4, dtype=np.float32)
-    mat4.fast_inverse(in_mat4=camera_transform, out_mat4=inv_camera_transform)
-    #position_camera = np.empty((3), dtype=np.float32)
-    position_camera = mat4.mul_vector3(in_mat4=inv_camera_transform, in_vec3=object_position)
-    scale = -position_camera[2] * constants.GIZMO_3D_SCALE_COEFFICIENT
-
+    view_matrix = np.eye(4, dtype=np.float32)
+    mat4.fast_inverse(in_mat4=camera_matrix, out_mat4=view_matrix)
+    position_camera = mat4.mul_vector3(in_mat4=view_matrix, in_vec3=object_position)
+    scale = constants.GIZMO_3D_SCALE_COEFFICIENT / position_camera[2]
     return scale
 
 
+def world_pos2screen_pos(view_matrix: np.ndarray,
+                         camera_position: np.array,
+                         projection_matrix: np.ndarray,
+                         world_position: np.array):
+
+    """view_projection_position = mat4.mul_vector3(in_mat4=projection_matrix @ view_matrix, in_vec3=world_position)
+
+    # Z-Zc=F
+    # X' = X * (F/Z)
+    # Y' = Y * (F/Z)
+
+    coefficient = (view_projection_position[2] - camera_position[2]) / view_projection_position[2]
+    screen_x = view_projection_position[0] * coefficient
+    screen_y = view_projection_position[1] * coefficient
+
+    return screen_x, screen_y
+    """
+    # Create a 4D vector for the object's world position
+    object_position_4d = np.append(world_position, 1)
+
+    # Transform the object's world position to camera space
+    object_camera_position = np.dot(np.linalg.inv(view_matrix), object_position_4d)
+
+    # Project the object's camera space position onto the image plane
+    projected_position = np.dot(projection_matrix, object_camera_position)
+
+    # Perform perspective divide
+    projected_position /= projected_position[3]
+
+    # The x and y coordinates on the screen are now the first two elements of projected_position
+    screen_coordinates = projected_position[:2]
+
+    return screen_coordinates
+
+
 @njit(cache=True)
-def screen_to_world_ray(viewport_coord_norm: tuple,
-                        camera_matrix: np.ndarray,
-                        projection_matrix: np.ndarray):
+def screen_pos2world_ray(viewport_coord_norm: tuple,
+                         camera_matrix: np.ndarray,
+                         projection_matrix: np.ndarray):
 
     """
     Viewport coordinates are +1 to the right, -1 to the left, +1 up and -1 down. Zero at the centre for both axes

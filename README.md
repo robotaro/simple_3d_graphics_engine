@@ -25,6 +25,9 @@ https://github.com/ubuntunux/PyEngine3D
 - https://numba.pydata.org/
 - https://www.dask.org/
 
+## Gizmo design ideas
+https://projects.blender.org/blender/blender/issues/54661
+
 ## Gizmo sources
 - https://github.com/john-chapman/im3d
 - https://github.com/CedricGuillemet/ImGuizmo

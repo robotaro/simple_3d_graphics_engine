@@ -120,28 +120,43 @@ class Gizmo3DSystem(System):
             return True
 
         selected_transform_component = self.component_pool.transform_3d_components[self.selected_entity_uid]
+        world_position = np.ascontiguousarray(selected_transform_component.world_matrix[:3, 3])
         selected_object_position = np.array(selected_transform_component.position, dtype=np.float32)
 
         for camera_entity_id, camera_component in self.component_pool.camera_components.items():
 
             # Find which gizmo is attached to this camera
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_id]
-            gizmo_transform_component = self.component_pool.transform_3d_components[gizmo_3d_entity_uid]
+
+            # Get MVP matrices
+            camera_matrix = self.component_pool.transform_3d_components[gizmo_3d_entity_uid].world_matrix
+            camera_position = np.ascontiguousarray(camera_matrix[:3, 3])
+            projection_matrix = camera_component.get_projection_matrix()
+            view_matrix = np.eye(4, dtype=np.float32)
+            mat4.fast_inverse(in_mat4=camera_matrix, out_mat4=view_matrix)
 
             # Get both gizmo's and selected entity's transforms
             camera_transform_component = self.component_pool.transform_3d_components[camera_entity_id]
-            scale = utils_camera.get_gizmo_scale(camera_transform=camera_transform_component.world_matrix,
+
+            screen_position = utils_camera.world_pos2screen_pos(world_position=world_position,
+                                                                camera_position = camera_position,
+                                                                projection_matrix=projection_matrix,
+                                                                view_matrix=camera_transform_component.world_matrix)
+            scale = utils_camera.get_gizmo_scale(camera_matrix=camera_transform_component.world_matrix,
                                                  object_position=selected_object_position)
-            # If gizmo is too lcose to camera, just ignore it
+
+            debug_camera_name = self.component_pool.entities[camera_entity_id].name
+            print(f"{debug_camera_name}: {screen_position}")
+            # If gizmo is too close to camera, just ignore it
             if scale < 0.01:
                 continue
 
-
             # DEBUG
-            debug_camera_name = self.component_pool.entities[camera_entity_id].name
+            #debug_camera_name = self.component_pool.entities[camera_entity_id].name
             #print(f"{debug_camera_name} - {scale:.2f}")
 
             # Put gizmo where the selected entity's is
+            # TODO: This does not acc
             gizmo_transform_component.position = selected_transform_component.position
             gizmo_transform_component.rotation = selected_transform_component.rotation
             gizmo_transform_component.scale = scale
@@ -159,17 +174,14 @@ class Gizmo3DSystem(System):
             if viewport_coord_norm is None:
                 continue
 
-            ray_direction, ray_origin = utils_camera.screen_to_world_ray(
+            # From here onwards, it's about deciding to highlight it or not
+
+            ray_direction, ray_origin = utils_camera.screen_pos2world_ray(
                 viewport_coord_norm=viewport_coord_norm,
                 camera_matrix=camera_matrix,
                 projection_matrix=projection_matrix)
 
-
-            print(f"{debug_camera_name}: {self.mouse_screen_position} -> {viewport_coord_norm} : {ray_origin}, {ray_direction}")
-
-
-
-            # TODO: Clean this silly code. Change the intersection function to accommodate for this
+            # TODO: [CLEANUP] Clean this silly code. Change the intersection function to accommodate for this
             points_a = np.array([gizmo_transform_component.position,
                                  gizmo_transform_component.position,
                                  gizmo_transform_component.position], dtype=np.float32)
@@ -223,7 +235,7 @@ class Gizmo3DSystem(System):
         if viewport_coord_norm is None:
             return None, None
 
-        return utils_camera.screen_to_world_ray(
+        return utils_camera.screen_pos2world_ray(
             viewport_coord_norm=viewport_coord_norm,
             camera_matrix=view_matrix,
             projection_matrix=projection_matrix)
@@ -238,17 +250,14 @@ class Gizmo3DSystem(System):
         for entity_camera_id, camera_component in self.component_pool.camera_components.items():
 
             # Check if mouse is inside viewports
-            if not camera_component.is_inside_viewport(coord_pixels=event_data):
+            viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=event_data)
+            if viewport_coord_norm is None:
                 continue
 
             camera_matrix = self.component_pool.transform_3d_components[entity_camera_id].world_matrix
             projection_matrix = camera_component.get_projection_matrix()
 
-            viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=event_data)
-            if viewport_coord_norm is None:
-                continue
-
-            ray_direction, ray_origin = utils_camera.screen_to_world_ray(
+            ray_direction, ray_origin = utils_camera.screen_pos2world_ray(
                 viewport_coord_norm=viewport_coord_norm,
                 camera_matrix=camera_matrix,
                 projection_matrix=projection_matrix)
