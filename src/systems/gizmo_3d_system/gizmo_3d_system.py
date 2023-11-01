@@ -123,6 +123,10 @@ class Gizmo3DSystem(System):
         world_position = np.ascontiguousarray(selected_transform_component.world_matrix[:3, 3])
         selected_object_position = np.array(selected_transform_component.position, dtype=np.float32)
 
+        return True
+
+        # TODO: CODE DISABLED!!!!
+
         for camera_entity_id, camera_component in self.component_pool.camera_components.items():
 
             # Find which gizmo is attached to this camera

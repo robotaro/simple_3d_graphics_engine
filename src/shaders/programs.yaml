@@ -8,9 +8,9 @@ debug_forward_pass:
   geometry_shader: "debug_forward_pass.glsl"
   fragment_shader: "debug_forward_pass.glsl"
 
-overlay_pass:
-  vertex_shader: "overlay_pass.glsl"
-  fragment_shader: "overlay_pass.glsl"
+overlay_3d_pass:
+  vertex_shader: "overlay_3d_pass.glsl"
+  fragment_shader: "overlay_3d_pass.glsl"
 
 selected_entity_pass:
   vertex_shader: "selected_entity.glsl"

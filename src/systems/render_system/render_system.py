@@ -39,9 +39,11 @@ class RenderSystem(System):
         "forward_pass_texture_depth",
         "forward_pass_framebuffer",
         "debug_forward_pass_framebuffer",
-        "overlay_pass_texture_color",
-        "overlay_pass_texture_depth",
-        "overlay_pass_framebuffer",
+        "overlay_3d_pass_texture_color",
+        "overlay_3d_pass_texture_depth",
+        "overlay_3d_pass_framebuffer",
+        "overlay_2d_pass_texture_color",
+        "overlay_2d_pass_framebuffer",
         "selection_pass_texture_color",
         "selection_pass_texture_depth",
         "selection_pass_framebuffer",
@@ -101,10 +103,14 @@ class RenderSystem(System):
         # Debug Forward Pass
         self.debug_forward_pass_framebuffer = None
 
-        # Overlay Pass
-        self.overlay_pass_texture_color = None
-        self.overlay_pass_texture_depth = None
-        self.overlay_pass_framebuffer = None
+        # Overlay 3D Pass
+        self.overlay_3d_pass_texture_color = None
+        self.overlay_3d_pass_texture_depth = None
+        self.overlay_3d_pass_framebuffer = None
+
+        # Overlay 2D Pass
+        self.overlay_2d_pass_texture_color = None
+        self.overlay_2d_pass_framebuffer = None
 
         # Selection Pass
         self.selection_pass_texture_color = None
@@ -195,12 +201,17 @@ class RenderSystem(System):
                 self.forward_pass_texture_color],
             depth_attachment=self.forward_pass_texture_depth)
 
-        # Overlay Pass
-        self.overlay_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
-        self.overlay_pass_texture_depth = self.ctx.depth_texture(size=window_size)
-        self.overlay_pass_framebuffer = self.ctx.framebuffer(
-            color_attachments=[self.overlay_pass_texture_color],
-            depth_attachment=self.overlay_pass_texture_depth)
+        # Overlay 3D Pass
+        self.overlay_3d_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
+        self.overlay_3d_pass_texture_depth = self.ctx.depth_texture(size=window_size)
+        self.overlay_3d_pass_framebuffer = self.ctx.framebuffer(
+            color_attachments=[self.overlay_3d_pass_texture_color],
+            depth_attachment=self.overlay_3d_pass_texture_depth)
+
+        # Overlay 2D Pass
+        self.overlay_2d_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
+        self.overlay_2d_pass_framebuffer = self.ctx.framebuffer(
+            color_attachments=[self.overlay_2d_pass_texture_color])
 
         # Selection Pass
         self.selection_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
@@ -211,8 +222,6 @@ class RenderSystem(System):
         self.selection_pass_framebuffer = self.ctx.framebuffer(
             color_attachments=[self.selection_pass_texture_color],
             depth_attachment=self.selection_pass_texture_depth)
-
-        # Screen quads
 
     def _release_all_framebuffers_and_textures(self):
 
@@ -229,9 +238,12 @@ class RenderSystem(System):
 
         safe_release(self.debug_forward_pass_framebuffer)
 
-        safe_release(self.overlay_pass_texture_color)
-        safe_release(self.overlay_pass_texture_depth)
-        safe_release(self.overlay_pass_framebuffer)
+        safe_release(self.overlay_3d_pass_texture_color)
+        safe_release(self.overlay_3d_pass_texture_depth)
+        safe_release(self.overlay_3d_pass_framebuffer)
+
+        safe_release(self.overlay_2d_pass_texture_color)
+        safe_release(self.overlay_2d_pass_framebuffer)
 
         safe_release(self.selection_pass_texture_color)
         safe_release(self.selection_pass_texture_depth)
@@ -332,7 +344,8 @@ class RenderSystem(System):
 
             self.render_forward_pass(camera_uid=camera_uid)
             #self.render_debug_forward_pass(camera_uid=camera_uid)
-            self.render_overlay_pass(camera_uid=camera_uid)
+            self.render_overlay_3d_pass(camera_uid=camera_uid)
+            self.render_overlay_2d_pass(camera_uid=camera_uid)
             self.render_selection_pass(camera_uid=camera_uid, selected_entity_uid=self.selected_entity_id)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
@@ -473,24 +486,24 @@ class RenderSystem(System):
 
             # Stage: Draw transparent objects back to front
 
-    def render_overlay_pass(self, camera_uid: int):
+    def render_overlay_3d_pass(self, camera_uid: int):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
         camera_component = self.component_pool.camera_components[camera_uid]
         camera_transform = self.component_pool.transform_3d_components[camera_uid]
 
-        self.overlay_pass_framebuffer.use()
-        self.overlay_pass_framebuffer.viewport = camera_component.viewport_pixels
+        self.overlay_3d_pass_framebuffer.use()
+        self.overlay_3d_pass_framebuffer.viewport = camera_component.viewport_pixels
 
         # Clear context (you need to use the use() first to bind it!)
-        self.overlay_pass_framebuffer.clear(
+        self.overlay_3d_pass_framebuffer.clear(
             color=(0.0, 0.0, 0.0),
             alpha=1.0,
             depth=1.0,
             viewport=camera_component.viewport_pixels)
 
-        program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_PASS]
+        program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_3D_PASS]
 
         # Setup camera
         camera_component.upload_uniforms(program=program)
@@ -506,7 +519,7 @@ class RenderSystem(System):
                                                                component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
             material = self.component_pool.get_component(entity_uid=mesh_entity_uid,
-                                                               component_type=constants.COMPONENT_TYPE_MATERIAL)
+                                                         component_type=constants.COMPONENT_TYPE_MATERIAL)
 
             # Upload uniforms
             program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
@@ -517,7 +530,35 @@ class RenderSystem(System):
                 program["color_diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
 
             # Render the mesh
-            mesh_component.vaos[constants.SHADER_PROGRAM_OVERLAY_PASS].render(mode=mesh_component.render_mode)
+            mesh_component.vaos[constants.SHADER_PROGRAM_OVERLAY_3D_PASS].render(mode=mesh_component.render_mode)
+
+    def render_overlay_2d_pass(self, camera_uid: int):
+
+        self.forward_pass_framebuffer.use()
+        self.ctx.disable(moderngl.DEPTH_TEST)
+
+        # Upload uniforms TODO: Move this to render system
+        projection_matrix = mat4.orthographic_projection(
+            left=0,
+            right=self.buffer_size[0],
+            bottom=self.buffer_size[1],
+            top=0,
+            near=-1,
+            far=1)
+
+        # Upload uniforms
+        program = self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]
+        program["projection_matrix"].write(projection_matrix.T.tobytes())
+
+        # Update VBOs and render text
+        for _, text_2d in self.component_pool.text_2d_components.items():
+            # State Updates
+            text_2d.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
+            text_2d.update_buffer(font_library=self.font_library)
+
+            # Rendering
+            self.textures[text_2d.font_name].use(location=0)
+            text_2d.vao.render(mode=moderngl.POINTS)
 
     def render_selection_pass(self, camera_uid: int, selected_entity_uid: int):
 
@@ -553,40 +594,6 @@ class RenderSystem(System):
 
         # Render
         mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(mode=mesh_component.render_mode)
-
-    def render_text_2d_pass(self, component_pool: ComponentPool):
-
-        # TODO: This function's code is old and won't probably work!
-
-        if len(component_pool.text_2d_components) == 0:
-            return
-
-        self.forward_pass_framebuffer.use()
-        self.ctx.disable(moderngl.DEPTH_TEST)
-
-        # Upload uniforms TODO: Move this to render system
-        projection_matrix = mat4.orthographic_projection(
-            left=0,
-            right=self.buffer_size[0],
-            bottom=self.buffer_size[1],
-            top=0,
-            near=-1,
-            far=1)
-
-        # Upload uniforms
-        program = self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]
-        program["projection_matrix"].write(projection_matrix.T.tobytes())
-
-        # Update VBOs and render text
-        for _, text_2d in component_pool.text_2d_components.items():
-
-            # State Updates
-            text_2d.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
-            text_2d.update_buffer(font_library=self.font_library)
-
-            # Rendering
-            self.textures[text_2d.font_name].use(location=0)
-            text_2d.vao.render(mode=moderngl.POINTS)
 
     def render_shadow_mapping_pass(self, component_pool: ComponentPool):
 
@@ -641,7 +648,7 @@ class RenderSystem(System):
         self.forward_pass_texture_viewpos.use(location=2)
         self.forward_pass_texture_entity_info.use(location=3)
         self.selection_pass_texture_color.use(location=4)
-        self.overlay_pass_texture_color.use(location=5)
+        self.overlay_3d_pass_texture_color.use(location=5)
         self.forward_pass_texture_depth.use(location=6)
 
         quad_vao = self.quads["fullscreen"]['vao']

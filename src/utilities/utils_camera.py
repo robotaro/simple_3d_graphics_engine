@@ -11,7 +11,7 @@ def get_gizmo_scale(camera_matrix: np.ndarray, object_position: np.array) -> flo
     view_matrix = np.eye(4, dtype=np.float32)
     mat4.fast_inverse(in_mat4=camera_matrix, out_mat4=view_matrix)
     position_camera = mat4.mul_vector3(in_mat4=view_matrix, in_vec3=object_position)
-    scale = constants.GIZMO_3D_SCALE_COEFFICIENT / position_camera[2]
+    scale = -position_camera[2] * constants.GIZMO_3D_SCALE_COEFFICIENT
     return scale
 
 
