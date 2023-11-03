@@ -12,16 +12,14 @@ overlay_3d_pass:
   vertex_shader: "overlay_3d_pass.glsl"
   fragment_shader: "overlay_3d_pass.glsl"
 
+overlay_2d_pass:
+  vertex_shader: "overlay_2d_pass.glsl"
+  geometry_shader: "overlay_2d_pass.glsl"
+  fragment_shader: "overlay_2d_pass.glsl"
+
 selected_entity_pass:
   vertex_shader: "selected_entity.glsl"
   fragment_shader: "selected_entity.glsl"
-
-text_2d:
-  vertex_shader: "text_2d.glsl"
-  geometry_shader: "text_2d.glsl"
-  fragment_shader: "text_2d.glsl"
-  input_texture_locations:
-    font_texture: 0
 
 fragment_picking:
   vertex_shader: "fragment_picking.glsl"
@@ -47,3 +45,10 @@ screen_quad:
 shadow_mapping:
   vertex_shader: "shadow_mapping.glsl"
   fragment_shader: "shadow_mapping.glsl"
+
+text_2d:
+  vertex_shader: "text_2d.glsl"
+  geometry_shader: "text_2d.glsl"
+  fragment_shader: "text_2d.glsl"
+  input_texture_locations:
+    font_texture: 0

@@ -12,7 +12,7 @@ from src.core.action_publisher import ActionPublisher
 
 class InputControlSystem(System):
 
-    _type = "input_control_system"
+    name = "input_control_system"
 
     __slots__ = [
         "mouse_x_past",

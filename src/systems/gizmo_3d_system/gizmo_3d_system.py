@@ -14,7 +14,7 @@ from src.systems.gizmo_3d_system.gizmo_blueprint import GIZMO_3D_RIG_BLUEPRINT
 
 class Gizmo3DSystem(System):
 
-    _type = "gizmo_3d_system"
+    name = "gizmo_3d_system"
 
     __slots__ = [
         "entity_ray_intersection_list",

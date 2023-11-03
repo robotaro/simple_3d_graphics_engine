@@ -47,6 +47,7 @@
         <mesh fpath="meshes/BrainStem.gltf" scale="1"/>
         <material diffuse="tab10_blue" shininess_factor="32.0"/>
         <transform_3d position="0 0 0" rotation="-90 0 0" degrees="true"/>
+        <text_2d text="apple"/>
     </entity>
 
     <entity name="capsule">

@@ -23,7 +23,7 @@ class ImguiSystem(System):
         "_exit_popup_open"
     ]
 
-    _type = "imgui_system"
+    name = constants.SYSTEM_NAME_IMGUI
 
     def __init__(self, logger: logging.Logger,
                  component_pool: ComponentPool,

@@ -13,7 +13,7 @@ from src.math import mat4
 
 class TransformSystem(System):
 
-    _type = "transform_system"
+    name = "transform_system"
 
     __slots__ = [
         "update_tree",

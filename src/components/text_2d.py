@@ -22,12 +22,12 @@ class Text2D(Component):
         "_gpu_initialised"
     ]
 
-    def __init__(self, parameters: dict):
+    def __init__(self, parameters, system_owned=False):
 
-        super().__init__(parameters=parameters)
+        super().__init__(parameters=parameters, system_owned=system_owned)
 
-        # TODO: User standard methof for retrieving parameter values
-        self.font_name = parameters["font_name"]
+        # TODO: User standard method for retrieving parameter values
+        self.font_name = parameters.get("font_name", constants.FONT_DEFAULT_NAME)
         self.position = (10, 10)
         self.render_layer = 0
         self.visible = True

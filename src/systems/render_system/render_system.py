@@ -18,7 +18,7 @@ from src.math import mat4
 
 class RenderSystem(System):
 
-    _type = "render_system"
+    name = "render_system"
 
     __slots__ = [
         "ctx",
@@ -42,8 +42,6 @@ class RenderSystem(System):
         "overlay_3d_pass_texture_color",
         "overlay_3d_pass_texture_depth",
         "overlay_3d_pass_framebuffer",
-        "overlay_2d_pass_texture_color",
-        "overlay_2d_pass_framebuffer",
         "selection_pass_texture_color",
         "selection_pass_texture_depth",
         "selection_pass_framebuffer",
@@ -107,10 +105,6 @@ class RenderSystem(System):
         self.overlay_3d_pass_texture_color = None
         self.overlay_3d_pass_texture_depth = None
         self.overlay_3d_pass_framebuffer = None
-
-        # Overlay 2D Pass
-        self.overlay_2d_pass_texture_color = None
-        self.overlay_2d_pass_framebuffer = None
 
         # Selection Pass
         self.selection_pass_texture_color = None
@@ -208,11 +202,6 @@ class RenderSystem(System):
             color_attachments=[self.overlay_3d_pass_texture_color],
             depth_attachment=self.overlay_3d_pass_texture_depth)
 
-        # Overlay 2D Pass
-        self.overlay_2d_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
-        self.overlay_2d_pass_framebuffer = self.ctx.framebuffer(
-            color_attachments=[self.overlay_2d_pass_texture_color])
-
         # Selection Pass
         self.selection_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
         self.selection_pass_texture_color.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
@@ -241,9 +230,6 @@ class RenderSystem(System):
         safe_release(self.overlay_3d_pass_texture_color)
         safe_release(self.overlay_3d_pass_texture_depth)
         safe_release(self.overlay_3d_pass_framebuffer)
-
-        safe_release(self.overlay_2d_pass_texture_color)
-        safe_release(self.overlay_2d_pass_framebuffer)
 
         safe_release(self.selection_pass_texture_color)
         safe_release(self.selection_pass_texture_depth)

@@ -124,7 +124,7 @@ class Editor:
         # Systems - Need to be created after everything else has been created
         self.systems = []
         for system_type in system_types:
-            self.create_system(system_type=system_type)
+            self.create_system(system_name=system_type)
 
         # Flags
         self.close_application = False
@@ -269,13 +269,13 @@ class Editor:
         self.mouse_state[constants.MOUSE_SCROLL_POSITION_LAST_FRAME] = self.mouse_state[
             constants.MOUSE_SCROLL_POSITION]
 
-    def create_system(self, system_type: str, subscribed_events: Union[List[int], None] = None, parameters=None) -> bool:
+    def create_system(self, system_name: str, parameters=None) -> bool:
 
         """
         Creates and appends a new system to the editor. Systems are responsible for processing the data stored
         in the components and the order by which systems are run is the order by which they are created
 
-        :param system_type: str, Type of the system
+        :param system_name: str, Type of the system
         :param subscribed_events: List of events this system will be listening to
         :return: bool, TRUE if systems was successfully created
         """
@@ -284,7 +284,7 @@ class Editor:
         if parameters is None:
             parameters = {}
 
-        if system_type == RenderSystem._type:
+        if system_name == RenderSystem.name:
             new_system = RenderSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
@@ -294,18 +294,7 @@ class Editor:
                 context=self.ctx,
                 buffer_size=self.buffer_size)
 
-            if subscribed_events is None:
-                subscribed_events = [
-                    constants.EVENT_ENTITY_SELECTED,
-                    constants.EVENT_MOUSE_ENTER_UI,
-                    constants.EVENT_MOUSE_LEAVE_UI,
-                    constants.EVENT_MOUSE_HOVER_GIZMO_3D,
-                    constants.EVENT_MOUSE_LEAVE_GIZMO_3D,
-                    constants.EVENT_MOUSE_BUTTON_PRESS,
-                    constants.EVENT_KEYBOARD_PRESS,
-                    constants.EVENT_WINDOW_FRAMEBUFFER_SIZE]
-
-        if system_type == ImguiSystem._type:
+        if system_name == ImguiSystem.name:
             new_system = ImguiSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
@@ -314,12 +303,7 @@ class Editor:
                 parameters=parameters,
                 window_glfw=self.window_glfw)
 
-            if subscribed_events is None:
-                subscribed_events = [
-                    constants.EVENT_ENTITY_SELECTED,
-                    constants.EVENT_KEYBOARD_PRESS]
-
-        if system_type == InputControlSystem._type:
+        if system_name == InputControlSystem.name:
             new_system = InputControlSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
@@ -327,14 +311,7 @@ class Editor:
                 action_publisher=self.action_publisher,
                 parameters=parameters)
 
-            if subscribed_events is None:
-                subscribed_events = [
-                    constants.EVENT_MOUSE_SCROLL,
-                    constants.EVENT_MOUSE_MOVE,
-                    constants.EVENT_KEYBOARD_PRESS,
-                    constants.EVENT_KEYBOARD_RELEASE]
-
-        if system_type == Gizmo3DSystem._type:
+        if system_name == Gizmo3DSystem.name:
             new_system = Gizmo3DSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
@@ -342,19 +319,7 @@ class Editor:
                 action_publisher=self.action_publisher,
                 parameters=parameters)
 
-            if subscribed_events is None:
-                subscribed_events = [
-                    constants.EVENT_MOUSE_SCROLL,
-                    constants.EVENT_MOUSE_MOVE,
-                    constants.EVENT_KEYBOARD_PRESS,
-                    constants.EVENT_KEYBOARD_RELEASE,
-                    constants.EVENT_ENTITY_SELECTED,
-                    constants.EVENT_ENTITY_DESELECTED,
-                    constants.EVENT_MOUSE_ENTER_UI,
-                    constants.EVENT_MOUSE_LEAVE_UI,
-                    constants.EVENT_WINDOW_FRAMEBUFFER_SIZE]
-
-        if system_type == TransformSystem._type:
+        if system_name == TransformSystem.name:
             new_system = TransformSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
@@ -362,10 +327,7 @@ class Editor:
                 action_publisher=self.action_publisher,
                 parameters=parameters)
 
-            if subscribed_events is None:
-                subscribed_events = []
-
-        if system_type == ImportSystem._type:
+        if system_name == ImportSystem.name:
             new_system = ImportSystem(
                 logger=self.logger,
                 component_pool=self.component_pool,
@@ -373,21 +335,13 @@ class Editor:
                 action_publisher=self.action_publisher,
                 parameters=parameters)
 
-            # Set default events to subscribe too
-            if subscribed_events is None:
-                subscribed_events = [
-                    constants.EVENT_WINDOW_DROP_FILES]
-
         if new_system is None:
-            self.logger.error(f"Failed to create system {system_type}")
+            self.logger.error(f"Failed to create system {system_name}")
             return False
 
-        # Subscribe system to specific topics
-        if subscribed_events is not None:
-            for event_type in subscribed_events:
-                self.event_publisher.subscribe(
-                    event_type=event_type,
-                    listener=new_system)
+        # Subscribe system to listen to its pre-determined events
+        for event_type in constants.SYSTEMS_EVENT_SUBSCRITONS[new_system.name]:
+            self.event_publisher.subscribe( event_type=event_type, listener=new_system)
 
         # And finally add the new system to the roster
         self.systems.append(new_system)
@@ -452,7 +406,7 @@ class Editor:
         # Initialise systems
         for system in self.systems:
             if not system.initialise():
-                raise Exception(f"[ERROR] System {system._type} failed to initialise")
+                raise Exception(f"[ERROR] System {system.name} failed to initialise")
 
         self.initialise_components()
         self.publish_startup_events()
