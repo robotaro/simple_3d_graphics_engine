@@ -546,7 +546,7 @@ class RenderSystem(System):
             far=1)
 
         # Upload uniforms
-        program = self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]
+        program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_2D_PASS]
         program["projection_matrix"].write(projection_matrix.T.tobytes())
 
         # Update VBOs and render text

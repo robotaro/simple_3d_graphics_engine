@@ -49,7 +49,7 @@ class Overlay2D(Component):
         shader_library = kwargs["shader_library"]
 
         self.vbo = ctx.buffer(reserve=constants.FONT_VBO_BUFFER_RESERVE)  # TODO: Check this size
-        program = shader_library[constants.SHADER_PROGRAM_TEXT_2D]
+        program = shader_library[constants.SHADER_PROGRAM_OVERLAY_2D_PASS]
 
         self.vao = ctx.vertex_array(program, self.vbo, "in_position", "in_size", "in_uv_min", "in_uv_max")
 
