@@ -4,13 +4,14 @@ from src.core import constants
 from src.components.component import Component
 from src.systems.render_system.shader_program_library import ShaderProgramLibrary
 from src.systems.render_system.font_library import FontLibrary
+from src.utilities.utils_im_overlay_2d import ImOverlay2D
 
+class Overlay2D(Component):
 
-class Text2D(Component):
-
-    _type = "text_2d"
+    _type = "overlay_2d"
 
     __slots__ = [
+        "im_overlay",
         "font_name",
         "position",
         "render_layer",
@@ -24,6 +25,8 @@ class Text2D(Component):
     def __init__(self, parameters, system_owned=False):
 
         super().__init__(parameters=parameters, system_owned=system_owned)
+
+        self.im_overlay = ImOverlay2D()
 
         # TODO: User standard method for retrieving parameter values
         self.font_name = parameters.get("font_name", constants.FONT_DEFAULT_NAME)

@@ -550,7 +550,7 @@ class RenderSystem(System):
         program["projection_matrix"].write(projection_matrix.T.tobytes())
 
         # Update VBOs and render text
-        text_2d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TEXT_2D)
+        text_2d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
         for _, text_2d in text_2d_pool.items():
             # State Updates
             text_2d.update_buffer(font_library=self.font_library)

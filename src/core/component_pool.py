@@ -9,7 +9,7 @@ from src.components.mesh import Mesh
 from src.components.material import Material
 from src.components.camera import Camera
 from src.components.input_control import InputControl
-from src.components.text_2d import Text2D
+from src.components.overlay_2d import Overlay2D
 from src.components.point_light import PointLight
 from src.components.directional_light import DirectionalLight
 from src.components.gizmo_3d import Gizmo3D
@@ -47,7 +47,7 @@ class ComponentPool:
         constants.COMPONENT_TYPE_CAMERA: Camera,
         constants.COMPONENT_TYPE_MATERIAL: Material,
         constants.COMPONENT_TYPE_INPUT_CONTROL: InputControl,
-        constants.COMPONENT_TYPE_TEXT_2D: Text2D,
+        constants.COMPONENT_TYPE_OVERLAY_2D: Overlay2D,
         constants.COMPONENT_TYPE_POINT_LIGHT: PointLight,
         constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT: DirectionalLight,
         constants.COMPONENT_TYPE_COLLIDER: Collider,
@@ -62,7 +62,7 @@ class ComponentPool:
         "camera": constants.COMPONENT_TYPE_CAMERA,
         "material": constants.COMPONENT_TYPE_MATERIAL,
         "input_control": constants.COMPONENT_TYPE_INPUT_CONTROL,
-        "text_2d": constants.COMPONENT_TYPE_TEXT_2D,
+        "overlay_2d": constants.COMPONENT_TYPE_OVERLAY_2D,
         "directional_light": constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT,
         "spot_light": constants.COMPONENT_TYPE_SPOT_LIGHT,
         "point_light": constants.COMPONENT_TYPE_POINT_LIGHT,
