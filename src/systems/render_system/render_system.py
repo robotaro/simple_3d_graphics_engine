@@ -240,7 +240,9 @@ class RenderSystem(System):
         if event_type == constants.EVENT_WINDOW_FRAMEBUFFER_SIZE:
             self.buffer_size = event_data
             self.create_framebuffers(window_size=self.buffer_size)
-            for _, camera_component in self.component_pool.camera_components.items():
+
+            camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+            for _, camera_component in camera_pool.items():
                 camera_component.update_viewport(window_size=self.buffer_size)
 
         if event_type == constants.EVENT_MOUSE_ENTER_UI:
@@ -320,10 +322,11 @@ class RenderSystem(System):
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
         # Initialise object on the GPU if they haven't been already
-        camera_entity_uids = list(self.component_pool.camera_components.keys())
+
+        camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
 
         # Render shadow texture (if enabled)
-        self.render_shadow_mapping_pass(component_pool=self.component_pool)
+        #self.render_shadow_mapping_pass(component_pool=self.component_pool)
 
         # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
@@ -364,8 +367,11 @@ class RenderSystem(System):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
-        camera_component = self.component_pool.camera_components[camera_uid]
-        camera_transform = self.component_pool.transform_3d_components[camera_uid]
+        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
+        camera_component = camera_pool[camera_uid]
+        camera_transform = transform_3d_pool[camera_uid]
 
         self.forward_pass_framebuffer.use()
         self.forward_pass_framebuffer.viewport = camera_component.viewport_pixels
@@ -398,20 +404,18 @@ class RenderSystem(System):
         self.upload_uniforms_directional_lights(program=program)
 
         # Render meshes
-        for mesh_entity_uid, mesh_component in self.component_pool.mesh_components.items():
+        mesh_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+
+        for mesh_entity_uid, mesh_component in mesh_pool.items():
 
             if not mesh_component.visible or mesh_component.layer == constants.RENDER_SYSTEM_LAYER_OVERLAY:
                 continue
 
-            mesh_transform = self.component_pool.get_component(entity_uid=mesh_entity_uid,
-                                                               component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-
-            material_component = self.component_pool.get_component(entity_uid=mesh_entity_uid,
-                                                         component_type=constants.COMPONENT_TYPE_MATERIAL)
-
             # Mesh uniforms
             program["entity_id"].value = mesh_entity_uid
-            program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
+            program["model_matrix"].write(transform_3d_pool[mesh_entity_uid].world_matrix.T.tobytes())
             program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
             program["directional_lights_enabled"].value = self._directional_lights_enabled
             program["point_lights_enabled"].value = self._point_lights_enabled
@@ -420,6 +424,7 @@ class RenderSystem(System):
 
             # TODO: Technically, you only need to upload the material once since it doesn't change.
             #       The program will keep its variable states!
+            material_component = material_pool[mesh_entity_uid]
             if material_component is not None:
                 material_component.upload_uniforms(program=program)
 
@@ -429,10 +434,12 @@ class RenderSystem(System):
 
     def upload_uniforms_point_lights(self, program: moderngl.Program):
 
-        program["num_point_lights"].value = len(self.component_pool.point_light_components)
-        for index, (mesh_entity_uid, point_light_component) in enumerate(
-                self.component_pool.point_light_components.items()):
-            light_transform = self.component_pool.transform_3d_components[mesh_entity_uid]
+        point_light_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
+        program["num_point_lights"].value = len(point_light_pool)
+        for index, (mesh_entity_uid, point_light_component) in enumerate(point_light_pool.items()):
+            light_transform = transform_3d_pool[mesh_entity_uid]
 
             program[f"point_lights[{index}].position"] = light_transform.position
             program[f"point_lights[{index}].diffuse"] = point_light_component.diffuse
@@ -442,11 +449,13 @@ class RenderSystem(System):
 
     def upload_uniforms_directional_lights(self, program: moderngl.Program):
 
-        program["num_directional_lights"].value = len(self.component_pool.directional_light_components)
-        for index, (mesh_entity_uid, dir_light_component) in enumerate(
-                self.component_pool.directional_light_components.items()):
-            light_transform = self.component_pool.transform_3d_components[mesh_entity_uid]
+        directional_light_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
+        program["num_directional_lights"].value = len(directional_light_pool)
+        for index, (mesh_entity_uid, dir_light_component) in enumerate(directional_light_pool.items()):
+
+            light_transform = transform_3d_pool[mesh_entity_uid]
             program[f"directional_lights[{index}].direction"] = tuple(light_transform.world_matrix[:3, 2])
             program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
             program[f"directional_lights[{index}].specular"] = dir_light_component.specular
@@ -476,8 +485,12 @@ class RenderSystem(System):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
-        camera_component = self.component_pool.camera_components[camera_uid]
-        camera_transform = self.component_pool.transform_3d_components[camera_uid]
+        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        mesh_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
+
+        camera_component = camera_pool[camera_uid]
+        camera_transform = transform_3d_pool[camera_uid]
 
         self.overlay_3d_pass_framebuffer.use()
         self.overlay_3d_pass_framebuffer.viewport = camera_component.viewport_pixels
@@ -496,7 +509,7 @@ class RenderSystem(System):
         program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
 
         # Render meshes
-        for mesh_entity_uid, mesh_component in self.component_pool.mesh_components.items():
+        for mesh_entity_uid, mesh_component in mesh_pool.items():
 
             if not mesh_component.visible or mesh_component.layer != constants.RENDER_SYSTEM_LAYER_OVERLAY:
                 continue
@@ -537,7 +550,8 @@ class RenderSystem(System):
         program["projection_matrix"].write(projection_matrix.T.tobytes())
 
         # Update VBOs and render text
-        for _, text_2d in self.component_pool.text_2d_components.items():
+        text_2d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TEXT_2D)
+        for _, text_2d in text_2d_pool.items():
             # State Updates
             text_2d.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
             text_2d.update_buffer(font_library=self.font_library)
@@ -549,7 +563,8 @@ class RenderSystem(System):
     def render_selection_pass(self, camera_uid: int, selected_entity_uid: int):
 
         # IMPORTANT: It uses the current bound framebuffer!
-        camera_component = self.component_pool.camera_components[camera_uid]
+        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        camera_component = camera_pool[camera_uid]
 
         self.selection_pass_framebuffer.use()
         self.selection_pass_framebuffer.viewport = camera_component.viewport_pixels
@@ -564,18 +579,17 @@ class RenderSystem(System):
         if mesh_component is None:
             return
 
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
         # Safety checks before we go any further!
-        renderable_transform = self.component_pool.get_component(entity_uid=selected_entity_uid,
-                                                                 component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        renderable_transform = transform_3d_pool[selected_entity_uid]
         if renderable_transform is None:
             return
-
-        camera_transform = self.component_pool.transform_3d_components[camera_uid]
 
         # Upload uniforms
         program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
         camera_component.upload_uniforms(program=program)
-        program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
+        program["view_matrix"].write(transform_3d_pool[camera_uid].world_matrix.T.tobytes())
         program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
 
         # Render

@@ -2,6 +2,7 @@ import numpy as np
 import moderngl
 import logging
 
+from src.core import constants
 from src.core.component_pool import ComponentPool
 from src.systems.system import System
 from src.core.event_publisher import EventPublisher
@@ -43,10 +44,12 @@ class TransformSystem(System):
             self.recreate_transform_tree()
             self.update_tree = False
 
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
         for entity_uid in self.entity_uid_update_order:
 
             entity = self.component_pool.entities[entity_uid]
-            transform = self.component_pool.transform_3d_components[entity_uid]
+            transform = transform_3d_pool[entity_uid]
 
             if transform.dirty:
                 transform.local_matrix = mat4.compute_transform(position=transform.position,
@@ -59,7 +62,7 @@ class TransformSystem(System):
                 continue
 
             # TODO: Think of a way to minimise unecessary updates. Probably do it when we move to DOD
-            parent_transform = self.component_pool.transform_3d_components[entity.parent_uid]
+            parent_transform = transform_3d_pool[entity.parent_uid]
             transform.world_matrix = parent_transform.world_matrix @ transform.local_matrix
 
         # ================= Process actions =================

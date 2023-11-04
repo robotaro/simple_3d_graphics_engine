@@ -367,8 +367,8 @@ class Editor:
         # TODO: This is SORT OF a hack. Please think of a way to make this universal
         render_system = [system for system in self.systems if isinstance(system, RenderSystem)][0]
 
-        for component_id, components in self.component_pool.component_storage_map.items():
-            for entity_uid, component in components.items():
+        for _, pool in self.component_pool.component_master_pool.items():
+            for entity_uid, component in pool.items():
                 component.initialise(ctx=self.ctx, shader_library=render_system.shader_program_library)
 
     def release_components(self):

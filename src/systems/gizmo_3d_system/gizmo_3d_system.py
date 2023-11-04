@@ -61,7 +61,8 @@ class Gizmo3DSystem(System):
         """
 
         # Stage 1) For every camera, create a gizmo entity and associate their ids
-        for camera_entity_id, camera_component in self.component_pool.camera_components.items():
+        pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        for camera_entity_id, camera_component in pool.items():
             if camera_entity_id in self.camera2gizmo_map:
                 continue
 
@@ -70,7 +71,8 @@ class Gizmo3DSystem(System):
                 system_owned=True)
 
         # Stage 2) For every gizmo3D, find out which meshes correspond to their respective axes
-        for gizmo_3d_entity_uid, gizmo_3d_component in self.component_pool.gizmo_3d_components.items():
+        pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
+        for gizmo_3d_entity_uid, gizmo_3d_component in pool.items():
 
             children_uids = self.component_pool.get_children_uids(entity_uid=gizmo_3d_entity_uid)
 
@@ -119,15 +121,17 @@ class Gizmo3DSystem(System):
         if self.selected_entity_uid is None:
             return True
 
-        selected_transform_component = self.component_pool.transform_3d_components[self.selected_entity_uid]
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
+        selected_transform_component = transform_3d_pool[self.selected_entity_uid]
         world_position = np.ascontiguousarray(selected_transform_component.world_matrix[:3, 3])
         selected_object_position = np.array(selected_transform_component.position, dtype=np.float32)
 
         return True
+        # ============== TODO: CODE DISABLED BEYOND THIS POINT !!!! ==========
 
-        # TODO: CODE DISABLED!!!!
-
-        for camera_entity_id, camera_component in self.component_pool.camera_components.items():
+        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        for camera_entity_id, camera_component in camera_pool.items():
 
             # Find which gizmo is attached to this camera
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_id]
@@ -219,13 +223,17 @@ class Gizmo3DSystem(System):
 
     def set_all_gizmo_3d_visibility(self, visible=True):
 
-        for camera_entity_id, camera_component in self.component_pool.camera_components.items():
+        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        gizmo_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
+        mesh_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
+
+        for camera_entity_id, camera_component in camera_pool.items():
 
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_id]
-            gizmo_3d_component = self.component_pool.gizmo_3d_components[gizmo_3d_entity_uid]
+            gizmo_3d_component = gizmo_3d_pool[gizmo_3d_entity_uid]
 
             for mesh_entity_uid in gizmo_3d_component.axes_entities_uids:
-                self.component_pool.mesh_components[mesh_entity_uid].visible = visible
+                mesh_pool[mesh_entity_uid].visible = visible
 
     def perform_ray_axis_collision(self, camera_entity_uid: int) -> tuple:
 
@@ -251,14 +259,19 @@ class Gizmo3DSystem(System):
         if not self.gizmo_selection_enabled:
             return
 
-        for entity_camera_id, camera_component in self.component_pool.camera_components.items():
+        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+        collier_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_COLLIDER)
+
+        for entity_camera_id, camera_component in camera_pool.items():
 
             # Check if mouse is inside viewports
             viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=event_data)
             if viewport_coord_norm is None:
                 continue
 
-            camera_matrix = self.component_pool.transform_3d_components[entity_camera_id].world_matrix
+            camera_matrix = transform_3d_pool[entity_camera_id].world_matrix
             projection_matrix = camera_component.get_projection_matrix()
 
             ray_direction, ray_origin = utils_camera.screen_pos2world_ray(
@@ -266,20 +279,16 @@ class Gizmo3DSystem(System):
                 camera_matrix=camera_matrix,
                 projection_matrix=projection_matrix)
 
-            for entity_entity_id, collider_component in self.component_pool.collider_components.items():
-
-                collider_transform = self.component_pool.transform_3d_components[entity_entity_id]
+            for entity_entity_id, collider_component in collier_pool.items():
 
                 collision = False
                 if collider_component.shape == "sphere":
                     collision = intersection_3d.intersect_boolean_ray_sphere(
                         ray_origin=ray_origin,
                         ray_direction=ray_direction,
-                        sphere_origin=collider_transform.world_matrix[:3, 3].flatten(),
+                        sphere_origin=transform_3d_pool[entity_entity_id].world_matrix[:3, 3].flatten(),
                         sphere_radius=collider_component.radius)
 
-                material = self.component_pool.material_components[entity_entity_id]
-
                 # TODO: Consider "state variables" inside each component, that CAN be changed by events
-                material.state_highlighted = collision
+                material_pool[entity_entity_id].state_highlighted = collision
 

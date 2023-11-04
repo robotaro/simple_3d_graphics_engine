@@ -242,7 +242,8 @@ class ImguiSystem(System):
         # ======================================================================
 
         # [ Point Light ]
-        point_light = self.component_pool.point_light_components.get(self.selected_entity_uid, None)
+        point_light_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
+        point_light = point_light_pool.get(self.selected_entity_uid, None)
         if point_light and not point_light.system_owned:
             imgui.text(f"Colors")
             _, point_light.diffuse = imgui.drag_float3("Diffuse Color",
@@ -267,13 +268,15 @@ class ImguiSystem(System):
             imgui.spacing()
 
         # [ Camera ]
-        camera = self.component_pool.camera_components.get(self.selected_entity_uid, None)
+        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        camera = camera_pool.get(self.selected_entity_uid, None)
         if camera and not camera.system_owned:
             imgui.text(f"Camera")
             _, camera.perspective = imgui.checkbox("Perspective", camera.perspective)
 
         # [ Transform 3D ]
-        transform = self.component_pool.transform_3d_components.get(self.selected_entity_uid, None)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform = transform_3d_pool.get(self.selected_entity_uid, None)
         if transform and not transform.system_owned:
             imgui.text(f"Transform")
             value_updated, transform.position = imgui.drag_float3("Position",
@@ -288,7 +291,8 @@ class ImguiSystem(System):
             imgui.spacing()
 
         # [ Material]
-        material = self.component_pool.material_components.get(self.selected_entity_uid, None)
+        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+        material = material_pool.get(self.selected_entity_uid, None)
         if material and not material.system_owned:
             imgui.text(f"Material")
             _, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
