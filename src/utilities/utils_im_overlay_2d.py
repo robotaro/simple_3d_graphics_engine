@@ -29,9 +29,15 @@ spec = [
 @jitclass(spec=spec)
 class ImOverlay2D:
 
+    """
+    [ Immediate-Mode (IM) Overlay 2D Class ]
+    You can use this class to efficiently create all 2D drawing instructions that will go with the
+    overlay_2d.glsl program
+    """
+
     def __init__(self):
         self.num_draw_commands = 0
-        self.draw_commands = np.empty((constants.OVERLAY_2D_MAX_DRAW_COMMANDS, 7), dtype=np.float32)
+        self.draw_commands = np.empty((constants.OVERLAY_2D_MAX_DRAW_COMMANDS, 9), dtype=np.float32)
         self.max_draw_commands_limit_reached = False
 
     def add_text(self, text: str):

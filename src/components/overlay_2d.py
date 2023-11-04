@@ -78,8 +78,8 @@ class Overlay2D(Component):
         text_data = np.insert(text_data, 0, new_columns, axis=1)
         text_data = np.ascontiguousarray(text_data)
 
-        self.vbo.write(text_data[:, :9].tobytes())
-        #self.vbo.write(self.im_overlay.draw_commands[:self.im_overlay.num_draw_commands, :].tobytes())
+        #self.vbo.write(text_data[:, :9].tobytes())
+        self.vbo.write(self.im_overlay.draw_commands[:self.im_overlay.num_draw_commands, :].tobytes())
 
     def set_text(self, text: str) -> None:
         self.text = text
