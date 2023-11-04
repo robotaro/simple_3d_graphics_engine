@@ -553,7 +553,6 @@ class RenderSystem(System):
         text_2d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TEXT_2D)
         for _, text_2d in text_2d_pool.items():
             # State Updates
-            text_2d.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
             text_2d.update_buffer(font_library=self.font_library)
 
             # Rendering
