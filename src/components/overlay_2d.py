@@ -52,7 +52,9 @@ class Overlay2D(Component):
         self.vbo = ctx.buffer(reserve=constants.OVERLAY_2D_VBO_SIZE_RESERVE)  # TODO: Check this size
         program = shader_library[constants.SHADER_PROGRAM_OVERLAY_2D_PASS]
 
-        self.vao = ctx.vertex_array(program, self.vbo,
+        self.vao = ctx.vertex_array(program,
+                                    self.vbo,
+                                    "in_command_id",
                                     "in_position",
                                     "in_size",
                                     "in_uv_min",
@@ -71,10 +73,12 @@ class Overlay2D(Component):
         text_data = font_library.generate_text_vbo_data(font_name=self.font_name,
                                                         text=self.text,
                                                         position=self.position)
-        #text_data = np.insert(text_data, 0, np.ones((text_data.shape[0], 1), dtype=np.float32), axis=1)
-        #text_data = np.ascontiguousarray(text_data)
 
-        self.vbo.write(text_data[:, :8].tobytes())
+        new_columns = np.ones((text_data.shape[0], ), dtype=np.float32)
+        text_data = np.insert(text_data, 0, new_columns, axis=1)
+        text_data = np.ascontiguousarray(text_data)
+
+        self.vbo.write(text_data[:, :9].tobytes())
         #self.vbo.write(self.im_overlay.draw_commands[:self.im_overlay.num_draw_commands, :].tobytes())
 
     def set_text(self, text: str) -> None:

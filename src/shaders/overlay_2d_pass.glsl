@@ -95,9 +95,6 @@ out vec4 frag_color;
 void main()
 {
 
-    float texture_color = texture(font_texture, uv).r;
-    frag_color =  vec4(1.0, 1.0, 1.0, texture_color);
-
     if (command_id == 1){
         float texture_color = texture(font_texture, uv).r;
         frag_color =  vec4(1.0, 1.0, 1.0, texture_color);
