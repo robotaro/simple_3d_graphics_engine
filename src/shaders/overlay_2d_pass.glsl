@@ -5,17 +5,18 @@
 in float in_command_id;
 in vec2 in_position;
 in vec2 in_size;
-
+in vec4 in_fill_color;
+in vec4 in_edge_color;
 in vec2 in_uv_min;
 in vec2 in_uv_max;
-in vec2 in_color;
-in vec2 in_border_color;
 
 flat out int gs_command_id;
 out vec2 gs_position;
 out vec2 gs_size;
 out vec2 gs_uv_min;
 out vec2 gs_uv_max;
+out vec4 gs_edge_color;
+out vec4 gs_fill_color;
 
 flat out int command_id;
 
@@ -27,6 +28,9 @@ void main() {
     gs_size = in_size;
     gs_uv_min = in_uv_min;
     gs_uv_max = in_uv_max;
+    gs_fill_color = in_fill_color;
+    gs_edge_color = in_edge_color;
+
 
     // TODO: Find out if we need this in the
     gl_Position = vec4(in_position, 0.0, 1.0);
@@ -38,6 +42,7 @@ void main() {
 // TODO: Move these definitions to another file and include them here instead
 #define COMMAND_ID_AABB         0
 #define COMMAND_ID_CHARACTER    1
+
 
 layout (points) in;
 layout (triangle_strip, max_vertices = 4) out;
@@ -54,12 +59,12 @@ in vec2 gs_position[];
 in vec2 gs_size[];
 in vec2 gs_uv_min[];
 in vec2 gs_uv_max[];
+in vec4 gs_fill_color[];
+in vec4 gs_edge_color[];
 
 flat out int command_id;
 out vec2 uv;
-out vec3 geo_color;
-
-
+out vec4 geometry_color;
 
 void emitVertexWithUV(vec2 position, vec2 uvCoords) {
     gl_Position = projection_matrix * vec4(position, 0.0, 1.0);
@@ -75,7 +80,7 @@ void main() {
 
     command_id = gs_command_id[0];
 
-     if (command_id == COMMAND_ID_CHARACTER){
+    if (command_id == COMMAND_ID_CHARACTER){
 
         emitVertexWithUV(position, gs_uv_min[0]);
         emitVertexWithUV(position + vec2(0, gs_size[0].y), vec2(gs_uv_min[0].x, gs_uv_max[0].y));
@@ -83,17 +88,26 @@ void main() {
         emitVertexWithUV(position + vec2(gs_size[0].x, gs_size[0].y), vec2(gs_uv_max[0].x, gs_uv_max[0].y));
 
     } else if (command_id == COMMAND_ID_AABB){
+
+        // Draw Fill area
         gl_Position = projection_matrix * vec4(position, 0.0, 1.0);
+        geometry_color = gs_fill_color[0];
         EmitVertex();
 
         gl_Position = projection_matrix * vec4(position.x, position.y + size.y, 0, 1.0);
+        geometry_color = gs_fill_color[0];
         EmitVertex();
 
         gl_Position = projection_matrix * vec4(position.x + size.x, position.y, 0, 1.0);
+        geometry_color = gs_fill_color[0];
         EmitVertex();
 
         gl_Position = projection_matrix * vec4(position.x + size.x, position.y + size.y, 0, 1.0);
+        geometry_color = gs_fill_color[0];
         EmitVertex();
+
+        // Draw Edges
+
     }
 
 
@@ -115,10 +129,9 @@ uniform sampler2D font_texture;
 
 flat in int command_id;
 in vec2 uv;
-in vec4 geo_color;
+in vec4 geometry_color;
 
 out vec4 frag_color;
-
 
 
 void main()
@@ -129,7 +142,7 @@ void main()
         frag_color =  vec4(1.0, 1.0, 1.0, texture_color);
 
     } else if (command_id == COMMAND_ID_AABB){
-        frag_color =  vec4(1.0, 1.0, 1.0, 1.0);
+        frag_color = geometry_color;
     }
 
 }
