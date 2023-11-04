@@ -279,7 +279,6 @@ DEBUG_MESH_RENDER_MODES = {
 
 # Font Library
 FONT_DEFAULT_NAME = "Consolas.ttf"
-FONT_VBO_BUFFER_RESERVE = 4096
 FONT_NUM_VERTICES_PER_CHAR = 12
 FONT_CHAR_SIZE = 48  # Resolution dpi, not actual pixels
 FONT_SHEET_ROWS = 16
@@ -291,6 +290,13 @@ FONT_TEXTURE_WIDTH = FONT_SHEET_CELL_WIDTH * FONT_SHEET_COLS
 FONT_TEXTURE_HEIGHT = FONT_SHEET_CELL_HEIGHT * FONT_SHEET_ROWS
 
 DIRECTIONAL_LIGHT_TEXTURE_SIZE = (2048, 2048)
+
+# =============================================================================
+#                              Overlay 2D
+# =============================================================================
+
+OVERLAY_2D_MAX_DRAW_COMMANDS = 2048
+OVERLAY_2D_VBO_SIZE_RESERVE = OVERLAY_2D_MAX_DRAW_COMMANDS * 4
 
 # =============================================================================
 #                              Transform System

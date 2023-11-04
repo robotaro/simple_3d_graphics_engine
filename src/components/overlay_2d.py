@@ -1,4 +1,5 @@
 import moderngl
+import numpy as np
 
 from src.core import constants
 from src.components.component import Component
@@ -48,10 +49,14 @@ class Overlay2D(Component):
         ctx = kwargs["ctx"]
         shader_library = kwargs["shader_library"]
 
-        self.vbo = ctx.buffer(reserve=constants.FONT_VBO_BUFFER_RESERVE)  # TODO: Check this size
+        self.vbo = ctx.buffer(reserve=constants.OVERLAY_2D_VBO_SIZE_RESERVE)  # TODO: Check this size
         program = shader_library[constants.SHADER_PROGRAM_OVERLAY_2D_PASS]
 
-        self.vao = ctx.vertex_array(program, self.vbo, "in_position", "in_size", "in_uv_min", "in_uv_max")
+        self.vao = ctx.vertex_array(program, self.vbo,
+                                    "in_position",
+                                    "in_size",
+                                    "in_uv_min",
+                                    "in_uv_max")
 
         self.initialised = True
 
@@ -60,11 +65,17 @@ class Overlay2D(Component):
         if not self.initialised or not self.dirty:
             return
 
+        self.im_overlay.clear()
+        self.im_overlay.add_aabb(100.0, 100.0, 200.0, 100.0)
+
         text_data = font_library.generate_text_vbo_data(font_name=self.font_name,
                                                         text=self.text,
                                                         position=self.position)
+        #text_data = np.insert(text_data, 0, np.ones((text_data.shape[0], 1), dtype=np.float32), axis=1)
+        #text_data = np.ascontiguousarray(text_data)
 
         self.vbo.write(text_data[:, :8].tobytes())
+        #self.vbo.write(self.im_overlay.draw_commands[:self.im_overlay.num_draw_commands, :].tobytes())
 
     def set_text(self, text: str) -> None:
         self.text = text

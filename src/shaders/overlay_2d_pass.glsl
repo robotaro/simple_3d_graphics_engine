@@ -2,23 +2,33 @@
 
 #if defined VERTEX_SHADER
 
+in float in_command_id;
 in vec2 in_position;
 in vec2 in_size;
+
 in vec2 in_uv_min;
 in vec2 in_uv_max;
+in vec2 in_color;
+in vec2 in_border_color;
 
+flat out int gs_command_id;
 out vec2 gs_position;
 out vec2 gs_size;
 out vec2 gs_uv_min;
 out vec2 gs_uv_max;
 
+flat out int command_id;
+
+
 void main() {
 
+    gs_command_id = int(in_command_id);
     gs_position = in_position;
     gs_size = in_size;
     gs_uv_min = in_uv_min;
     gs_uv_max = in_uv_max;
 
+    // TODO: Find out if we need this in the
     gl_Position = vec4(in_position, 0.0, 1.0);
 }
 
@@ -35,12 +45,16 @@ uniform mat4 projection_matrix; // Your projection matrix
 // The POINTS rendering mode means this is a 1-element array, hence
 // the gs_position[0] :)
 
+flat in int gs_command_id[];
 in vec2 gs_position[];
 in vec2 gs_size[];
 in vec2 gs_uv_min[];
 in vec2 gs_uv_max[];
 
+flat out int command_id;
 out vec2 uv;
+out vec3 geo_color;
+
 
 
 void emitVertexWithUV(vec2 position, vec2 uvCoords) {
@@ -53,12 +67,14 @@ void main() {
 
     // Calculate the rectangle vertex position
     vec2 position = gs_position[0].xy;
+    command_id = gs_command_id[0];
 
     // Emit the rectangle vertices with adjusted UV coordinates
     emitVertexWithUV(position, gs_uv_min[0]);
     emitVertexWithUV(position + vec2(0, gs_size[0].y), vec2(gs_uv_min[0].x, gs_uv_max[0].y));
     emitVertexWithUV(position + vec2(gs_size[0].x, 0), vec2(gs_uv_max[0].x, gs_uv_min[0].y));
     emitVertexWithUV(position + vec2(gs_size[0].x, gs_size[0].y), vec2(gs_uv_max[0].x, gs_uv_max[0].y));
+
 
     EndPrimitive();
 }
@@ -68,16 +84,25 @@ void main() {
 
 uniform sampler2D font_texture;
 
+flat in int command_id;
 in vec2 uv;
+in vec4 geo_color;
 
 uniform vec3 font_color = vec3(1.0, 1.0, 1.0);
 
-out vec4 fragColor;
+out vec4 frag_color;
 
 void main()
 {
+
     float texture_color = texture(font_texture, uv).r;
-    fragColor =  vec4(1.0, 1.0, 1.0, texture_color);
+    frag_color =  vec4(1.0, 1.0, 1.0, texture_color);
+
+    if (command_id == 1){
+        float texture_color = texture(font_texture, uv).r;
+        frag_color =  vec4(1.0, 1.0, 1.0, texture_color);
+    }
+
 }
 
 #endif
