@@ -49,6 +49,9 @@ class Overlay2D(Component):
 
         ctx = kwargs["ctx"]
         shader_library = kwargs["shader_library"]
+        font_library = kwargs["font_library"]
+
+        self.im_overlay.register_font(font_library.fonts[self.font_name].character_data)
 
         self.vbo = ctx.buffer(reserve=constants.OVERLAY_2D_VBO_SIZE_RESERVE)  # TODO: Check this size
         program = shader_library[constants.SHADER_PROGRAM_OVERLAY_2D_PASS]
@@ -74,6 +77,7 @@ class Overlay2D(Component):
         self.im_overlay.clear()
         self.im_overlay.add_aabb_filled(600.0, 100.0, 200.0, 100.0, (1.0, 0.65, 0.0, 0.3))
         self.im_overlay.add_aabb_edge(600.0, 300.0, 200.0, 100.0, 2.0, (1.0, 0.0, 0.0, 1.0))
+        #self.im_overlay.add_text("This is a test", 700.0, 600.0)
         self.im_overlay.add_aabb_filled(600.0, 600.0, 200.0, 100.0, (0.0, 1.0, 0.0, 0.6))
 
         text_data = font_library.generate_text_vbo_data(font_name=self.font_name,

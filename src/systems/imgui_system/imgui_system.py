@@ -205,6 +205,7 @@ class ImguiSystem(System):
         # open new window context
         imgui.begin(f"Selected Entity", True)
 
+        #imgui.set_window_position(300, 150)
         imgui.set_window_size(500, 500)
 
         flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP

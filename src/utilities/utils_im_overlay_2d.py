@@ -24,18 +24,31 @@ COL_INDEX_COLOR_GREEN = 6
 COL_INDEX_COLOR_BLUE = 7
 COL_INDEX_COLOR_ALPHA = 8
 COL_INDEX_EDGE_WIDTH = 9
-COL_INDEX_MIN_U = 10
-COL_INDEX_MIN_V = 11
-COL_INDEX_MAX_U = 12
-COL_INDEX_MAX_V = 13
+COL_INDEX_U_MIN = 10
+COL_INDEX_V_MIN = 11
+COL_INDEX_U_MAX = 12
+COL_INDEX_V_MAX = 13
 
+# Special Characters
+CHAR_SPACE = 32
+CHAR_NEW_LINE = 10
+
+# FOnt library copied-over constants
+FONT_LIBRARY_COLUMN_INDEX_WIDTH = 2
+FONT_LIBRARY_COLUMN_INDEX_HEIGHT = 3
+FONT_LIBRARY_COLUMN_INDEX_U_MIN = 4
+FONT_LIBRARY_COLUMN_INDEX_V_MIN = 5
+FONT_LIBRARY_COLUMN_INDEX_U_MAX = 6
+FONT_LIBRARY_COLUMN_INDEX_V_MAX = 7
 
 # Numba's class data type specification - required for internal optimisation
 spec = [
     ('num_draw_commands', int32),
     ('draw_commands', float32[:, :]),
+    ('character_data', float32[:, :]),
     ('max_draw_commands_limit_reached', boolean)
 ]
+
 
 @jitclass(spec=spec)
 class ImOverlay2D:
@@ -50,10 +63,53 @@ class ImOverlay2D:
         self.num_draw_commands = 0
         array_size = (constants.OVERLAY_2D_MAX_DRAW_COMMANDS, constants.OVERLAY_2D_NUM_COMMAND_COLUMNS)
         self.draw_commands = np.empty(array_size, dtype=np.float32)
+        self.character_data = np.empty((1, 1), dtype=np.float32)
         self.max_draw_commands_limit_reached = False
 
-    def add_text(self, text: str):
-        pass
+    def register_font(self, character_data: float32[:, :]):
+        self.character_data = character_data
+
+    def add_text(self, text: str, x: float32, y: float32):
+        """
+        Adds one character at time on the
+        :param text:
+        :return:
+        """
+
+        cursor_x = 0.0
+        cursor_y = 0.0
+        for index, char in enumerate(text):
+
+            if self.num_draw_commands >= constants.OVERLAY_2D_MAX_DRAW_COMMANDS:
+                continue
+
+            char_index = ord(char)
+
+            if char_index == CHAR_SPACE:
+                cursor_x += 4  # TODO: Think of better way to determine what space should be. Maybe use font itsef
+
+            # Command ID
+            self.draw_commands[index, COL_INDEX_ID] = COMMAND_ID_CHARACTER
+
+            # Position
+            self.draw_commands[index, COL_INDEX_X] = x + cursor_x
+            self.draw_commands[index, COL_INDEX_Y] = y + cursor_y
+
+            # Size
+            self.draw_commands[index, COL_INDEX_WIDTH] = self.character_data[char_index, FONT_LIBRARY_COLUMN_INDEX_WIDTH]
+            self.draw_commands[index, COL_INDEX_HEIGHT] = self.character_data[char_index, FONT_LIBRARY_COLUMN_INDEX_HEIGHT]
+
+            # UVs
+            self.draw_commands[index, COL_INDEX_U_MIN] = self.character_data[char_index, FONT_LIBRARY_COLUMN_INDEX_U_MIN]
+            self.draw_commands[index, COL_INDEX_V_MIN] = self.character_data[char_index, FONT_LIBRARY_COLUMN_INDEX_V_MIN]
+            self.draw_commands[index, COL_INDEX_U_MAX] = self.character_data[char_index, FONT_LIBRARY_COLUMN_INDEX_U_MAX]
+            self.draw_commands[index, COL_INDEX_V_MAX] = self.character_data[char_index, FONT_LIBRARY_COLUMN_INDEX_V_MAX]
+
+            # Move curser forward for the next character
+            cursor_x += self.character_data[CHAR_SPACE, constants.FONT_LIBRARY_COLUMN_INDEX_HORIZONTAL_ADVANCE]
+
+            # Each character is draw command, so add it
+            self.num_draw_commands += 1
 
     def add_aabb_filled(self,
                         x: float32,

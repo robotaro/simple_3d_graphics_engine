@@ -369,7 +369,9 @@ class Editor:
 
         for _, pool in self.component_pool.component_master_pool.items():
             for entity_uid, component in pool.items():
-                component.initialise(ctx=self.ctx, shader_library=render_system.shader_program_library)
+                component.initialise(ctx=self.ctx,
+                                     shader_library=render_system.shader_program_library,
+                                     font_library=render_system.font_library)
 
     def release_components(self):
         for component_id, components in self.component_pool.component_storage_map.items():
