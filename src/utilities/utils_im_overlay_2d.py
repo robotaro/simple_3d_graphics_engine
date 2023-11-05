@@ -9,9 +9,9 @@ from src.core import constants
 
 
 # Command IDs
-COMMAND_ID_AABB_FILLED = 0.0
-COMMAND_ID_AABB_EDGE = 1.0
-COMMAND_ID_CHARACTER = 2.0
+COMMAND_ID_AABB_FILLED = np.float32(1.0)
+COMMAND_ID_AABB_EDGE = np.float32(0.0)
+COMMAND_ID_CHARACTER = np.float32(2.0)
 
 # Command Array Column Indices
 COL_INDEX_ID = 0
@@ -24,6 +24,10 @@ COL_INDEX_COLOR_GREEN = 6
 COL_INDEX_COLOR_BLUE = 7
 COL_INDEX_COLOR_ALPHA = 8
 COL_INDEX_EDGE_WIDTH = 9
+COL_INDEX_MIN_U = 10
+COL_INDEX_MIN_V = 11
+COL_INDEX_MAX_U = 12
+COL_INDEX_MAX_V = 13
 
 
 # Numba's class data type specification - required for internal optimisation
@@ -98,7 +102,7 @@ class ImOverlay2D:
         index = self.num_draw_commands
 
         # Command ID
-        self.draw_commands[index, COL_INDEX_ID] = COMMAND_ID_AABB
+        self.draw_commands[index, COL_INDEX_ID] = COMMAND_ID_AABB_EDGE
 
         # Position
         self.draw_commands[index, COL_INDEX_X] = x
@@ -108,14 +112,14 @@ class ImOverlay2D:
         self.draw_commands[index, COL_INDEX_WIDTH] = width
         self.draw_commands[index, COL_INDEX_HEIGHT] = height
 
-        # Edge Width
-        self.draw_commands[index, COL_INDEX_EDGE_WIDTH] = edge_width
-
         # Color
         self.draw_commands[index, COL_INDEX_COLOR_RED] = color[0]
         self.draw_commands[index, COL_INDEX_COLOR_GREEN] = color[1]
         self.draw_commands[index, COL_INDEX_COLOR_BLUE] = color[2]
         self.draw_commands[index, COL_INDEX_COLOR_ALPHA] = color[3]
+
+        # Edge Width
+        self.draw_commands[index, COL_INDEX_EDGE_WIDTH] = edge_width
 
         self.num_draw_commands += 1
 

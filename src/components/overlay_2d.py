@@ -58,7 +58,7 @@ class Overlay2D(Component):
                                     "in_position",
                                     "in_size",
                                     "in_color",
-
+                                    "in_edge_width",
                                     "in_uv_min",
                                     "in_uv_max")
 
@@ -71,7 +71,9 @@ class Overlay2D(Component):
 
         # [DEBUG]
         self.im_overlay.clear()
-        self.im_overlay.add_aabb_filled(100.0, 100.0, 200.0, 100.0, (1.0, 0.65, 0.0, 0.3))
+        self.im_overlay.add_aabb_filled(600.0, 100.0, 200.0, 100.0, (1.0, 0.65, 0.0, 0.3))
+        self.im_overlay.add_aabb_edge(600.0, 300.0, 200.0, 100.0, 2.0, (1.0, 0.0, 0.0, 1.0))
+        self.im_overlay.add_aabb_filled(600.0, 600.0, 200.0, 100.0, (0.0, 1.0, 0.0, 0.6))
 
         text_data = font_library.generate_text_vbo_data(font_name=self.font_name,
                                                         text=self.text,
