@@ -7,6 +7,7 @@ from src.systems.render_system.shader_program_library import ShaderProgramLibrar
 from src.systems.render_system.font_library import FontLibrary
 from src.utilities.utils_im_overlay_2d import ImOverlay2D
 
+
 class Overlay2D(Component):
 
     _type = "overlay_2d"

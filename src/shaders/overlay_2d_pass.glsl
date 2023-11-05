@@ -10,7 +10,7 @@ in vec4 in_color;
 in vec2 in_uv_min;
 in vec2 in_uv_max;
 
-flat out int gs_command_id;
+out float gs_command_id;
 out vec2 gs_position;
 out vec2 gs_size;
 out float gs_edge_width;
@@ -24,12 +24,7 @@ flat out int command_id;
 
 void main() {
 
-    if (in_command_id > -0.1 && in_command_id < 0.1) gs_command_id = 0;
-    if (in_command_id > 0.9 && in_command_id < 1.1) gs_command_id = 1;
-    if (in_command_id > 1.9 && in_command_id < 2.1) gs_command_id = 2;
-
-
-    //gs_command_id = int(in_command_id);  // Command IDs come in float for the sake of simplicity
+    gs_command_id = in_command_id;
     gs_position = in_position;
     gs_size = in_size;
     gs_edge_width = in_edge_width;
@@ -44,9 +39,9 @@ void main() {
 #elif defined GEOMETRY_SHADER
 
 // TODO: Move these definitions to another file and include them here instead
-#define COMMAND_ID_AABB_FILLED  int(1)
-#define COMMAND_ID_AABB_EDGE    int(0)
-#define COMMAND_ID_CHARACTER    int(2)
+#define COMMAND_ID_AABB_FILLED  0.0
+#define COMMAND_ID_AABB_EDGE    1.0
+#define COMMAND_ID_CHARACTER    2.0
 
 
 layout (points) in;
@@ -59,7 +54,7 @@ uniform mat4 projection_matrix; // Your projection matrix
 // The POINTS rendering mode means this is a 1-element array, hence
 // the gs_position[0] :)
 
-flat in int gs_command_id[];
+in float gs_command_id[];
 in vec2 gs_position[];
 in vec2 gs_size[];
 in float gs_edge_width[];
@@ -84,9 +79,8 @@ void main() {
     vec2 position = gs_position[0].xy;
     vec2 size = gs_size[0].xy;
     float edge = gs_edge_width[0];
-    command_id = gs_command_id[0];
 
-    if (command_id == COMMAND_ID_AABB_FILLED){
+    if (gs_command_id[0] == COMMAND_ID_AABB_FILLED){
 
         vec2 fill_0 = position;
         vec2 fill_1 = vec2(position.x, position.y + size.y );
@@ -111,7 +105,7 @@ void main() {
         EmitVertex();
 
 
-    } else if (command_id == COMMAND_ID_AABB_EDGE) {
+    } else if (gs_command_id[0] == COMMAND_ID_AABB_EDGE) {
 
         // =========[ Draw Fill ]==========
 
@@ -149,7 +143,7 @@ void main() {
         EmitVertex();
 
 
-    } else if (command_id == COMMAND_ID_CHARACTER) {
+    } else if (gs_command_id[0] == COMMAND_ID_CHARACTER) {
 
         emitVertexWithUV(position, gs_uv_min[0]);
         emitVertexWithUV(position + vec2(0, gs_size[0].y), vec2(gs_uv_min[0].x, gs_uv_max[0].y));

@@ -535,7 +535,6 @@ class RenderSystem(System):
 
         self.forward_pass_framebuffer.use()
         self.ctx.disable(moderngl.DEPTH_TEST)
-        #self.ctx.disable(moderngl.CULL_FACE)
 
         # Upload uniforms TODO: Move this to render system
         projection_matrix = mat4.orthographic_projection(

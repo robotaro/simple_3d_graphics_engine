@@ -9,9 +9,9 @@ from src.core import constants
 
 
 # Command IDs
-COMMAND_ID_AABB_FILLED = np.float32(1.0)
-COMMAND_ID_AABB_EDGE = np.float32(0.0)
-COMMAND_ID_CHARACTER = np.float32(2.0)
+COMMAND_ID_AABB_FILLED = 0.0
+COMMAND_ID_AABB_EDGE = 1.0
+COMMAND_ID_CHARACTER = 2.0
 
 # Command Array Column Indices
 COL_INDEX_ID = 0
