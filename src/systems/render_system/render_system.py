@@ -533,31 +533,41 @@ class RenderSystem(System):
 
     def render_overlay_2d_pass(self, camera_uid: int):
 
+
+
+        camera_component = self.component_pool.get_component(entity_uid=camera_uid,
+                                                             component_type=constants.COMPONENT_TYPE_CAMERA)
+        overlay_2d_component = self.component_pool.get_component(entity_uid=camera_uid,
+                                                                 component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
+
+        if overlay_2d_component is None:
+            return
+
         self.forward_pass_framebuffer.use()
         self.ctx.disable(moderngl.DEPTH_TEST)
 
         # Upload uniforms TODO: Move this to render system
-        projection_matrix = mat4.orthographic_projection(
+        overlay_projection_matrix = mat4.orthographic_projection(
             left=0,
-            right=self.buffer_size[0],
-            bottom=self.buffer_size[1],
             top=0,
+            right=camera_component.viewport_pixels[2],
+            bottom=camera_component.viewport_pixels[3],
             near=-1,
             far=1)
 
         # Upload uniforms
         program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_2D_PASS]
-        program["projection_matrix"].write(projection_matrix.T.tobytes())
+        program["projection_matrix"].write(overlay_projection_matrix.T.tobytes())
 
         # Update VBOs and render text
         text_2d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
-        for _, text_2d in text_2d_pool.items():
-            # State Updates
-            text_2d.update_buffer(font_library=self.font_library)
 
-            # Rendering
-            self.textures[text_2d.font_name].use(location=0)
-            text_2d.vao.render(mode=moderngl.POINTS)
+        # State Updates
+        overlay_2d_component.update_buffer(font_library=self.font_library)
+
+        # Rendering
+        self.textures[overlay_2d_component.font_name].use(location=0)
+        overlay_2d_component.vao.render(mode=moderngl.POINTS)
 
     def render_selection_pass(self, camera_uid: int, selected_entity_uid: int):
 

@@ -41,7 +41,7 @@ DEFAULT_SYSTEMS = [
     SYSTEM_NAME_GIZMO_3D,
     SYSTEM_NAME_TRANSFORM,  # Must go BEFORE render system to read the transforms before they are shown!
     SYSTEM_NAME_RENDER,
-    SYSTEM_NAME_IMGUI  # Must come AFTER the render system to add the GUI to the final render
+    #SYSTEM_NAME_IMGUI  # Must come AFTER the render system to add the GUI to the final render
 ]
 
 # =============================================================================
