@@ -5,34 +5,33 @@
 in float in_command_id;
 in vec2 in_position;
 in vec2 in_size;
-in vec4 in_fill_color;
-in vec4 in_edge_color;
+in float in_edge_width;
+in vec4 in_color;
 in vec2 in_uv_min;
 in vec2 in_uv_max;
 
 flat out int gs_command_id;
 out vec2 gs_position;
 out vec2 gs_size;
+out float gs_edge_width;
+out vec4 gs_color;
 out vec2 gs_uv_min;
 out vec2 gs_uv_max;
-out vec4 gs_edge_color;
-out vec4 gs_fill_color;
+
 
 flat out int command_id;
 
 
 void main() {
 
-    gs_command_id = int(in_command_id);
+    gs_command_id = int(in_command_id);  // Command IDs come in float for the sake of simplicity
     gs_position = in_position;
     gs_size = in_size;
+    gs_edge_width = in_edge_width;
+    gs_color = in_color;
     gs_uv_min = in_uv_min;
     gs_uv_max = in_uv_max;
-    gs_fill_color = in_fill_color;
-    gs_edge_color = in_edge_color;
 
-
-    // TODO: Find out if we need this in the
     gl_Position = vec4(in_position, 0.0, 1.0);
 }
 
@@ -40,12 +39,13 @@ void main() {
 #elif defined GEOMETRY_SHADER
 
 // TODO: Move these definitions to another file and include them here instead
-#define COMMAND_ID_AABB         0
-#define COMMAND_ID_CHARACTER    1
+#define COMMAND_ID_AABB_FILLED  0
+#define COMMAND_ID_AABB_EDGE    1
+#define COMMAND_ID_CHARACTER    2
 
 
 layout (points) in;
-layout (triangle_strip, max_vertices = 4) out;
+layout (triangle_strip, max_vertices=8) out;
 
 uniform mat4 projection_matrix; // Your projection matrix
 
@@ -57,10 +57,11 @@ uniform mat4 projection_matrix; // Your projection matrix
 flat in int gs_command_id[];
 in vec2 gs_position[];
 in vec2 gs_size[];
+in float gs_edge_width[];
+in vec4 gs_color[];
 in vec2 gs_uv_min[];
 in vec2 gs_uv_max[];
-in vec4 gs_fill_color[];
-in vec4 gs_edge_color[];
+
 
 flat out int command_id;
 out vec2 uv;
@@ -87,26 +88,31 @@ void main() {
         emitVertexWithUV(position + vec2(gs_size[0].x, 0), vec2(gs_uv_max[0].x, gs_uv_min[0].y));
         emitVertexWithUV(position + vec2(gs_size[0].x, gs_size[0].y), vec2(gs_uv_max[0].x, gs_uv_max[0].y));
 
-    } else if (command_id == COMMAND_ID_AABB){
+    } else if (command_id == COMMAND_ID_AABB_FILLED){
 
-        // Draw Fill area
-        gl_Position = projection_matrix * vec4(position, 0.0, 1.0);
-        geometry_color = gs_fill_color[0];
+        vec2 fill_0 = position;
+        vec2 fill_1 = vec2(position.x, position.y + size.y );
+        vec2 fill_2 = vec2(position.x + size.x, position.y);
+        vec2 fill_3 = vec2(position.x + size.x, position.y + size.y);
+
+        // =========[ Draw Fill ]==========
+
+        geometry_color = gs_color[0].rgba;
+
+        // Triangle A)
+        gl_Position = projection_matrix * vec4(fill_0, 0.0, 1.0);
         EmitVertex();
 
-        gl_Position = projection_matrix * vec4(position.x, position.y + size.y, 0, 1.0);
-        geometry_color = gs_fill_color[0];
+        gl_Position = projection_matrix * vec4(fill_1, 0.0, 1.0);
         EmitVertex();
 
-        gl_Position = projection_matrix * vec4(position.x + size.x, position.y, 0, 1.0);
-        geometry_color = gs_fill_color[0];
+        gl_Position = projection_matrix * vec4(fill_2, 0.0, 1.0);
         EmitVertex();
 
-        gl_Position = projection_matrix * vec4(position.x + size.x, position.y + size.y, 0, 1.0);
-        geometry_color = gs_fill_color[0];
+        gl_Position = projection_matrix * vec4(fill_3, 0.0, 1.0);
         EmitVertex();
 
-        // Draw Edges
+        // Draw Edge (if it exists)
 
     }
 
@@ -120,8 +126,9 @@ void main() {
 #elif defined FRAGMENT_SHADER
 
 // TODO: Move these definitions to another file and include them here instead
-#define COMMAND_ID_AABB         0
-#define COMMAND_ID_CHARACTER    1
+#define COMMAND_ID_AABB_FILLED  0
+#define COMMAND_ID_AABB_EDGE    1
+#define COMMAND_ID_CHARACTER    2
 
 uniform sampler2D font_texture;
 
@@ -137,12 +144,12 @@ out vec4 frag_color;
 void main()
 {
 
-    if (command_id == COMMAND_ID_CHARACTER){
+    if (command_id == COMMAND_ID_AABB_FILLED){
+        frag_color = geometry_color;
+    } else if (command_id == COMMAND_ID_CHARACTER){
         float texture_color = texture(font_texture, uv).r;
         frag_color =  vec4(1.0, 1.0, 1.0, texture_color);
 
-    } else if (command_id == COMMAND_ID_AABB){
-        frag_color = geometry_color;
     }
 
 }
