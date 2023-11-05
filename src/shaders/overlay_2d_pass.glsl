@@ -5,8 +5,8 @@
 in float in_command_id;
 in vec2 in_position;
 in vec2 in_size;
-in float in_edge_width;
 in vec4 in_color;
+in float in_edge_width;
 in vec2 in_uv_min;
 in vec2 in_uv_max;
 
@@ -39,13 +39,17 @@ void main() {
 #elif defined GEOMETRY_SHADER
 
 // TODO: Move these definitions to another file and include them here instead
-#define COMMAND_ID_AABB_FILLED  0.0
-#define COMMAND_ID_AABB_EDGE    1.0
-#define COMMAND_ID_CHARACTER    2.0
+#define COMMAND_ID_AABB_FILLED 0.0
+#define COMMAND_ID_AABB_EDGE 1.0
+#define COMMAND_ID_CIRCLE_FILL 2.0
+#define COMMAND_ID_CIRCLE_EDGE 3.0
+#define COMMAND_ID_CHARACTER 4.0
+
+#define CIRCLE_NUM_SIDES 32
 
 
 layout (points) in;
-layout (triangle_strip, max_vertices=10) out;
+layout (triangle_strip, max_vertices=70) out;
 
 uniform mat4 projection_matrix; // Your projection matrix
 
@@ -67,11 +71,14 @@ out float command_id_float;
 out vec2 uv;
 out vec4 geometry_color;
 
+const float PI = 3.1415926535897932384626433832795;
+
 void emitVertexWithUV(vec2 position, vec2 uvCoords) {
     gl_Position = projection_matrix * vec4(position, 0.0, 1.0);
     uv = uvCoords;
     EmitVertex();
 }
+
 
 void main() {
 
@@ -147,6 +154,33 @@ void main() {
         emitVertexWithUV(position + vec2(gs_size[0].x, 0), vec2(gs_uv_max[0].x, gs_uv_min[0].y));
         emitVertexWithUV(position + vec2(gs_size[0].x, gs_size[0].y), vec2(gs_uv_max[0].x, gs_uv_max[0].y));
 
+    } else if (command_id_float == COMMAND_ID_CIRCLE_EDGE) {
+        vec2 center = position;
+        float radius = size.x; // Assuming size.x holds the radius value
+        geometry_color = gs_color[0].rgba;
+
+        float angle_step = (2.0 * PI) / float(CIRCLE_NUM_SIDES);
+        float angle = 0.0;
+        float half_edge = edge / 2.0;
+
+        for (int i = 0; i < CIRCLE_NUM_SIDES + 1; ++i) {
+
+            // Calculate the positions of the vertices
+            vec2 offset_unit_vector = vec2(cos(angle), sin(angle));
+
+            // Outer vertex of next segment
+            vec2 outer_vertex = center + (radius + half_edge) * offset_unit_vector;
+            gl_Position = projection_matrix * vec4(outer_vertex, 0.0, 1.0);
+            EmitVertex();
+
+            // Emmit outer vertex of this segment
+            vec2 inner_vertex = center + (radius - half_edge) * offset_unit_vector;
+            gl_Position = projection_matrix * vec4(inner_vertex, 0.0, 1.0);
+            EmitVertex();
+
+            // Update the angle for the next vertex
+            angle += angle_step;
+        }
     }
 
     EndPrimitive();
@@ -156,9 +190,12 @@ void main() {
 #elif defined FRAGMENT_SHADER
 
 // TODO: Move these definitions to another file and include them here instead
-#define COMMAND_ID_AABB_FILLED  0.0
-#define COMMAND_ID_AABB_EDGE    1.0
-#define COMMAND_ID_CHARACTER    2.0
+#define COMMAND_ID_AABB_FILLED 0.0
+#define COMMAND_ID_AABB_EDGE 1.0
+#define COMMAND_ID_CIRCLE_FILL 2.0
+#define COMMAND_ID_CIRCLE_EDGE 3.0
+#define COMMAND_ID_CHARACTER 4.0
+
 
 uniform sampler2D font_texture;
 

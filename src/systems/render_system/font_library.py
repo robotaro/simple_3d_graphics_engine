@@ -23,6 +23,12 @@ class Font:
 
 class FontLibrary:
 
+    """
+    The font parameters created by this library assume that the 2D cartesian
+    origin is on the left upper corner of the screen, where positive x is right
+    and positive y is down.
+    """
+
     __slots__ = [
         "fonts",
         "logger"
@@ -74,12 +80,12 @@ class FontLibrary:
                 cursor_x += 4  # TODO: Use different spaces for letters
 
             text_data[index, :] = font_parameters[char_index, :]
-            text_data[index, constants.FONT_LIBRARY_COLUMN_INDEX_X] += cursor_x
+            text_data[index, constants.FONT_LIBRARY_COLUMN_INDEX_OFFSET_X] += cursor_x
             cursor_x += text_data[index, constants.FONT_LIBRARY_COLUMN_INDEX_HORIZONTAL_ADVANCE]
 
         # Add position offset
-        text_data[:, constants.FONT_LIBRARY_COLUMN_INDEX_X] += position[0]
-        text_data[:, constants.FONT_LIBRARY_COLUMN_INDEX_Y] += position[1]
+        text_data[:, constants.FONT_LIBRARY_COLUMN_INDEX_OFFSET_X] += position[0]
+        text_data[:, constants.FONT_LIBRARY_COLUMN_INDEX_OFFSET_Y] += position[1]
 
         return text_data
 
@@ -152,8 +158,8 @@ class FontLibrary:
             char_cell_row = char_index // constants.FONT_SHEET_COLS
             char_cell_col = char_index % constants.FONT_SHEET_COLS
 
-            data[char_index, constants.FONT_LIBRARY_COLUMN_INDEX_X] = 0
-            data[char_index, constants.FONT_LIBRARY_COLUMN_INDEX_Y] = -(selected_glyph['offset_hor_bearing_y'] // 2)
+            data[char_index, constants.FONT_LIBRARY_COLUMN_INDEX_OFFSET_X] = 0
+            data[char_index, constants.FONT_LIBRARY_COLUMN_INDEX_OFFSET_Y] = -(selected_glyph['offset_hor_bearing_y'] // 2)
             data[char_index, constants.FONT_LIBRARY_COLUMN_INDEX_WIDTH] = selected_glyph['width']
             data[char_index, constants.FONT_LIBRARY_COLUMN_INDEX_HEIGHT] = selected_glyph['height']
 

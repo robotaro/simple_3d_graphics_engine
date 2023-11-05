@@ -1,11 +1,9 @@
-import moderngl
 import numpy as np
 
 from src.core import constants
 from src.components.component import Component
-from src.systems.render_system.shader_program_library import ShaderProgramLibrary
 from src.systems.render_system.font_library import FontLibrary
-from src.utilities.utils_im_overlay_2d import ImOverlay2D
+from src.systems.render_system.im_overlay_2d import ImOverlay2D
 
 
 class Overlay2D(Component):
@@ -76,19 +74,11 @@ class Overlay2D(Component):
         # [DEBUG]
         self.im_overlay.clear()
         self.im_overlay.add_aabb_filled(600.0, 100.0, 200.0, 100.0, (1.0, 0.65, 0.0, 0.3))
-        self.im_overlay.add_aabb_edge(600.0, 300.0, 200.0, 100.0, 2.0, (1.0, 0.0, 0.0, 1.0))
-        #self.im_overlay.add_text("This is a test", 700.0, 600.0)
+        self.im_overlay.add_aabb_edge(700.0, 500.0, 200.0, 100.0, 2.0, (1.0, 0.0, 0.0, 1.0))
+        self.im_overlay.add_text("This is a test", 700.0, 500.0)
+        self.im_overlay.add_circle_edge(800.0, 400.0, 200, 4.0, (0.0, 0.0, 1.0, 1.0))
         self.im_overlay.add_aabb_filled(600.0, 600.0, 200.0, 100.0, (0.0, 1.0, 0.0, 0.6))
 
-        text_data = font_library.generate_text_vbo_data(font_name=self.font_name,
-                                                        text=self.text,
-                                                        position=self.position)
-
-        new_columns = np.ones((text_data.shape[0], ), dtype=np.float32)
-        text_data = np.insert(text_data, 0, new_columns, axis=1)
-        text_data = np.ascontiguousarray(text_data)
-
-        #self.vbo.write(text_data[:, :9].tobytes())
         self.vbo.write(self.im_overlay.draw_commands[:self.im_overlay.num_draw_commands, :].tobytes())
 
     def set_text(self, text: str) -> None:
