@@ -2,6 +2,29 @@ import numpy as np
 
 from src.utilities import utils_camera
 
+def test_screen_position_pixels2viewport_position():
+
+    params = {"viewport_ratio": (0.25, 0.25, 0.5, 0.5)}
+
+    screen_size = (400, 300)
+    viewport_pixels = (200, 150, 400, 300)
+
+    test_conditions = [
+        # screen     viewport
+        ((400, 300), (0.0, 0.0)),
+        ((500, 375), (0.5, -0.5)),
+        ((600, 450), (1.0, -1.0)),
+        ((200, 150), None),
+        ((0, 0), None)  # Invalid scenario, as coordinates should range form -1 to 1
+    ]
+
+    for conditions in test_conditions:
+        xy_pixel = conditions[0]
+        target = conditions[1]
+        result = utils_camera.screen_position_pixels2viewport_position(screen_position_pixels=xy_pixel,
+                                                                       viewport_pixels=viewport_pixels)
+        assert target == result
+
 
 def test_screen_to_world_ray():
 
@@ -35,7 +58,7 @@ def test_screen_to_world_ray():
         np.testing.assert_array_equal(target_ray_origin, result_ray_origin)
 
 
-def test_world_pos2screen_pos():
+def test_world_pos2viewport_position():
 
     camera_position = np.array([0, 0, 5], dtype=np.float32)
     camera_matrix = np.eye(4, dtype=np.float32)
@@ -61,5 +84,6 @@ def test_world_pos2screen_pos():
 
         result = utils_camera.world_pos2viewport_position(world_position=np.array(world_position, dtype=np.float32),
                                                           projection_matrix=projection_matrix,
-                                                          view_matrix=view_matrix,
-                                                          camera_position=camera_position)
+                                                          view_matrix=view_matrix)
+        assert target == result
+

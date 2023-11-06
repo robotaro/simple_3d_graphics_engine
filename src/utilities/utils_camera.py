@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit
+from numba import njit, float32
 
 from src.core import constants
 from src.math import mat4
@@ -15,10 +15,10 @@ def get_gizmo_scale(camera_matrix: np.ndarray, object_position: np.array) -> flo
     return scale
 
 
-#@njit(cache=True)
+#@njit(float32[:](float32[:, :], float32[:, :], float32[:]), cache=True)
 def world_pos2viewport_position(view_matrix: np.ndarray,
                                 projection_matrix: np.ndarray,
-                                world_position: np.array):
+                                world_position: np.array) -> np.array:
 
     """view_projection_position = mat4.mul_vector3(in_mat4=projection_matrix @ view_matrix, in_vec3=world_position)
 
@@ -65,6 +65,39 @@ def world_pos2screen_pixels(view_matrix: np.ndarray,
     screen_y = viewport_pixels[3] * (-viewport_position[1] + 1.0) / 2.0 + viewport_pixels[1]
 
     return screen_x, screen_y
+
+
+def screen_position_pixels2viewport_position(screen_position_pixels: tuple, viewport_pixels: tuple) -> tuple:
+
+    """
+    Screen's origin is the left-upper corner with positive x to the RIGHT and positive y DOWN
+    Viewports origin is at the center with positive x to the RIGHT and positive y UP
+
+    :param screen_position_pixels: (x, y) <float32>
+    :param viewport_pixels: tuple (x, y, width, height) <float32>
+    :return: Relative
+    """
+
+    if screen_position_pixels[0] < viewport_pixels[0]:
+        return None
+
+    if screen_position_pixels[0] > viewport_pixels[0] + viewport_pixels[2]:
+        return None
+
+    if screen_position_pixels[1] < viewport_pixels[0]:
+        return None
+
+    if screen_position_pixels[1] > viewport_pixels[1] + viewport_pixels[3]:
+        return None
+
+    # TODO: Y-axis is reversed to get positive Y-axis pointing up. Check if this is because of the projection matrix
+    x_normalised = (screen_position_pixels[0] - viewport_pixels[0]) / viewport_pixels[2]
+    y_normalised = 1.0 - (screen_position_pixels[1] - viewport_pixels[1]) / viewport_pixels[3]
+
+    x_viewport = (x_normalised - 0.5) * 2.0
+    y_viewport = (y_normalised - 0.5) * 2.0
+
+    return (x_viewport, y_viewport)
 
 
 @njit(cache=True)

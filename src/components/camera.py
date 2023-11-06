@@ -31,7 +31,8 @@ class Camera(Component):
 
         # Orthographic variables
         self.orthographic_scale = 1.0
-        self.viewport_screen_ratio = self.dict2tuple_float(input_dict=self.parameters, key="viewport_screen_ratio",
+        self.viewport_screen_ratio = self.dict2tuple_float(input_dict=self.parameters,
+                                                           key="viewport_screen_ratio",
                                                            default_value=(0.0, 0.0, 1.0, 1.0))
         self.viewport_pixels = None
 
@@ -56,35 +57,6 @@ class Camera(Component):
         flag_y = self.viewport_pixels[1] <= coord_pixels[1] < (self.viewport_pixels[3] + self.viewport_pixels[1])
 
         return flag_x & flag_y
-
-    def get_ray(self, screen_coord_pixels: tuple) -> Union[tuple, None]:
-
-        if screen_coord_pixels is None:
-            return None
-
-    def get_viewport_coordinates(self, screen_coord_pixels: tuple) -> Union[tuple, None]:
-        """
-        Returns a normalised coordinates withing the viewport of the camera. This will return
-        erroneous values if the input coordinates are outside the viewport in screen values
-        """
-        if self.viewport_pixels is None:
-            return None
-
-        # Get normalise values
-        x = (screen_coord_pixels[0] - self.viewport_pixels[0]) / self.viewport_pixels[2]
-        y = (screen_coord_pixels[1] - self.viewport_pixels[1]) / self.viewport_pixels[3]
-
-        # Convert normalised values to viewport coordinates (-1 to 1)
-        x = 2.0 * x - 1.0
-        y = 2.0 * y - 1.0
-
-        if x < -1.0 or x > 1.0:
-            return None
-
-        if y < -1.0 or y > 1.0:
-            return None
-
-        return x, y
 
     def get_projection_matrix(self):
 

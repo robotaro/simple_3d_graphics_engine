@@ -159,8 +159,6 @@ class Gizmo3DSystem(System):
             scale = utils_camera.get_gizmo_scale(camera_matrix=camera_transform_component.world_matrix,
                                                  object_position=selected_object_position)
 
-            debug_camera_name = self.component_pool.entities[camera_entity_id].name
-
             # If gizmo is too close to camera, just ignore it
             if scale < 0.01:
                 continue
@@ -178,14 +176,18 @@ class Gizmo3DSystem(System):
             camera_matrix = transform_3d_pool[camera_entity_id].world_matrix
             projection_matrix = camera_component.get_projection_matrix()
 
-            viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=self.mouse_screen_position)
-            if viewport_coord_norm is None:
+            viewport_position = utils_camera.screen_position_pixels2viewport_position(
+                screen_position_pixels=self.mouse_screen_position,
+                viewport_pixels=camera_component.viewport_pixels
+            )
+
+            if viewport_position is None:
                 continue
 
             # From here onwards, it's about deciding to highlight it or not
 
             ray_direction, ray_origin = utils_camera.screen_pos2world_ray(
-                viewport_coord_norm=viewport_coord_norm,
+                viewport_coord_norm=viewport_position,
                 camera_matrix=camera_matrix,
                 projection_matrix=projection_matrix)
 
@@ -268,7 +270,10 @@ class Gizmo3DSystem(System):
         for entity_camera_id, camera_component in camera_pool.items():
 
             # Check if mouse is inside viewports
-            viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=event_data)
+            viewport_coord_norm = utils_camera.screen_position_pixels2viewport_position(
+                screen_position_pixels=event_data,
+                viewport_pixels=camera_component.viewport_pixels
+            )
             if viewport_coord_norm is None:
                 continue
 
