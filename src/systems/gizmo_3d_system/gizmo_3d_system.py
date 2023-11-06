@@ -178,8 +178,7 @@ class Gizmo3DSystem(System):
 
             viewport_position = utils_camera.screen_position_pixels2viewport_position(
                 screen_position_pixels=self.mouse_screen_position,
-                viewport_pixels=camera_component.viewport_pixels
-            )
+                viewport_pixels=camera_component.viewport_pixels)
 
             if viewport_position is None:
                 continue

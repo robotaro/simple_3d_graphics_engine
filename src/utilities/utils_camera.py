@@ -90,14 +90,13 @@ def screen_position_pixels2viewport_position(screen_position_pixels: tuple, view
     if screen_position_pixels[1] > viewport_pixels[1] + viewport_pixels[3]:
         return None
 
-    # TODO: Y-axis is reversed to get positive Y-axis pointing up. Check if this is because of the projection matrix
     x_normalised = (screen_position_pixels[0] - viewport_pixels[0]) / viewport_pixels[2]
-    y_normalised = 1.0 - (screen_position_pixels[1] - viewport_pixels[1]) / viewport_pixels[3]
+    y_normalised = (screen_position_pixels[1] - viewport_pixels[1]) / viewport_pixels[3]
 
     x_viewport = (x_normalised - 0.5) * 2.0
     y_viewport = (y_normalised - 0.5) * 2.0
 
-    return (x_viewport, y_viewport)
+    return x_viewport, y_viewport
 
 
 @njit(cache=True)
