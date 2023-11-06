@@ -71,14 +71,6 @@ class Overlay2D(Component):
         if not self.initialised or not self.dirty:
             return
 
-        # [DEBUG]
-        self.im_overlay.clear()
-        self.im_overlay.add_aabb_filled(600.0, 100.0, 200.0, 100.0, (1.0, 0.65, 0.0, 0.3))
-        self.im_overlay.add_aabb_edge(700.0, 500.0, 200.0, 100.0, 2.0, (1.0, 0.0, 0.0, 1.0))
-        self.im_overlay.add_text("This is a test", 700.0, 500.0)
-        self.im_overlay.add_circle_edge(800.0, 400.0, 200, 4.0, (0.0, 0.0, 1.0, 1.0))
-        self.im_overlay.add_aabb_filled(600.0, 600.0, 200.0, 100.0, (0.0, 1.0, 0.0, 0.6))
-
         self.vbo.write(self.im_overlay.draw_commands[:self.im_overlay.num_draw_commands, :].tobytes())
 
     def set_text(self, text: str) -> None:

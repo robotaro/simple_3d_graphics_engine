@@ -45,7 +45,6 @@ https://projects.blender.org/blender/blender/issues/54661
 https://stackoverflow.com/questions/7777913/how-to-render-depth-linearly-in-modern-opengl-with-gl-fragcoord-z-in-fragment-sh
 
 # How to count lines-of-code
-
 https://codetabs.com/count-loc/count-loc-online.html
 
 # 2D rendering to consider
@@ -71,6 +70,12 @@ https://shadered.org/view?s=0xMVU6DEAe
 - If a component/system does not handle any graphics, make it 100% Numba-complient
 - Reduce number of uniform variable access. Maybe Uniform Array Object?
 - Separate meshes by layer in list/array so we don't have to go over all objects. Alternatively, consider multi-layed meshes
+
+## Numba Tips
+
+### Jitclass caching
+https://github.com/numba/numba/issues/6522
+https://github.com/numba/numba/issues/4830
 
 ## Linux installation
 
