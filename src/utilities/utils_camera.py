@@ -61,8 +61,8 @@ def world_pos2screen_pixels(view_matrix: np.ndarray,
                                                     world_position=world_position)
 
     # TODO: Y-axis is reversed to get positive Y-axis pointing up. Check if this is because of the projection matrix
-    screen_x = viewport_pixels[2] * (viewport_position[0] + 1.0) / 2.0 + viewport_pixels[0]
-    screen_y = viewport_pixels[3] * (-viewport_position[1] + 1.0) / 2.0 + viewport_pixels[1]
+    screen_x = viewport_pixels[2] * (viewport_position[0] + 1.0) / 2.0
+    screen_y = viewport_pixels[3] * (-viewport_position[1] + 1.0) / 2.0
 
     return screen_x, screen_y
 
