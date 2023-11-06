@@ -121,14 +121,13 @@ class Gizmo3DSystem(System):
         if self.selected_entity_uid is None:
             return True
 
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        gizmo_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
+        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
         world_position = np.ascontiguousarray(selected_transform_component.world_matrix[:3, 3])
         selected_object_position = np.array(selected_transform_component.position, dtype=np.float32)
-
-        return True
-        # ============== TODO: CODE DISABLED BEYOND THIS POINT !!!! ==========
 
         camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         for camera_entity_id, camera_component in camera_pool.items():
@@ -137,14 +136,15 @@ class Gizmo3DSystem(System):
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_id]
 
             # Get MVP matrices
-            camera_matrix = self.component_pool.transform_3d_components[gizmo_3d_entity_uid].world_matrix
+            camera_matrix = transform_3d_pool[gizmo_3d_entity_uid].world_matrix
             camera_position = np.ascontiguousarray(camera_matrix[:3, 3])
             projection_matrix = camera_component.get_projection_matrix()
             view_matrix = np.eye(4, dtype=np.float32)
             mat4.fast_inverse(in_mat4=camera_matrix, out_mat4=view_matrix)
 
             # Get both gizmo's and selected entity's transforms
-            camera_transform_component = self.component_pool.transform_3d_components[camera_entity_id]
+            camera_transform_component = transform_3d_pool[camera_entity_id]
+            gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
             screen_position = utils_camera.world_pos2screen_pos(world_position=world_position,
                                                                 camera_position = camera_position,
@@ -154,17 +154,11 @@ class Gizmo3DSystem(System):
                                                  object_position=selected_object_position)
 
             debug_camera_name = self.component_pool.entities[camera_entity_id].name
-            print(f"{debug_camera_name}: {screen_position}")
+
             # If gizmo is too close to camera, just ignore it
             if scale < 0.01:
                 continue
 
-            # DEBUG
-            #debug_camera_name = self.component_pool.entities[camera_entity_id].name
-            #print(f"{debug_camera_name} - {scale:.2f}")
-
-            # Put gizmo where the selected entity's is
-            # TODO: This does not acc
             gizmo_transform_component.position = selected_transform_component.position
             gizmo_transform_component.rotation = selected_transform_component.rotation
             gizmo_transform_component.scale = scale
@@ -175,7 +169,7 @@ class Gizmo3DSystem(System):
                               in_vec3_array=constants.GIZMO_3D_AXES,
                               out_vec3_array=self.gizmo_transformed_axes)
 
-            camera_matrix = self.component_pool.transform_3d_components[camera_entity_id].world_matrix
+            camera_matrix = transform_3d_pool[camera_entity_id].world_matrix
             projection_matrix = camera_component.get_projection_matrix()
 
             viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=self.mouse_screen_position)
@@ -205,9 +199,10 @@ class Gizmo3DSystem(System):
             # TODO: [CLEANUP] Remove direct access and use get_component instead. Think about performance later
 
             # De-highlight all axes
-            gizmo_component = self.component_pool.gizmo_3d_components[gizmo_3d_entity_uid]
+
+            gizmo_component = gizmo_3d_pool[gizmo_3d_entity_uid]
             for axis_entity_uid in gizmo_component.axes_entities_uids:
-                self.component_pool.material_components[axis_entity_uid].state_highlighted = False
+                material_pool[axis_entity_uid].state_highlighted = False
 
             # And Re-highlight only the current axis being hovered, if any
             valid_indices = np.where(self.axes_distances > -1.0)[0]
@@ -216,7 +211,7 @@ class Gizmo3DSystem(System):
 
             selected_axis_index = valid_indices[self.axes_distances[valid_indices].argmin()]
             axis_entity_uid = gizmo_component.axes_entities_uids[selected_axis_index]
-            axis_material = self.component_pool.material_components[axis_entity_uid]
+            axis_material = material_pool[axis_entity_uid]
             axis_material.state_highlighted = True
 
         return True
