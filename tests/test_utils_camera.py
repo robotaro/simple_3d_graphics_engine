@@ -59,7 +59,7 @@ def test_world_pos2screen_pos():
 
     for world_position, target in zip(test_world_positions, target_screen_coordinates):
 
-        result = utils_camera.world_pos2screen_pos(world_position=np.array(world_position, dtype=np.float32),
-                                                   projection_matrix=projection_matrix,
-                                                   view_matrix=view_matrix,
-                                                   camera_position=camera_position)
+        result = utils_camera.world_pos2viewport_position(world_position=np.array(world_position, dtype=np.float32),
+                                                          projection_matrix=projection_matrix,
+                                                          view_matrix=view_matrix,
+                                                          camera_position=camera_position)

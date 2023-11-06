@@ -15,7 +15,7 @@ class Camera(Component):
         "z_near",
         "z_far",
         "orthographic_scale",
-        "viewport_ratio",
+        "viewport_screen_ratio",
         "viewport_pixels",
         "perspective"
     ]
@@ -31,8 +31,8 @@ class Camera(Component):
 
         # Orthographic variables
         self.orthographic_scale = 1.0
-        self.viewport_ratio = self.dict2tuple_float(input_dict=self.parameters, key="viewport_ratio",
-                                                    default_value=(0.0, 0.0, 1.0, 1.0))
+        self.viewport_screen_ratio = self.dict2tuple_float(input_dict=self.parameters, key="viewport_screen_ratio",
+                                                           default_value=(0.0, 0.0, 1.0, 1.0))
         self.viewport_pixels = None
 
         # Flags
@@ -43,10 +43,10 @@ class Camera(Component):
 
     def update_viewport(self, window_size: tuple):
 
-        self.viewport_pixels = (int(self.viewport_ratio[0] * window_size[0]),
-                                int(self.viewport_ratio[1] * window_size[1]),
-                                int(self.viewport_ratio[2] * window_size[0]),
-                                int(self.viewport_ratio[3] * window_size[1]))
+        self.viewport_pixels = (int(self.viewport_screen_ratio[0] * window_size[0]),
+                                int(self.viewport_screen_ratio[1] * window_size[1]),
+                                int(self.viewport_screen_ratio[2] * window_size[0]),
+                                int(self.viewport_screen_ratio[3] * window_size[1]))
 
     def is_inside_viewport(self, coord_pixels: tuple) -> bool:
         if self.viewport_pixels is None:

@@ -13,13 +13,10 @@ class Overlay2D(Component):
     __slots__ = [
         "im_overlay",
         "font_name",
-        "position",
         "render_layer",
         "visible",
         "vao",
-        "vbo",
-        "text",
-        "dirty"
+        "vbo"
     ]
 
     def __init__(self, parameters, system_owned=False):
@@ -30,15 +27,10 @@ class Overlay2D(Component):
 
         # TODO: User standard method for retrieving parameter values
         self.font_name = parameters.get("font_name", constants.FONT_DEFAULT_NAME)
-        self.position = Component.dict2tuple_float(input_dict=self.parameters,
-                                                   key="position",
-                                                   default_value=(0.0, 0.0))
         self.render_layer = 0
         self.visible = True
         self.vao = None
         self.vbo = None
-        self.text = parameters.get("text", "")
-        self.dirty = False if len(self.text) == 0 else True
 
     def initialise(self, **kwargs):
 
@@ -66,16 +58,13 @@ class Overlay2D(Component):
 
         self.initialised = True
 
-    def update_buffer(self, font_library: FontLibrary):
+    def update_buffer(self):
 
-        if not self.initialised or not self.dirty:
-            return
+        if self.im_overlay.num_draw_commands > 0:
+            self.vbo.write(self.im_overlay.draw_commands[:self.im_overlay.num_draw_commands, :].tobytes())
 
-        self.vbo.write(self.im_overlay.draw_commands[:self.im_overlay.num_draw_commands, :].tobytes())
-
-    def set_text(self, text: str) -> None:
-        self.text = text
-        self.dirty = True
+    def clear(self):
+        self.im_overlay.clear()
 
     def release(self):
         if self.vbo:

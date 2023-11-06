@@ -533,8 +533,6 @@ class RenderSystem(System):
 
     def render_overlay_2d_pass(self, camera_uid: int):
 
-
-
         camera_component = self.component_pool.get_component(entity_uid=camera_uid,
                                                              component_type=constants.COMPONENT_TYPE_CAMERA)
         overlay_2d_component = self.component_pool.get_component(entity_uid=camera_uid,
@@ -543,7 +541,10 @@ class RenderSystem(System):
         if overlay_2d_component is None:
             return
 
-        self.forward_pass_framebuffer.use()
+        if overlay_2d_component.im_overlay.num_draw_commands == 0:
+            return
+
+        self.overlay_3d_pass_framebuffer.use()
         self.ctx.disable(moderngl.DEPTH_TEST)
 
         # Upload uniforms TODO: Move this to render system
@@ -559,15 +560,15 @@ class RenderSystem(System):
         program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_2D_PASS]
         program["projection_matrix"].write(overlay_projection_matrix.T.tobytes())
 
-        # Update VBOs and render text
-        text_2d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
+        # Upload VBOs
+        overlay_2d_component.update_buffer()
 
-        # State Updates
-        overlay_2d_component.update_buffer(font_library=self.font_library)
-
-        # Rendering
+        # Render
         self.textures[overlay_2d_component.font_name].use(location=0)
         overlay_2d_component.vao.render(mode=moderngl.POINTS)
+
+        # And don#t forget to clear the buffer for the next frame of commands
+        overlay_2d_component.im_overlay.clear()
 
     def render_selection_pass(self, camera_uid: int, selected_entity_uid: int):
 

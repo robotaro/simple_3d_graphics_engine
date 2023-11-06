@@ -15,10 +15,10 @@ def get_gizmo_scale(camera_matrix: np.ndarray, object_position: np.array) -> flo
     return scale
 
 
-def world_pos2screen_pos(view_matrix: np.ndarray,
-                         camera_position: np.array,
-                         projection_matrix: np.ndarray,
-                         world_position: np.array):
+#@njit(cache=True)
+def world_pos2viewport_position(view_matrix: np.ndarray,
+                                projection_matrix: np.ndarray,
+                                world_position: np.array):
 
     """view_projection_position = mat4.mul_vector3(in_mat4=projection_matrix @ view_matrix, in_vec3=world_position)
 
@@ -48,6 +48,23 @@ def world_pos2screen_pos(view_matrix: np.ndarray,
     screen_coordinates = projected_position[:2]
 
     return screen_coordinates
+
+
+#@njit(cache=True)
+def world_pos2screen_pixels(view_matrix: np.ndarray,
+                            viewport_pixels: tuple,
+                            projection_matrix: np.ndarray,
+                            world_position: np.array):
+
+    viewport_position = world_pos2viewport_position(view_matrix=view_matrix,
+                                                    projection_matrix=projection_matrix,
+                                                    world_position=world_position)
+
+    # TODO: Y-axis is reversed to get positive Y-axis pointing up. Check if this is because of the projection matrix
+    screen_x = viewport_pixels[2] * (viewport_position[0] + 1.0) / 2.0 + viewport_pixels[0]
+    screen_y = viewport_pixels[3] * (-viewport_position[1] + 1.0) / 2.0 + viewport_pixels[1]
+
+    return screen_x, screen_y
 
 
 @njit(cache=True)

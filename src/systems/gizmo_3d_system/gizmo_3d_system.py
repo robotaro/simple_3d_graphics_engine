@@ -146,10 +146,16 @@ class Gizmo3DSystem(System):
             camera_transform_component = transform_3d_pool[camera_entity_id]
             gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
-            screen_position = utils_camera.world_pos2screen_pos(world_position=world_position,
-                                                                camera_position = camera_position,
-                                                                projection_matrix=projection_matrix,
-                                                                view_matrix=camera_transform_component.world_matrix)
+            screen_position = utils_camera.world_pos2screen_pixels(world_position=world_position,
+                                                                   projection_matrix=projection_matrix,
+                                                                   view_matrix=camera_transform_component.world_matrix,
+                                                                   viewport_pixels=camera_component.viewport_pixels)
+            overlay_component = self.component_pool.get_component(entity_uid=camera_entity_id,
+                                                                  component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
+
+            if overlay_component is not None:
+                overlay_component.im_overlay.add_circle_edge(screen_position[0], screen_position[1], 10, 2)
+
             scale = utils_camera.get_gizmo_scale(camera_matrix=camera_transform_component.world_matrix,
                                                  object_position=selected_object_position)
 

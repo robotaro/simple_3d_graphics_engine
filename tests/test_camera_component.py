@@ -3,7 +3,7 @@ from src.components.camera import Camera
 
 def test_update_viewport():
 
-    params = {"viewport_ratio": (0.25, 0.25, 0.5, 0.5)}
+    params = {"viewport_screen_ratio": (0.25, 0.25, 0.5, 0.5)}
 
     camera = Camera(parameters=params)
     assert camera.viewport_pixels is None
