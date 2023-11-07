@@ -5,7 +5,7 @@ GIZMO_3D_RIG_BLUEPRINT = {
         {
             "name": "transform_3d",
             "parameters": {
-                "position": "-2 0 2",
+                "position": "0 0 0",
                 "degrees": "true"
             }
         },

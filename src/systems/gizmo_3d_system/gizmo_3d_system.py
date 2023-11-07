@@ -121,105 +121,41 @@ class Gizmo3DSystem(System):
         if self.selected_entity_uid is None:
             return True
 
-
+        # Get component pools for easy access
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
         gizmo_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
         material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
-        world_position = np.ascontiguousarray(selected_transform_component.world_matrix[:3, 3])
-        selected_object_position = np.array(selected_transform_component.position, dtype=np.float32)
+        selected_world_position = np.ascontiguousarray(selected_transform_component.world_matrix[:3, 3])
 
         camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-        for camera_entity_id, camera_component in camera_pool.items():
+        for index, (camera_entity_id, camera_component) in enumerate(camera_pool.items()):
 
-            # Find which gizmo is attached to this camera
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_id]
 
-            # Get MVP matrices
-            camera_matrix = transform_3d_pool[gizmo_3d_entity_uid].world_matrix
-            camera_position = np.ascontiguousarray(camera_matrix[:3, 3])
-            projection_matrix = camera_component.get_projection_matrix()
+            camera_matrix = transform_3d_pool[camera_entity_id].world_matrix
             view_matrix = np.eye(4, dtype=np.float32)
             mat4.fast_inverse(in_mat4=camera_matrix, out_mat4=view_matrix)
 
-            # Get both gizmo's and selected entity's transforms
-            camera_transform_component = transform_3d_pool[camera_entity_id]
+            view_position = mat4.mul_vector3(in_mat4=view_matrix, in_vec3=selected_world_position)
+            gizmo_scale = utils_camera.set_gizmo_scale(view_matrix=view_matrix, object_position=selected_world_position)
             gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
-            screen_position = utils_camera.world_pos2screen_pixels(world_position=world_position,
-                                                                   projection_matrix=projection_matrix,
-                                                                   view_matrix=camera_transform_component.world_matrix,
-                                                                   viewport_pixels=camera_component.viewport_pixels)
-            overlay_component = self.component_pool.get_component(entity_uid=camera_entity_id,
-                                                                  component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
-
-            if overlay_component is not None:
-                overlay_component.im_overlay.add_circle_edge(screen_position[0], screen_position[1], 10, 2)
-
-            scale = utils_camera.get_gizmo_scale(camera_matrix=camera_transform_component.world_matrix,
-                                                 object_position=selected_object_position)
-
             # If gizmo is too close to camera, just ignore it
-            if scale < 0.01:
-                continue
+            #if gizmo_scale < 0.001:
+            #    gizmo_scale = 0.001
+
+            if index == 2:
+                print(f"[{index}] view_pos: {view_position[2]:.4f}, scale: {gizmo_scale:.4f}")
+
+            target_rot = selected_transform_component.rotation
 
             gizmo_transform_component.position = selected_transform_component.position
-            gizmo_transform_component.rotation = selected_transform_component.rotation
-            gizmo_transform_component.scale = scale
+            gizmo_transform_component.rotation = (target_rot[0], target_rot[1] + index, target_rot[2])
+            gizmo_transform_component.scale = gizmo_scale
             gizmo_transform_component.dirty = True
 
-            # Transform origin axes to gizmo's transform
-            mat4.mul_vectors3(in_mat4=gizmo_transform_component.world_matrix,
-                              in_vec3_array=constants.GIZMO_3D_AXES,
-                              out_vec3_array=self.gizmo_transformed_axes)
-
-            camera_matrix = transform_3d_pool[camera_entity_id].world_matrix
-            projection_matrix = camera_component.get_projection_matrix()
-
-            viewport_position = utils_camera.screen_position_pixels2viewport_position(
-                screen_position_pixels=self.mouse_screen_position,
-                viewport_pixels=camera_component.viewport_pixels)
-
-            if viewport_position is None:
-                continue
-
-            # From here onwards, it's about deciding to highlight it or not
-
-            ray_direction, ray_origin = utils_camera.screen_pos2world_ray(
-                viewport_coord_norm=viewport_position,
-                camera_matrix=camera_matrix,
-                projection_matrix=projection_matrix)
-
-            # TODO: [CLEANUP] Clean this silly code. Change the intersection function to accommodate for this
-            points_a = np.array([gizmo_transform_component.position,
-                                 gizmo_transform_component.position,
-                                 gizmo_transform_component.position], dtype=np.float32)
-
-            intersection_3d.intersect_ray_capsules(
-                ray_origin=ray_origin,
-                ray_direction=ray_direction,
-                points_a=points_a,
-                points_b=self.gizmo_transformed_axes,
-                radius=np.float32(0.1 * scale),
-                output_distances=self.axes_distances)
-
-            # TODO: [CLEANUP] Remove direct access and use get_component instead. Think about performance later
-
-            # De-highlight all axes
-
-            gizmo_component = gizmo_3d_pool[gizmo_3d_entity_uid]
-            for axis_entity_uid in gizmo_component.axes_entities_uids:
-                material_pool[axis_entity_uid].state_highlighted = False
-
-            # And Re-highlight only the current axis being hovered, if any
-            valid_indices = np.where(self.axes_distances > -1.0)[0]
-            if valid_indices.size == 0:
-                continue
-
-            selected_axis_index = valid_indices[self.axes_distances[valid_indices].argmin()]
-            axis_entity_uid = gizmo_component.axes_entities_uids[selected_axis_index]
-            axis_material = material_pool[axis_entity_uid]
-            axis_material.state_highlighted = True
 
         return True
 
@@ -297,3 +233,55 @@ class Gizmo3DSystem(System):
                 # TODO: Consider "state variables" inside each component, that CAN be changed by events
                 material_pool[entity_entity_id].state_highlighted = collision
 
+# REMOVED FROM THE UPDATE FUNCTION
+
+ # Transform origin axes to gizmo's transform
+            """mat4.mul_vectors3(in_mat4=gizmo_transform_component.world_matrix,
+                              in_vec3_array=constants.GIZMO_3D_AXES,
+                              out_vec3_array=self.gizmo_transformed_axes)
+
+            camera_matrix = transform_3d_pool[camera_entity_id].world_matrix
+            projection_matrix = camera_component.get_projection_matrix()
+
+            viewport_position = utils_camera.screen_position_pixels2viewport_position(
+                screen_position_pixels=self.mouse_screen_position,
+                viewport_pixels=camera_component.viewport_pixels)
+
+            if viewport_position is None:
+                continue
+
+            ray_direction, ray_origin = utils_camera.screen_pos2world_ray(
+                viewport_coord_norm=viewport_position,
+                camera_matrix=camera_matrix,
+                projection_matrix=projection_matrix)
+
+            # TODO: [CLEANUP] Clean this silly code. Change the intersection function to accommodate for this
+            points_a = np.array([gizmo_transform_component.position,
+                                 gizmo_transform_component.position,
+                                 gizmo_transform_component.position], dtype=np.float32)
+
+            intersection_3d.intersect_ray_capsules(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                points_a=points_a,
+                points_b=self.gizmo_transformed_axes,
+                radius=np.float32(0.1 * gizmo_scale),
+                output_distances=self.axes_distances)
+
+            # TODO: [CLEANUP] Remove direct access and use get_component instead. Think about performance later
+
+            # De-highlight all axes
+
+            gizmo_component = gizmo_3d_pool[gizmo_3d_entity_uid]
+            for axis_entity_uid in gizmo_component.axes_entities_uids:
+                material_pool[axis_entity_uid].state_highlighted = False
+
+            # And Re-highlight only the current axis being hovered, if any
+            valid_indices = np.where(self.axes_distances > -1.0)[0]
+            if valid_indices.size == 0:
+                continue
+
+            selected_axis_index = valid_indices[self.axes_distances[valid_indices].argmin()]
+            axis_entity_uid = gizmo_component.axes_entities_uids[selected_axis_index]
+            axis_material = material_pool[axis_entity_uid]
+            axis_material.state_highlighted = True"""

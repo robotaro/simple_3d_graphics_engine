@@ -288,6 +288,10 @@ class ImguiSystem(System):
                                                                   *transform.rotation,
                                                                   constants.IMGUI_DRAG_FLOAT_PRECISION)
             transform.dirty |= value_updated
+            value_updated, transform.scale = imgui.drag_float("Scale",
+                                                              transform.scale,
+                                                              constants.IMGUI_DRAG_FLOAT_PRECISION)
+            transform.dirty |= value_updated
 
             imgui.spacing()
 

@@ -6,14 +6,11 @@ from src.math import mat4
 
 
 @njit(cache=True)
-def get_gizmo_scale(camera_matrix: np.ndarray, object_position: np.array) -> float:
+def set_gizmo_scale(view_matrix: np.ndarray, object_position: np.array) -> float:
 
-    view_matrix = np.eye(4, dtype=np.float32)
-    mat4.fast_inverse(in_mat4=camera_matrix, out_mat4=view_matrix)
-    position_camera = mat4.mul_vector3(in_mat4=view_matrix, in_vec3=object_position)
-    scale = -position_camera[2] * constants.GIZMO_3D_SCALE_COEFFICIENT
+    view_position = mat4.mul_vector3(in_mat4=view_matrix, in_vec3=object_position)
+    scale = np.abs(view_position[2]) * np.tan(constants.DEG2RAD * 5.0)
     return scale
-
 
 #@njit(float32[:](float32[:, :], float32[:, :], float32[:]), cache=True)
 def world_pos2viewport_position(view_matrix: np.ndarray,
@@ -136,6 +133,43 @@ def screen_pos2world_ray(viewport_coord_norm: tuple,
     ray_direction /= np.linalg.norm(ray_direction)
 
     return ray_direction, ray_origin
+
+
+#@njit
+def ray_xy_plane_intersection(ray_origin: np.array, ray_direction: np.array, plane_z_offset: float):
+    """
+    [IMPORTANT] This function was made by ChatGPT4 and UNTESTED!!!
+
+    Calculate the intersection of a ray with the XY plane in 3D space that is offset along the Z-axis.
+
+    Parameters:
+    - ray_origin (tuple): A tuple (x, y, z) representing the origin of the ray.
+    - ray_direction (tuple): A tuple (x, y, z) representing the direction of the ray.
+    - plane_z_offset (float): The offset of the XY plane along the Z-axis.
+
+    Returns:
+    - tuple: A tuple (x, y) representing the point of intersection with the offset XY plane, or None if no intersection.
+    """
+
+    # Unpack the origin and direction vectors
+    O_x, O_y, O_z = ray_origin
+    D_x, D_y, D_z = ray_direction
+
+    # Calculate the t value for intersection, considering the Z offset
+    if D_z == 0:
+        if O_z == plane_z_offset:  # The ray is on the plane
+            return (O_x, O_y)
+        else:  # The ray never intersects the plane
+            return None
+
+    t = (plane_z_offset - O_z) / D_z
+
+    # Calculate the intersection point
+    intersection_point = np.array([0, 0], dtype=np.float32)
+    intersection_point[0] = O_x + t * D_x
+    intersection_point[1] = O_y + t * D_y
+
+    return intersection_point
 
 
 def orthographic_projection(scale_x: float, scale_y: float, z_near: float, z_far: float):
