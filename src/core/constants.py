@@ -75,6 +75,8 @@ GIZMO_3D_AXES_NAME_ORDER = [
 ]
 GIZMO_3D_SCALE_COEFFICIENT = 0.1
 GIZMO_3D_AXES = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]], dtype=np.float32)
+GIZMO_3D_ANGLE_TANGENT_COEFFICIENT = np.tan(5.0 * np.pi / 180.0)
+GIZMO_3D_VIEWPORT_SCALE_COEFFICIENT = 1000.0
 
 # =============================================================================
 #                               Events

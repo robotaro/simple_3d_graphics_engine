@@ -497,16 +497,14 @@ class RenderSystem(System):
 
         self.overlay_pass_framebuffer.use()
 
-        camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
+        # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
+        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        mesh_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
 
         # Every Render pass operates on the OFFSCREEN buffers only
+        camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
         for camera_uid in camera_entity_uids:
-
-            # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
-
-            camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-            transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-            mesh_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
 
             camera_component = camera_pool[camera_uid]
             camera_transform = transform_3d_pool[camera_uid]
@@ -528,7 +526,9 @@ class RenderSystem(System):
             # Render meshes
             for mesh_entity_uid, mesh_component in mesh_pool.items():
 
-                if not mesh_component.visible or mesh_component.layer != constants.RENDER_SYSTEM_LAYER_OVERLAY:
+                if (not mesh_component.visible or
+                        mesh_component.layer != constants.RENDER_SYSTEM_LAYER_OVERLAY or
+                        mesh_component.exclusive_to_camera_uid != camera_uid):
                     continue
 
                 mesh_transform = self.component_pool.get_component(entity_uid=mesh_entity_uid,

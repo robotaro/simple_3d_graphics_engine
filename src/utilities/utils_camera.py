@@ -9,7 +9,7 @@ from src.math import mat4
 def set_gizmo_scale(view_matrix: np.ndarray, object_position: np.array) -> float:
 
     view_position = mat4.mul_vector3(in_mat4=view_matrix, in_vec3=object_position)
-    scale = np.abs(view_position[2]) * np.tan(constants.DEG2RAD * 5.0)
+    scale = np.abs(view_position[2]) * constants.GIZMO_3D_ANGLE_TANGENT_COEFFICIENT
     return scale
 
 #@njit(float32[:](float32[:, :], float32[:, :], float32[:]), cache=True)
@@ -64,31 +64,31 @@ def world_pos2screen_pixels(view_matrix: np.ndarray,
     return screen_x, screen_y
 
 
-def screen_position_pixels2viewport_position(screen_position_pixels: tuple, viewport_pixels: tuple) -> tuple:
+def screen_gl_position_pixels2viewport_position(position_pixels: tuple, viewport_pixels: tuple) -> tuple:
 
     """
-    Screen's origin is the left-upper corner with positive x to the RIGHT and positive y DOWN
-    Viewports origin is at the center with positive x to the RIGHT and positive y UP
+    Screen's GL origin is the left-lower corner with positive x to the RIGHT and positive y UP. Both axes start from 0
+    Viewports origin is at its center with positive x to the RIGHT and positive y UP. Both axes range form -1 to 1
 
-    :param screen_position_pixels: (x, y) <float32>
+    :param position_pixels: (x, y) <float32>
     :param viewport_pixels: tuple (x, y, width, height) <float32>
     :return: Relative
     """
 
-    if screen_position_pixels[0] < viewport_pixels[0]:
+    if position_pixels[0] < viewport_pixels[0]:
         return None
 
-    if screen_position_pixels[0] > viewport_pixels[0] + viewport_pixels[2]:
+    if position_pixels[0] > (viewport_pixels[0] + viewport_pixels[2]):
         return None
 
-    if screen_position_pixels[1] < viewport_pixels[0]:
+    if position_pixels[1] < viewport_pixels[1]:
         return None
 
-    if screen_position_pixels[1] > viewport_pixels[1] + viewport_pixels[3]:
+    if position_pixels[1] > (viewport_pixels[1] + viewport_pixels[3]):
         return None
 
-    x_normalised = (screen_position_pixels[0] - viewport_pixels[0]) / viewport_pixels[2]
-    y_normalised = (screen_position_pixels[1] - viewport_pixels[1]) / viewport_pixels[3]
+    x_normalised = (position_pixels[0] - viewport_pixels[0]) / viewport_pixels[2]
+    y_normalised = (position_pixels[1] - viewport_pixels[1]) / viewport_pixels[3]
 
     x_viewport = (x_normalised - 0.5) * 2.0
     y_viewport = (y_normalised - 0.5) * 2.0

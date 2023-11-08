@@ -170,6 +170,30 @@ class ComponentPool:
 
         return None
 
+    def get_all_sub_entity_components(self, parent_entity_uid: int, component_type: int) -> list:
+
+        def get_components_recursivelly(entity_uid: int, component_type: int, output_list: list):
+
+            # Add selected component type to output if present in this entity
+            pool = self.component_master_pool[component_type]
+            if entity_uid in pool:
+                output_list.append(pool[entity_uid])
+
+            # And go recursivelly through its children
+            entity = self.entities[entity_uid]
+            for child_uid in entity.children_uids:
+                get_components_recursivelly(entity_uid=child_uid,
+                                            component_type=component_type,
+                                            output_list=output_list)
+
+        parent_entity = self.entities.get(parent_entity_uid, None)
+        output_components = []
+        get_components_recursivelly(entity_uid=parent_entity_uid,
+                                    component_type=component_type,
+                                    output_list=output_components)
+
+        return output_components
+
     def get_pool(self, component_type: int) -> dict:
         return self.component_master_pool.get(component_type, None)
 

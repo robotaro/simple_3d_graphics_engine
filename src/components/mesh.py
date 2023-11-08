@@ -23,7 +23,8 @@ class Mesh(Component):
         "ibo_faces",
         "render_mode",
         "layer",
-        "visible"]
+        "visible",
+        "exclusive_to_camera_uid"]
 
     def __init__(self, parameters, system_owned=False):
         super().__init__(parameters=parameters, system_owned=system_owned)
@@ -52,6 +53,7 @@ class Mesh(Component):
                                         default_value=constants.RENDER_SYSTEM_LAYER_DEFAULT)
         self.visible = Component.dict2bool(input_dict=self.parameters, key="visible",
                                            default_value=True)
+        self.exclusive_to_camera_uid = None
 
     def initialise(self, **kwargs):
 

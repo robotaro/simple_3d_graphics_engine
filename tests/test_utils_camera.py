@@ -2,28 +2,28 @@ import numpy as np
 
 from src.utilities import utils_camera
 
-def test_screen_position_pixels2viewport_position():
 
-    params = {"viewport_ratio": (0.25, 0.25, 0.5, 0.5)}
+def test_screen_gl_position_pixels2viewport_position():
 
-    screen_size = (400, 300)
-    viewport_pixels = (200, 150, 400, 300)
+    """
+    This test condition has one viewport on the left covering half of the screen, and two on the right,
+    covering each top and bottom quarters.
+    :return:
+    """
+
 
     test_conditions = [
-        # screen     viewport
-        ((400, 300), (0.0, 0.0)),
-        ((500, 375), (0.5, 0.5)),
-        ((600, 450), (1.0, 1.0)),
-        ((200, 150), None),
-        ((0, 0), None)  # Invalid scenario, as coordinates should range form -1 to 1
+        # gl_pixels    viewport_pixels  target_viewport_position
+        ((400, 450), (0, 0, 800, 900), (0, 0)),
+        ((1200, 675), (800, 450, 800, 450), (0, 0)),
+        ((1200, 1025), (800, 0, 800, 450), None)
     ]
 
-    for conditions in test_conditions:
-        xy_pixel = conditions[0]
-        target = conditions[1]
-        result = utils_camera.screen_position_pixels2viewport_position(screen_position_pixels=xy_pixel,
-                                                                       viewport_pixels=viewport_pixels)
-        assert target == result
+    for gl_pixels, viewport_pixels, target_viewport_position in test_conditions:
+
+        result = utils_camera.screen_gl_position_pixels2viewport_position(position_pixels=gl_pixels,
+                                                                          viewport_pixels=viewport_pixels)
+        assert target_viewport_position == result
 
 
 def test_screen_to_world_ray():

@@ -207,11 +207,17 @@ class Editor:
             self.mouse_state[button] = constants.BUTTON_RELEASED
 
     def _glfw_callback_mouse_move(self, glfw_window, x, y):
-        opengl_y = self.window_size[1] - y
+
+        # We send both coordinate systems to help things out!
+        y_gl = self.window_size[1] - y
+        y_gui = y
+        both_coordinates = (x, y_gl, y_gui)
+
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_MOVE,
-                                     event_data=(x, opengl_y),
+                                     event_data=both_coordinates,
                                      sender=self)
-        self.mouse_state[constants.MOUSE_POSITION] = (x, opengl_y)
+
+        self.mouse_state[constants.MOUSE_POSITION] = both_coordinates
 
     def _glfw_callback_mouse_scroll(self, glfw_window, x_offset, y_offset):
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_SCROLL,

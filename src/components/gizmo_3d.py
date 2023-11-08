@@ -11,7 +11,8 @@ class Gizmo3D(Component):
         "mode",
         "axes_entities_uids",
         "selected_axis",
-        "active"
+        "active",
+        "exclusive_to_camera_uid"
     ]
 
     def __init__(self, parameters, system_owned=False):
@@ -19,7 +20,5 @@ class Gizmo3D(Component):
 
         self.mode = Component.dict2int(input_dict=parameters, key="mode", default_value=0)
         self.selected_axis = None
-
         self.axes_entities_uids = np.array([-1, -1, -1], dtype=np.int32)
-
         self.active = False
