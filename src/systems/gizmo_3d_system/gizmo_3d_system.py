@@ -140,22 +140,18 @@ class Gizmo3DSystem(System):
 
             view_position = mat4.mul_vector3(in_mat4=view_matrix, in_vec3=selected_world_position)
             gizmo_scale = utils_camera.set_gizmo_scale(view_matrix=view_matrix, object_position=selected_world_position)
-            gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
+
 
             # If gizmo is too close to camera, just ignore it
             #if gizmo_scale < 0.001:
             #    gizmo_scale = 0.001
 
-            if index == 2:
-                print(f"[{index}] view_pos: {view_position[2]:.4f}, scale: {gizmo_scale:.4f}")
-
             target_rot = selected_transform_component.rotation
-
+            gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
             gizmo_transform_component.position = selected_transform_component.position
             gizmo_transform_component.rotation = (target_rot[0], target_rot[1] + index, target_rot[2])
             gizmo_transform_component.scale = gizmo_scale
             gizmo_transform_component.dirty = True
-
 
         return True
 
