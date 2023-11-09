@@ -39,7 +39,7 @@ def test_is_inside_viewport():
         x = conditions[0]
         y = conditions[1]
         target = conditions[2]
-        result = camera.is_inside_viewport(coord_pixels=(x, y))
+        result = camera.is_inside_viewport(screen_gl_position=(x, y))
         assert target == result
 
 

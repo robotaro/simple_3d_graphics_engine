@@ -251,12 +251,10 @@ class RenderSystem(System):
         if event_type == constants.EVENT_MOUSE_LEAVE_UI:
             self.entity_selection_enabled = True
 
-        if event_type == constants.EVENT_MOUSE_HOVER_GIZMO_3D:
-            self.logger.debug("Hovering gizmo!")
+        if event_type == constants.EVENT_MOUSE_HOVERING_GIZMO_3D:
             self.entity_selection_enabled = False
 
-        if event_type == constants.EVENT_MOUSE_LEAVE_GIZMO_3D:
-            self.logger.debug("Bye gizmo!")
+        if event_type == constants.EVENT_MOUSE_NOT_HOVERING_GIZMO_3D:
             self.entity_selection_enabled = True
 
         if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:

@@ -1,6 +1,7 @@
 # Math and Physics
+scipy
 numba==0.56.2
-PyGLM==2.5.7        # Required for rendering as well
+PyGLM==2.5.7        # Required for running examplesrendering as well
 warp-lang==0.10.1
 
 # Documentation
@@ -13,7 +14,7 @@ glfw==2.5.5
 numpy==1.21.6
 
 # Geometry Libraries
-trimesh==3.22.3  # 3D geometry operations
+trimesh==3.22.3  # 3D geometry operations (requires scipy)
 triangle==20230923 # 2D triangulation
 
 # General IO
