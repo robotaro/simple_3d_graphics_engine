@@ -12,7 +12,8 @@ def set_gizmo_scale(view_matrix: np.ndarray, object_position: np.array) -> float
     scale = np.abs(view_position[2]) * constants.GIZMO_3D_ANGLE_TANGENT_COEFFICIENT
     return scale
 
-#@njit(float32[:](float32[:, :], float32[:, :], float32[:]), cache=True)
+
+@njit(cache=True)
 def world_pos2viewport_position(view_matrix: np.ndarray,
                                 projection_matrix: np.ndarray,
                                 world_position: np.array) -> np.array:
@@ -29,17 +30,12 @@ def world_pos2viewport_position(view_matrix: np.ndarray,
 
     return screen_x, screen_y
     """
-    # Create a 4D vector for the object's world position
-    object_position_4d = np.append(world_position, 1)
 
-    # Transform the object's world position to camera space
-    object_camera_position = np.dot(np.linalg.inv(view_matrix), object_position_4d)
-
-    # Project the object's camera space position onto the image plane
-    projected_position = np.dot(projection_matrix, object_camera_position)
+    # Transform the object's world position to its respective 2D projected space
+    projected_position = mat4.mul_vector3(projection_matrix @ view_matrix, world_position)
 
     # Perform perspective divide
-    projected_position /= projected_position[3]
+    projected_position /= projected_position[2]
 
     # The x and y coordinates on the screen are now the first two elements of projected_position
     screen_coordinates = projected_position[:2]
@@ -47,7 +43,7 @@ def world_pos2viewport_position(view_matrix: np.ndarray,
     return screen_coordinates
 
 
-#@njit(cache=True)
+@njit(cache=True)
 def world_pos2screen_pixels(view_matrix: np.ndarray,
                             viewport_pixels: tuple,
                             projection_matrix: np.ndarray,
@@ -64,7 +60,7 @@ def world_pos2screen_pixels(view_matrix: np.ndarray,
     return screen_x, screen_y
 
 
-
+#@njit(cache=True)
 def screen_gl_position_pixels2viewport_position(position_pixels: tuple, viewport_pixels: tuple) -> tuple:
 
     """
@@ -135,44 +131,7 @@ def screen_pos2world_ray(viewport_coord_norm: tuple,
 
     return ray_direction, ray_origin
 
-
-#@njit
-def ray_xy_plane_intersection(ray_origin: np.array, ray_direction: np.array, plane_z_offset: float):
-    """
-    [IMPORTANT] This function was made by ChatGPT4 and UNTESTED!!!
-
-    Calculate the intersection of a ray with the XY plane in 3D space that is offset along the Z-axis.
-
-    Parameters:
-    - ray_origin (tuple): A tuple (x, y, z) representing the origin of the ray.
-    - ray_direction (tuple): A tuple (x, y, z) representing the direction of the ray.
-    - plane_z_offset (float): The offset of the XY plane along the Z-axis.
-
-    Returns:
-    - tuple: A tuple (x, y) representing the point of intersection with the offset XY plane, or None if no intersection.
-    """
-
-    # Unpack the origin and direction vectors
-    O_x, O_y, O_z = ray_origin
-    D_x, D_y, D_z = ray_direction
-
-    # Calculate the t value for intersection, considering the Z offset
-    if D_z == 0:
-        if O_z == plane_z_offset:  # The ray is on the plane
-            return (O_x, O_y)
-        else:  # The ray never intersects the plane
-            return None
-
-    t = (plane_z_offset - O_z) / D_z
-
-    # Calculate the intersection point
-    intersection_point = np.array([0, 0], dtype=np.float32)
-    intersection_point[0] = O_x + t * D_x
-    intersection_point[1] = O_y + t * D_y
-
-    return intersection_point
-
-
+@njit(cache=True)
 def orthographic_projection(scale_x: float, scale_y: float, z_near: float, z_far: float):
     """Returns an orthographic projection matrix."""
     projection = np.zeros((4, 4), dtype=np.float32)
@@ -184,6 +143,7 @@ def orthographic_projection(scale_x: float, scale_y: float, z_near: float, z_far
     return projection
 
 
+@njit(cache=True)
 def perspective_projection(fov_rad: float, aspect_ratio: float, z_near: float, z_far: float):
     """Returns a perspective projection matrix."""
     ar = aspect_ratio

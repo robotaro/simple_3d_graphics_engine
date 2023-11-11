@@ -1,7 +1,11 @@
 import numpy as np
 from numba import jit, njit, float32
 
-@jit(nopython=True, cache=True)
+# Constants
+FLT_EPSILON = np.finfo(float).eps
+
+
+@njit(cache=True)
 def intersect_ray_sphere(ray_origin: np.array,
                          ray_direction: np.array,
                          sphere_position: np.array,

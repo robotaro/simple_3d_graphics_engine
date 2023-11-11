@@ -73,11 +73,11 @@ def test_world_pos2viewport_position():
 
     test_world_positions = [
         (0, 0, 0),
-        (0, 2.5, 0)
+        (0, 2.5, 5)
     ]
     target_screen_coordinates = [
         np.array([0, 0], dtype=np.float32),
-        #np.array([0, -0.47731623], dtype=np.float32)
+        np.array([0, 1.2548383], dtype=np.float32)
         # TODO: THis still not covering it properly! WHy is the Y axis inverted??? FIND OUT!
     ]
 

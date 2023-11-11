@@ -22,14 +22,16 @@ class Gizmo3DSystem(System):
         "selected_entity_uid",
         "selected_entity_init_distance_to_cam",
         "gizmo_selection_enabled",
-        "selected_gizmo_axis_index",
+        "gizmo_axis_on_hover_index",
         "gizmo_mouse_hovering",
+        "gizmo_in_use",
+        "selected_entity_original_transform_component",
         "camera2gizmo_map",
-        "mouse_left_button_pressed",
         "mouse_screen_position",
         "axes_distances",
         "gizmo_transformed_axes",
-        "hover_axis_index"
+        "hover_axis_index",
+        "event_handlers"
     ]
 
     def __init__(self, logger: logging.Logger,
@@ -47,17 +49,33 @@ class Gizmo3DSystem(System):
 
         self.window_size = None
         self.entity_ray_intersection_list = []
-        self.gizmo_selection_enabled = True
-        self.selected_gizmo_axis_index = None
+        self.gizmo_axis_on_hover_index = None
         self.camera2gizmo_map = {}
-        self.mouse_left_button_pressed = False
         self.mouse_screen_position = (-1, -1)  # in Pixels
         self.axes_distances = np.array([-1, -1, -1], dtype=np.float32)
         self.gizmo_transformed_axes = np.eye(3, dtype=np.float32)
 
-        # DEBUG
+        # In-Use variables
+        self.selected_entity_original_transform_component = None
+
+        # State flags
+        self.gizmo_selection_enabled = True
+        self.gizmo_in_use = False
+
+        # State variables
         self.selected_entity_uid = None
         self.selected_entity_init_distance_to_cam = None
+
+        self.event_handlers = {
+            constants.EVENT_WINDOW_FRAMEBUFFER_SIZE: self.handle_event_window_framebuffer_size,
+            constants.EVENT_ENTITY_SELECTED: self.handle_event_entity_selected,
+            constants.EVENT_ENTITY_DESELECTED: self.handle_event_entity_deselected,
+            constants.EVENT_MOUSE_LEAVE_UI: self.handle_event_mouse_leave_ui,
+            constants.EVENT_MOUSE_ENTER_UI: self.handle_event_mouse_enter_ui,
+            constants.EVENT_MOUSE_MOVE: self.handle_event_mouse_move,
+            constants.EVENT_MOUSE_BUTTON_PRESS: self.handle_event_mouse_button_press,
+            constants.EVENT_MOUSE_BUTTON_RELEASE: self.handle_event_mouse_button_release,
+        }
 
     def initialise(self) -> bool:
         """
@@ -107,37 +125,70 @@ class Gizmo3DSystem(System):
 
     def on_event(self, event_type: int, event_data: tuple):
 
-        if event_type == constants.EVENT_WINDOW_FRAMEBUFFER_SIZE:
-            self.window_size = event_data
+        handler = self.event_handlers.get(event_type, None)
+        if handler is not None:
+            handler(event_data=event_data)
 
-        if event_type == constants.EVENT_ENTITY_SELECTED:
-            self.selected_entity_uid = event_data[0]
-            self.set_all_gizmo_3d_visibility(visible=True)
-            self.set_gizmo_to_selected_entity()
+    # ========================================================================
+    #                             Event Handling
+    # ========================================================================
 
-        if event_type == constants.EVENT_ENTITY_DESELECTED:
-            self.selected_entity_uid = None
-            self.set_all_gizmo_3d_visibility(visible=False)
+    def handle_event_window_framebuffer_size(self, event_data: tuple):
+        self.window_size = event_data
 
-        if event_type == constants.EVENT_MOUSE_LEAVE_UI:
-            self.gizmo_selection_enabled = True
+    def handle_event_entity_selected(self, event_data: tuple):
+        self.selected_entity_uid = event_data[0]
+        self.set_all_gizmo_3d_visibility(visible=True)
+        self.set_gizmo_to_selected_entity()
 
-        if event_type == constants.EVENT_MOUSE_ENTER_UI:
-            self.gizmo_selection_enabled = False
+    def handle_event_entity_deselected(self, event_data: tuple):
+        self.selected_entity_uid = None
+        self.set_all_gizmo_3d_visibility(visible=False)
 
-        if (event_type == constants.EVENT_MOUSE_BUTTON_PRESS and
-                event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] == constants.MOUSE_LEFT and
-                self.selected_gizmo_axis_index is not None):
-            self.mouse_left_button_pressed = True
+    def handle_event_mouse_enter_ui(self, event_data: tuple):
+        self.gizmo_selection_enabled = False
 
-        if (event_type == constants.EVENT_MOUSE_BUTTON_RELEASE and
-                event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] == constants.MOUSE_LEFT and
-                self.selected_gizmo_axis_index is not None):
-            self.mouse_left_button_pressed = False
+    def handle_event_mouse_leave_ui(self, event_data: tuple):
+        self.gizmo_selection_enabled = True
 
-        if event_type == constants.EVENT_MOUSE_MOVE:
-            self.mouse_screen_position = event_data
-            self.process_mouse_movement(screen_gl_pixels=(event_data[0], event_data[1]))
+    def handle_event_mouse_move(self, event_data: tuple):
+        self.mouse_screen_position = event_data
+        self.process_mouse_movement(screen_gl_pixels=(event_data[0], event_data[1]))
+
+    def handle_event_mouse_button_press(self, event_data: tuple):
+        if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != constants.MOUSE_LEFT:
+            return
+
+        if self.gizmo_axis_on_hover_index is None:
+            return
+
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_GIZMO_3D_ACTIVATED,
+                                     event_data=(None,),
+                                     sender=self)
+
+        transform = self.component_pool.get_component(entity_uid=self.selected_entity_uid,
+                                                      component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
+        self.gizmo_in_use = True
+        self.selected_entity_original_transform_component = transform
+        self.process_mouse_movement(screen_gl_pixels=event_data[2:])
+
+    def handle_event_mouse_button_release(self, event_data: tuple):
+        if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != constants.MOUSE_LEFT:
+            return
+
+        if not self.gizmo_in_use:
+            return
+
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_GIZMO_3D_DEACTIVATED,
+                                     event_data=(None,),
+                                     sender=self)
+
+        self.gizmo_in_use = False
+
+    # ========================================================================
+    #                            Core functions
+    # ========================================================================
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
@@ -179,34 +230,34 @@ class Gizmo3DSystem(System):
 
         # Find which viewport the mouse is
         camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-        focused_camera_component = None
-        focused_camera_id = None
+        active_camera_component = None
+        active_camera_id = None
         for camera_entity_id, camera_component in camera_pool.items():
             if camera_component.is_inside_viewport(screen_gl_position=screen_gl_pixels):
-                focused_camera_component = camera_component
-                focused_camera_id = camera_entity_id
+                active_camera_component = camera_component
+                active_camera_id = camera_entity_id
                 continue
 
-        if focused_camera_component is None:
+        if active_camera_component is None:
             return
 
         gizmo_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
         material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
-        gizmo_3d_entity_uid = self.camera2gizmo_map[focused_camera_id]
+        gizmo_3d_entity_uid = self.camera2gizmo_map[active_camera_id]
 
         gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
         mat4.mul_vectors3(in_mat4=gizmo_transform_component.world_matrix,
                           in_vec3_array=constants.GIZMO_3D_AXES,
                           out_vec3_array=self.gizmo_transformed_axes)
 
-        camera_matrix = transform_3d_pool[focused_camera_id].world_matrix
-        projection_matrix = focused_camera_component.get_projection_matrix()
+        camera_matrix = transform_3d_pool[active_camera_id].world_matrix
+        projection_matrix = active_camera_component.get_projection_matrix()
 
         viewport_position = utils_camera.screen_gl_position_pixels2viewport_position(
             position_pixels=self.mouse_screen_position,
-            viewport_pixels=focused_camera_component.viewport_pixels)
+            viewport_pixels=active_camera_component.viewport_pixels)
 
         if viewport_position is None:
             return
@@ -216,7 +267,8 @@ class Gizmo3DSystem(System):
             camera_matrix=camera_matrix,
             projection_matrix=projection_matrix)
 
-        # TODO: !!!!!!!!!!!!!!! Continue from Here !!!!!!!!!!!!!!!
+        if self.process_gizmo_in_use(ray_origin=ray_origin, ray_direction=ray_direction):
+            return
 
         # TODO: [CLEANUP] Clean this silly code. Change the intersection function to accommodate for this
         points_a = np.array([gizmo_transform_component.position,
@@ -241,7 +293,7 @@ class Gizmo3DSystem(System):
         # And Re-highlight only the current axis being hovered, if any
         valid_indices = np.where(self.axes_distances > -1.0)[0]
         if valid_indices.size == 0:
-            self.selected_gizmo_axis_index = None
+            self.gizmo_axis_on_hover_index = None
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_NOT_HOVERING_GIZMO_3D,
                                          event_data=(-1,),
                                          sender=self)
@@ -251,18 +303,25 @@ class Gizmo3DSystem(System):
         axis_entity_uid = gizmo_component.axes_entities_uids[selected_axis_index]
         axis_material = material_pool[axis_entity_uid]
         axis_material.state_highlighted = True
-        self.selected_gizmo_axis_index = int(selected_axis_index)
+        self.gizmo_axis_on_hover_index = int(selected_axis_index)
 
         # Notify all systems that mouse is currently hovering one of the gizmo axes
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_HOVERING_GIZMO_3D,
-                                     event_data=(self.selected_gizmo_axis_index,),
+                                     event_data=(self.gizmo_axis_on_hover_index,),
                                      sender=self)
+
+    def process_gizmo_in_use(self, ray_origin: np.array, ray_direction: np.array) -> bool:
+        if not self.gizmo_in_use:
+            return False
+
+        print(self.gizmo_axis_on_hover_index)
+
+        return True
 
     def set_gizmo_to_selected_entity(self):
 
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
-        selected_world_position = np.ascontiguousarray(selected_transform_component.world_matrix[:3, 3])
 
         camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         for camera_entity_id, camera_component in camera_pool.items():

@@ -1,8 +1,42 @@
 import numpy as np
-from numba import njit, float32
+from numba import njit, float32, UniTuple
 
 # Constants
 FLT_EPSILON = np.finfo(float).eps
+
+# ======================================================================================================================
+#                                                Ray / Ray
+# ======================================================================================================================
+
+
+@njit(UniTuple(float32[:], 2)(float32[:], float32[:], float32[:], float32[:]), cache=True)
+def ray2ray_nearest_point(ray_0_origin, ray_0_direction, ray_1_origin, ray_1_direction):
+
+    """
+    Original function from Gizmo project: https://github.com/john-chapman/im3d/blob/master/im3d.cpp
+    :param ray_0_origin:
+    :param ray_0_direction:
+    :param ray_1_origin:
+    :param ray_1_direction:
+    :return:
+    """
+
+    p = ray_0_origin - ray_1_origin
+    q = np.dot(ray_0_direction, ray_1_direction)
+    s = np.dot(ray_1_direction, p)
+
+    d = 1.0 - q * q
+
+    if d < FLT_EPSILON:  # lines are parallel
+        t0_ = 0.0
+        t1_ = s
+    else:
+        r = np.dot(ray_0_direction, p)
+        t0_ = (q * s - r) / d
+        t1_ = (s - q * r) / d
+
+    return t0_, t1_
+
 
 # ======================================================================================================================
 #                                                Ray / Sphere
@@ -178,6 +212,7 @@ def ray_cylinder_intersection(ray_origin: np.array,
 #                                                Ray / Plane
 # ======================================================================================================================
 
+
 float32(float32[:], float32[:])
 @njit(cache=True)
 def plane_from_point_and_normal(point, normal):
@@ -193,22 +228,6 @@ def plane_from_point_and_normal(point, normal):
     coefficients = np.append(normal, D)
     return coefficients
 
-"""float32(float32[:], float32[:], float32[:])
-@njit(cache=True)
-def define_plane(origin: np.array, vector_a: np.array, vector_b: np.array):
-
-    # BING: Not completly reliable. W should be negative when it is positive
-
-    # The plane's normal vector is the cross product of the two vectors
-    normal = np.cross(vector_a, vector_b)
-
-    # The last element of the plane definition is the dot product of the normal and the point
-    w = -np.dot(normal, origin)
-
-    # The plane is defined by the normal vector and w
-    plane = np.append(normal, w)
-
-    return plane"""
 
 float32(float32[:], float32[:], float32[:])
 @njit(cache=True)
@@ -229,32 +248,7 @@ def intersect_ray_plane(r_origin: np.array, r_vector: np.array, plane: np.array)
     return -(numerator / denominator)
 
 
-
-
-"""
-def intersect_ray_plane(ray_origin, ray_direction, plane_x_pointd, B, C):
-    # Define plane normal
-    AB = B - plane_x_point
-    BC = C - B
-    plane_normal = np.cross(AB, BC)
-
-    # Calculate D value (dot product of normal and a point on the plane)
-    D = -np.dot(plane_normal, B)
-
-    # Calculate t (the parameter for the parametric equation of the line)
-    t = -(np.dot(plane_normal, ray_origin) + D) / np.dot(plane_normal, ray_direction)
-
-    # Calculate the intersection point
-    intersection_point = ray_origin + t * ray_direction
-
-    # Calculate local coordinates
-    local_x = np.dot(intersection_point - B, AB/np.linalg.norm(AB))
-    local_y = np.dot(intersection_point - B, BC/np.linalg.norm(BC))
-
-    return local_x, local_y
-"""
-
-@njit( cache=True)
+@njit(cache=True)
 def intersect_ray_plane_old(plane_origin: np.array,
                         plane_normal: np.array,
                         ray_origin: np.array,

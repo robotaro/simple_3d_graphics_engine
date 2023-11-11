@@ -118,6 +118,7 @@ EVENT_ENTITY_SELECTED = 21
 EVENT_ENTITY_DESELECTED = 22
 EVENT_MULTIPLE_ENTITIES_SELECTED = 23
 
+
 # Window
 EVENT_WINDOW_SIZE = 30                # args: (width, height) <int, int>
 EVENT_WINDOW_FRAMEBUFFER_SIZE = 31    # args: (width, height) <int, int>
