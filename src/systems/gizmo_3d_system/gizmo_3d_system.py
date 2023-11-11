@@ -6,7 +6,7 @@ from src.core import constants
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
 from src.core.component_pool import ComponentPool
-from src.math import intersection_3d, mat4
+from src.math import ray_intersection, mat4
 from src.utilities import utils_camera
 from src.systems.system import System
 from src.systems.gizmo_3d_system.gizmo_blueprint import GIZMO_3D_RIG_BLUEPRINT
@@ -223,7 +223,7 @@ class Gizmo3DSystem(System):
                              gizmo_transform_component.position,
                              gizmo_transform_component.position], dtype=np.float32)
 
-        intersection_3d.intersect_ray_capsules(
+        ray_intersection.intersect_ray_capsules(
             ray_origin=ray_origin,
             ray_direction=ray_direction,
             points_a=points_a,
