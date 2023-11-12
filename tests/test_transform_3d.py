@@ -4,6 +4,7 @@ import numpy as np
 from src.components.transform_3d import Transform3D
 from src.math import mat4
 
+
 @fixture
 def condition_0_parameters():
     return {
@@ -13,6 +14,7 @@ def condition_0_parameters():
         "mode": "euler_xyz",
         "degrees": "true"
     }
+
 
 @fixture
 def condition_1_parameters():
@@ -34,6 +36,34 @@ def condition_2_parameters():
         "mode": "euler_xyz",
         "degrees": "true"
     }
+
+
+def test_update_local_matrix_euler_xyz(condition_2_parameters):
+    transform = Transform3D(parameters=condition_2_parameters)
+
+    # These values should be overwritten because local matrix update takes precedence
+    transform.position = (4, 5, 6)
+    transform.rotation = (10, 20, 30)
+    transform.scale = 2
+    transform.input_values_updated = True
+
+    target_rotation = (0.7853981633974475, 0.7853981633974475, 0)
+    target_position = (7.0, 8.0, 9.0)
+    target_scale = 1.0
+
+    rotation = R.from_euler('xyz', target_rotation)
+    transform.local_matrix = np.eye(4, dtype=np.float32)
+    transform.local_matrix[:3, :3] = rotation.as_matrix().astype(np.float32)
+    transform.local_matrix[:3, 3] = target_position
+    transform.local_matrix_updated = True
+
+    transform.update()
+
+    # TODO: Scale is not YET being checked! Decide to go with one value per axis or one for all first!
+    np.testing.assert_almost_equal(np.array(transform.position),
+                                   np.array(target_position))
+    np.testing.assert_almost_equal(np.array(transform.rotation),
+                                   np.array(target_rotation))
 
 
 def test_parameter_position(condition_1_parameters):
@@ -81,28 +111,6 @@ def test_update_input_values_euler_xyz(condition_2_parameters):
     np.testing.assert_array_almost_equal(target, transform.local_matrix)
 
 
-def test_update_local_matrix_euler_xyz(condition_0_parameters):
-    transform = Transform3D(parameters=condition_0_parameters)
-
-    # These values should be overwritten because local matrix update takes precedence
-    transform.position = (4, 5, 6)
-    transform.rotation = (10, 20, 30)
-    transform.scale = 2
-    transform.input_values_updated = True
-
-
-
-    transform.local_matrix = np.array([[0.707107, 0., 0.707107,  1.],
-                                       [0., 1., 0.,              2.],
-                                       [-0.707107, 0., 0.707107, 3.],
-                                       [0., 0., 0.,              1.]], dtype=np.float32)
-    transform.local_matrix_updated = True
-
-    transform.update()
-
-    assert transform.position == (1.0, 2.0, 3.0)
-    #assert transform.position == (0.0, 0.7853981633974475, 0.0)
-    #assert transform.position == 1.0
 
 
 

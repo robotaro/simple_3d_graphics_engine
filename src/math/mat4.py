@@ -93,6 +93,34 @@ def create_transform_euler_xyz(position: np.array, rotation: np.array, scale: fl
     return transform
 
 
+@njit(float32[:](float32[:, :]), cache=True)
+def to_euler_xyz(rotation_matrix) -> np.array:
+
+    # Safety: Normalise matrix rotation first
+    rotation_matrix[:, 0] /= np.linalg.norm(rotation_matrix[:, 0])
+    rotation_matrix[:, 1] /= np.linalg.norm(rotation_matrix[:, 1])
+    rotation_matrix[:, 2] /= np.linalg.norm(rotation_matrix[:, 2])
+
+    ret = np.zeros((3,), dtype=np.float32)
+    if np.abs(rotation_matrix[2, 0]) < 1.0:
+        ret[1] = -np.arcsin(rotation_matrix[2, 0])
+        c = 1.0 / np.cos(ret[1])
+        ret[0] = np.arctan2(rotation_matrix[2, 1] * c, rotation_matrix[2, 2] * c)
+        ret[2] = np.arctan2(rotation_matrix[1, 0] * c, rotation_matrix[0, 0] * c)
+        return ret
+
+    ret[2] = 0.0
+    if not (rotation_matrix[2, 0] > -1.0):
+        ret[0] = ret[2] + np.arctan2(rotation_matrix[0, 1], rotation_matrix[0, 2])
+        ret[1] = np.pi / 2
+        return ret
+
+    ret[0] = -ret[2] + np.arctan2(-rotation_matrix[0, 1], -rotation_matrix[0, 2])
+    ret[1] = -np.pi / 2
+
+    return ret
+
+
 @njit(cache=True)
 def mul_vector3(in_mat4: np.ndarray, in_vec3: np.array) -> np.array:
     return np.dot(in_mat4[:3, :3], in_vec3) + in_mat4[:3, 3]

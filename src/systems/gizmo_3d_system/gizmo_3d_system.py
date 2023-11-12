@@ -212,6 +212,10 @@ class Gizmo3DSystem(System):
             gizmo_scale = utils_camera.set_gizmo_scale(view_matrix=view_matrix, object_position=selected_world_position)
             viewport_height = camera_component.viewport_pixels[3]
             gizmo_scale *= constants.GIZMO_3D_VIEWPORT_SCALE_COEFFICIENT / viewport_height
+
+            # Update gizmo's transform parameters for visual feedback
+            gizmo_transform_component.position = selected_transform_component.position
+            gizmo_transform_component.rotation = selected_transform_component.rotation
             gizmo_transform_component.scale = gizmo_scale
             gizmo_transform_component.input_values_updated = True
 

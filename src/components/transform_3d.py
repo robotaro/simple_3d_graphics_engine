@@ -70,21 +70,17 @@ class Transform3D(Component):
 
         if self.local_matrix_updated:
             self.position = tuple(self.local_matrix[:3, 3])
-
+            self.rotation = tuple(mat4.to_euler_xyz(self.local_matrix))
             self.local_matrix_updated = False
             self.input_values_updated = False  # They have now been overwritten, so no updated required.
             return
 
         if self.input_values_updated:
-            #self.local_matrix = mat4.compute_transform(position=self.position,
-            #                                           rotation_rad=self.rotation,
-            #                                           scale=self.scale)
             self.local_matrix = mat4.create_transform_euler_xyz(
                 np.array(self.position, dtype=np.float32),
                 np.array(self.rotation, dtype=np.float32),
                 self.scale)
             self.input_values_updated = False
-            return
 
     def move(self, delta_position: np.array):
         self.position += delta_position
