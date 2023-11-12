@@ -3,7 +3,7 @@ from src.components.camera import Camera
 
 def test_update_viewport():
 
-    params = {"viewport_ratio": (0.25, 0.25, 0.5, 0.5)}
+    params = {"viewport_screen_ratio": (0.25, 0.25, 0.5, 0.5)}
 
     camera = Camera(parameters=params)
     assert camera.viewport_pixels is None
@@ -15,7 +15,12 @@ def test_update_viewport():
 
 def test_is_inside_viewport():
 
-    params = {"viewport_ratio": (0.25, 0.25, 0.5, 0.5)}
+    """
+    Tests whether a pixel is inside the viewport or not
+    :return:
+    """
+
+    params = {"viewport_screen_ratio": (0.25, 0.25, 0.5, 0.5)}
 
     camera = Camera(parameters=params)
 
@@ -34,30 +39,7 @@ def test_is_inside_viewport():
         x = conditions[0]
         y = conditions[1]
         target = conditions[2]
-        result = camera.is_inside_viewport(coord_pixels=(x, y))
+        result = camera.is_inside_viewport(screen_gl_position=(x, y))
         assert target == result
 
 
-def test_get_viewport_coordinates():
-
-    params = {"viewport_ratio": (0.25, 0.25, 0.5, 0.5)}
-
-    camera = Camera(parameters=params)
-
-    result = camera.get_viewport_coordinates(screen_coord_pixels=(400, 300))
-    assert result is None
-
-    camera.update_viewport(window_size=(800, 600))
-
-    test_conditions = [
-        # Coords     Norm Coordinates
-        ((400, 300), (0.0, 0.0)),
-        ((200, 150), (-1.0, -1.0)),
-        ((0, 0), (-2.0, -2.0))  # Invalid scenario, as coordinates should range form -1 to 1
-    ]
-
-    for conditions in test_conditions:
-        xy_pixel = conditions[0]
-        target = conditions[1]
-        result = camera.get_viewport_coordinates(screen_coord_pixels=xy_pixel)
-        assert target == result

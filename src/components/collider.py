@@ -30,7 +30,3 @@ class Collider(Component):
     def ray_intersection(self, ray_origin: np.array, ray_direction: np.array) -> float:
 
         pass
-
-
-
-

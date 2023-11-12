@@ -20,7 +20,7 @@ class System:
         "runtime"
     ]
 
-    _type = "base_system"
+    name = "base_system"
 
     def __init__(self,
                  logger: logging.Logger,

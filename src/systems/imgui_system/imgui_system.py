@@ -23,7 +23,7 @@ class ImguiSystem(System):
         "_exit_popup_open"
     ]
 
-    _type = "imgui_system"
+    name = constants.SYSTEM_NAME_IMGUI
 
     def __init__(self, logger: logging.Logger,
                  component_pool: ComponentPool,
@@ -205,6 +205,7 @@ class ImguiSystem(System):
         # open new window context
         imgui.begin(f"Selected Entity", True)
 
+        #imgui.set_window_position(300, 150)
         imgui.set_window_size(500, 500)
 
         flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP
@@ -242,7 +243,8 @@ class ImguiSystem(System):
         # ======================================================================
 
         # [ Point Light ]
-        point_light = self.component_pool.point_light_components.get(self.selected_entity_uid, None)
+        point_light_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
+        point_light = point_light_pool.get(self.selected_entity_uid, None)
         if point_light and not point_light.system_owned:
             imgui.text(f"Colors")
             _, point_light.diffuse = imgui.drag_float3("Diffuse Color",
@@ -267,28 +269,35 @@ class ImguiSystem(System):
             imgui.spacing()
 
         # [ Camera ]
-        camera = self.component_pool.camera_components.get(self.selected_entity_uid, None)
+        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        camera = camera_pool.get(self.selected_entity_uid, None)
         if camera and not camera.system_owned:
             imgui.text(f"Camera")
             _, camera.perspective = imgui.checkbox("Perspective", camera.perspective)
 
         # [ Transform 3D ]
-        transform = self.component_pool.transform_3d_components.get(self.selected_entity_uid, None)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform = transform_3d_pool.get(self.selected_entity_uid, None)
         if transform and not transform.system_owned:
             imgui.text(f"Transform")
             value_updated, transform.position = imgui.drag_float3("Position",
                                                                   *transform.position,
                                                                   constants.IMGUI_DRAG_FLOAT_PRECISION)
-            transform.dirty |= value_updated
+            transform.input_values_updated |= value_updated
             value_updated, transform.rotation = imgui.drag_float3("Rotation",
                                                                   *transform.rotation,
                                                                   constants.IMGUI_DRAG_FLOAT_PRECISION)
-            transform.dirty |= value_updated
+            transform.input_values_updated |= value_updated
+            value_updated, transform.scale = imgui.drag_float("Scale",
+                                                              transform.scale,
+                                                              constants.IMGUI_DRAG_FLOAT_PRECISION)
+            transform.input_values_updated |= value_updated
 
             imgui.spacing()
 
         # [ Material]
-        material = self.component_pool.material_components.get(self.selected_entity_uid, None)
+        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+        material = material_pool.get(self.selected_entity_uid, None)
         if material and not material.system_owned:
             imgui.text(f"Material")
             _, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)

@@ -16,7 +16,7 @@ from src.systems.import_system.loading_task_gltf import LoadingTaskGLTF
 
 class ImportSystem(System):
 
-    _type = "import_system"
+    name = "import_system"
 
     LOADING_TASK_CLASS = {
         "obj": LoadingTaskObj,

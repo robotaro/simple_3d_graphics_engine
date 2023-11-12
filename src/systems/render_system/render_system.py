@@ -18,7 +18,7 @@ from src.math import mat4
 
 class RenderSystem(System):
 
-    _type = "render_system"
+    name = "render_system"
 
     __slots__ = [
         "ctx",
@@ -38,6 +38,7 @@ class RenderSystem(System):
         "forward_pass_texture_entity_info",
         "forward_pass_texture_depth",
         "forward_pass_framebuffer",
+        "debug_forward_pass_framebuffer",
         "overlay_pass_texture_color",
         "overlay_pass_texture_depth",
         "overlay_pass_framebuffer",
@@ -51,7 +52,8 @@ class RenderSystem(System):
         "outline_program",
         "outline_texture",
         "outline_framebuffer",
-        "entity_selection_enabled",
+        "hovering_ui",
+        "hovering_gizmo",
         "selected_entity_id",
         "shadow_map_program",
         "shadow_map_depth_texture",
@@ -97,7 +99,10 @@ class RenderSystem(System):
         self.forward_pass_texture_depth = None
         self.forward_pass_framebuffer = None
 
-        # Overlay Pass
+        # Debug Forward Pass
+        self.debug_forward_pass_framebuffer = None
+
+        # Overlay 3D Pass
         self.overlay_pass_texture_color = None
         self.overlay_pass_texture_depth = None
         self.overlay_pass_framebuffer = None
@@ -119,7 +124,8 @@ class RenderSystem(System):
         self.outline_framebuffer = None
 
         # Entity selection variables
-        self.entity_selection_enabled = True
+        self.hovering_ui = False
+        self.hovering_gizmo = False
         self.selected_entity_id = -1
 
         # Shadow Mapping
@@ -168,25 +174,7 @@ class RenderSystem(System):
 
     def create_framebuffers(self, window_size: tuple):
 
-        # Release any previous existing textures and/or framebuffers
-        def safe_release(mgl_object):
-            if mgl_object is not None:
-                mgl_object.release()
-
-        safe_release(self.forward_pass_texture_color)
-        safe_release(self.forward_pass_texture_normal)
-        safe_release(self.forward_pass_texture_viewpos)
-        safe_release(self.forward_pass_texture_entity_info)
-        safe_release(self.forward_pass_texture_depth)
-        safe_release(self.forward_pass_framebuffer)
-
-        safe_release(self.overlay_pass_texture_color)
-        safe_release(self.overlay_pass_texture_depth)
-        safe_release(self.overlay_pass_framebuffer)
-
-        safe_release(self.selection_pass_texture_color)
-        safe_release(self.selection_pass_texture_depth)
-        safe_release(self.selection_pass_framebuffer)
+        self._release_all_framebuffers_and_textures()
 
         # Forward Pass
         self.forward_pass_texture_color = self.ctx.texture(size=window_size, components=4)
@@ -203,7 +191,13 @@ class RenderSystem(System):
                 self.forward_pass_texture_entity_info],
             depth_attachment=self.forward_pass_texture_depth)
 
-        # Overlay Pass
+        # Debug Forward Pass
+        self.debug_forward_pass_framebuffer = self.ctx.framebuffer(
+            color_attachments=[
+                self.forward_pass_texture_color],
+            depth_attachment=self.forward_pass_texture_depth)
+
+        # Overlay 3D Pass
         self.overlay_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
         self.overlay_pass_texture_depth = self.ctx.depth_texture(size=window_size)
         self.overlay_pass_framebuffer = self.ctx.framebuffer(
@@ -220,93 +214,127 @@ class RenderSystem(System):
             color_attachments=[self.selection_pass_texture_color],
             depth_attachment=self.selection_pass_texture_depth)
 
-        # Screen quads
+    def _release_all_framebuffers_and_textures(self):
+
+        def safe_release(mgl_object):
+            if mgl_object is not None:
+                mgl_object.release()
+
+        safe_release(self.forward_pass_texture_color)
+        safe_release(self.forward_pass_texture_normal)
+        safe_release(self.forward_pass_texture_viewpos)
+        safe_release(self.forward_pass_texture_entity_info)
+        safe_release(self.forward_pass_texture_depth)
+        safe_release(self.forward_pass_framebuffer)
+
+        safe_release(self.debug_forward_pass_framebuffer)
+
+        safe_release(self.overlay_pass_texture_color)
+        safe_release(self.overlay_pass_texture_depth)
+        safe_release(self.overlay_pass_framebuffer)
+
+        safe_release(self.selection_pass_texture_color)
+        safe_release(self.selection_pass_texture_depth)
+        safe_release(self.selection_pass_framebuffer)
 
     def on_event(self, event_type: int, event_data: tuple):
 
         if event_type == constants.EVENT_WINDOW_FRAMEBUFFER_SIZE:
             self.buffer_size = event_data
             self.create_framebuffers(window_size=self.buffer_size)
-            for _, camera_component in self.component_pool.camera_components.items():
+
+            camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+            for _, camera_component in camera_pool.items():
                 camera_component.update_viewport(window_size=self.buffer_size)
 
         if event_type == constants.EVENT_MOUSE_ENTER_UI:
-            self.entity_selection_enabled = False
+            self.hovering_ui = True
 
         if event_type == constants.EVENT_MOUSE_LEAVE_UI:
-            self.entity_selection_enabled = True
+            self.hovering_ui = False
 
-        if event_type == constants.EVENT_MOUSE_ENTER_GIZMO_3D:
-            self.entity_selection_enabled = False
+        if event_type == constants.EVENT_MOUSE_HOVERING_GIZMO_3D:
+            self.hovering_gizmo = True
 
-        if event_type == constants.EVENT_MOUSE_LEAVE_GIZMO_3D:
-            self.entity_selection_enabled = False
+        if event_type == constants.EVENT_MOUSE_NOT_HOVERING_GIZMO_3D:
+            self.hovering_gizmo = False
 
-        if self.entity_selection_enabled:
-            if (event_type == constants.EVENT_MOUSE_BUTTON_PRESS and
-                    event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] == glfw.MOUSE_BUTTON_LEFT):
-
-                # TODO: Move this to its own function!
-                # Pass the coordinate of the pixel you want to sample to the fragment picking shader
-                self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
-                self.forward_pass_texture_entity_info.use(location=0)
-
-                self.picker_vao.transform(
-                    self.picker_buffer,
-                    mode=moderngl.POINTS,
-                    vertices=1,
-                    first=0,
-                    instances=1)
-
-                self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
-
-                if self.selected_entity_id < constants.COMPONENT_POOL_STARTING_ID_COUNTER:
-                    self.event_publisher.publish(event_type=constants.EVENT_ENTITY_DESELECTED,
-                                                 event_data=(None,),
-                                                 sender=self)
-                    return
-
-                self.event_publisher.publish(event_type=constants.EVENT_ENTITY_SELECTED,
-                                             event_data=(self.selected_entity_id,),
-                                             sender=self)
+        if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:
+            self.process_entity_selection(event_data=event_data)
 
         if event_type == constants.EVENT_KEYBOARD_PRESS:
-
-            # Texture debugging modes
-            key_value = event_data[constants.EVENT_INDEX_KEYBOARD_KEY]
-            if glfw.KEY_F1 <= key_value <= glfw.KEY_F11:
-                self.fullscreen_selected_texture = key_value - glfw.KEY_F1
-
-            # Light debugging modes
-            if glfw.KEY_1 == key_value:
-                self._ambient_hemisphere_light_enabled = not self._ambient_hemisphere_light_enabled
-            if glfw.KEY_2 == key_value:
-                self._point_lights_enabled = not self._point_lights_enabled
-            if glfw.KEY_3 == key_value:
-                self._directional_lights_enabled = not self._directional_lights_enabled
-            if glfw.KEY_4 == key_value:
-                self._gamma_correction_enabled = not self._gamma_correction_enabled
-            if glfw.KEY_5 == key_value:
-                self._shadows_enabled = not self._shadows_enabled
+            self.process_keyboard_press(event_data=event_data)
 
         if event_type == constants.EVENT_ENTITY_SELECTED:
             # Other systems may change the selected entity, so this should be reflected by the render system
             self.selected_entity_id = event_data[0]
 
+    def process_entity_selection(self, event_data: tuple):
+        if self.hovering_ui or self.hovering_gizmo:
+            return
+
+        if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != glfw.MOUSE_BUTTON_LEFT:
+            return
+
+        # TODO: Move this to its own function!
+        # Pass the coordinate of the pixel you want to sample to the fragment picking shader
+        self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
+        self.forward_pass_texture_entity_info.use(location=0)
+
+        self.picker_vao.transform(
+            self.picker_buffer,
+            mode=moderngl.POINTS,
+            vertices=1,
+            first=0,
+            instances=1)
+
+        self.selected_entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
+
+        if self.selected_entity_id < constants.COMPONENT_POOL_STARTING_ID_COUNTER:
+            self.event_publisher.publish(event_type=constants.EVENT_ENTITY_DESELECTED,
+                                         event_data=(None,),
+                                         sender=self)
+
+            # Clear all pixels that represent any selected objects
+            self.selection_pass_framebuffer.use()
+            self.selection_pass_framebuffer.clear(depth=1.0)
+            return
+
+        self.event_publisher.publish(event_type=constants.EVENT_ENTITY_SELECTED,
+                                     event_data=(self.selected_entity_id,),
+                                     sender=self)
+
+    def process_keyboard_press(self, event_data: tuple):
+
+        # Texture debugging modes
+        key_value = event_data[constants.EVENT_INDEX_KEYBOARD_KEY]
+        if glfw.KEY_F1 <= key_value <= glfw.KEY_F11:
+            self.fullscreen_selected_texture = key_value - glfw.KEY_F1
+
+        # Light debugging modes
+        if glfw.KEY_1 == key_value:
+            self._ambient_hemisphere_light_enabled = not self._ambient_hemisphere_light_enabled
+        if glfw.KEY_2 == key_value:
+            self._point_lights_enabled = not self._point_lights_enabled
+        if glfw.KEY_3 == key_value:
+            self._directional_lights_enabled = not self._directional_lights_enabled
+        if glfw.KEY_4 == key_value:
+            self._gamma_correction_enabled = not self._gamma_correction_enabled
+        if glfw.KEY_5 == key_value:
+            self._shadows_enabled = not self._shadows_enabled
+
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
         # Initialise object on the GPU if they haven't been already
-        camera_entity_uids = list(self.component_pool.camera_components.keys())
 
         # Render shadow texture (if enabled)
-        self.render_shadow_mapping_pass(component_pool=self.component_pool)
+        #self.render_shadow_mapping_pass(component_pool=self.component_pool)
 
-        # Every Render pass operates on the OFFSCREEN buffers only
-        for camera_uid in camera_entity_uids:
-
-            self.render_forward_pass(camera_uid=camera_uid)
-            self.render_overlay_pass(camera_uid=camera_uid)
-            self.render_selection_pass(camera_uid=camera_uid, selected_entity_uid=self.selected_entity_id)
+        self.render_forward_pass()
+        #self.render_debug_forward_pass()
+        self.render_overlay_3d_pass()
+        self.render_overlay_2d_pass()
+        self.render_selection_pass(selected_entity_uid=self.selected_entity_id)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
         self.render_screen_pass()
@@ -315,13 +343,7 @@ class RenderSystem(System):
 
     def shutdown(self):
 
-        # Release textures
-        for texture_name, texture_obj in self.textures.items():
-            texture_obj.release()
-
-        # Release Framebuffers
-        for frabuffer_name, framebuffer_obj in self.framebuffers.items():
-            framebuffer_obj.release()
+        self._release_all_framebuffers_and_textures()
 
         for quad_name, quad in self.quads.items():
             if quad["vbo_vertices"] is not None:
@@ -340,43 +362,88 @@ class RenderSystem(System):
     #                           Render Passes
     # =========================================================================
 
-    def render_forward_pass(self, camera_uid: int):
+    def render_forward_pass(self):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
-        camera_component = self.component_pool.camera_components[camera_uid]
-        camera_transform = self.component_pool.transform_3d_components[camera_uid]
-
         self.forward_pass_framebuffer.use()
-        self.forward_pass_framebuffer.viewport = camera_component.viewport_pixels
 
-        # TODO: FInd out how this viewport affects the location of the rendering. Clearing seems to also set the
-        #       viewport in a weird way...
-        self.forward_pass_framebuffer.clear(
-            color=constants.RENDER_SYSTEM_BACKGROUND_COLOR,
-            alpha=1.0,
-            depth=1.0,
-            viewport=camera_component.viewport_pixels)
+        camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
 
-        # Prepare context flags for rendering
-        self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)  # Removing has no effect? Why?
-        self.ctx.cull_face = "back"
-        self.ctx.blend_func = (
-            moderngl.SRC_ALPHA,
-            moderngl.ONE_MINUS_SRC_ALPHA,
-            moderngl.ONE,
-            moderngl.ONE)
+        # Every Render pass operates on the OFFSCREEN buffers only
+        for camera_uid in camera_entity_uids:
 
-        program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
-        program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
+            camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+            transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
-        camera_component.upload_uniforms(program=program)
+            camera_component = camera_pool[camera_uid]
+            camera_transform = transform_3d_pool[camera_uid]
+            self.forward_pass_framebuffer.viewport = camera_component.viewport_pixels
 
-        # Point Lights
-        program["num_point_lights"].value = len(self.component_pool.point_light_components)
-        for index, (mesh_entity_uid, point_light_component) in enumerate(self.component_pool.point_light_components.items()):
+            # TODO: FInd out how this viewport affects the location of the rendering. Clearing seems to also set the
+            #       viewport in a weird way...
+            self.forward_pass_framebuffer.clear(
+                color=constants.RENDER_SYSTEM_BACKGROUND_COLOR,
+                alpha=1.0,
+                depth=1.0,
+                viewport=camera_component.viewport_pixels)
 
-            light_transform = self.component_pool.transform_3d_components[mesh_entity_uid]
+            # Prepare context flags for rendering
+            self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)  # Removing has no effect? Why?
+            self.ctx.cull_face = "back"
+            self.ctx.blend_func = (
+                moderngl.SRC_ALPHA,
+                moderngl.ONE_MINUS_SRC_ALPHA,
+                moderngl.ONE,
+                moderngl.ONE)
+
+            program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
+
+            # Setup camera
+            camera_component.upload_uniforms(program=program)
+            program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
+
+            # Setup lights
+            self.upload_uniforms_point_lights(program=program)
+            self.upload_uniforms_directional_lights(program=program)
+
+            # Render meshes
+            mesh_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
+            transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+            material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+
+            for mesh_entity_uid, mesh_component in mesh_pool.items():
+
+                if not mesh_component.visible or mesh_component.layer == constants.RENDER_SYSTEM_LAYER_OVERLAY:
+                    continue
+
+                # Mesh uniforms
+                program["entity_id"].value = mesh_entity_uid
+                program["model_matrix"].write(transform_3d_pool[mesh_entity_uid].world_matrix.T.tobytes())
+                program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
+                program["directional_lights_enabled"].value = self._directional_lights_enabled
+                program["point_lights_enabled"].value = self._point_lights_enabled
+                program["gamma_correction_enabled"].value = self._gamma_correction_enabled
+                program["shadows_enabled"].value = self._shadows_enabled
+
+                # TODO: Technically, you only need to upload the material once since it doesn't change.
+                #       The program will keep its variable states!
+                material_component = material_pool[mesh_entity_uid]
+                if material_component is not None:
+                    material_component.upload_uniforms(program=program)
+
+                mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_FORWARD_PASS)
+
+                # Stage: Draw transparent objects back to front
+
+    def upload_uniforms_point_lights(self, program: moderngl.Program):
+
+        point_light_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
+        program["num_point_lights"].value = len(point_light_pool)
+        for index, (mesh_entity_uid, point_light_component) in enumerate(point_light_pool.items()):
+            light_transform = transform_3d_pool[mesh_entity_uid]
 
             program[f"point_lights[{index}].position"] = light_transform.position
             program[f"point_lights[{index}].diffuse"] = point_light_component.diffuse
@@ -384,12 +451,15 @@ class RenderSystem(System):
             program[f"point_lights[{index}].attenuation_coeffs"] = point_light_component.attenuation_coeffs
             program[f"point_lights[{index}].enabled"] = point_light_component.enabled
 
-        # Directional Lights
-        program["num_directional_lights"].value = len(self.component_pool.directional_light_components)
-        for index, (mesh_entity_uid, dir_light_component) in enumerate(self.component_pool.directional_light_components.items()):
+    def upload_uniforms_directional_lights(self, program: moderngl.Program):
 
-            light_transform = self.component_pool.transform_3d_components[mesh_entity_uid]
+        directional_light_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
+        program["num_directional_lights"].value = len(directional_light_pool)
+        for index, (mesh_entity_uid, dir_light_component) in enumerate(directional_light_pool.items()):
+
+            light_transform = transform_3d_pool[mesh_entity_uid]
             program[f"directional_lights[{index}].direction"] = tuple(light_transform.world_matrix[:3, 2])
             program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
             program[f"directional_lights[{index}].specular"] = dir_light_component.specular
@@ -397,153 +467,174 @@ class RenderSystem(System):
             program[f"directional_lights[{index}].shadow_enabled"] = dir_light_component.shadow_enabled
             program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
 
-        for mesh_entity_uid, mesh_component in self.component_pool.mesh_components.items():
+    def render_debug_forward_pass(self):
 
-            if not mesh_component.visible or mesh_component.layer != constants.RENDER_SYSTEM_LAYER_DEFAULT:
-                continue
+        """
+        THIS FUNCTION IS BROKEN!!!!!!!!
+        :return:
+        """
 
-            mesh_transform = self.component_pool.get_component(entity_uid=mesh_entity_uid,
-                                                               component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-
-            material = self.component_pool.material_components.get(mesh_entity_uid, None)
-
-            # Upload uniforms
-            program["entity_id"] = mesh_entity_uid
-            program["entity_id"].value = mesh_entity_uid
-            program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
-            program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
-            program["directional_lights_enabled"].value = self._directional_lights_enabled
-            program["point_lights_enabled"].value = self._point_lights_enabled
-            program["gamma_correction_enabled"].value = self._gamma_correction_enabled
-            program["shadows_enabled"].value = self._shadows_enabled
-
-            # TODO: Technically, you only need to upload the material once since it doesn't change.
-            #       The program will keep its variable states!
-            if material is not None:
-                program["material.diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
-                program["material.specular"].value = material.specular
-                program["material.shininess_factor"] = material.shininess_factor
-                program["color_source"] = material.color_source
-                program["lighting_mode"] = material.lighting_mode
-
-            # Render the mesh
-            # TODO: Change render types from triangles to whatever the mesh is set to!!!! No fixed-type rendering!
-            mesh_component.vaos[constants.SHADER_PROGRAM_FORWARD_PASS].render(moderngl.TRIANGLES)
-
-            # Stage: Draw transparent objects back to front
-
-    def render_overlay_pass(self, camera_uid: int):
-
-        # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
+        camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
 
         camera_component = self.component_pool.camera_components[camera_uid]
         camera_transform = self.component_pool.transform_3d_components[camera_uid]
 
-        self.overlay_pass_framebuffer.use()
-        self.overlay_pass_framebuffer.viewport = camera_component.viewport_pixels
+        for debug_mesh_entity_uid, debug_mesh_component in self.component_pool.debug_mesh_components.items():
 
-        # Clear context (you need to use the use() first to bind it!)
-        self.overlay_pass_framebuffer.clear(
-            color=(0.0, 0.0, 0.0),
-            alpha=1.0,
-            depth=1.0,
-            viewport=camera_component.viewport_pixels)
-
-        program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_PASS]
-        program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
-
-        camera_component.upload_uniforms(program=program)
-
-        for mesh_entity_uid, mesh_component in self.component_pool.mesh_components.items():
-
-            if not mesh_component.visible or mesh_component.layer != constants.RENDER_SYSTEM_LAYER_OVERLAY:
+            if not debug_mesh_component.visible or debug_mesh_component.num_instances == 0:
                 continue
 
-            mesh_transform = self.component_pool.get_component(entity_uid=mesh_entity_uid,
-                                                               component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+            program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
+            camera_component.upload_uniforms(program=program)
+            program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
 
-            material = self.component_pool.material_components.get(mesh_entity_uid, None)
+            debug_mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_DEBUG_FORWARD_PASS)
+
+            # Stage: Draw transparent objects back to front
+
+    def render_overlay_3d_pass(self):
+
+        self.overlay_pass_framebuffer.use()
+
+        # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
+        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        mesh_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
+
+        # Every Render pass operates on the OFFSCREEN buffers only
+        camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
+        for camera_uid in camera_entity_uids:
+
+            camera_component = camera_pool[camera_uid]
+            camera_transform = transform_3d_pool[camera_uid]
+            self.overlay_pass_framebuffer.viewport = camera_component.viewport_pixels
+
+            # Clear context (you need to use the use() first to bind it!)
+            self.overlay_pass_framebuffer.clear(
+                color=(0.0, 0.0, 0.0),
+                alpha=1.0,
+                depth=1.0,
+                viewport=camera_component.viewport_pixels)
+
+            program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_3D_PASS]
+
+            # Setup camera
+            camera_component.upload_uniforms(program=program)
+            program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
+
+            # Render meshes
+            for mesh_entity_uid, mesh_component in mesh_pool.items():
+
+                if (not mesh_component.visible or
+                        mesh_component.layer != constants.RENDER_SYSTEM_LAYER_OVERLAY or
+                        mesh_component.exclusive_to_camera_uid != camera_uid):
+                    continue
+
+                mesh_transform = self.component_pool.get_component(entity_uid=mesh_entity_uid,
+                                                                   component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
+                material = self.component_pool.get_component(entity_uid=mesh_entity_uid,
+                                                             component_type=constants.COMPONENT_TYPE_MATERIAL)
+
+                # Upload uniforms
+                program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
+
+                # TODO: Technically, you only need to upload the material once since it doesn't change.
+                #       The program will keep its variable states!
+                if material is not None:
+                    program["color_diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
+
+                # Render the mesh
+                mesh_component.vaos[constants.SHADER_PROGRAM_OVERLAY_3D_PASS].render(mode=mesh_component.render_mode)
+
+    def render_overlay_2d_pass(self):
+
+        self.overlay_pass_framebuffer.use()
+
+        camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
+
+        # Every Render pass operates on the OFFSCREEN buffers only
+        for camera_uid in camera_entity_uids:
+
+            overlay_2d_component = self.component_pool.get_component(entity_uid=camera_uid,
+                                                                     component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
+
+            if overlay_2d_component is None:
+                return
+
+            if overlay_2d_component.im_overlay.num_draw_commands == 0:
+                return
+
+            camera_component = self.component_pool.get_component(entity_uid=camera_uid,
+                                                                 component_type=constants.COMPONENT_TYPE_CAMERA)
+
+            self.overlay_pass_framebuffer.viewport = camera_component.viewport_pixels
+            self.ctx.disable(moderngl.DEPTH_TEST)
+
+            # Upload uniforms TODO: Move this to render system
+            overlay_projection_matrix = mat4.orthographic_projection(
+                left=0,
+                top=0,
+                right=camera_component.viewport_pixels[2],
+                bottom=camera_component.viewport_pixels[3],
+                near=-1,
+                far=1)
 
             # Upload uniforms
-            program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
+            program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_2D_PASS]
+            program["projection_matrix"].write(overlay_projection_matrix.T.tobytes())
 
-            # TODO: Technically, you only need to upload the material once since it doesn't change.
-            #       The program will keep its variable states!
-            if material is not None:
-                program["color_diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
+            # Upload VBOs
+            overlay_2d_component.update_buffer()
 
-            # Render the mesh
-            # TODO: Change render types from triangles to whatever the mesh is set to!!!! No fixed-type rendering!
-            mesh_component.vaos[constants.SHADER_PROGRAM_OVERLAY_PASS].render(moderngl.TRIANGLES)
+            # Render
+            self.textures[overlay_2d_component.font_name].use(location=0)
+            overlay_2d_component.vao.render(mode=moderngl.POINTS)
 
-    def render_selection_pass(self, camera_uid: int, selected_entity_uid: int):
+            # And don#t forget to clear the buffer for the next frame of commands
+            overlay_2d_component.im_overlay.clear()
 
-        # IMPORTANT: It uses the current bound framebuffer!
-        camera_component = self.component_pool.camera_components[camera_uid]
-
-        self.selection_pass_framebuffer.use()
-        self.selection_pass_framebuffer.viewport = camera_component.viewport_pixels
-        self.selection_pass_framebuffer.clear(depth=1.0, viewport=camera_component.viewport_pixels)
+    def render_selection_pass(self, selected_entity_uid: int):
 
         # TODO: Numbers between 0 and 1 are background colors, so we assume they are NULL selection
         if selected_entity_uid is None or selected_entity_uid <= 1:
             return
 
-        mesh_component = self.component_pool.get_component(entity_uid=selected_entity_uid,
-                                                           component_type=constants.COMPONENT_TYPE_MESH)
-        if mesh_component is None:
-            return
+        self.selection_pass_framebuffer.use()
 
-        # Safety checks before we go any further!
-        renderable_transform = self.component_pool.get_component(entity_uid=selected_entity_uid,
-                                                                 component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-        if renderable_transform is None:
-            return
+        camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
 
-        camera_transform = self.component_pool.transform_3d_components[camera_uid]
+        # Every Render pass operates on the OFFSCREEN buffers only
+        for camera_uid in camera_entity_uids:
 
-        # Upload uniforms
-        program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
-        camera_component.upload_uniforms(program=program)
-        program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
-        program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
+            # IMPORTANT: It uses the current bound framebuffer!
+            camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+            camera_component = camera_pool[camera_uid]
 
-        # Render
-        mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(moderngl.TRIANGLES)
+            self.selection_pass_framebuffer.viewport = camera_component.viewport_pixels
+            self.selection_pass_framebuffer.clear(depth=1.0, viewport=camera_component.viewport_pixels)
 
-    def render_text_2d_pass(self, component_pool: ComponentPool):
+            mesh_component = self.component_pool.get_component(entity_uid=selected_entity_uid,
+                                                               component_type=constants.COMPONENT_TYPE_MESH)
+            if mesh_component is None:
+                return
 
-        # TODO: This function's code is old and won't probably work!
+            transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
-        if len(component_pool.text_2d_components) == 0:
-            return
+            # Safety checks before we go any further!
+            renderable_transform = transform_3d_pool[selected_entity_uid]
+            if renderable_transform is None:
+                return
 
-        self.forward_pass_framebuffer.use()
-        self.ctx.disable(moderngl.DEPTH_TEST)
+            # Upload uniforms
+            program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
+            camera_component.upload_uniforms(program=program)
+            program["view_matrix"].write(transform_3d_pool[camera_uid].world_matrix.T.tobytes())
+            program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
 
-        # Upload uniforms TODO: Move this to render system
-        projection_matrix = mat4.orthographic_projection(
-            left=0,
-            right=self.buffer_size[0],
-            bottom=self.buffer_size[1],
-            top=0,
-            near=-1,
-            far=1)
+            # Render
+            mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(mode=mesh_component.render_mode)
 
-        # Upload uniforms
-        program = self.shader_program_library[constants.SHADER_PROGRAM_TEXT_2D]
-        program["projection_matrix"].write(projection_matrix.T.tobytes())
-
-        # Update VBOs and render text
-        for _, text_2d in component_pool.text_2d_components.items():
-
-            # State Updates
-            text_2d.initialise_on_gpu(ctx=self.ctx, shader_library=self.shader_program_library)
-            text_2d.update_buffer(font_library=self.font_library)
-
-            # Rendering
-            self.textures[text_2d.font_name].use(location=0)
-            text_2d.vao.render(moderngl.POINTS)
 
     def render_shadow_mapping_pass(self, component_pool: ComponentPool):
 
@@ -580,7 +671,7 @@ class RenderSystem(System):
             program["view_matrix"].write(light_transform.world_matrix.T.tobytes())
             program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
 
-            mesh_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(moderngl.TRIANGLES)
+            mesh_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(mesh_component.render_mode)
 
     def render_screen_pass(self) -> None:
 

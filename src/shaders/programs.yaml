@@ -3,20 +3,25 @@ forward_pass:
   vertex_shader: "forward_pass.glsl"
   fragment_shader: "forward_pass.glsl"
 
-overlay_pass:
-  vertex_shader: "overlay_pass.glsl"
-  fragment_shader: "overlay_pass.glsl"
+debug_forward_pass:
+  vertex_shader: "debug_forward_pass.glsl"
+  geometry_shader: "debug_forward_pass.glsl"
+  fragment_shader: "debug_forward_pass.glsl"
+
+overlay_3d_pass:
+  vertex_shader: "overlay_3d_pass.glsl"
+  fragment_shader: "overlay_3d_pass.glsl"
+
+overlay_2d_pass:
+  vertex_shader: "overlay_2d_pass.glsl"
+  geometry_shader: "overlay_2d_pass.glsl"
+  fragment_shader: "overlay_2d_pass.glsl"
+  input_texture_locations:
+    font_texture: 0
 
 selected_entity_pass:
   vertex_shader: "selected_entity.glsl"
   fragment_shader: "selected_entity.glsl"
-
-text_2d:
-  vertex_shader: "text_2d.glsl"
-  geometry_shader: "text_2d.glsl"
-  fragment_shader: "text_2d.glsl"
-  input_texture_locations:
-    font_texture: 0
 
 fragment_picking:
   vertex_shader: "fragment_picking.glsl"

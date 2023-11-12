@@ -1,3 +1,5 @@
+import moderngl
+
 from src.core import constants
 from src.components.component import Component
 
@@ -52,6 +54,13 @@ class Material(Component):
 
         # State Variables - Can be changed by events
         self.state_highlighted = False
+
+    def upload_uniforms(self, program: moderngl.Program):
+        program["material.diffuse"].value = self.diffuse_highlight if self.state_highlighted else self.diffuse
+        program["material.specular"].value = self.specular
+        program["material.shininess_factor"] = self.shininess_factor
+        program["color_source"] = self.color_source
+        program["lighting_mode"] = self.lighting_mode
 
     def is_transparent(self) -> bool:
         return self.alpha == 1.0

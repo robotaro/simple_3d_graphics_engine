@@ -12,7 +12,7 @@ from src.core.action_publisher import ActionPublisher
 
 class InputControlSystem(System):
 
-    _type = "input_control_system"
+    name = "input_control_system"
 
     __slots__ = [
         "mouse_x_past",
@@ -143,13 +143,16 @@ class InputControlSystem(System):
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
-        for entity_uid, input_control in self.component_pool.input_control_components.items():
+        input_control_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_INPUT_CONTROL)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
-            input_control = self.component_pool.input_control_components[entity_uid]
+        for entity_uid, input_control in input_control_pool.items():
+
+            input_control = input_control_pool[entity_uid]
             if not input_control.active:
                 continue
 
-            transform = self.component_pool.transform_3d_components[entity_uid]
+            transform = transform_3d_pool[entity_uid]
 
             # Rotate
             input_control.yaw += self.mouse_dx * input_control.mouse_sensitivity

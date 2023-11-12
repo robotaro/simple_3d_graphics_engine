@@ -1,178 +1,258 @@
 import numpy as np
-from numba import njit, float32
+from numba import jit, njit, float32
 
-# ======================================================================================================================
-#                                                Ray / Sphere
-# ======================================================================================================================
+# Constants
+FLT_EPSILON = np.finfo(float).eps
 
 
 @njit(cache=True)
-def intersect_boolean_ray_sphere(ray_origin: np.array,
-                                 ray_direction: np.array,
-                                 sphere_origin: np.array,
-                                 sphere_radius: float) -> bool:
+def intersect_ray_sphere(ray_origin: np.array,
+                         ray_direction: np.array,
+                         sphere_position: np.array,
+                         sphere_radius: float) -> bool:
 
     """
     Formula from:
-    https://viclw17.github.io/2018/07/16/raytracing-ray-sphere-intersection
-
-    The intersection is true even for values that are
+    https://viclw17.github.io/2018/07/16/raytracing-ray-sphere-intersection/#:~:text=When%20the%20ray%20and%20sphere,equations%20and%20solving%20for%20t.
 
     This function only tests if there is an intersection, not where it occurs specifically. This will need to be
     implemented
 
     :param ray_origin: Numpy array (3,) <float32>
     :param ray_direction: Numpy array (3,) <float32>
-    :param sphere_origin: Numpy array (3,) <float32>
+    :param sphere_position: Numpy array (3,) <float32>
     :param sphere_radius: float
     :return: bool
     """
 
-    sphere_to_ray = ray_origin - sphere_origin
+    oc = ray_origin - sphere_position
     a = np.dot(ray_direction, ray_direction)
-    if a == 0.0:  # Ray has direction (0, 0, 0)
-        return False
-    b = 2 * np.dot(sphere_to_ray, ray_direction)
-    c = np.dot(sphere_to_ray, sphere_to_ray) - sphere_radius * sphere_radius
-    discriminant = b * b - 4 * a * c
-    return discriminant >= 0  # Return if at least one intersection exists
-
-
-@njit(cache=True)
-def intersect_distance_ray_sphere(ray_origin: np.array,
-                                  ray_direction: np.array,
-                                  sphere_origin: np.array,
-                                  sphere_radius: float) -> float:
-
-    """
-    Formula from:
-    https://viclw17.github.io/2018/07/16/raytracing-ray-sphere-intersection
-
-    The intersection is true even for values that are
-
-    This function only tests if there is an intersection, not where it occurs specifically. This will need to be
-    implemented
-
-    :param ray_origin: Numpy array (3,) <float32>
-    :param ray_direction: Numpy array (3,) <float32>
-    :param sphere_origin: Numpy array (3,) <float32>
-    :param sphere_radius: float
-    :return: bool
-    """
-
-    sphere_to_ray = ray_origin - sphere_origin
-    a = np.dot(ray_direction, ray_direction)
-    if a == 0.0:
-        return -1.0
-    b = 2 * np.dot(sphere_to_ray, ray_direction)
-    c = np.dot(sphere_to_ray, sphere_to_ray) - sphere_radius * sphere_radius
-    discriminant = b * b - 4 * a * c
+    b = 2 * np.dot(oc, ray_direction)
+    c = np.dot(oc, oc) - sphere_radius * sphere_radius
+    discriminant = b*b - 4*a*c
     if discriminant < 0:
-        return -1.0
-    return (-b - np.sqrt(discriminant)) / (2.0 * a)
-
-# ======================================================================================================================
-#                                                Ray / capsule
-# ======================================================================================================================
-
-
-# Check this for performance warning explanation for '::1': https://github.com/numba/numba/issues/8739
-@njit(float32(float32[::1], float32[::1], float32[::1], float32[::1], float32), cache=True)
-def intersect_ray_capsule(ray_origin, ray_direction, point_a, point_b, radius) -> float:
-    """
-    Original code from: https://iquilezles.org/articles/intersectors/
-
-    :param ray_origin: np.array, (3,) <float32>
-    :param ray_direction: np.array, (3,) <float32>
-    :param point_a: np.array, (3,) <float32>
-    :param point_b: np.array, (3,) <float32>
-    :param radius: <float32>
-    :return:
-    """
-
-    ba = point_b - point_a
-    oa = ray_origin - point_a
-
-    baba = np.dot(ba, ba)
-    bard = np.dot(ba, ray_direction)
-    baoa = np.dot(ba, oa)
-    rdoa = np.dot(ray_direction, oa)
-    oaoa = np.dot(oa, oa)
-
-    a = baba - bard * bard
-
-    # Edge-case-fix added by Me! If the ray passes through point A and B, a = 0 and it causes a division by zero.
-    if a == 0.0:
-        return -1
-
-    b = baba * rdoa - baoa * bard
-    c = baba * oaoa - baoa * baoa - radius * radius * baba
-
-    h = b * b - a * c
-
-    if h >= 0.0:
-        t = (-b - np.sqrt(h)) / a
-        y = baoa + t * bard
-
-        # body
-        if 0.0 < y < baba:
-            return t
-
-        # caps
-        oc = oa if y <= 0.0 else ray_origin - point_b
-        b = np.dot(ray_direction, oc)
-        c = np.dot(oc, oc) - radius * radius
-        h = b * b - c
-
-        if h > 0.0:
-            return -b - np.sqrt(h)
-    return -1.0
-
-# ======================================================================================================================
-#                                                Ray / capsule
-# ======================================================================================================================
-
-# UNTESTED
-@njit
-def ray_cylinder_intersection(ray_origin: np.array,
-                              ray_direction: np.array,
-                              cylinder_start: np.array,
-                              cylinder_end: np.array,
-                              cylinder_radius: float):
-    # Calculate the vector representing the axis of the cylinder
-    cylinder_axis = cylinder_end - cylinder_start
-
-    # Calculate the vector from the ray's origin to the cylinder's start point
-    ray_to_cylinder_start = cylinder_start - ray_origin
-
-    # Calculate the coefficients for the quadratic equation
-    a = np.dot(ray_direction - np.dot(ray_direction, cylinder_axis) * cylinder_axis, ray_direction - np.dot(ray_direction, cylinder_axis) * cylinder_axis)
-    b = 2.0 * np.dot(ray_direction - np.dot(ray_direction, cylinder_axis) * cylinder_axis, ray_to_cylinder_start - np.dot(ray_to_cylinder_start, cylinder_axis) * cylinder_axis)
-    c = np.dot(ray_to_cylinder_start - np.dot(ray_to_cylinder_start, cylinder_axis) * cylinder_axis, ray_to_cylinder_start - np.dot(ray_to_cylinder_start, cylinder_axis) * cylinder_axis) - cylinder_radius**2
-
-    # Calculate the discriminant
-    discriminant = b ** 2 - 4 * a * c
-
-    if discriminant >= 0:
-        # At least one intersection point exists
+        return False
+    else:
         return True
 
-    return False
 
-# UNTESTED
-@njit
-def ray_box_intersection(ray_origin, ray_direction, box_min, box_max):
-    t_min = (box_min - ray_origin) / ray_direction
-    t_max = (box_max - ray_origin) / ray_direction
+@jit(nopython=True, cache=True)
+def intersect_ray_plane(plane_origin: np.array,
+                        plane_normal: np.array,
+                        ray_origin: np.array,
+                        ray_direction_normalised: np.array):
 
-    t1 = np.min(t_min)
-    t2 = np.max(t_max)
+    """
+    Original equation from https://en.wikipedia.org/wiki/Line%E2%80%93plane_intersection
 
-    if t1 <= t2:
-        #t_near = t1
-        t_far = t2
+    # WARNING! Ray direction must be normalised!
 
-        if t_far >= 0:
-            return True
+    :param plane_origin: Numpy array (3,) <float32>
+    :param plane_normal:  Numpy array (3,) <float32>
+    :param ray_origin:  Numpy array (3,) <float32>
+    :param ray_direction:  Numpy array (3,) <float32>
+    :return: point of intersection in space or an array of NaN if the ray and the plane are parallel
+    """
 
-    return False
+    num = np.dot((plane_origin - ray_origin), plane_normal)
+    den = np.dot(ray_direction_normalised, plane_normal)
+
+    if den == 0:
+        temp = np.empty_like(plane_origin)
+        temp[:] = np.nan
+        return temp
+    else:
+        return ray_origin + (num / den) * ray_direction_normalised
+
+
+@jit(nopython=True, cache=True)
+def point_on_segment(seg_a: np.array,
+                     seg_b: np.array,
+                     point: np.array):
+
+    """
+    This measures the distance between a point and its closes perpendicular projection on a line segment.
+    Code based on: https://github.com/CedricGuillemet/ImGuizmo/blob/master/ImGuizmo.cpp
+    :param seg_a: Numpy array (3,) <float32>
+    :param seg_b: Numpy array (3,) <float32>
+    :param point: Numpy array (3,) <float32>
+    :return: Numpy array (3,) <float32>
+    """
+
+    c = point - seg_a
+    v = seg_b - seg_a
+    v /= np.linalg.norm(v)
+
+    d = np.linalg.norm(seg_b - seg_a)
+    t = np.dot(v, c)
+
+    if t < 0:
+        return seg_a
+
+    if t > d:
+        return seg_b
+
+    return seg_a + v * t
+
+@jit(float32(float32), nopython=True, cache=True)
+def clip01(value: np.float32):
+    if value > 1:
+        return 1.0
+    if value < 0:
+        return 0.0
+    return value
+
+@jit(nopython=True)
+def lerp(point_a: np.array, point_b: np.array, t: np.float32):
+
+    delta = point_b - point_a
+    return (point_a + delta * t).astype(np.float32)
+
+@jit(nopython=True, cache=True)
+def point_on_segment2(seg_a: np.array,
+                      seg_b: np.array,
+                      point: np.array):
+    seg_ba = seg_b - seg_a
+    t = np.dot(point - seg_a, seg_ba) / np.dot(seg_ba, seg_ba)
+    return lerp(seg_a, seg_b, clip01(t))
+
+@jit(nopython=True, cache=True)
+def lines_closest_points(seg_a: np.array,
+                         seg_b: np.array,
+                         seg_c: np.array,
+                         seg_d: np.array):
+
+    """
+    Original code from: https://zalo.github.io/blog/closest-point-between-segments/
+    :param seg_a:
+    :param seg_b:
+    :param seg_c:
+    :param seg_d:
+    :return: point on ab, point on cd, dist_sqr between points
+    """
+
+    seg_dc = seg_d - seg_c
+    line_dir_sqr_mag = np.dot(seg_dc, seg_dc)
+    in_plane_a = seg_a - ((np.dot(seg_a - seg_c, seg_dc) / line_dir_sqr_mag) * seg_dc)
+    in_plane_b = seg_b - ((np.dot(seg_b - seg_c, seg_dc) / line_dir_sqr_mag) * seg_dc)
+    in_plane_ba = in_plane_b - in_plane_a
+    t = np.dot(seg_c - in_plane_a, in_plane_ba) / np.dot(in_plane_ba, in_plane_ba)
+    if np.array_equal(in_plane_a, in_plane_b):
+        t = 0
+    seg_ab_to_line_cd = lerp(seg_a, seg_b, clip01(t))
+    seg_cd_to_seg_ab = point_on_segment2(seg_a=seg_c,
+                                         seg_b=seg_d,
+                                         point=seg_ab_to_line_cd)
+    seg_ab_to_seg_cd = point_on_segment2(seg_a=seg_a,
+                                         seg_b=seg_b,
+                                         point=seg_cd_to_seg_ab)
+
+    dist2 = np.sum((seg_cd_to_seg_ab - seg_ab_to_seg_cd) ** 2)
+
+    return seg_ab_to_seg_cd, seg_cd_to_seg_ab, dist2
+
+
+@jit(nopython=True, cache=True)
+def distance_point_plane(plane_origin: np.array,
+                         plane_normal: np.array,
+                         point: np.array):
+
+    # WARNING: Broken function!!!!
+    return np.dot(plane_normal, point) + np.dot(plane_normal, plane_origin)
+
+
+@jit(nopython=True, cache=True)
+def point_on_segment(seg_a: np.array,
+                     seg_b: np.array,
+                     point: np.array):
+
+    """
+    This measures the distance between a point and its closes perpendicular projection on a line segment.
+    Code based on: https://github.com/CedricGuillemet/ImGuizmo/blob/master/ImGuizmo.cpp
+    :param seg_a: Numpy array (3,) <float32>
+    :param seg_b: Numpy array (3,) <float32>
+    :param point: Numpy array (3,) <float32>
+    :return: Numpy array (3,) <float32>
+    """
+
+    c = point - seg_a
+    v = seg_b - seg_a
+    v /= np.linalg.norm(v)
+
+    d = np.linalg.norm(seg_b - seg_a)
+    t = np.dot(v, c)
+
+    if t < 0:
+        return seg_a
+
+    if t > d:
+        return seg_b
+
+    return seg_a + v * t
+
+@jit(float32(float32), nopython=True, cache=True)
+def clip01(value: np.float32):
+    if value > 1:
+        return 1.0
+    if value < 0:
+        return 0.0
+    return value
+
+@jit(nopython=True)
+def lerp(point_a: np.array, point_b: np.array, t: np.float32):
+
+    delta = point_b - point_a
+    return (point_a + delta * t).astype(np.float32)
+
+@jit(nopython=True, cache=True)
+def point_on_segment2(seg_a: np.array,
+                      seg_b: np.array,
+                      point: np.array):
+    seg_ba = seg_b - seg_a
+    t = np.dot(point - seg_a, seg_ba) / np.dot(seg_ba, seg_ba)
+    return lerp(seg_a, seg_b, clip01(t))
+
+@jit(nopython=True, cache=True)
+def lines_closest_points(seg_a: np.array,
+                         seg_b: np.array,
+                         seg_c: np.array,
+                         seg_d: np.array):
+
+    """
+    Original code from: https://zalo.github.io/blog/closest-point-between-segments/
+    :param seg_a:
+    :param seg_b:
+    :param seg_c:
+    :param seg_d:
+    :return: point on ab, point on cd, dist_sqr between points
+    """
+
+    seg_dc = seg_d - seg_c
+    line_dir_sqr_mag = np.dot(seg_dc, seg_dc)
+    in_plane_a = seg_a - ((np.dot(seg_a - seg_c, seg_dc) / line_dir_sqr_mag) * seg_dc)
+    in_plane_b = seg_b - ((np.dot(seg_b - seg_c, seg_dc) / line_dir_sqr_mag) * seg_dc)
+    in_plane_ba = in_plane_b - in_plane_a
+    t = np.dot(seg_c - in_plane_a, in_plane_ba) / np.dot(in_plane_ba, in_plane_ba)
+    if np.array_equal(in_plane_a, in_plane_b):
+        t = 0
+    seg_ab_to_line_cd = lerp(seg_a, seg_b, clip01(t))
+    seg_cd_to_seg_ab = point_on_segment2(seg_a=seg_c,
+                                         seg_b=seg_d,
+                                         point=seg_ab_to_line_cd)
+    seg_ab_to_seg_cd = point_on_segment2(seg_a=seg_a,
+                                         seg_b=seg_b,
+                                         point=seg_cd_to_seg_ab)
+
+    dist2 = np.sum((seg_cd_to_seg_ab - seg_ab_to_seg_cd) ** 2)
+
+    return seg_ab_to_seg_cd, seg_cd_to_seg_ab, dist2
+
+
+@jit(nopython=True, cache=True)
+def distance_point_plane(plane_origin: np.array,
+                         plane_normal: np.array,
+                         point: np.array):
+
+    # WARNING: Broken function!!!!
+    return np.dot(plane_normal, point) + np.dot(plane_normal, plane_origin)
+

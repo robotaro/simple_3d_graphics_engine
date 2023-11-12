@@ -99,7 +99,7 @@ class Component:
     def dict2map(input_dict: Any, key: Any, map_dict: dict, default_value: Any) -> Any:
 
         """
-        Finds a value inside dictionary and uses that value as the key for another dictionay
+        Finds a value inside dictionary and uses that value as the key for another dictionary
         """
 
         if not isinstance(input_dict, dict):

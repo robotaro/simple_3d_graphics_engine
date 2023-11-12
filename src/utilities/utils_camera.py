@@ -1,31 +1,111 @@
 import numpy as np
-from numba import njit
+from numba import njit, float32
 
 from src.core import constants
 from src.math import mat4
 
 
 @njit(cache=True)
-def get_gizmo_scale(camera_transform: np.ndarray, object_position: np.array) -> float:
+def set_gizmo_scale(view_matrix: np.ndarray, object_position: np.array) -> float:
 
-    inv_camera_transform = np.eye(4, dtype=np.float32)
-    mat4.fast_inverse(in_mat4=camera_transform, out_mat4=inv_camera_transform)
-    #position_camera = np.empty((3), dtype=np.float32)
-    position_camera = mat4.mul_vector3(in_mat4=inv_camera_transform, in_vec3=object_position)
-    scale = -position_camera[2] * constants.GIZMO_3D_SCALE_COEFFICIENT
-
+    view_position = mat4.mul_vector3(in_mat4=view_matrix, in_vec3=object_position)
+    scale = np.abs(view_position[2]) * constants.GIZMO_3D_ANGLE_TANGENT_COEFFICIENT
     return scale
 
 
 @njit(cache=True)
-def screen_to_world_ray(viewport_coord_norm: tuple,
-                        view_matrix: np.ndarray,
-                        projection_matrix: np.ndarray):
+def world_pos2viewport_position(view_matrix: np.ndarray,
+                                projection_matrix: np.ndarray,
+                                world_position: np.array) -> np.array:
 
+    """view_projection_position = mat4.mul_vector3(in_mat4=projection_matrix @ view_matrix, in_vec3=world_position)
+
+    # Z-Zc=F
+    # X' = X * (F/Z)
+    # Y' = Y * (F/Z)
+
+    coefficient = (view_projection_position[2] - camera_position[2]) / view_projection_position[2]
+    screen_x = view_projection_position[0] * coefficient
+    screen_y = view_projection_position[1] * coefficient
+
+    return screen_x, screen_y
     """
 
+    # Transform the object's world position to its respective 2D projected space
+    projected_position = mat4.mul_vector3(projection_matrix @ view_matrix, world_position)
+
+    # Perform perspective divide
+    projected_position /= projected_position[2]
+
+    # The x and y coordinates on the screen are now the first two elements of projected_position
+    screen_coordinates = projected_position[:2]
+
+    return screen_coordinates
+
+
+@njit(cache=True)
+def world_pos2screen_pixels(view_matrix: np.ndarray,
+                            viewport_pixels: tuple,
+                            projection_matrix: np.ndarray,
+                            world_position: np.array):
+
+    viewport_position = world_pos2viewport_position(view_matrix=view_matrix,
+                                                    projection_matrix=projection_matrix,
+                                                    world_position=world_position)
+
+    # TODO: Y-axis is reversed to get positive Y-axis pointing up. Check if this is because of the projection matrix
+    screen_x = viewport_pixels[2] * (viewport_position[0] + 1.0) / 2.0
+    screen_y = viewport_pixels[3] * (-viewport_position[1] + 1.0) / 2.0
+
+    return screen_x, screen_y
+
+
+#@njit(cache=True)
+def screen_gl_position_pixels2viewport_position(position_pixels: tuple, viewport_pixels: tuple) -> tuple:
+
+    """
+    Screen's GL origin is the left-lower corner with positive x to the RIGHT and positive y UP. Both axes start from 0
+    Viewports origin is at its center with positive x to the RIGHT and positive y UP. Both axes range form -1 to 1
+
+    :param position_pixels: (x, y) <float32>
+    :param viewport_pixels: tuple (x, y, width, height) <float32>
+    :return: Relative
+    """
+
+    if position_pixels[0] < viewport_pixels[0]:
+        return None
+
+    if position_pixels[0] > (viewport_pixels[0] + viewport_pixels[2]):
+        return None
+
+    if position_pixels[1] < viewport_pixels[1]:
+        return None
+
+    if position_pixels[1] > (viewport_pixels[1] + viewport_pixels[3]):
+        return None
+
+    x_normalised = (position_pixels[0] - viewport_pixels[0]) / viewport_pixels[2]
+    y_normalised = (position_pixels[1] - viewport_pixels[1]) / viewport_pixels[3]
+
+    x_viewport = (x_normalised - 0.5) * 2.0
+    y_viewport = (y_normalised - 0.5) * 2.0
+
+    return x_viewport, y_viewport
+
+
+@njit(cache=True)
+def screen_pos2world_ray(viewport_coord_norm: tuple,
+                         camera_matrix: np.ndarray,
+                         projection_matrix: np.ndarray):
+
+    """
+    Viewport coordinates are +1 to the right, -1 to the left, +1 up and -1 down. Zero at the centre for both axes
+
     :param viewport_coord_norm: tuple, (x, y) <float, float> Ranges between -1 and 1
-    :param view_matrix: np.ndarray (4, 4) <float32> position and orientation of camera in space
+    :param camera_matrix: np.ndarray (4, 4) <float32> Do NOT confuse this with the "view_matrix"!
+                          This is the transform of the camera in space, simply as you want the camera to be placed
+                          in the scene. the view_matrix is the INVERSE of the camera_matrix :)
+
     :param projection_matrix: (4, 4) <float32> perspective matrix
 
     :return:
@@ -40,19 +120,18 @@ def screen_to_world_ray(viewport_coord_norm: tuple,
     eye_coordinates = np.array([eye_coordinates[0], eye_coordinates[1], -1.0, 0.0], dtype=np.float32)
 
     # Inverse the view matrix to get the world coordinates
-    world_coordinates = np.dot(view_matrix, eye_coordinates)
+    world_coordinates = np.dot(camera_matrix, eye_coordinates)
 
     # Extract the ray's origin from the inverted view matrix
-    ray_origin = view_matrix[:, 3][:3]
+    ray_origin = np.ascontiguousarray(camera_matrix[:, 3][:3])  # When extracting vectors, they need to be continuous!
 
     # Normalize the world coordinates to get the ray direction
-    ray_direction = world_coordinates[:3]
-    ray_direction[1] = -ray_direction[1]  # TODO: FIND OUT WHY THE Y-AXIS IS REVERSED!!!!!! VERY IMPORTANT!!!a
+    ray_direction = np.ascontiguousarray(world_coordinates[:3])
     ray_direction /= np.linalg.norm(ray_direction)
 
     return ray_direction, ray_origin
 
-
+@njit(cache=True)
 def orthographic_projection(scale_x: float, scale_y: float, z_near: float, z_far: float):
     """Returns an orthographic projection matrix."""
     projection = np.zeros((4, 4), dtype=np.float32)
@@ -64,6 +143,7 @@ def orthographic_projection(scale_x: float, scale_y: float, z_near: float, z_far
     return projection
 
 
+@njit(cache=True)
 def perspective_projection(fov_rad: float, aspect_ratio: float, z_near: float, z_far: float):
     """Returns a perspective projection matrix."""
     ar = aspect_ratio
