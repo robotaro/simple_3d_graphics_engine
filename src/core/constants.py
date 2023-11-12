@@ -423,7 +423,10 @@ MATERIAL_COLORS = {
 #                               Transforms
 # =============================================================================
 
-TRANSFORMS_UP_VECTOR = np.array((0, 1, 0), dtype=np.float32)
+TRANSFORM_3D_UP_VECTOR = np.array((0, 1, 0), dtype=np.float32)
+TRANSFORM_3D_MODE_NAME_QUATERNION = "quaternion"
+TRANSFORM_3D_MODE_NAME_EULER_XYZ = "euler_xyz"
+TRANSFORM_3D_MODE_NAME_AXIS = "axis"
 
 # =============================================================================
 #                              Shader Library

@@ -76,4 +76,3 @@ class Camera(Component):
                 scale_y=self.orthographic_scale,
                 z_near=self.z_near,
                 z_far=self.z_far)
-

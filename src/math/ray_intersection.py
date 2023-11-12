@@ -1,5 +1,5 @@
 import numpy as np
-from numba import njit, float32, UniTuple
+from numba import njit, float32
 
 # Constants
 FLT_EPSILON = np.finfo(float).eps
@@ -9,7 +9,7 @@ FLT_EPSILON = np.finfo(float).eps
 # ======================================================================================================================
 
 
-@njit(UniTuple(float32[:], 2)(float32[:], float32[:], float32[:], float32[:]), cache=True)
+@njit(float32[:](float32[:], float32[:], float32[:], float32[:]), cache=True)
 def ray2ray_nearest_point(ray_0_origin, ray_0_direction, ray_1_origin, ray_1_direction):
 
     """
@@ -35,7 +35,7 @@ def ray2ray_nearest_point(ray_0_origin, ray_0_direction, ray_1_origin, ray_1_dir
         t0_ = (q * s - r) / d
         t1_ = (s - q * r) / d
 
-    return t0_, t1_
+    return np.array([t0_, t1_], dtype=float32)
 
 
 # ======================================================================================================================

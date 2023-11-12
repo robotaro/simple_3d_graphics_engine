@@ -41,21 +41,18 @@ class TransformSystem(System):
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
         if self.update_tree:
-            self.recreate_transform_tree()
+            self.update_transform_tree()
             self.update_tree = False
 
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
+        # TODO: [OPTIMIZE] Not all world matrices need to be recreated all the time! Take the dirty flags into account!
         for entity_uid in self.entity_uid_update_order:
 
             entity = self.component_pool.entities[entity_uid]
             transform = transform_3d_pool[entity_uid]
 
-            if transform.dirty:
-                transform.local_matrix = mat4.compute_transform(position=transform.position,
-                                                                rotation_rad=transform.rotation,
-                                                                scale=transform.scale)
-                transform.dirty = False
+            transform.update()
 
             if entity.parent_uid is None:
                 transform.world_matrix = transform.local_matrix
@@ -73,7 +70,7 @@ class TransformSystem(System):
 
         return True
 
-    def recreate_transform_tree(self):
+    def update_transform_tree(self):
 
         temp_update_order = []
 

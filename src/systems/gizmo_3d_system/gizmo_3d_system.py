@@ -213,7 +213,7 @@ class Gizmo3DSystem(System):
             viewport_height = camera_component.viewport_pixels[3]
             gizmo_scale *= constants.GIZMO_3D_VIEWPORT_SCALE_COEFFICIENT / viewport_height
             gizmo_transform_component.scale = gizmo_scale
-            gizmo_transform_component.dirty = True
+            gizmo_transform_component.input_values_updated = True
 
         return True
 
@@ -314,7 +314,7 @@ class Gizmo3DSystem(System):
         if not self.gizmo_in_use:
             return False
 
-        print(self.gizmo_axis_on_hover_index)
+        # TODO: CONTINUE FROM HERE !!!!!!!
 
         return True
 
@@ -330,7 +330,7 @@ class Gizmo3DSystem(System):
             gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
             gizmo_transform_component.position = selected_transform_component.position
             gizmo_transform_component.rotation = selected_transform_component.rotation
-            gizmo_transform_component.dirty = True
+            gizmo_transform_component.input_values_updated = True
 
     def set_all_gizmo_3d_visibility(self, visible=True):
 
