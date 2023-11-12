@@ -25,7 +25,7 @@ class Gizmo3DSystem(System):
         "gizmo_axis_on_hover_index",
         "gizmo_mouse_hovering",
         "gizmo_in_use",
-        "selected_entity_original_transform_component",
+        "original_active_local_matrix",
         "camera2gizmo_map",
         "mouse_screen_position",
         "axes_distances",
@@ -56,7 +56,7 @@ class Gizmo3DSystem(System):
         self.gizmo_transformed_axes = np.eye(3, dtype=np.float32)
 
         # In-Use variables
-        self.selected_entity_original_transform_component = None
+        self.original_active_local_matrix = None
 
         # State flags
         self.gizmo_selection_enabled = True
@@ -170,7 +170,7 @@ class Gizmo3DSystem(System):
                                                       component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
         self.gizmo_in_use = True
-        self.selected_entity_original_transform_component = transform
+        self.original_active_local_matrix = transform.local_matrix.copy()
         self.process_mouse_movement(screen_gl_pixels=event_data[2:])
 
     def handle_event_mouse_button_release(self, event_data: tuple):
@@ -204,6 +204,7 @@ class Gizmo3DSystem(System):
         camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         for camera_entity_id, camera_component in camera_pool.items():
 
+            # TODO: This also needs to be executed when you SELECT THE ENTITY!
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_id]
             gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
             camera_matrix = transform_3d_pool[camera_entity_id].world_matrix
@@ -232,47 +233,79 @@ class Gizmo3DSystem(System):
         if self.selected_entity_uid is None:
             return
 
-        # Find which viewport the mouse is
+        active_camera_uid, active_camera_component = self.get_active_camera(screen_gl_pixels=screen_gl_pixels)
+        if active_camera_uid is None:
+            return
+
+        ray_origin, ray_direction = self.get_mouse_ray_point_on_axis(active_camera_uid=active_camera_uid,
+                                                                     active_camera_component=active_camera_component)
+
+        if self.process_gizmo_in_use(ray_origin=ray_origin, ray_direction=ray_direction):
+            return
+
+        self.update_gizmo_colors_if_mouse_hovering(active_camera_uid=active_camera_uid,
+                                                   ray_origin=ray_origin,
+                                                   ray_direction=ray_direction)
+
+    def process_gizmo_in_use(self, ray_origin: np.array, ray_direction: np.array) -> bool:
+        if not self.gizmo_in_use:
+            return False
+
+        # TODO: CONTINUE FROM HERE !!!!!!!
+        axis_origin = np.ascontiguousarray(self.original_active_local_matrix[:3, 3])
+        axis_direction = np.ascontiguousarray(self.original_active_local_matrix[:3, self.gizmo_axis_on_hover_index])
+        closest_points = ray_intersection.ray2ray_nearest_point(ray_0_origin=axis_origin,
+                                                                ray_0_direction=axis_direction,
+                                                                ray_1_origin=ray_origin,
+                                                                ray_1_direction=ray_direction)
+        # new_position = axis_origin + closest_points[0] *
+        return True
+
+    def get_active_camera(self, screen_gl_pixels: tuple) -> tuple:
         camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         active_camera_component = None
-        active_camera_id = None
+        active_camera_uid = None
         for camera_entity_id, camera_component in camera_pool.items():
             if camera_component.is_inside_viewport(screen_gl_position=screen_gl_pixels):
                 active_camera_component = camera_component
-                active_camera_id = camera_entity_id
+                active_camera_uid = camera_entity_id
                 continue
 
         if active_camera_component is None:
-            return
+            return None, None
 
-        gizmo_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
-        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+        return active_camera_uid, active_camera_component
+
+    def get_mouse_ray_point_on_axis(self, active_camera_uid: int, active_camera_component) -> tuple:
+
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
-        gizmo_3d_entity_uid = self.camera2gizmo_map[active_camera_id]
+        gizmo_3d_entity_uid = self.camera2gizmo_map[active_camera_uid]
 
         gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
         mat4.mul_vectors3(in_mat4=gizmo_transform_component.world_matrix,
                           in_vec3_array=constants.GIZMO_3D_AXES,
                           out_vec3_array=self.gizmo_transformed_axes)
 
-        camera_matrix = transform_3d_pool[active_camera_id].world_matrix
+        camera_matrix = transform_3d_pool[active_camera_uid].world_matrix
         projection_matrix = active_camera_component.get_projection_matrix()
 
         viewport_position = utils_camera.screen_gl_position_pixels2viewport_position(
             position_pixels=self.mouse_screen_position,
             viewport_pixels=active_camera_component.viewport_pixels)
 
-        if viewport_position is None:
-            return
-
         ray_direction, ray_origin = utils_camera.screen_pos2world_ray(
             viewport_coord_norm=viewport_position,
             camera_matrix=camera_matrix,
             projection_matrix=projection_matrix)
 
-        if self.process_gizmo_in_use(ray_origin=ray_origin, ray_direction=ray_direction):
-            return
+        return ray_origin, ray_direction
+
+    def update_gizmo_colors_if_mouse_hovering(self, active_camera_uid: int, ray_origin: np.array, ray_direction: np.array):
+
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        gizmo_3d_entity_uid = self.camera2gizmo_map[active_camera_uid]
+        gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
         # TODO: [CLEANUP] Clean this silly code. Change the intersection function to accommodate for this
         points_a = np.array([gizmo_transform_component.position,
@@ -290,6 +323,8 @@ class Gizmo3DSystem(System):
         # TODO: [CLEANUP] Remove direct access and use get_component instead. Think about performance later
 
         # De-highlight all axes
+        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+        gizmo_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
         gizmo_component = gizmo_3d_pool[gizmo_3d_entity_uid]
         for axis_entity_uid in gizmo_component.axes_entities_uids:
             material_pool[axis_entity_uid].state_highlighted = False
@@ -309,18 +344,9 @@ class Gizmo3DSystem(System):
         axis_material.state_highlighted = True
         self.gizmo_axis_on_hover_index = int(selected_axis_index)
 
-        # Notify all systems that mouse is currently hovering one of the gizmo axes
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_HOVERING_GIZMO_3D,
                                      event_data=(self.gizmo_axis_on_hover_index,),
                                      sender=self)
-
-    def process_gizmo_in_use(self, ray_origin: np.array, ray_direction: np.array) -> bool:
-        if not self.gizmo_in_use:
-            return False
-
-        # TODO: CONTINUE FROM HERE !!!!!!!
-
-        return True
 
     def set_gizmo_to_selected_entity(self):
 

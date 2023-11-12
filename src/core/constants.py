@@ -424,9 +424,11 @@ MATERIAL_COLORS = {
 # =============================================================================
 
 TRANSFORM_3D_UP_VECTOR = np.array((0, 1, 0), dtype=np.float32)
-TRANSFORM_3D_MODE_NAME_QUATERNION = "quaternion"
-TRANSFORM_3D_MODE_NAME_EULER_XYZ = "euler_xyz"
-TRANSFORM_3D_MODE_NAME_AXIS = "axis"
+TRANSFORM_3D_COORDINATE_MODE_LOCAL = "local"
+TRANSFORM_3D_COORDINATE_MODE_GLOBAL = "global"
+TRANSFORM_3D_ROTATION_MODE_QUATERNION = "quaternion"
+TRANSFORM_3D_ROTATION_MODE_EULER_XYZ = "euler_xyz"
+TRANSFORM_3D_ROTATION_MODE_AXIS = "axis"
 
 # =============================================================================
 #                              Shader Library
