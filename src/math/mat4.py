@@ -54,6 +54,7 @@ def compute_transform(position: tuple, rotation_rad: tuple, scale=1.0, order='xy
 
     return transform
 
+
 @njit(float32[:, :](float32[:], float32[:], float32))
 def create_transform_euler_xyz(position: np.array, rotation: np.array, scale: float):
 
@@ -76,12 +77,12 @@ def create_transform_euler_xyz(position: np.array, rotation: np.array, scale: fl
 
     # From wiki: https://en.wikipedia.org/wiki/Rotation_matrix
     transform[0, 0] = cy * cz * scale
-    transform[0, 1] = sx * sy * cz - cx * sz * scale
-    transform[0, 2] = cx * sy * cz + sx * sz * scale
+    transform[0, 1] = (sx * sy * cz - cx * sz) * scale
+    transform[0, 2] = (cx * sy * cz + sx * sz) * scale
 
     transform[1, 0] = cy * sz * scale
-    transform[1, 1] = sx * sy * sz + cx * cz * scale
-    transform[1, 2] = cx * sy * sz - sx * cz * scale
+    transform[1, 1] = (sx * sy * sz + cx * cz) * scale
+    transform[1, 2] = (cx * sy * sz - sx * cz) * scale
 
     transform[2, 0] = -sy * scale
     transform[2, 1] = sx * cy * scale
