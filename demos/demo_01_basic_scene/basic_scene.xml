@@ -35,7 +35,6 @@
     </entity>
 
     <entity name="2D">
-        <directional_light diffuse="1.0 1.0 1.0"/>
         <transform_3d position="2.0 2.0 2.0" rotation="-45 90 0" degrees="true"/>
     </entity>
 
