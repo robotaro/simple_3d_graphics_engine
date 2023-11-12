@@ -18,7 +18,7 @@ def main():
 
     t0 = time.perf_counter()
     for i in range(count):
-        transform2 = mat4.create_transform_xyz(position=position, rotation=rotation, scale=scale)
+        transform2 = mat4.create_transform_euler_xyz(position=position, rotation=rotation, scale=scale)
     t1 = time.perf_counter()
     print(f"Numba = {t1-t0:.3f} seconds")
 

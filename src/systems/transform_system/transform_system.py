@@ -58,7 +58,7 @@ class TransformSystem(System):
                 transform.world_matrix = transform.local_matrix
                 continue
 
-            # TODO: Think of a way to minimise unecessary updates. Probably do it when we move to DOD
+            # TODO: Think of a way to minimise necessary updates. Probably do it when we move to DOD
             parent_transform = transform_3d_pool[entity.parent_uid]
             transform.world_matrix = parent_transform.world_matrix @ transform.local_matrix
 

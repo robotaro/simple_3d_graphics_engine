@@ -60,14 +60,31 @@ class Transform3D(Component):
         the local matrix based on the translation, rotation (including mode) and scale values.
         If however, "local_matrix_updated" is true, it will update the input values to reflect what would
         be necessary to recreate said local matrix
+
+        # IMPORTANT: Updating the local matrix TAKES PRECEDENCE. So if both input values are local matrix
+                     are updated before the update function is called (both flags true) the local matrix
+                     will remain unchanged and the input values will be updated instead
+
         :return: None
         """
 
-        if self.input_values_updated:
-            self.local_matrix = mat4.compute_transform(position=self.position,
-                                                       rotation_rad=self.rotation,
-                                                       scale=self.scale)
+        if self.local_matrix_updated:
+            self.position = tuple(self.local_matrix[:3, 3])
+
             self.local_matrix_updated = False
+            self.input_values_updated = False  # They have now been overwritten, so no updated required.
+            return
+
+        if self.input_values_updated:
+            #self.local_matrix = mat4.compute_transform(position=self.position,
+            #                                           rotation_rad=self.rotation,
+            #                                           scale=self.scale)
+            self.local_matrix = mat4.create_transform_euler_xyz(
+                np.array(self.position, dtype=np.float32),
+                np.array(self.rotation, dtype=np.float32),
+                self.scale)
+            self.input_values_updated = False
+            return
 
     def move(self, delta_position: np.array):
         self.position += delta_position

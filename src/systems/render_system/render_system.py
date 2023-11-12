@@ -52,7 +52,8 @@ class RenderSystem(System):
         "outline_program",
         "outline_texture",
         "outline_framebuffer",
-        "entity_selection_enabled",
+        "hovering_ui",
+        "hovering_gizmo",
         "selected_entity_id",
         "shadow_map_program",
         "shadow_map_depth_texture",
@@ -123,7 +124,8 @@ class RenderSystem(System):
         self.outline_framebuffer = None
 
         # Entity selection variables
-        self.entity_selection_enabled = True
+        self.hovering_ui = False
+        self.hovering_gizmo = False
         self.selected_entity_id = -1
 
         # Shadow Mapping
@@ -246,16 +248,16 @@ class RenderSystem(System):
                 camera_component.update_viewport(window_size=self.buffer_size)
 
         if event_type == constants.EVENT_MOUSE_ENTER_UI:
-            self.entity_selection_enabled = False
+            self.hovering_ui = True
 
         if event_type == constants.EVENT_MOUSE_LEAVE_UI:
-            self.entity_selection_enabled = True
+            self.hovering_ui = False
 
         if event_type == constants.EVENT_MOUSE_HOVERING_GIZMO_3D:
-            self.entity_selection_enabled = False
+            self.hovering_gizmo = True
 
         if event_type == constants.EVENT_MOUSE_NOT_HOVERING_GIZMO_3D:
-            self.entity_selection_enabled = True
+            self.hovering_gizmo = False
 
         if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:
             self.process_entity_selection(event_data=event_data)
@@ -268,7 +270,7 @@ class RenderSystem(System):
             self.selected_entity_id = event_data[0]
 
     def process_entity_selection(self, event_data: tuple):
-        if not self.entity_selection_enabled:
+        if self.hovering_ui or self.hovering_gizmo:
             return
 
         if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != glfw.MOUSE_BUTTON_LEFT:
@@ -327,7 +329,6 @@ class RenderSystem(System):
 
         # Render shadow texture (if enabled)
         #self.render_shadow_mapping_pass(component_pool=self.component_pool)
-
 
         self.render_forward_pass()
         #self.render_debug_forward_pass()
