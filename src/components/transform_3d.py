@@ -85,6 +85,12 @@ class Transform3D(Component):
                 np.array(self.position, dtype=np.float32),
                 np.array(self.rotation, dtype=np.float32),
                 self.scale)
+            """self.local_matrix = mat4.compute_transform(
+                position=self.position,
+                rotation_rad=self.rotation,
+                scale=self.scale,
+                order="xyz"
+            )"""
             self.input_values_updated = False
 
     def move(self, delta_position: np.array):
