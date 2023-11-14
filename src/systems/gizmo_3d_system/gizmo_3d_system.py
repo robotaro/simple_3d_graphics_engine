@@ -21,7 +21,6 @@ class Gizmo3DSystem(System):
         "selected_entity_uid",
         "selected_entity_init_distance_to_cam",
         "gizmo_selection_enabled",
-        "gizmo_axis_on_hover_index",
         "gizmo_mouse_hovering",
         "gizmo_in_use",
         "active_camera_uid",
@@ -49,7 +48,6 @@ class Gizmo3DSystem(System):
                          parameters=parameters)
 
         self.entity_ray_intersection_list = []
-        self.gizmo_axis_on_hover_index = None
         self.camera2gizmo_map = {}
         self.mouse_screen_position = (-1, -1)  # in Pixels
         self.gizmo_transformed_axes = np.eye(3, dtype=np.float32)
@@ -144,7 +142,6 @@ class Gizmo3DSystem(System):
         self.set_gizmo_to_selected_entity()
 
     def handle_event_entity_deselected(self, event_data: tuple):
-        self.gizmo_state = constants.GIZMO_3D_STATE_INACTIVE
         self.selected_entity_uid = None
         self.set_all_gizmo_3d_visibility(visible=False)
 
@@ -157,6 +154,9 @@ class Gizmo3DSystem(System):
     def handle_event_mouse_move(self, event_data: tuple):
         self.mouse_screen_position = event_data
         ray_origin, ray_direction, self.active_camera_uid = self.screen2ray(screen_gl_pixels=event_data)
+        if self.active_camera_uid is None:
+            return
+
         self.update_state(ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=False)
 
         if self.gizmo_state == constants.GIZMO_3D_STATE_NOT_HOVERING:
@@ -173,7 +173,10 @@ class Gizmo3DSystem(System):
         if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != constants.MOUSE_LEFT:
             return
 
-        if self.gizmo_axis_on_hover_index is None:
+        if self.gizmo_state == constants.GIZMO_3D_STATE_NOT_HOVERING:
+            return
+
+        if self.active_camera_uid is None:
             return
 
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_GIZMO_3D_ACTIVATED,
@@ -209,6 +212,8 @@ class Gizmo3DSystem(System):
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
+        print(self.gizmo_state)
+
         if self.selected_entity_uid is None:
             return True
 
@@ -237,7 +242,8 @@ class Gizmo3DSystem(System):
             gizmo_transform_component.scale = gizmo_scale
             gizmo_transform_component.input_values_updated = True
 
-        print(self.gizmo_state)
+            self.dehighlight_gizmo(camera_uid=camera_entity_uid)
+            self.highlight_active_gizmo_part(camera_uid=camera_entity_uid)
 
         return True
 
@@ -284,7 +290,7 @@ class Gizmo3DSystem(System):
 
         active_camera_uid, active_camera_component = self.get_active_camera(screen_gl_pixels=screen_gl_pixels)
         if active_camera_uid is None:
-            return
+            return None, None, None
 
         ray_origin, ray_direction = self.get_mouse_ray_point_on_axis(active_camera_uid=active_camera_uid,
                                                                      active_camera_component=active_camera_component)
@@ -299,7 +305,8 @@ class Gizmo3DSystem(System):
             self.gizmo_state = axis + 1  # axis vary 0 to 2 and hover axis states are 1 to 3, hence the +1
             return
 
-        return constants.GIZMO_3D_STATE_NOT_HOVERING
+        # If the mouse ray doesn't intersect anything, then it is not hovering the gizmo
+        self.gizmo_state = constants.GIZMO_3D_STATE_NOT_HOVERING
 
 
     # ========================================================================
@@ -414,9 +421,9 @@ class Gizmo3DSystem(System):
     def mouse_ray_check_planes_collision(self, active_camera_uid: int, ray_origin: np.array, ray_direction: np.array):
         pass
 
-    def dehighlight_gizmo(self):
+    def dehighlight_gizmo(self, camera_uid: int):
 
-        gizmo_3d_entity_uid = self.camera2gizmo_map[self.active_camera_uid]
+        gizmo_3d_entity_uid = self.camera2gizmo_map[camera_uid]
 
         # De-highlight all axes
         material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
@@ -425,24 +432,21 @@ class Gizmo3DSystem(System):
         for axis_entity_uid in gizmo_component.axes_entities_uids:
             material_pool[axis_entity_uid].state_highlighted = False
 
-    def update_active_camera_gizmo_materials(self):
+    def highlight_active_gizmo_part(self, camera_uid: int):
 
-        # TODO: [CLEANUP] Remove direct access and use get_component instead. Think about performance later
+        # TODO: Continue from here!!!! Remove all this code repetition!!!!!!
 
-        # highlight only the current axis being hovered, if any
-        valid_indices = np.where(self.axes_distances > -1.0)[0]
-        if valid_indices.size == 0:
-            self.gizmo_axis_on_hover_index = None
-            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_NOT_HOVERING_GIZMO_3D,
-                                         event_data=(-1,),
-                                         sender=self)
+        if self.gizmo_state == constants.GIZMO_3D_STATE_NOT_HOVERING:
             return
 
-        selected_axis_index = valid_indices[self.axes_distances[valid_indices].argmin()]
-        axis_entity_uid = gizmo_component.axes_entities_uids[selected_axis_index]
+        axis_index = self.gizmo_state - constants.GIZMO_3D_STATE_HOVER_X_AXIS
+
+        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+        gizmo_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
+        gizmo_component = gizmo_3d_pool[self.camera2gizmo_map[camera_uid]]
+        axis_entity_uid = gizmo_component.axes_entities_uids[axis_index]
         axis_material = material_pool[axis_entity_uid]
         axis_material.state_highlighted = True
-        self.gizmo_axis_on_hover_index = int(selected_axis_index)
 
     def set_gizmo_to_selected_entity(self):
 
