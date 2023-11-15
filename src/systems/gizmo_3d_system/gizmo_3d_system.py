@@ -204,6 +204,9 @@ class Gizmo3DSystem(System):
 
         # TODO: Which state to move to? For not, I put not hovering, but this will create a bug
         self.gizmo_state = constants.GIZMO_3D_STATE_NOT_HOVERING
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_LEAVE_GIZMO_3D,
+                                     event_data=(None,),
+                                     sender=self)
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_GIZMO_3D_DEACTIVATED,
                                      event_data=(None,),
                                      sender=self)
@@ -265,25 +268,22 @@ class Gizmo3DSystem(System):
         pass
 
     def handle_state_translate_on_axis(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
+        #print(f"[state] translate_on_axis")
         """
-        Input values are in WORLD coordinates! Don't forget
+        Don't forget: Input values are in WORLD coordinates!
         :param ray_origin:
         :param ray_direction:
         :param mouse_press:
         :return:
         """
-        #print(f"[state] translate_on_axis : mouse_press {mouse_press}")
 
         # Determine where on the selected axis your mouse ray's closest point is
         local_point_on_ray_0 = self.get_local_point_on_axes(ray_origin=ray_origin, ray_direction=ray_direction)
-
         new_local_position = local_point_on_ray_0 - self.local_axis_offset_point + self.original_active_local_position
-
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
         selected_transform_component.position = tuple(new_local_position)
         selected_transform_component.input_values_updated = True
-
 
     def handle_state_translate_on_plane(self, screen_gl_pixels: tuple, entering_state: bool):
         """
