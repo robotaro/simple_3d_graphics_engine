@@ -20,10 +20,6 @@ class Gizmo3DSystem(System):
         "entity_ray_intersection_list",
         "selected_entity_uid",
         "selected_entity_init_distance_to_cam",
-        "gizmo_selection_enabled",
-        "gizmo_mouse_hovering",
-        "gizmo_in_use",
-        "active_camera_uid",
         "original_active_local_matrix",
         "camera2gizmo_map",
         "mouse_screen_position",
@@ -31,7 +27,11 @@ class Gizmo3DSystem(System):
         "hover_axis_index",
         "gizmo_state",
         "event_handlers",
-        "state_handlers"
+        "state_handlers",
+        "gizmo_selection_enabled",
+        "focused_camera_uid",
+        "focused_gizmo_axis_index",
+        "focused_gizmo_plane_index"
     ]
 
     def __init__(self, logger: logging.Logger,
@@ -55,12 +55,11 @@ class Gizmo3DSystem(System):
         # In-Use variables
         self.original_active_local_matrix = None
 
-        # State flags
-        self.gizmo_selection_enabled = True
-        self.gizmo_in_use = False
-
         # State variables
-        self.active_camera_uid = None
+        self.gizmo_selection_enabled = True
+        self.focused_gizmo_axis_index = -1
+        self.focused_gizmo_plane_index = -1
+        self.focused_camera_uid = None
         self.gizmo_state = constants.GIZMO_3D_STATE_NOT_HOVERING
         self.selected_entity_uid = None
         self.selected_entity_init_distance_to_cam = None
@@ -76,9 +75,12 @@ class Gizmo3DSystem(System):
         }
 
         self.state_handlers = {
-            constants.GIZMO_3D_STATE_TRANSLATE_AXIS: self.handle_state_translate_axis,
-            constants.GIZMO_3D_STATE_TRANSLATE_PLANE: self.handle_state_translate_plane,
-            constants.GIZMO_3D_STATE_ROTATE_AXIS: self.handle_state_rotate_axis,
+            constants.GIZMO_3D_STATE_NOT_HOVERING: self.handle_state_not_hovering,
+            constants.GIZMO_3D_STATE_HOVERING_AXIS: self.handle_state_hovering_axis,
+            constants.GIZMO_3D_STATE_HOVERING_PLANE: self.handle_state_hovering_plane,
+            constants.GIZMO_3D_STATE_TRANSLATING_ON_AXIS: self.handle_state_translate_on_axis,
+            constants.GIZMO_3D_STATE_TRANSLATING_ON_PLANE: self.handle_state_translate_on_plane,
+            constants.GIZMO_3D_STATE_ROTATE_AROUND_AXIS: self.handle_state_rotate_axis,
         }
 
     def initialise(self) -> bool:
@@ -153,66 +155,124 @@ class Gizmo3DSystem(System):
 
     def handle_event_mouse_move(self, event_data: tuple):
         self.mouse_screen_position = event_data
-        ray_origin, ray_direction, self.active_camera_uid = self.screen2ray(screen_gl_pixels=event_data)
-        if self.active_camera_uid is None:
+
+        if self.selected_entity_uid is None:
             return
 
-        self.update_state(ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=False)
-
-        if self.gizmo_state == constants.GIZMO_3D_STATE_NOT_HOVERING:
-            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_NOT_HOVERING_GIZMO_3D,
-                                         event_data=(None,),
-                                         sender=self)
+        ray_origin, ray_direction, self.focused_camera_uid = self.screen2ray(screen_gl_pixels=event_data)
+        if self.focused_camera_uid is None:
             return
 
-        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_NOT_HOVERING_GIZMO_3D,
-                                     event_data=(None,),
-                                     sender=self)
+        if ray_origin is None or ray_direction is None:
+            return
+
+        self.state_handlers[self.gizmo_state](ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=False)
 
     def handle_event_mouse_button_press(self, event_data: tuple):
         if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != constants.MOUSE_LEFT:
             return
 
-        if self.gizmo_state == constants.GIZMO_3D_STATE_NOT_HOVERING:
+        if self.selected_entity_uid is None:
             return
 
-        if self.active_camera_uid is None:
+        ray_origin, ray_direction, self.focused_camera_uid = self.screen2ray(screen_gl_pixels=event_data)
+        if self.focused_camera_uid is None:
             return
 
-        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_GIZMO_3D_ACTIVATED,
-                                     event_data=(None,),  # TODO: say which mode has been activated
-                                     sender=self)
+        if ray_origin is None or ray_direction is None:
+            return
 
-        transform = self.component_pool.get_component(entity_uid=self.selected_entity_uid,
-                                                      component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-
-        self.gizmo_in_use = True
-        self.original_active_local_matrix = transform.local_matrix.copy()
-
-        ray_origin, ray_direction = self.screen2ray(screen_gl_pixels=event_data[0])
-        self.update_state(ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=True)
+        self.state_handlers[self.gizmo_state](ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=True)
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         # When the LEFT MOUSE BUTTON is released, it should apply any transforms to the selected entity
         if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != constants.MOUSE_LEFT:
             return
 
-        if not self.gizmo_in_use:
-            return
-
+        # TODO: Which state to move to? For not, I put not hovering, but this will create a bug
+        self.gizmo_state = constants.GIZMO_3D_STATE_NOT_HOVERING
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_GIZMO_3D_DEACTIVATED,
                                      event_data=(None,),
                                      sender=self)
 
-        self.gizmo_in_use = False
+    # ========================================================================
+    #                             State Handling
+    # ========================================================================
+
+    def handle_state_not_hovering(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
+        print("not hovering")
+
+        # AXIS COLLISION
+        self.focused_gizmo_axis_index = self.mouse_ray_check_axes_collision(ray_origin=ray_origin,
+                                                                            ray_direction=ray_direction)
+        if self.focused_gizmo_axis_index == -1:
+            return
+
+        # PLANE COLLISION
+        # TODO: Add collision check with planes
+        self.gizmo_state = constants.GIZMO_3D_STATE_HOVERING_AXIS
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_ENTER_GIZMO_3D,
+                                     event_data=(self.focused_gizmo_axis_index,), sender=self)
+
+    def handle_state_hovering_axis(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
+        print(f"hovering axis  - {self.focused_gizmo_axis_index}")
+        if not self.gizmo_selection_enabled:
+            return
+
+        if mouse_press:
+            self.gizmo_state = constants.GIZMO_3D_STATE_TRANSLATING_ON_AXIS
+            transform = self.component_pool.get_component(entity_uid=self.selected_entity_uid,
+                                                          component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+            self.original_active_local_matrix = transform.local_matrix.copy()
+            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_GIZMO_3D_ACTIVATED,
+                                         event_data=(self.focused_gizmo_axis_index,),
+                                         sender=self)
+            return
+
+        # Check if any other axis is now being hovered
+        self.focused_gizmo_axis_index = self.mouse_ray_check_axes_collision(ray_origin=ray_origin,
+                                                                            ray_direction=ray_direction)
+        if self.focused_gizmo_axis_index == -1:
+            self.gizmo_state = constants.GIZMO_3D_STATE_NOT_HOVERING
+            return
+
+        # PLANE COLLISION
+        # TODO: Add collision check with planes
+
+    def handle_state_hovering_plane(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
+        pass
+
+    def handle_state_translate_on_axis(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
+        print("translating on Axis")
+        pass
+
+    def handle_state_translate_on_plane(self, screen_gl_pixels: tuple, entering_state: bool):
+        """
+        Handles mouse interaction when translating along an Axis. If this is the first time entering the
+        state, use variable "entering_state" to allow the state to be initialised properly. This will happen
+        when the mouse is first pressed
+        :param screen_gl_pixels: current mouse location on screen
+        :param entering_state: bool, should be TRUE if called from the MOUSE PRESS event callback
+        :return:
+        """
+        pass
+
+    def handle_state_rotate_axis(self, screen_gl_pixels: tuple, entering_state: bool):
+        """
+        Handles mouse interaction when translating along an Axis. If this is the first time entering the
+        state, use variable "entering_state" to allow the state to be initialised properly. This will happen
+        when the mouse is first pressed
+        :param screen_gl_pixels: current mouse location on screen
+        :param entering_state: bool, should be TRUE if called from the MOUSE PRESS event callback
+        :return:
+        """
+        pass
 
     # ========================================================================
     #                            Core functions
     # ========================================================================
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
-
-        print(self.gizmo_state)
 
         if self.selected_entity_uid is None:
             return True
@@ -247,35 +307,22 @@ class Gizmo3DSystem(System):
 
         return True
 
-    def handle_state_translate_axis(self, screen_gl_pixels: tuple, entering_state: bool):
-        """
-        Handles mouse interaction when translating along an Axis. If this is the first time entering the
-        state, use variable "entering_state" to allow the state to be initialised properly. This will happen
-        when the mouse is first pressed
-        :param screen_gl_pixels: current mouse location on screen
-        :param entering_state: bool, should be TRUE if called from the MOUSE PRESS event callback
-        :return:
-        """
+    # ========================================================================
+    #                            Auxiliary functions
+    # ========================================================================
 
-    def handle_state_translate_plane(self, screen_gl_pixels: tuple, entering_state: bool):
-        """
-        Handles mouse interaction when translating along an Axis. If this is the first time entering the
-        state, use variable "entering_state" to allow the state to be initialised properly. This will happen
-        when the mouse is first pressed
-        :param screen_gl_pixels: current mouse location on screen
-        :param entering_state: bool, should be TRUE if called from the MOUSE PRESS event callback
-        :return:
-        """
+    """def process_mouse_movement(self, screen_gl_pixels: tuple):
 
-    def handle_state_rotate_axis(self, screen_gl_pixels: tuple, entering_state: bool):
-        """
-        Handles mouse interaction when translating along an Axis. If this is the first time entering the
-        state, use variable "entering_state" to allow the state to be initialised properly. This will happen
-        when the mouse is first pressed
-        :param screen_gl_pixels: current mouse location on screen
-        :param entering_state: bool, should be TRUE if called from the MOUSE PRESS event callback
-        :return:
-        """
+        if self.selected_entity_uid is None:
+            return
+
+        # Get mouse ray
+        ray_origin, ray_direction = self.screen2ray(screen_gl_pixels=screen_gl_pixels)
+
+        # Determine if mouse ray is intersection any structures
+        self.update_state(ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=False)
+
+        self.dehighlight_gizmo()"""
 
     def screen2ray(self, screen_gl_pixels: tuple) -> tuple:
         """
@@ -296,35 +343,6 @@ class Gizmo3DSystem(System):
                                                                      active_camera_component=active_camera_component)
 
         return ray_origin, ray_direction, active_camera_uid
-
-    def update_state(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
-
-        # Check if mouse ray is hovering at any of the axes
-        axis = self.mouse_ray_check_axes_collision(ray_origin=ray_origin, ray_direction=ray_direction)
-        if axis != -1:
-            self.gizmo_state = axis + 1  # axis vary 0 to 2 and hover axis states are 1 to 3, hence the +1
-            return
-
-        # If the mouse ray doesn't intersect anything, then it is not hovering the gizmo
-        self.gizmo_state = constants.GIZMO_3D_STATE_NOT_HOVERING
-
-
-    # ========================================================================
-    #                            Auxiliary functions
-    # ========================================================================
-
-    """def process_mouse_movement(self, screen_gl_pixels: tuple):
-
-        if self.selected_entity_uid is None:
-            return
-
-        # Get mouse ray
-        ray_origin, ray_direction = self.screen2ray(screen_gl_pixels=screen_gl_pixels)
-
-        # Determine if mouse ray is intersection any structures
-        self.update_state(ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=False)
-
-        self.dehighlight_gizmo()"""
 
     def process_gizmo_in_use(self, ray_origin: np.array, ray_direction: np.array) -> bool:
         if not self.gizmo_in_use:
@@ -382,6 +400,9 @@ class Gizmo3DSystem(System):
             position_pixels=self.mouse_screen_position,
             viewport_pixels=active_camera_component.viewport_pixels)
 
+        if viewport_position is None:
+            return None, None
+
         ray_direction, ray_origin = utils_camera.screen_pos2world_ray(
             viewport_coord_norm=viewport_position,
             camera_matrix=camera_matrix,
@@ -392,7 +413,7 @@ class Gizmo3DSystem(System):
     def mouse_ray_check_axes_collision(self, ray_origin: np.array, ray_direction: np.array) -> int:
 
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-        gizmo_3d_entity_uid = self.camera2gizmo_map[self.active_camera_uid] # TODO [CLEANUP] All I need is the gizmo transform
+        gizmo_3d_entity_uid = self.camera2gizmo_map[self.focused_camera_uid] # TODO [CLEANUP] All I need is the gizmo transform
         gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
         # TODO: [CLEANUP] Clean this silly code. Change the intersection function to accommodate for this
@@ -410,7 +431,7 @@ class Gizmo3DSystem(System):
             radius=np.float32(0.1 * gizmo_transform_component.scale),
             output_distances=intersection_distances)
 
-        # Retrieve subindices of any axes being intersected by the mouse ray
+        # Retrieve sub-indices of any axes being intersected by the mouse ray
         valid_axis_indices = np.where(intersection_distances > -1.0)[0]
         if valid_axis_indices.size == 0:
             return -1
@@ -434,17 +455,13 @@ class Gizmo3DSystem(System):
 
     def highlight_active_gizmo_part(self, camera_uid: int):
 
-        # TODO: Continue from here!!!! Remove all this code repetition!!!!!!
-
         if self.gizmo_state == constants.GIZMO_3D_STATE_NOT_HOVERING:
             return
-
-        axis_index = self.gizmo_state - constants.GIZMO_3D_STATE_HOVER_X_AXIS
 
         material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
         gizmo_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
         gizmo_component = gizmo_3d_pool[self.camera2gizmo_map[camera_uid]]
-        axis_entity_uid = gizmo_component.axes_entities_uids[axis_index]
+        axis_entity_uid = gizmo_component.axes_entities_uids[self.focused_gizmo_axis_index]
         axis_material = material_pool[axis_entity_uid]
         axis_material.state_highlighted = True
 

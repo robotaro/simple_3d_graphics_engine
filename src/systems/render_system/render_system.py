@@ -253,10 +253,10 @@ class RenderSystem(System):
         if event_type == constants.EVENT_MOUSE_LEAVE_UI:
             self.hovering_ui = False
 
-        if event_type == constants.EVENT_MOUSE_HOVERING_GIZMO_3D:
+        if event_type == constants.EVENT_MOUSE_ENTER_GIZMO_3D:
             self.hovering_gizmo = True
 
-        if event_type == constants.EVENT_MOUSE_NOT_HOVERING_GIZMO_3D:
+        if event_type == constants.EVENT_MOUSE_LEAVE_GIZMO_3D:
             self.hovering_gizmo = False
 
         if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:

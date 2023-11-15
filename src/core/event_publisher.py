@@ -31,8 +31,8 @@ class EventPublisher:
             constants.EVENT_WINDOW_DROP_FILES: [],
             constants.EVENT_ENTITY_SELECTED: [],
             constants.EVENT_ENTITY_DESELECTED: [],
-            constants.EVENT_MOUSE_HOVERING_GIZMO_3D: [],
-            constants.EVENT_MOUSE_NOT_HOVERING_GIZMO_3D: [],
+            constants.EVENT_MOUSE_ENTER_GIZMO_3D: [],
+            constants.EVENT_MOUSE_LEAVE_GIZMO_3D: [],
             constants.EVENT_MOUSE_GIZMO_3D_ACTIVATED: [],
             constants.EVENT_MOUSE_GIZMO_3D_DEACTIVATED: []
         }
