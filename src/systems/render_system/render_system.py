@@ -278,7 +278,9 @@ class RenderSystem(System):
 
         # TODO: Move this to its own function!
         # Pass the coordinate of the pixel you want to sample to the fragment picking shader
-        self.picker_program['texel_pos'].value = event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X:]  # (x, y)
+        mouse_position = (int(event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X]),
+                          int(event_data[constants.EVENT_INDEX_MOUSE_BUTTON_Y_OPENGL]))
+        self.picker_program['texel_pos'].value = mouse_position  # (x, y)
         self.forward_pass_texture_entity_info.use(location=0)
 
         self.picker_vao.transform(

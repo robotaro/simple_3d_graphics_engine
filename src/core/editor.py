@@ -176,15 +176,16 @@ class Editor:
 
     def _glfw_callback_mouse_button(self, glfw_window, button, action, mods):
 
-        mouse_pos = (-1, -1)
+        mouse_position = (-1.0, -1.0)
         if glfw.get_window_attrib(self.window_glfw, glfw.FOCUSED):
-            mouse_pos = glfw.get_cursor_pos(self.window_glfw)
-            mouse_pos = (int(mouse_pos[0]), self.window_size[1] - int(mouse_pos[1]))
+            x, y_gui = glfw.get_cursor_pos(self.window_glfw)
+            y_gl = self.window_size[1] - y_gui
+            mouse_position = (x, y_gl, y_gui)
 
         # NOTE: Button numbers already match the GLFW numbers in the constants
         if action == glfw.PRESS:
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_PRESS,
-                                         event_data=(button, mods, *mouse_pos),
+                                         event_data=(button, mods, *mouse_position),
                                          sender=self)
             self.mouse_state[button] = constants.BUTTON_PRESSED
 
@@ -194,7 +195,7 @@ class Editor:
             self.mouse_press_last_timestamp = mouse_press_timestamp
             if time_between_clicks < constants.DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD:
                 self.event_publisher.publish(event_type=constants.EVENT_MOUSE_DOUBLE_CLICK,
-                                             event_data=(button, mods, *mouse_pos),
+                                             event_data=(button, mods, *mouse_position),
                                              sender=self)
 
                 # Three consecutive clicks may trigger two double clicks, so we reset the timestamp after a double click
@@ -202,7 +203,7 @@ class Editor:
 
         if action == glfw.RELEASE:
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_RELEASE,
-                                         event_data=(button, mods, *mouse_pos),
+                                         event_data=(button, mods, *mouse_position),
                                          sender=self)
             self.mouse_state[button] = constants.BUTTON_RELEASED
 

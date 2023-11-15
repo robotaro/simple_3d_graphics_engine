@@ -154,6 +154,7 @@ class Gizmo3DSystem(System):
         self.gizmo_selection_enabled = True
 
     def handle_event_mouse_move(self, event_data: tuple):
+        print(f"move = {event_data}")
         self.mouse_screen_position = event_data
 
         if self.selected_entity_uid is None:
@@ -175,11 +176,14 @@ class Gizmo3DSystem(System):
         if self.selected_entity_uid is None:
             return
 
+        print(f"click = {event_data}")
+
         ray_origin, ray_direction, self.focused_camera_uid = self.screen2ray(screen_gl_pixels=event_data)
         if self.focused_camera_uid is None:
             return
 
         if ray_origin is None or ray_direction is None:
+            print("None!")
             return
 
         self.state_handlers[self.gizmo_state](ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=True)
