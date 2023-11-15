@@ -10,7 +10,7 @@ FLT_EPSILON = np.finfo(float).eps
 
 
 @njit(float32[:](float32[:], float32[:], float32[:], float32[:]), cache=True)
-def ray2ray_nearest_point(ray_0_origin, ray_0_direction, ray_1_origin, ray_1_direction):
+def ray2ray_nearest_point_on_ray_0(ray_0_origin, ray_0_direction, ray_1_origin, ray_1_direction):
 
     """
     Original function from Gizmo project: https://github.com/john-chapman/im3d/blob/master/im3d.cpp
@@ -28,14 +28,14 @@ def ray2ray_nearest_point(ray_0_origin, ray_0_direction, ray_1_origin, ray_1_dir
     d = 1.0 - q * q
 
     if d < FLT_EPSILON:  # lines are parallel
-        t0_ = 0.0
-        t1_ = s
+        t0_ = float32(0.0)
+        #t1_ = s
     else:
         r = np.dot(ray_0_direction, p)
-        t0_ = (q * s - r) / d
-        t1_ = (s - q * r) / d
+        t0_ = float32((q * s - r) / d)
+        #t1_ = (s - q * r) / d
 
-    return np.array([t0_, t1_], dtype=float32)
+    return (ray_0_direction * t0_) + ray_0_origin
 
 
 # ======================================================================================================================
