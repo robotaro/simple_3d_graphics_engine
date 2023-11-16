@@ -225,6 +225,7 @@ def look_at_inverse(position: np.array, target: np.array, up: np.array):
     return rot @ trans
 
 
+@njit(cache=True)
 def perspective_projection(fovy_rad: float, aspect: float, near: float, far: float):
 
     """
@@ -246,7 +247,7 @@ def perspective_projection(fovy_rad: float, aspect: float, near: float, far: flo
                      [0, 0, zz, zw],
                      [0, 0, -1, 0]], dtype=np.float32)
 
-
+@njit(cache=True)
 def orthographic_projection(left: float, right: float, bottom: float, top: float, near: float, far: float):
     dx = right - left
     dy = top - bottom

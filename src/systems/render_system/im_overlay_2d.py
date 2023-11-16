@@ -11,22 +11,24 @@ from src.core import constants
 # Command IDs
 COMMAND_ID_AABB_FILLED = 0.0
 COMMAND_ID_AABB_EDGE = 1.0
-COMMAND_ID_CIRCLE_FILL = 2.0
-COMMAND_ID_CIRCLE_EDGE = 3.0
-COMMAND_ID_CHARACTER = 4.0
+COMMAND_ID_AABB_TEXTURED = 2.0
+COMMAND_ID_CIRCLE_FILL = 3.0
+COMMAND_ID_CIRCLE_EDGE = 4.0
+COMMAND_ID_CHARACTER = 5.0
 
 # Command Array Column Indices
-COL_INDEX_ID = 0
+COL_INDEX_COMMAND_ID = 0
 COL_INDEX_X = 1
 COL_INDEX_Y = 2
 COL_INDEX_WIDTH = 3
-COL_INDEX_RADIUS = 3  # Yep, same column for a different purpose on circles
 COL_INDEX_HEIGHT = 4
+COL_INDEX_RADIUS = 3  # Yep, same column for a different purpose on circles
 COL_INDEX_COLOR_RED = 5
 COL_INDEX_COLOR_GREEN = 6
 COL_INDEX_COLOR_BLUE = 7
 COL_INDEX_COLOR_ALPHA = 8
 COL_INDEX_EDGE_WIDTH = 9
+COL_INDEX_TEXTURE_INDEX = 9
 COL_INDEX_U_MIN = 10
 COL_INDEX_V_MIN = 11
 COL_INDEX_U_MAX = 12
@@ -96,7 +98,7 @@ class ImOverlay2D:
                 cursor_x += 10  # TODO: Think of better way to determine what space should be. Maybe use font itself
 
             # Command ID
-            self.draw_commands[index, COL_INDEX_ID] = COMMAND_ID_CHARACTER
+            self.draw_commands[index, COL_INDEX_COMMAND_ID] = COMMAND_ID_CHARACTER
 
             # Position
             char_offset_x = self.character_data[char_index, FONT_LIBRARY_COLUMN_INDEX_OFFSET_X]
@@ -134,7 +136,7 @@ class ImOverlay2D:
         index = self.num_draw_commands
 
         # Command ID
-        self.draw_commands[index, COL_INDEX_ID] = COMMAND_ID_AABB_FILLED
+        self.draw_commands[index, COL_INDEX_COMMAND_ID] = COMMAND_ID_AABB_FILLED
 
         # Position
         self.draw_commands[index, COL_INDEX_X] = x
@@ -167,7 +169,45 @@ class ImOverlay2D:
         index = self.num_draw_commands
 
         # Command ID
-        self.draw_commands[index, COL_INDEX_ID] = COMMAND_ID_AABB_EDGE
+        self.draw_commands[index, COL_INDEX_COMMAND_ID] = COMMAND_ID_AABB_EDGE
+
+        # Position
+        self.draw_commands[index, COL_INDEX_X] = x
+        self.draw_commands[index, COL_INDEX_Y] = y
+
+        # Size
+        self.draw_commands[index, COL_INDEX_WIDTH] = width
+        self.draw_commands[index, COL_INDEX_HEIGHT] = height
+
+        # Color
+        self.draw_commands[index, COL_INDEX_COLOR_RED] = color[0]
+        self.draw_commands[index, COL_INDEX_COLOR_GREEN] = color[1]
+        self.draw_commands[index, COL_INDEX_COLOR_BLUE] = color[2]
+        self.draw_commands[index, COL_INDEX_COLOR_ALPHA] = color[3]
+
+        # Edge Width
+        self.draw_commands[index, COL_INDEX_EDGE_WIDTH] = edge_width
+
+        self.num_draw_commands += 1
+
+    def add_aabb_textured(self,
+                          x: float32,
+                          y: float32,
+                          width: float32,
+                          height: float32,
+                          texture_index: int32,
+                          uv_min=(0.0, 0.0),
+                          uv_max=(1.0, 1.0),
+                          color=(1.0, 1.0, 1.0, 1.0)):
+
+        # Check if you can still fit this ome more draw command before proceeding
+        if self.num_draw_commands == constants.OVERLAY_2D_MAX_DRAW_COMMANDS:
+            return
+
+        index = self.num_draw_commands
+
+        # Command ID
+        self.draw_commands[index, COL_INDEX_COMMAND_ID] = COMMAND_ID_AABB_TEXTURED
 
         # Position
         self.draw_commands[index, COL_INDEX_X] = x
@@ -202,7 +242,7 @@ class ImOverlay2D:
         index = self.num_draw_commands
 
         # Command ID
-        self.draw_commands[index, COL_INDEX_ID] = COMMAND_ID_CIRCLE_EDGE
+        self.draw_commands[index, COL_INDEX_COMMAND_ID] = COMMAND_ID_CIRCLE_EDGE
 
         # Position
         self.draw_commands[index, COL_INDEX_X] = x

@@ -351,19 +351,6 @@ class Gizmo3DSystem(System):
     #                            Auxiliary functions
     # ========================================================================
 
-    """def process_mouse_movement(self, screen_gl_pixels: tuple):
-
-        if self.selected_entity_uid is None:
-            return
-
-        # Get mouse ray
-        ray_origin, ray_direction = self.screen2ray(screen_gl_pixels=screen_gl_pixels)
-
-        # Determine if mouse ray is intersection any structures
-        self.update_state(ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=False)
-
-        self.dehighlight_gizmo()"""
-
     def screen2ray(self, screen_gl_pixels: tuple) -> tuple:
         """
         Converts any position in pixels using the OpenGL coordinates (not the viewport ones!) into a 3D ray with
@@ -403,20 +390,6 @@ class Gizmo3DSystem(System):
         inv_world_matrix = np.eye(4, dtype=np.float32)
         mat4.fast_inverse(self.original_active_world_matrix, inv_world_matrix)
         return mat4.mul_vector3(in_mat4=inv_world_matrix, in_vec3=world_point_on_ray_0)
-
-    """def set_gizmo_position(self, position: np.array):
-
-            # Get component pools for easy access
-            transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-            camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-
-            for camera_entity_uid, camera_component in camera_pool.items():
-
-                gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_uid]
-                gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
-
-                gizmo_transform_component.position = tuple(position)
-                gizmo_transform_component.input_values_updated = True"""
 
     def get_active_camera(self, screen_gl_pixels: tuple) -> tuple:
         camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
@@ -552,22 +525,3 @@ class Gizmo3DSystem(System):
 
             for mesh_entity_uid in gizmo_3d_component.axes_entities_uids:
                 mesh_pool[mesh_entity_uid].visible = visible
-
-    def perform_ray_axis_collision(self, camera_entity_uid: int) -> tuple:
-
-        camera_component = self.component_pool.camera_components[camera_entity_uid]
-        transform_component = self.component_pool.transform_3d_components[camera_entity_uid]
-
-        view_matrix = self.component_pool.transform_3d_components[camera_entity_uid].world_matrix
-        projection_matrix = camera_component.get_projection_matrix()
-
-        viewport_coord_norm = camera_component.get_viewport_coordinates(screen_coord_pixels=self.mouse_screen_position)
-        if viewport_coord_norm is None:
-            return None, None
-
-        return utils_camera.screen_pos2world_ray(
-            viewport_coord_norm=viewport_coord_norm,
-            camera_matrix=view_matrix,
-            projection_matrix=projection_matrix)
-
-
