@@ -564,6 +564,9 @@ class RenderSystem(System):
             if overlay_2d_component is None:
                 return
 
+            # ============== [ DEBUG ] ========================
+            overlay_2d_component.im_overlay.add_circle_edge(100., 100., 25., 4.)
+
             if overlay_2d_component.im_overlay.num_draw_commands == 0:
                 return
 

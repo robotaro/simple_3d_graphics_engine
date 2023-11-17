@@ -443,6 +443,7 @@ class Editor:
 
             # Update All systems in order
             for system in self.systems:
+
                 if not system.update(elapsed_time=elapsed_time, context=self.ctx):
                     self.close_application = True
                     break

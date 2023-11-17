@@ -223,9 +223,6 @@ class ImOverlay2D:
         self.draw_commands[index, COL_INDEX_COLOR_BLUE] = color[2]
         self.draw_commands[index, COL_INDEX_COLOR_ALPHA] = color[3]
 
-        # Edge Width
-        self.draw_commands[index, COL_INDEX_EDGE_WIDTH] = edge_width
-
         self.num_draw_commands += 1
 
     def add_circle_edge(self,

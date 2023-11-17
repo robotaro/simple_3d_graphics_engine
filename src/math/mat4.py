@@ -247,8 +247,8 @@ def perspective_projection(fovy_rad: float, aspect: float, near: float, far: flo
                      [0, 0, zz, zw],
                      [0, 0, -1, 0]], dtype=np.float32)
 
-@njit(cache=True)
-def orthographic_projection(left: float, right: float, bottom: float, top: float, near: float, far: float):
+
+def orthographic_projection(left: float32, right: float32, bottom: float32, top: float32, near: float32, far: float32):
     dx = right - left
     dy = top - bottom
     dz = far - near

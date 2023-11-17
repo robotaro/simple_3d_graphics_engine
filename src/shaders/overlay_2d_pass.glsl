@@ -38,13 +38,7 @@ void main() {
 
 #elif defined GEOMETRY_SHADER
 
-// TODO: Move these definitions to another file and include them here instead
-#define COMMAND_ID_AABB_FILLED 0.0
-#define COMMAND_ID_AABB_EDGE 1.0
-#define COMMAND_ID_CIRCLE_FILL 2.0
-#define COMMAND_ID_CIRCLE_EDGE 3.0
-#define COMMAND_ID_CHARACTER 4.0
-#define COMMAND_ID_AABB_TEXTURED 5.0
+#include overlay_2d_constants.glsl
 
 #define CIRCLE_NUM_SIDES 32
 
@@ -199,13 +193,7 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
-// TODO: Move these definitions to another file and include them here instead
-#define COMMAND_ID_AABB_FILLED 0.0
-#define COMMAND_ID_AABB_EDGE 1.0
-#define COMMAND_ID_CIRCLE_FILL 2.0
-#define COMMAND_ID_CIRCLE_EDGE 3.0
-#define COMMAND_ID_CHARACTER 4.0
-
+#include overlay_2d_constants.glsl
 
 uniform sampler2D font_texture;
 
