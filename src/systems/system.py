@@ -17,7 +17,9 @@ class System:
         "action_queue",
         "current_action",
         "parameters",
-        "runtime"
+        "average_update_period",
+        "sum_update_periods",
+        "num_updates"
     ]
 
     name = "base_system"
@@ -36,7 +38,11 @@ class System:
         self.current_action = None
         self.component_pool = component_pool
         self.parameters = parameters
-        self.runtime = 0.0
+
+        # Profiling variables
+        self.average_update_period = -1.0
+        self.sum_update_periods = 0.0
+        self.num_updates = 0
 
     def on_event(self, event_type: int, event_data: tuple):
         pass

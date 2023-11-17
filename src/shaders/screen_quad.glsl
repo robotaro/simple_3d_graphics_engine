@@ -26,6 +26,7 @@ uniform sampler2D overlay_texture;
 uniform sampler2D depth_texture;
 
 // Other input uniforms
+uniform float blending = 1.0;
 uniform vec3 outline_color = vec3(1.0, 0.65, 0.0);  // Default orange color used in Blender
 uniform int selected_texture = 0;
 uniform bool perspective_projection = true;
@@ -62,7 +63,6 @@ float linearise_depth_orthographic(float depthValue);
 
 vec3 overlay_color_rgb = texture(overlay_texture, uv).rgb;
 bool overlay_collision = overlay_color_rgb != vec3(0.0, 0.0, 0.0);
-float blending = 0.75;
 
 void main() {
 

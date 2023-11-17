@@ -269,6 +269,7 @@ class RenderSystem(System):
             # Other systems may change the selected entity, so this should be reflected by the render system
             self.selected_entity_id = event_data[0]
 
+
     def process_entity_selection(self, event_data: tuple):
         if self.hovering_ui or self.hovering_gizmo:
             return
@@ -565,7 +566,9 @@ class RenderSystem(System):
                 return
 
             # ============== [ DEBUG ] ========================
-            overlay_2d_component.im_overlay.add_circle_edge(100., 100., 25., 4.)
+            overlay_2d_component.im_overlay.add_aabb_filled(50., 50., 100., 100., (0., 0., 0., 1.0))
+            overlay_2d_component.im_overlay.add_text("this is a test, ", 50., 50.)
+            overlay_2d_component.im_overlay.add_circle_edge(100., 100., 25., 4., (1., 0., 1., 1.0))
 
             if overlay_2d_component.im_overlay.num_draw_commands == 0:
                 return

@@ -20,7 +20,8 @@ class ImguiSystem(System):
         "selected_entity_name",
         "selected_entity_components",
         "past_window_hover",
-        "_exit_popup_open"
+        "_exit_popup_open",
+        "system_profiling_event_data"
     ]
 
     name = constants.SYSTEM_NAME_IMGUI
@@ -43,6 +44,9 @@ class ImguiSystem(System):
         self.selected_entity_name = ""
         self.selected_entity_components = []
         self.past_window_hover = False
+
+        # Profiling
+        self.system_profiling_event_data = ()
 
         # Flags
         self._exit_popup_open = False
@@ -97,6 +101,9 @@ class ImguiSystem(System):
         if event_type == constants.EVENT_KEYBOARD_PRESS:
             if event_data[constants.EVENT_INDEX_KEYBOARD_KEY] == glfw.KEY_ESCAPE:
                 self._exit_popup_open = True
+
+        if event_type == constants.EVENT_PROFILING_SYSTEM_PERIODS:
+            self.system_profiling_event_data = event_data
 
     def shutdown(self):
         self.imgui_renderer.shutdown()
@@ -209,6 +216,19 @@ class ImguiSystem(System):
         imgui.set_window_size(500, 500)
 
         flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP
+
+        # ======================================================================
+        #                              Profiling
+        # ======================================================================
+
+        for i in range(len(self.system_profiling_event_data) // 2):
+            name = self.system_profiling_event_data[i * 2]
+            period = self.system_profiling_event_data[i * 2 + 1]
+            imgui.text(f"{name} : {period * 1000.0:.3f} ms")
+
+        imgui.spacing()
+        imgui.separator()
+        imgui.spacing()
 
         # ======================================================================
         #                 List all available entities in the scene

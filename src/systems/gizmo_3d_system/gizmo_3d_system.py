@@ -36,8 +36,7 @@ class Gizmo3DSystem(System):
         "gizmo_selection_enabled",
         "focused_camera_uid",
         "focused_gizmo_axis_index",
-        "focused_gizmo_plane_index"
-    ]
+        "focused_gizmo_plane_index"]
 
     def __init__(self, logger: logging.Logger,
                  component_pool: ComponentPool,

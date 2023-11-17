@@ -48,7 +48,11 @@ class Editor:
                  "component_pool",
                  "event_publisher",
                  "action_publisher",
-                 "close_application",)
+                 "close_application",
+                 "profiling_update_period",
+                 "editor_num_updates",
+                 "editor_sum_update_periods",
+                 "average_fps")
 
     def __init__(self,
                  window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
@@ -71,6 +75,12 @@ class Editor:
         self.mouse_state = self.initialise_mouse_state()
         self.keyboard_state = self.initialise_keyboard_state()
         self.mouse_press_last_timestamp = time.perf_counter()
+
+        # Profiling variables
+        self.editor_num_updates = 0
+        self.editor_sum_update_periods = 0.0
+        self.profiling_update_period = 1.0  # seconds
+        self.average_fps = 0.0  # Hz
 
         if not glfw.init():
             raise ValueError("[ERROR] Failed to initialize GLFW")
@@ -390,6 +400,33 @@ class Editor:
                                      event_data=self.buffer_size,
                                      sender=self)
 
+    def internal_profiling_update(self, elapsed_time: float):
+
+        self.editor_sum_update_periods += elapsed_time
+        self.editor_num_updates += 1
+
+        # Check if it is time to update all mean periods. If its time, time to reset everything :)
+        if self.editor_sum_update_periods < self.profiling_update_period:
+            return
+
+        # Update system profiling
+        for system in self.systems:
+            system.average_update_period = system.sum_update_periods / system.num_updates
+            system.sum_update_periods = 0.0
+            system.num_updates = 0
+
+        # Send
+        event_data = tuple([item for system in self.systems for item in (system.name, system.average_update_period)])
+        self.event_publisher.publish(event_type=constants.EVENT_PROFILING_SYSTEM_PERIODS,
+                                     event_data=event_data,
+                                     sender=self)
+
+        # Update editor profiling
+        self.average_fps = self.editor_num_updates / self.editor_sum_update_periods
+        self.editor_num_updates = 0
+        self.editor_sum_update_periods = 0.0
+        print(self.average_fps)
+
     def run(self, profiling_enabled=False, title_fps=False) -> str:
         """
         Main function to run the application. Currently holds a few debugging variables but it will
@@ -400,13 +437,7 @@ class Editor:
         :return:
         """
 
-        # Throw-away constants
-        TITLE_UPDATE_NUM_FRAMES = 1000
-
-        # Initialisation variables
         profiling_result = ""
-        update_counter = 0
-        update_period_sum = 0.0
 
         if profiling_enabled:
             profiler = cProfile.Profile()
@@ -432,21 +463,19 @@ class Editor:
             elapsed_time = timestamp - timestamp_past
             timestamp_past = timestamp
 
-            # DEBUG - update title fps value
-            update_period_sum += elapsed_time
-            update_counter += 1
-            if update_counter >= TITLE_UPDATE_NUM_FRAMES:
-                glfw.set_window_title(window=self.window_glfw,
-                                      title=f"FPS: {update_counter / update_period_sum:.1f}")
-                update_period_sum = 0
-                update_counter = 0
-
             # Update All systems in order
             for system in self.systems:
 
+                t0_system = time.perf_counter()
                 if not system.update(elapsed_time=elapsed_time, context=self.ctx):
                     self.close_application = True
                     break
+                t1_system = time.perf_counter()
+
+                system.sum_update_periods += t1_system - t0_system
+                system.num_updates += 1
+
+            self.internal_profiling_update(elapsed_time=elapsed_time)
 
             # Still swap these even if you have to exit application?
             glfw.swap_buffers(self.window_glfw)

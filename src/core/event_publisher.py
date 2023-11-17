@@ -34,7 +34,8 @@ class EventPublisher:
             constants.EVENT_MOUSE_ENTER_GIZMO_3D: [],
             constants.EVENT_MOUSE_LEAVE_GIZMO_3D: [],
             constants.EVENT_MOUSE_GIZMO_3D_ACTIVATED: [],
-            constants.EVENT_MOUSE_GIZMO_3D_DEACTIVATED: []
+            constants.EVENT_MOUSE_GIZMO_3D_DEACTIVATED: [],
+            constants.EVENT_PROFILING_SYSTEM_PERIODS: []
         }
 
     def subscribe(self, event_type: int, listener):
