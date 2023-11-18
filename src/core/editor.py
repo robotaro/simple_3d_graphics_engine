@@ -85,7 +85,7 @@ class Editor:
         self.events_average_period = 0.0
         self.events_num_updates = 0
         self.events_sum_update_periods = 0.0
-        self.profiling_update_period = 1.0  # seconds
+        self.profiling_update_period = constants.DEFAULT_EDITOR_PROFILING_UPDATE_PERIOD
         self.average_fps = 0.0  # Hz
 
         if not glfw.init():

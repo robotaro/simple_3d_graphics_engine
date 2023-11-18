@@ -16,6 +16,7 @@ SHADERS_DIR = os.path.join(SRC_DIR, "shaders")
 #                                Editor
 # =============================================================================
 
+DEFAULT_EDITOR_PROFILING_UPDATE_PERIOD = 0.5  # Seconds
 DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)  # (1280, 720)
 DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD = 0.5  # in seconds - Windows default is 500ms
 

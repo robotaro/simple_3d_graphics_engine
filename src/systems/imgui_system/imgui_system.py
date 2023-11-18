@@ -77,7 +77,7 @@ class ImguiSystem(System):
 
         # Render menus and windows
         self.gui_main_menu_bar()
-        self.gui_entity_window()
+        self.gui_main_window()
 
         if not self.gui_exit_modal():
             return False
@@ -207,32 +207,51 @@ class ImguiSystem(System):
 
         return True
 
-    def gui_entity_window(self):
+    def gui_main_window(self):
 
         # open new window context
-        imgui.begin(f"Selected Entity", True)
+        imgui.begin(f"Inspection Window", True)
 
-        #imgui.set_window_position(300, 150)
+        with imgui.begin_tab_bar("MyTabBar") as tab_bar:
+            if tab_bar.opened:
+                with imgui.begin_tab_item("Entities") as item1:
+                    if item1.selected:
+                        imgui.text("Another content...")
+                        self.gui_tab_entities()
+
+                with imgui.begin_tab_item("Profiling") as item2:
+                    if item2.selected:
+                        self.gui_tab_profiling()
+
+                with imgui.begin_tab_item("Gizmo 3D") as item3:
+                    if item3.selected:
+                        self.gui_tab_gizmo_3d()
+
+        # imgui.set_window_position(300, 150)
         imgui.set_window_size(500, 500)
 
-        flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP
-
         # ======================================================================
-        #                              Profiling
+        #                 List all available entities in the scene
         # ======================================================================
 
+        # draw text label inside of current window
+        imgui.end()
+
+    def gui_tab_profiling(self):
         for i in range(len(self.system_profiling_event_data) // 2):
             name = self.system_profiling_event_data[i * 2]
             period = self.system_profiling_event_data[i * 2 + 1]
             imgui.text(f"{name} : {period * 1000.0:.3f} ms")
 
-        imgui.spacing()
-        imgui.separator()
-        imgui.spacing()
+    def gui_tab_gizmo_3d(self):
+        pass
 
-        # ======================================================================
-        #                 List all available entities in the scene
-        # ======================================================================
+    def gui_tab_entities(self):
+
+        flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP
+
+        imgui.text(f"[ All Scene Entities ]")
+        imgui.spacing()
 
         for entity_uid, entity in self.component_pool.entities.items():
 
@@ -250,12 +269,10 @@ class ImguiSystem(System):
         imgui.separator()
         imgui.spacing()
 
-        # TODO: Think of a better way to go through components
         if len(self.selected_entity_components) == 0:
-            imgui.end()
             return
 
-        imgui.text(f"[ Entity ] {self.selected_entity_name}")
+        imgui.text(f"[ Selected Entity ] {self.selected_entity_name}")
         imgui.spacing()
 
         # ======================================================================
@@ -280,11 +297,11 @@ class ImguiSystem(System):
                                                         1.0,
                                                         "%.3f")
             _, point_light.attenuation_coeffs = imgui.drag_float3("Attenuation Coeffs.",
-                                                        *point_light.attenuation_coeffs,
-                                                        0.005,
-                                                        0.0,
-                                                        100.0,
-                                                        "%.3f")
+                                                                  *point_light.attenuation_coeffs,
+                                                                  0.005,
+                                                                  0.0,
+                                                                  100.0,
+                                                                  "%.3f")
 
             imgui.spacing()
 
@@ -341,6 +358,3 @@ class ImguiSystem(System):
                 max_value=constants.RENDER_MODE_LIGHTING_LIT)
 
             imgui.spacing()
-
-        # draw text label inside of current window
-        imgui.end()
