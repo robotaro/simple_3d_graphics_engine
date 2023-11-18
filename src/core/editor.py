@@ -52,6 +52,9 @@ class Editor:
                  "profiling_update_period",
                  "editor_num_updates",
                  "editor_sum_update_periods",
+                 "events_average_period",
+                 "events_num_updates",
+                 "events_sum_update_periods",
                  "average_fps")
 
     def __init__(self,
@@ -79,6 +82,9 @@ class Editor:
         # Profiling variables
         self.editor_num_updates = 0
         self.editor_sum_update_periods = 0.0
+        self.events_average_period = 0.0
+        self.events_num_updates = 0
+        self.events_sum_update_periods = 0.0
         self.profiling_update_period = 1.0  # seconds
         self.average_fps = 0.0  # Hz
 
@@ -415,17 +421,22 @@ class Editor:
             system.sum_update_periods = 0.0
             system.num_updates = 0
 
-        # Send
-        event_data = tuple([item for system in self.systems for item in (system.name, system.average_update_period)])
-        self.event_publisher.publish(event_type=constants.EVENT_PROFILING_SYSTEM_PERIODS,
-                                     event_data=event_data,
-                                     sender=self)
-
         # Update editor profiling
         self.average_fps = self.editor_num_updates / self.editor_sum_update_periods
         self.editor_num_updates = 0
         self.editor_sum_update_periods = 0.0
-        print(self.average_fps)
+
+        # Update events profiling
+        self.events_average_period = self.events_sum_update_periods / self.events_num_updates
+        self.events_sum_update_periods = 0.0
+        self.events_num_updates = 0
+
+        # Publish updated profiling results
+        data_list = [item for system in self.systems for item in (system.name, system.average_update_period)]
+        event_data = tuple(["events", self.events_average_period] + data_list)
+        self.event_publisher.publish(event_type=constants.EVENT_PROFILING_SYSTEM_PERIODS,
+                                     event_data=event_data,
+                                     sender=self)
 
     def run(self, profiling_enabled=False, title_fps=False) -> str:
         """
@@ -456,7 +467,11 @@ class Editor:
         timestamp_past = time.perf_counter()
         while not glfw.window_should_close(self.window_glfw) and not self.close_application:
 
+            t0_events = time.perf_counter()
             glfw.poll_events()
+            t1_events = time.perf_counter()
+            self.events_sum_update_periods += t1_events - t0_events
+            self.events_num_updates += 1
 
             # Measure time
             timestamp = time.perf_counter()
