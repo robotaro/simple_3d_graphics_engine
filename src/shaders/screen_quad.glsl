@@ -56,13 +56,12 @@ vec3 int_to_color(uint i) {
     return c * (1.0 / 255.0);
 }
 
-
 vec3 calculate_outline_color_rgb();
 float linearise_depth_perspective(float depthValue);
 float linearise_depth_orthographic(float depthValue);
 
 vec3 overlay_color_rgb = texture(overlay_texture, uv).rgb;
-bool overlay_collision = overlay_color_rgb != vec3(0.0, 0.0, 0.0);
+bool overlay_collision = overlay_color_rgb != vec3(-1.0, -1.0, -1.0); // You must .clear() this with -1 on all colors
 
 void main() {
 

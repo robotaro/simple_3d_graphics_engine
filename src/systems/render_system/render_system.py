@@ -63,7 +63,8 @@ class RenderSystem(System):
         "_point_lights_enabled",
         "_directional_lights_enabled",
         "_gamma_correction_enabled",
-        "_shadows_enabled"
+        "_shadows_enabled",
+        "event_handlers"
     ]
 
     def __init__(self,
@@ -141,6 +142,17 @@ class RenderSystem(System):
         self._directional_lights_enabled = True
         self._gamma_correction_enabled = True
         self._shadows_enabled = False
+
+        self.event_handlers = {
+            constants.EVENT_ENTITY_SELECTED: self.handle_event_entity_selected,
+            constants.EVENT_MOUSE_ENTER_UI: self.handle_event_mouse_enter_ui,
+            constants.EVENT_MOUSE_LEAVE_UI: self.handle_event_mouse_leave_ui,
+            constants.EVENT_MOUSE_ENTER_GIZMO_3D: self.handle_event_mouse_enter_gizmo_3d,
+            constants.EVENT_MOUSE_LEAVE_GIZMO_3D: self.handle_event_mouse_leave_gizmo_3d,
+            constants.EVENT_MOUSE_BUTTON_PRESS: self.handle_event_mouse_button_press,
+            constants.EVENT_KEYBOARD_PRESS: self.handle_event_keyboard_press,
+            constants.EVENT_WINDOW_FRAMEBUFFER_SIZE: self.handle_event_window_framebuffer_size,
+        }
 
     # =========================================================================
     #                         System Core functions
@@ -237,38 +249,44 @@ class RenderSystem(System):
         safe_release(self.selection_pass_texture_depth)
         safe_release(self.selection_pass_framebuffer)
 
+    # ========================================================================
+    #                             Event Handling
+    # ========================================================================
+
     def on_event(self, event_type: int, event_data: tuple):
 
-        if event_type == constants.EVENT_WINDOW_FRAMEBUFFER_SIZE:
-            self.buffer_size = event_data
-            self.create_framebuffers(window_size=self.buffer_size)
+        handler = self.event_handlers.get(event_type, None)
+        if handler is not None:
+            handler(event_data=event_data)
 
-            camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-            for _, camera_component in camera_pool.items():
-                camera_component.update_viewport(window_size=self.buffer_size)
+    def handle_event_entity_selected(self, event_data: tuple):
+        self.selected_entity_id = event_data[0]
 
-        if event_type == constants.EVENT_MOUSE_ENTER_UI:
-            self.hovering_ui = True
+    def handle_event_mouse_enter_ui(self, event_data: tuple):
+        self.hovering_ui = True
 
-        if event_type == constants.EVENT_MOUSE_LEAVE_UI:
-            self.hovering_ui = False
+    def handle_event_mouse_leave_ui(self, event_data: tuple):
+        self.hovering_ui = False
 
-        if event_type == constants.EVENT_MOUSE_ENTER_GIZMO_3D:
-            self.hovering_gizmo = True
+    def handle_event_mouse_enter_gizmo_3d(self, event_data: tuple):
+        self.hovering_gizmo = True
 
-        if event_type == constants.EVENT_MOUSE_LEAVE_GIZMO_3D:
-            self.hovering_gizmo = False
+    def handle_event_mouse_leave_gizmo_3d(self, event_data: tuple):
+        self.hovering_gizmo = False
 
-        if event_type == constants.EVENT_MOUSE_BUTTON_PRESS:
-            self.process_entity_selection(event_data=event_data)
+    def handle_event_mouse_button_press(self, event_data: tuple):
+        self.process_entity_selection(event_data=event_data)
 
-        if event_type == constants.EVENT_KEYBOARD_PRESS:
-            self.process_keyboard_press(event_data=event_data)
+    def handle_event_keyboard_press(self, event_data: tuple):
+        self.process_keyboard_press(event_data=event_data)
 
-        if event_type == constants.EVENT_ENTITY_SELECTED:
-            # Other systems may change the selected entity, so this should be reflected by the render system
-            self.selected_entity_id = event_data[0]
+    def handle_event_window_framebuffer_size(self, event_data: tuple):
+        self.buffer_size = event_data
+        self.create_framebuffers(window_size=self.buffer_size)
 
+        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        for _, camera_component in camera_pool.items():
+            camera_component.update_viewport(window_size=self.buffer_size)
 
     def process_entity_selection(self, event_data: tuple):
         if self.hovering_ui or self.hovering_gizmo:
@@ -514,7 +532,7 @@ class RenderSystem(System):
 
             # Clear context (you need to use the use() first to bind it!)
             self.overlay_pass_framebuffer.clear(
-                color=(0.0, 0.0, 0.0),
+                color=(-1.0, -1.0, -1.0),
                 alpha=1.0,
                 depth=1.0,
                 viewport=camera_component.viewport_pixels)
@@ -553,6 +571,7 @@ class RenderSystem(System):
     def render_overlay_2d_pass(self):
 
         self.overlay_pass_framebuffer.use()
+        # Note: There is no framebuffer.clear() because it is done on the 3D pass. This may change in the future
 
         camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
 

@@ -138,14 +138,14 @@ class Gizmo3DSystem(System):
 
         return True
 
+    # ========================================================================
+    #                             Event Handling
+    # ========================================================================
+
     def on_event(self, event_type: int, event_data: tuple):
         handler = self.event_handlers.get(event_type, None)
         if handler is not None:
             handler(event_data=event_data)
-
-    # ========================================================================
-    #                             Event Handling
-    # ========================================================================
 
     def handle_event_entity_selected(self, event_data: tuple):
         self.selected_entity_uid = event_data[0]
