@@ -21,7 +21,8 @@ class ImguiSystem(System):
         "selected_entity_components",
         "past_window_hover",
         "_exit_popup_open",
-        "system_profiling_event_data"
+        "system_profiling_event_data",
+        "gizmo_mode"
     ]
 
     name = constants.SYSTEM_NAME_IMGUI
@@ -55,6 +56,9 @@ class ImguiSystem(System):
 
         # Flags
         self._exit_popup_open = False
+
+        # Temporary variables that will be removed on the next major refactoring
+        self.gizmo_mode = constants.GIZMO_3D_ORIENTATION_GLOBAL
 
     # =========================================================================
     #                         System Core functions
@@ -113,7 +117,6 @@ class ImguiSystem(System):
 
     def handle_event_profiling_system_periods(self, event_data: tuple):
         self.system_profiling_event_data = event_data
-        pass
 
     # =========================================================================
     #                           Custom functions
@@ -251,7 +254,18 @@ class ImguiSystem(System):
             imgui.text(f"{name} : {period * 1000.0:.3f} ms")
 
     def gui_tab_gizmo_3d(self):
-        pass
+
+        imgui.text(f"Gizmo 3D")
+        updated, self.gizmo_mode = imgui.slider_int(
+            "Orientation",
+            self.gizmo_mode,
+            min_value=constants.GIZMO_3D_ORIENTATION_GLOBAL,
+            max_value=constants.GIZMO_3D_ORIENTATION_LOCAL)
+
+        if updated:
+            self.event_publisher.publish(event_type=constants.EVENT_GIZMO_3D_SYSTEM_PARAMETER_UPDATED,
+                                         event_data=("orientation", self.gizmo_mode),
+                                         sender=self)
 
     def gui_tab_entities(self):
 

@@ -19,6 +19,4 @@ class Gizmo3D(Component):
         super().__init__(parameters=parameters, system_owned=system_owned)
 
         self.mode = Component.dict2int(input_dict=parameters, key="mode", default_value=0)
-        self.selected_axis = None
         self.axes_entities_uids = np.array([-1, -1, -1], dtype=np.int32)
-        self.active = False

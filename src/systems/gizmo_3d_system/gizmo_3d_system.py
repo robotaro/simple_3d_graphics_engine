@@ -33,10 +33,13 @@ class Gizmo3DSystem(System):
         "gizmo_state",
         "event_handlers",
         "state_handlers",
+        "gizmo_mode_global",
         "gizmo_selection_enabled",
         "focused_camera_uid",
         "focused_gizmo_axis_index",
-        "focused_gizmo_plane_index"]
+        "focused_gizmo_plane_index",
+        "gizmo_mode",
+        "gizmo_orientation"]
 
     def __init__(self, logger: logging.Logger,
                  component_pool: ComponentPool,
@@ -65,6 +68,8 @@ class Gizmo3DSystem(System):
         self.original_active_world_matrix = None
 
         # State variables
+        self.gizmo_mode = constants.GIZMO_3D_MODE_TRANSLATION
+        self.gizmo_orientation = constants.GIZMO_3D_ORIENTATION_GLOBAL
         self.gizmo_selection_enabled = True
         self.focused_gizmo_axis_index = -1
         self.focused_gizmo_plane_index = -1
@@ -81,6 +86,7 @@ class Gizmo3DSystem(System):
         self.event_handlers[constants.EVENT_MOUSE_MOVE] = self.handle_event_mouse_move
         self.event_handlers[constants.EVENT_MOUSE_BUTTON_PRESS] = self.handle_event_mouse_button_press
         self.event_handlers[constants.EVENT_MOUSE_BUTTON_RELEASE] = self.handle_event_mouse_button_release
+        self.event_handlers[constants.EVENT_GIZMO_3D_SYSTEM_PARAMETER_UPDATED] = self.handle_event_parameter_updated
 
         # Internal state handling
         self.state_handlers = {
@@ -191,6 +197,13 @@ class Gizmo3DSystem(System):
 
         self.state_handlers[self.gizmo_state](ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=True)
 
+    def handle_event_parameter_updated(self, event_data: tuple):
+        if event_data[0] == "orientation":
+            if event_data[1] == constants.GIZMO_3D_ORIENTATION_GLOBAL:
+                self.gizmo_orientation = event_data[1]
+            if event_data[1] == constants.GIZMO_3D_ORIENTATION_LOCAL:
+                self.gizmo_orientation = event_data[1]
+
     def handle_event_mouse_button_release(self, event_data: tuple):
         # When the LEFT MOUSE BUTTON is released, it should apply any transforms to the selected entity
         if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != constants.MOUSE_LEFT:
@@ -271,13 +284,18 @@ class Gizmo3DSystem(System):
         :return:
         """
 
-        # Determine where on the selected axis your mouse ray's closest point is
-        local_point_on_ray_0 = self.get_local_point_on_axes(ray_origin=ray_origin, ray_direction=ray_direction)
-        new_local_position = local_point_on_ray_0 - self.local_axis_offset_point + self.original_active_local_position
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-        selected_transform_component = transform_3d_pool[self.selected_entity_uid]
-        selected_transform_component.position = tuple(new_local_position)
-        selected_transform_component.input_values_updated = True
+        if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_GLOBAL:
+
+            # Determine where on the selected axis your mouse ray's closest point is
+            local_point_on_ray_0 = self.get_local_point_on_axes(ray_origin=ray_origin, ray_direction=ray_direction)
+            new_local_position = local_point_on_ray_0 - self.local_axis_offset_point + self.original_active_local_position
+            transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+            selected_transform_component = transform_3d_pool[self.selected_entity_uid]
+            selected_transform_component.position = tuple(new_local_position)
+            selected_transform_component.input_values_updated = True
+
+        if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_LOCAL:
+            pass
 
     def handle_state_translate_on_plane(self, screen_gl_pixels: tuple, entering_state: bool):
         """

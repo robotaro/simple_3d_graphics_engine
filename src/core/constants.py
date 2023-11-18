@@ -66,6 +66,16 @@ IMGUI_DRAG_FLOAT_PRECISION = 1e-2
 #                             Gizmo 3D System
 # =============================================================================
 
+# Orientations
+GIZMO_3D_ORIENTATION_GLOBAL = 0
+GIZMO_3D_ORIENTATION_LOCAL = 1
+
+# Modes
+GIZMO_3D_MODE_TRANSLATION = 0
+GIZMO_3D_MODE_ROTATION = 2
+GIZMO_3D_MODE_SCALE = 1
+
+# States
 GIZMO_3D_STATE_NOT_HOVERING = 0
 GIZMO_3D_STATE_HOVERING_AXIS = 1
 GIZMO_3D_STATE_HOVERING_PLANE = 2

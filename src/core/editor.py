@@ -439,7 +439,7 @@ class Editor:
                                      event_data=event_data,
                                      sender=self)
 
-    def run(self, profiling_enabled=False, title_fps=False) -> str:
+    def run(self, profiling_enabled=False) -> str:
         """
         Main function to run the application. Currently holds a few debugging variables but it will
         be cleaner in the future.
