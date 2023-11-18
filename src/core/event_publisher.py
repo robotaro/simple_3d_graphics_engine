@@ -35,7 +35,9 @@ class EventPublisher:
             constants.EVENT_MOUSE_LEAVE_GIZMO_3D: [],
             constants.EVENT_MOUSE_GIZMO_3D_ACTIVATED: [],
             constants.EVENT_MOUSE_GIZMO_3D_DEACTIVATED: [],
-            constants.EVENT_PROFILING_SYSTEM_PERIODS: []
+            constants.EVENT_PROFILING_SYSTEM_PERIODS: [],
+            constants.EVENT_GIZMO_3D_SYSTEM_PARAMETER_UPDATED: [],
+            constants.EVENT_RENDER_SYSTEM_PARAMETER_UPDATED: [],
         }
 
     def subscribe(self, event_type: int, listener):
@@ -45,15 +47,15 @@ class EventPublisher:
         if listener in self.listeners[event_type]:
             self.listeners[event_type].remove(listener)
 
-    def publish(self, event_type, event_data: tuple, sender):
+    def publish(self, event_type: int, event_data: tuple, sender) -> None:
         """
         Publishes an event to all the listeners. Make sure to specify a sender if a subsystem is sending it
         to avoid it accidentally receiving its own message and creating a infinite loop.
 
-        :param event_type:
-        :param event_data:
-        :param sender:
-        :return:
+        :param event_type: int, event ID defined in constants.py
+        :param event_data: tuple, variable type of data inside, but no tuples inside this tuple!
+        :param sender: sender needs to sent its own reference to avoid unwanted loops event loops
+        :return: None
         """
 
         for listener in self.listeners[event_type]:

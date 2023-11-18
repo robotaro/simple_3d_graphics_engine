@@ -73,16 +73,16 @@ class Gizmo3DSystem(System):
         self.selected_entity_uid = None
         self.selected_entity_init_distance_to_cam = None
 
-        self.event_handlers = {
-            constants.EVENT_ENTITY_SELECTED: self.handle_event_entity_selected,
-            constants.EVENT_ENTITY_DESELECTED: self.handle_event_entity_deselected,
-            constants.EVENT_MOUSE_LEAVE_UI: self.handle_event_mouse_leave_ui,
-            constants.EVENT_MOUSE_ENTER_UI: self.handle_event_mouse_enter_ui,
-            constants.EVENT_MOUSE_MOVE: self.handle_event_mouse_move,
-            constants.EVENT_MOUSE_BUTTON_PRESS: self.handle_event_mouse_button_press,
-            constants.EVENT_MOUSE_BUTTON_RELEASE: self.handle_event_mouse_button_release,
-        }
+        # Register event-handling callbacks
+        self.event_handlers[constants.EVENT_ENTITY_SELECTED] = self.handle_event_entity_selected
+        self.event_handlers[constants.EVENT_ENTITY_DESELECTED] = self.handle_event_entity_deselected
+        self.event_handlers[constants.EVENT_MOUSE_ENTER_UI] = self.handle_event_mouse_enter_ui
+        self.event_handlers[constants.EVENT_MOUSE_LEAVE_UI] = self.handle_event_mouse_leave_ui
+        self.event_handlers[constants.EVENT_MOUSE_MOVE] = self.handle_event_mouse_move
+        self.event_handlers[constants.EVENT_MOUSE_BUTTON_PRESS] = self.handle_event_mouse_button_press
+        self.event_handlers[constants.EVENT_MOUSE_BUTTON_RELEASE] = self.handle_event_mouse_button_release
 
+        # Internal state handling
         self.state_handlers = {
             constants.GIZMO_3D_STATE_NOT_HOVERING: self.handle_state_not_hovering,
             constants.GIZMO_3D_STATE_HOVERING_AXIS: self.handle_state_hovering_axis,
@@ -141,11 +141,6 @@ class Gizmo3DSystem(System):
     # ========================================================================
     #                             Event Handling
     # ========================================================================
-
-    def on_event(self, event_type: int, event_data: tuple):
-        handler = self.event_handlers.get(event_type, None)
-        if handler is not None:
-            handler(event_data=event_data)
 
     def handle_event_entity_selected(self, event_data: tuple):
         self.selected_entity_uid = event_data[0]

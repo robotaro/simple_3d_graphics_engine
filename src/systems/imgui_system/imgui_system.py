@@ -48,6 +48,11 @@ class ImguiSystem(System):
         # Profiling
         self.system_profiling_event_data = ()
 
+        # Register Event handlers
+        self.event_handlers[constants.EVENT_ENTITY_SELECTED] = self.handle_event_entity_selected
+        self.event_handlers[constants.EVENT_KEYBOARD_PRESS] = self.handle_event_keyboard_press
+        self.event_handlers[constants.EVENT_PROFILING_SYSTEM_PERIODS] = self.handle_event_profiling_system_periods
+
         # Flags
         self._exit_popup_open = False
 
@@ -90,23 +95,25 @@ class ImguiSystem(System):
 
         return True
 
-    def on_event(self, event_type: int, event_data: tuple):
-
-        # TODO: Find out whether I really need "on_event" callbacks if the
-        #       "self.imgui_renderer.process_inputs()" gets all mouse and keyboard inputs
-
-        if event_type == constants.EVENT_ENTITY_SELECTED and event_data[0] >= constants.COMPONENT_POOL_STARTING_ID_COUNTER:
-            self.select_entity(entity_uid=event_data[0])
-
-        if event_type == constants.EVENT_KEYBOARD_PRESS:
-            if event_data[constants.EVENT_INDEX_KEYBOARD_KEY] == glfw.KEY_ESCAPE:
-                self._exit_popup_open = True
-
-        if event_type == constants.EVENT_PROFILING_SYSTEM_PERIODS:
-            self.system_profiling_event_data = event_data
-
     def shutdown(self):
         self.imgui_renderer.shutdown()
+
+    # =========================================================================
+    #                           Event Handlers
+    # =========================================================================
+
+    def handle_event_entity_selected(self, event_data: tuple):
+        if event_data[0] < constants.COMPONENT_POOL_STARTING_ID_COUNTER:
+            return
+        self.select_entity(entity_uid=event_data[0])
+
+    def handle_event_keyboard_press(self, event_data: tuple):
+        if event_data[constants.EVENT_INDEX_KEYBOARD_KEY] == glfw.KEY_ESCAPE:
+            self._exit_popup_open = True
+
+    def handle_event_profiling_system_periods(self, event_data: tuple):
+        self.system_profiling_event_data = event_data
+        pass
 
     # =========================================================================
     #                           Custom functions

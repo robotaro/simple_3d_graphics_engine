@@ -9,6 +9,7 @@ from typing import List, Union
 
 # Systems
 from src.core import constants
+from src.core import system_subscriptions
 from src.systems.render_system.render_system import RenderSystem
 from src.systems.imgui_system.imgui_system import ImguiSystem
 from src.systems.gizmo_3d_system.gizmo_3d_system import Gizmo3DSystem
@@ -363,7 +364,7 @@ class Editor:
             return False
 
         # Subscribe system to listen to its pre-determined events
-        for event_type in constants.SYSTEMS_EVENT_SUBSCRITONS[new_system.name]:
+        for event_type in system_subscriptions.SYSTEMS_EVENT_SUBSCRITONS[new_system.name]:
             self.event_publisher.subscribe( event_type=event_type, listener=new_system)
 
         # And finally add the new system to the roster

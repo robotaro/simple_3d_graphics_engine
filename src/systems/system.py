@@ -17,6 +17,7 @@ class System:
         "action_queue",
         "current_action",
         "parameters",
+        "event_handlers",
         "average_update_period",
         "sum_update_periods",
         "num_updates"
@@ -39,13 +40,19 @@ class System:
         self.component_pool = component_pool
         self.parameters = parameters
 
+        # Event handling variables
+        self.event_handlers = {}
+
         # Profiling variables
         self.average_update_period = -1.0
         self.sum_update_periods = 0.0
         self.num_updates = 0
 
     def on_event(self, event_type: int, event_data: tuple):
-        pass
+        handler = self.event_handlers.get(event_type, None)
+        if handler is None:
+            return
+        handler(event_data=event_data)
 
     def on_action(self, action_type: int, action_data: tuple, entity_id: int, component_type: int):
         self.action_queue.appendleft((action_type, action_data, entity_id, component_type))
