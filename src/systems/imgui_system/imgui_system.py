@@ -226,7 +226,6 @@ class ImguiSystem(System):
             if tab_bar.opened:
                 with imgui.begin_tab_item("Entities") as item1:
                     if item1.selected:
-                        imgui.text("Another content...")
                         self.gui_tab_entities()
 
                 with imgui.begin_tab_item("Profiling") as item2:

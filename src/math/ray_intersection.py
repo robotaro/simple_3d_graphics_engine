@@ -14,10 +14,10 @@ def ray2ray_nearest_point_on_ray_0(ray_0_origin, ray_0_direction, ray_1_origin, 
 
     """
     Original function from Gizmo project: https://github.com/john-chapman/im3d/blob/master/im3d.cpp
-    :param ray_0_origin:
-    :param ray_0_direction:
-    :param ray_1_origin:
-    :param ray_1_direction:
+    :param ray_0_origin: axis origin
+    :param ray_0_direction: axis's selected vector direction
+    :param ray_1_origin: camera origin
+    :param ray_1_direction: camera's mouse ray direction
     :return:
     """
 

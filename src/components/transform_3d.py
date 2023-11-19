@@ -12,6 +12,7 @@ class Transform3D(Component):
     __slots__ = [
         "local_matrix",
         "world_matrix",
+        "inverse_world_matrix",
         "position",
         "rotation",
         "scale",
@@ -55,6 +56,7 @@ class Transform3D(Component):
 
         self.local_matrix = np.eye(4, dtype=np.float32)
         self.world_matrix = np.eye(4, dtype=np.float32)
+        #self.inverse_world_matrix = np.eye(4, dtype=np.float32)  # DOesn't get update correctly for some reason
         self.input_values_updated = True
         self.local_matrix_updated = False
 
