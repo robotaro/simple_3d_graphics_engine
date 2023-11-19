@@ -277,7 +277,8 @@ class Gizmo3DSystem(System):
     def handle_state_translate_on_axis(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
 
         # Determine where on the selected axis your mouse ray's closest point is
-        local_point_on_ray_0 = self.get_projected_point_on_axis(ray_origin=ray_origin, ray_direction=ray_direction)
+        local_point_on_ray_0 = self.get_projected_point_on_axis(ray_origin=ray_origin,
+                                                                ray_direction=ray_direction)
         new_local_position = local_point_on_ray_0 - self.local_axis_offset_point + self.original_active_local_position
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
