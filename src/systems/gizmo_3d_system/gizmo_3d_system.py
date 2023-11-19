@@ -251,11 +251,11 @@ class Gizmo3DSystem(System):
             self.original_active_local_position = np.array(transform.position, dtype=np.float32)
             self.original_active_world_matrix = transform.world_matrix.copy()
             self.original_active_local_matrix = transform.local_matrix.copy()
+            self.local_axis_offset_point = self.get_projected_point_on_axis(ray_origin=ray_origin,
+                                                                            ray_direction=ray_direction)
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_GIZMO_3D_ACTIVATED,
                                          event_data=(self.focused_gizmo_axis_index,),
                                          sender=self)
-            self.local_axis_offset_point = self.get_world_point_on_axes(ray_origin=ray_origin,
-                                                                        ray_direction=ray_direction)
             return
 
         # Check if any other axis is now being hovered
@@ -275,42 +275,19 @@ class Gizmo3DSystem(System):
         pass
 
     def handle_state_translate_on_axis(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
-        """
-        Don't forget: Input values are in WORLD coordinates!
-        :param ray_origin:
-        :param ray_direction:
-        :param mouse_press:
-        :return:
-        """
 
         # Determine where on the selected axis your mouse ray's closest point is
-        local_point_on_ray_0 = self.get_world_point_on_axes(ray_origin=ray_origin, ray_direction=ray_direction)
+        local_point_on_ray_0 = self.get_projected_point_on_axis(ray_origin=ray_origin, ray_direction=ray_direction)
         new_local_position = local_point_on_ray_0 - self.local_axis_offset_point + self.original_active_local_position
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
         selected_transform_component.position = tuple(new_local_position)
         selected_transform_component.input_values_updated = True
 
-    def handle_state_translate_on_plane(self, screen_gl_pixels: tuple, entering_state: bool):
-        """
-        Handles mouse interaction when translating along an Axis. If this is the first time entering the
-        state, use variable "entering_state" to allow the state to be initialised properly. This will happen
-        when the mouse is first pressed
-        :param screen_gl_pixels: current mouse location on screen
-        :param entering_state: bool, should be TRUE if called from the MOUSE PRESS event callback
-        :return:
-        """
+    def handle_state_translate_on_plane(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
         pass
 
     def handle_state_rotate_axis(self, screen_gl_pixels: tuple, entering_state: bool):
-        """
-        Handles mouse interaction when translating along an Axis. If this is the first time entering the
-        state, use variable "entering_state" to allow the state to be initialised properly. This will happen
-        when the mouse is first pressed
-        :param screen_gl_pixels: current mouse location on screen
-        :param entering_state: bool, should be TRUE if called from the MOUSE PRESS event callback
-        :return:
-        """
         pass
 
     # ========================================================================
@@ -362,7 +339,7 @@ class Gizmo3DSystem(System):
         return True
 
     # ========================================================================
-    #                            Auxiliary functions
+    #                            Utility functions
     # ========================================================================
 
     def screen2ray(self, screen_gl_pixels: tuple) -> tuple:
@@ -385,7 +362,7 @@ class Gizmo3DSystem(System):
 
         return ray_origin, ray_direction, active_camera_uid
 
-    def get_world_point_on_axes(self, ray_origin: np.array, ray_direction: np.array):
+    def get_projected_point_on_axis(self, ray_origin: np.array, ray_direction: np.array):
         """
         This function returns the local point on the selected
         :param ray_origin:
