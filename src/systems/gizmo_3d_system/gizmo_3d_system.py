@@ -232,8 +232,8 @@ class Gizmo3DSystem(System):
         if self.focused_gizmo_axis_index == -1:
             return
 
-        # PLANE COLLISION
-        # TODO: Add collision check with planes
+        # TODO:PLANE COLLISION
+
         self.gizmo_state = constants.GIZMO_3D_STATE_HOVERING_AXIS
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_ENTER_GIZMO_3D,
                                      event_data=(self.focused_gizmo_axis_index,), sender=self)
@@ -277,8 +277,7 @@ class Gizmo3DSystem(System):
     def handle_state_translate_on_axis(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
 
         # Determine where on the selected axis your mouse ray's closest point is
-        local_point_on_ray_0 = self.get_projected_point_on_axis(ray_origin=ray_origin,
-                                                                ray_direction=ray_direction)
+        local_point_on_ray_0 = self.get_projected_point_on_axis(ray_origin=ray_origin, ray_direction=ray_direction)
         new_local_position = local_point_on_ray_0 - self.local_axis_offset_point + self.original_active_local_position
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
@@ -373,26 +372,29 @@ class Gizmo3DSystem(System):
 
         # TODO: [OPTIMIZE] Extract the vectors we want from the transform in the first instance
         axis_origin = np.ascontiguousarray(self.original_active_world_matrix[:3, 3])
-        axis_direction = np.ascontiguousarray(self.original_active_world_matrix[:3, self.focused_gizmo_axis_index])
+
+        # Select from which axis to take the direction vector from
+        if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_GLOBAL:
+            axis_direction = np.ascontiguousarray(self.gizmo_world_matrix[:3, self.focused_gizmo_axis_index])
+
+        if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_LOCAL:
+            axis_direction = np.ascontiguousarray(self.original_active_world_matrix[:3, self.focused_gizmo_axis_index])
+
         world_point_on_ray_0 = ray_intersection.ray2ray_nearest_point_on_ray_0(ray_0_origin=axis_origin,
                                                                                ray_0_direction=axis_direction,
                                                                                ray_1_origin=ray_origin,
                                                                                ray_1_direction=ray_direction)
 
         # TODO: [OPTIMZE] This is convoluted. SOrt out parent access + inverse matrices should have been already calculated
-        inverse_parent_matrix = np.empty((4, 4), dtype=np.float32)
-        if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_GLOBAL:
-            mat4.fast_inverse(self.original_active_world_matrix, inverse_parent_matrix)
+        inverse_parent_matrix = np.eye(4, dtype=np.float32)
+        entity = self.component_pool.get_entity(entity_uid=self.selected_entity_uid)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
-        if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_LOCAL:
-            entity = self.component_pool.get_entity(entity_uid=self.selected_entity_uid)
-            transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-
-            if entity.parent_uid is None:
-                inverse_parent_matrix = np.eye(4, dtype=np.float32)
-            else:
-                parent_world_matrix = transform_3d_pool[entity.parent_uid].world_matrix
-                mat4.fast_inverse(parent_world_matrix, inverse_parent_matrix)
+        if entity.parent_uid is None:
+            inverse_parent_matrix = np.eye(4, dtype=np.float32)
+        else:
+            parent_world_matrix = transform_3d_pool[entity.parent_uid].world_matrix
+            mat4.fast_inverse(parent_world_matrix, inverse_parent_matrix)
 
         return mat4.mul_vector3(in_mat4=inverse_parent_matrix, in_vec3=world_point_on_ray_0)
 
