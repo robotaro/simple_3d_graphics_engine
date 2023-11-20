@@ -111,6 +111,10 @@ def screen_pos2world_ray(viewport_coord_norm: tuple,
     :return:
     """
 
+    # TODO: [BUG] Orthographic camera doesn't work
+
+    # TODO: [PERFORMANCE] You can provide the inverse project matrix directly, and calculate it once outside!
+
     # Create a 4D homogeneous clip space coordinate
     clip_coordinates = np.array([viewport_coord_norm[0], viewport_coord_norm[1], -1.0, 1.0], dtype=np.float32)
 

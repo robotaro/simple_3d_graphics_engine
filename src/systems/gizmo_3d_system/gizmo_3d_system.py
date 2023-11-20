@@ -28,6 +28,7 @@ class Gizmo3DSystem(System):
         "original_active_local_scale",
         "camera2gizmo_map",
         "mouse_screen_position",
+        "mouse_left_button_down",
         "gizmo_mode_global",
         "gizmo_selection_enabled",
         "gizmo_transformed_axes",
@@ -57,8 +58,11 @@ class Gizmo3DSystem(System):
 
         self.entity_ray_intersection_list = []
         self.camera2gizmo_map = {}
-        self.mouse_screen_position = (-1, -1)  # in Pixels
         self.gizmo_transformed_axes = np.eye(3, dtype=np.float32)
+
+        # Mouse states
+        self.mouse_screen_position = (-1, -1)  # in Pixels
+        self.mouse_left_button_down = False
 
         # Gizmo Active Use variables
         self.local_axis_offset_point = np.array([0, 0, 0], dtype=np.float32)
@@ -165,25 +169,12 @@ class Gizmo3DSystem(System):
     def handle_event_mouse_leave_ui(self, event_data: tuple):
         self.gizmo_selection_enabled = True
 
-    def handle_event_mouse_move(self, event_data: tuple):
-
-        self.mouse_screen_position = event_data
-
-        if self.selected_entity_uid is None:
-            return
-
-        ray_origin, ray_direction, self.focused_camera_uid = self.screen2ray(screen_gl_pixels=event_data)
-        if self.focused_camera_uid is None:
-            return
-
-        if ray_origin is None or ray_direction is None:
-            return
-
-        self.state_handlers[self.gizmo_state](ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=False)
-
     def handle_event_mouse_button_press(self, event_data: tuple):
+
         if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != constants.MOUSE_LEFT:
             return
+
+        self.mouse_left_button_down = True
 
         if self.selected_entity_uid is None:
             return
@@ -199,17 +190,33 @@ class Gizmo3DSystem(System):
 
         self.state_handlers[self.gizmo_state](ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=True)
 
+    def handle_event_mouse_move(self, event_data: tuple):
+
+        # On the "mouse_move" event, the event data is already in gl_pixels coordinates
+        self.mouse_screen_position = event_data
+
+        if self.selected_entity_uid is None:
+            return
+
+        ray_origin, ray_direction, self.focused_camera_uid = self.screen2ray(screen_gl_pixels=event_data)
+        if self.focused_camera_uid is None:
+            return
+
+        if ray_origin is None or ray_direction is None:
+            return
+
+        self.state_handlers[self.gizmo_state](ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=False)
+
     def handle_event_parameter_updated(self, event_data: tuple):
         if event_data[0] == "orientation":
-            if event_data[1] == constants.GIZMO_3D_ORIENTATION_GLOBAL:
-                self.gizmo_orientation = event_data[1]
-            if event_data[1] == constants.GIZMO_3D_ORIENTATION_LOCAL:
-                self.gizmo_orientation = event_data[1]
+            self.gizmo_orientation = event_data[1]
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         # When the LEFT MOUSE BUTTON is released, it should apply any transforms to the selected entity
         if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != constants.MOUSE_LEFT:
             return
+
+        self.mouse_left_button_down = False
 
         # TODO: Which state to move to? For not, I put not hovering, but this will create a bug
         self.gizmo_state = constants.GIZMO_3D_STATE_NOT_HOVERING
@@ -288,7 +295,7 @@ class Gizmo3DSystem(System):
         pass
 
     def handle_state_rotate_axis(self, screen_gl_pixels: tuple, entering_state: bool):
-        pass
+        passmouse_press=True
 
     # ========================================================================
     #                            Core functions
@@ -385,7 +392,6 @@ class Gizmo3DSystem(System):
                                                                                ray_1_origin=ray_origin,
                                                                                ray_1_direction=ray_direction)
 
-        # TODO: [OPTIMZE] This is convoluted. SOrt out parent access + inverse matrices should have been already calculated
         inverse_parent_matrix = np.eye(4, dtype=np.float32)
         entity = self.component_pool.get_entity(entity_uid=self.selected_entity_uid)
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)

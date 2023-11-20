@@ -253,12 +253,6 @@ class RenderSystem(System):
     #                             Event Handling
     # ========================================================================
 
-    def on_event(self, event_type: int, event_data: tuple):
-
-        handler = self.event_handlers.get(event_type, None)
-        if handler is not None:
-            handler(event_data=event_data)
-
     def handle_event_entity_selected(self, event_data: tuple):
         self.selected_entity_id = event_data[0]
 
@@ -586,7 +580,7 @@ class RenderSystem(System):
 
             # ============== [ DEBUG ] ========================
             #overlay_2d_component.im_overlay.add_aabb_filled(50., 50., 100., 100., (0., 0., 0., 1.0))
-            #overlay_2d_component.im_overlay.add_text("this is a test, ", 50., 50.)
+            #overlay_2d_component.im_overlay.add_text("this is a test, this is a test, this is a test, this is a test, this is a test, ", 50., 50.)
             #overlay_2d_component.im_overlay.add_circle_edge(100., 100., 25., 4., (1., 0., 1., 1.0))
 
             if overlay_2d_component.im_overlay.num_draw_commands == 0:

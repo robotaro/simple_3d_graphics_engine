@@ -70,7 +70,6 @@ class ShapeMatching:
 
         self.particles_initial_from_cm = self.particles_pos - self.center_of_mass
 
-
         q_x = self.particles_initial_from_cm[:, 0]
         q_y = self.particles_initial_from_cm[:, 1]
         q_z = self.particles_initial_from_cm[:, 2]

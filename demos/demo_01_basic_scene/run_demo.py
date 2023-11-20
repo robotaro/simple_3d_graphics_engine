@@ -8,7 +8,7 @@ def main():
 
     editor.load_scene(scene_xml_fpath="demos/demo_01_basic_scene/basic_scene.xml")
 
-    editor.run(profiling_enabled=True)
+    editor.run(profiling_enabled=False)
 
 
 if __name__ == "__main__":
