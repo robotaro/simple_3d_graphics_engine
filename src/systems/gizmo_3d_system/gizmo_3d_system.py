@@ -39,7 +39,7 @@ class Gizmo3DSystem(System):
         "state_handlers",
         "focused_camera_uid",
         "focused_gizmo_axis_index",
-        "focused_gizmo_plane_index",
+        "focused_gizmo_plane",
         "gizmo_mode",
         "gizmo_orientation"]
 
@@ -78,7 +78,7 @@ class Gizmo3DSystem(System):
         self.gizmo_selection_enabled = True
         self.gizmo_world_matrix = np.eye(4, dtype=np.float32)
         self.focused_gizmo_axis_index = -1
-        self.focused_gizmo_plane_index = -1
+        self.focused_gizmo_plane = -1
         self.focused_camera_uid = None
         self.gizmo_state = constants.GIZMO_3D_STATE_NOT_HOVERING
         self.selected_entity_uid = None
@@ -158,6 +158,9 @@ class Gizmo3DSystem(System):
         self.selected_entity_uid = event_data[0]
         self.set_all_gizmo_3d_visibility(visible=True)
         self.set_gizmo_to_selected_entity()
+
+        # When the entity is selected, the user may choose to keep holding the entity to move it
+        print("object selected")
 
     def handle_event_entity_deselected(self, event_data: tuple):
         self.selected_entity_uid = None
@@ -292,10 +295,14 @@ class Gizmo3DSystem(System):
         selected_transform_component.input_values_updated = True
 
     def handle_state_translate_on_plane(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
-        pass
+
+        if self.focused_gizmo_plane == constants.GIZMO_3D_PLANE_CAMERA:
+
+            pass
+
 
     def handle_state_rotate_axis(self, screen_gl_pixels: tuple, entering_state: bool):
-        passmouse_press=True
+        pass
 
     # ========================================================================
     #                            Core functions

@@ -59,16 +59,14 @@ class Camera(Component):
                                 int(self.viewport_screen_ratio[2] * window_size[0]),
                                 int(self.viewport_screen_ratio[3] * window_size[1]))
 
+        self.update_projection_matrix()
+
     def is_inside_viewport(self, screen_gl_position: tuple) -> bool:
         if self.viewport_pixels is None:
             return False
 
-        try:
-            flag_x = self.viewport_pixels[0] <= screen_gl_position[0] < (self.viewport_pixels[2] + self.viewport_pixels[0])
-            flag_y = self.viewport_pixels[1] <= screen_gl_position[1] < (self.viewport_pixels[3] + self.viewport_pixels[1])
-        except Exception:
-            g = 0
-
+        flag_x = self.viewport_pixels[0] <= screen_gl_position[0] < (self.viewport_pixels[2] + self.viewport_pixels[0])
+        flag_y = self.viewport_pixels[1] <= screen_gl_position[1] < (self.viewport_pixels[3] + self.viewport_pixels[1])
 
         return flag_x & flag_y
 
