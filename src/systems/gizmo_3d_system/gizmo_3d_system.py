@@ -28,7 +28,8 @@ class Gizmo3DSystem(System):
         "original_active_local_scale",
         "camera2gizmo_map",
         "mouse_screen_position",
-        "mouse_left_button_down",
+
+        "local_camera_plane_offset_xy",
         "gizmo_mode_global",
         "gizmo_selection_enabled",
         "gizmo_transformed_axes",
@@ -62,9 +63,9 @@ class Gizmo3DSystem(System):
 
         # Mouse states
         self.mouse_screen_position = (-1, -1)  # in Pixels
-        self.mouse_left_button_down = False
 
         # Gizmo Active Use variables
+        self.local_camera_plane_offset_xy = np.array([0, 0, 0], dtype=np.float32)
         self.local_axis_offset_point = np.array([0, 0, 0], dtype=np.float32)
         self.original_active_local_position = None
         self.original_active_local_rotation = None
@@ -160,7 +161,9 @@ class Gizmo3DSystem(System):
         self.set_gizmo_to_selected_entity()
 
         # When the entity is selected, the user may choose to keep holding the entity to move it
-        print("object selected")
+        if self.gizmo_state == constants.GIZMO_3D_STATE_NOT_HOVERING:
+            self.focused_gizmo_plane = constants.GIZMO_3D_PLANE_CAMERA
+            self.gizmo_state = constants.GIZMO_3D_STATE_TRANSLATING_ON_PLANE
 
     def handle_event_entity_deselected(self, event_data: tuple):
         self.selected_entity_uid = None
@@ -174,10 +177,12 @@ class Gizmo3DSystem(System):
 
     def handle_event_mouse_button_press(self, event_data: tuple):
 
+        """
+        This event is called before the "entity_selected", when a entity is selected
+        """
+
         if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != constants.MOUSE_LEFT:
             return
-
-        self.mouse_left_button_down = True
 
         if self.selected_entity_uid is None:
             return
@@ -218,8 +223,6 @@ class Gizmo3DSystem(System):
         # When the LEFT MOUSE BUTTON is released, it should apply any transforms to the selected entity
         if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != constants.MOUSE_LEFT:
             return
-
-        self.mouse_left_button_down = False
 
         # TODO: Which state to move to? For not, I put not hovering, but this will create a bug
         self.gizmo_state = constants.GIZMO_3D_STATE_NOT_HOVERING
@@ -286,10 +289,10 @@ class Gizmo3DSystem(System):
 
     def handle_state_translate_on_axis(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
 
-        # Determine where on the selected axis your mouse ray's closest point is
         local_point_on_ray_0 = self.get_projected_point_on_axis(ray_origin=ray_origin, ray_direction=ray_direction)
         new_local_position = local_point_on_ray_0 - self.local_axis_offset_point + self.original_active_local_position
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
         selected_transform_component.position = tuple(new_local_position)
         selected_transform_component.input_values_updated = True
@@ -299,7 +302,6 @@ class Gizmo3DSystem(System):
         if self.focused_gizmo_plane == constants.GIZMO_3D_PLANE_CAMERA:
 
             pass
-
 
     def handle_state_rotate_axis(self, screen_gl_pixels: tuple, entering_state: bool):
         pass
@@ -315,6 +317,7 @@ class Gizmo3DSystem(System):
 
         # Get component pools for easy access
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        overlay_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
 
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
         selected_world_position = np.ascontiguousarray(selected_transform_component.world_matrix[:3, 3])
@@ -322,6 +325,7 @@ class Gizmo3DSystem(System):
         camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         for camera_entity_uid, camera_component in camera_pool.items():
 
+            overlay = overlay_pool[camera_entity_uid]
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_uid]
             gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
@@ -355,6 +359,10 @@ class Gizmo3DSystem(System):
     # ========================================================================
     #                            Utility functions
     # ========================================================================
+
+    def update_camera_plane_xy_offset(self, ):
+
+        self.local_camera_plane_offset_xy
 
     def screen2ray(self, screen_gl_pixels: tuple) -> tuple:
         """

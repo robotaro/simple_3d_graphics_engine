@@ -58,8 +58,6 @@ class EventPublisher:
         :return: None
         """
 
-        print(f"Event: {event_type}")
-
         for listener in self.listeners[event_type]:
 
             # Prevent a sender to publishing to itself and creating a potential infinite loop
