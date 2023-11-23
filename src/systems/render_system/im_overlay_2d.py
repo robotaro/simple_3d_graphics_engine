@@ -267,15 +267,15 @@ class ImOverlay2D:
         self.num_draw_commands += 1
 
     def add_line_segments(self,
-                          points_a: float32[:],
-                          points_b: float32[:],
+                          points_a: np.ndarray,
+                          points_b: np.ndarray,
                           edge=1.0,
                           color=(1.0, 1.0, 1.0, 1.0)):
 
-        "This assumes both arrays have the same length"
+        """This assumes both arrays have the same length
+        """
 
-        for i in points_a.shape[0]:
-            pass
+        for i in range(points_a.shape[0]):
 
             # Check if you can still fit this ome more draw command before proceeding
             if self.num_draw_commands == constants.OVERLAY_2D_MAX_DRAW_COMMANDS:

@@ -183,7 +183,6 @@ void command_line_segment(vec2 point_a, vec2 point_b, float edge){
 
     geometry_color = gs_color[0].rgba;
 
-    // Triangle A)
     gl_Position = projection_matrix * vec4(line0_a, 0.0, 1.0);
     EmitVertex();
 
@@ -191,13 +190,6 @@ void command_line_segment(vec2 point_a, vec2 point_b, float edge){
     EmitVertex();
 
     gl_Position = projection_matrix * vec4(line1_a, 0.0, 1.0);
-    EmitVertex();
-
-    // Triangle B)
-    gl_Position = projection_matrix * vec4(line1_a, 0.0, 1.0);
-    EmitVertex();
-
-    gl_Position = projection_matrix * vec4(line0_b, 0.0, 1.0);
     EmitVertex();
 
     gl_Position = projection_matrix * vec4(line1_b, 0.0, 1.0);
@@ -219,6 +211,7 @@ void main() {
     else if (command_id_float == COMMAND_ID_CHARACTER) command_character(position);
     else if (command_id_float == COMMAND_ID_AABB_TEXTURED) command_aabb_textured(position);
     else if (command_id_float == COMMAND_ID_CIRCLE_EDGE) command_circle_edge(position, size, edge);
+    else if (command_id_float == COMMAND_ID_LINE_SEGMENT) command_line_segment(position, size, edge);
 
     EndPrimitive();
 }
