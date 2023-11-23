@@ -128,9 +128,6 @@ class ImguiSystem(System):
         if entity is not None:
             self.selected_entity_name = entity.name
         self.selected_entity_components = self.component_pool.get_all_components(entity_uid=entity_uid)
-        self.event_publisher.publish(event_type=constants.EVENT_ENTITY_SELECTED,
-                                     event_data=(entity_uid,),
-                                     sender=self)
 
     def publish_events(self):
         # Enable/Disable mouse buttons to other systems if it is hovering on any Imgui windows
@@ -283,7 +280,11 @@ class ImguiSystem(System):
             (opened, selected) = imgui.selectable(entity.name, selected=False, flags=flags)
 
             if selected:
+                # Here the entity selection is initiated from the GUI, so you publish the respective event now.
                 self.select_entity(entity_uid=entity_uid)
+                self.event_publisher.publish(event_type=constants.EVENT_ENTITY_SELECTED,
+                                             event_data=(entity_uid,),
+                                             sender=self)
 
         imgui.spacing()
         imgui.separator()

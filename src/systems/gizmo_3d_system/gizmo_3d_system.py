@@ -28,6 +28,7 @@ class Gizmo3DSystem(System):
         "original_active_local_scale",
         "camera2gizmo_map",
         "mouse_screen_position",
+        "local_camera_plane_offset_xy",
         "gizmo_mode_global",
         "gizmo_selection_enabled",
         "gizmo_transformed_axes",
@@ -38,7 +39,7 @@ class Gizmo3DSystem(System):
         "state_handlers",
         "focused_camera_uid",
         "focused_gizmo_axis_index",
-        "focused_gizmo_plane_index",
+        "focused_gizmo_plane",
         "gizmo_mode",
         "gizmo_orientation"]
 
@@ -57,10 +58,13 @@ class Gizmo3DSystem(System):
 
         self.entity_ray_intersection_list = []
         self.camera2gizmo_map = {}
-        self.mouse_screen_position = (-1, -1)  # in Pixels
         self.gizmo_transformed_axes = np.eye(3, dtype=np.float32)
 
+        # Mouse states
+        self.mouse_screen_position = (-1, -1)  # in Pixels
+
         # Gizmo Active Use variables
+        self.local_camera_plane_offset_xy = np.array([0, 0, 0], dtype=np.float32)
         self.local_axis_offset_point = np.array([0, 0, 0], dtype=np.float32)
         self.original_active_local_position = None
         self.original_active_local_rotation = None
@@ -74,7 +78,7 @@ class Gizmo3DSystem(System):
         self.gizmo_selection_enabled = True
         self.gizmo_world_matrix = np.eye(4, dtype=np.float32)
         self.focused_gizmo_axis_index = -1
-        self.focused_gizmo_plane_index = -1
+        self.focused_gizmo_plane = -1
         self.focused_camera_uid = None
         self.gizmo_state = constants.GIZMO_3D_STATE_NOT_HOVERING
         self.selected_entity_uid = None
@@ -155,6 +159,11 @@ class Gizmo3DSystem(System):
         self.set_all_gizmo_3d_visibility(visible=True)
         self.set_gizmo_to_selected_entity()
 
+        # When the entity is selected, the user may choose to keep holding the entity to move it
+        if self.gizmo_state == constants.GIZMO_3D_STATE_NOT_HOVERING:
+            self.focused_gizmo_plane = constants.GIZMO_3D_PLANE_CAMERA
+            self.gizmo_state = constants.GIZMO_3D_STATE_TRANSLATING_ON_PLANE
+
     def handle_event_entity_deselected(self, event_data: tuple):
         self.selected_entity_uid = None
         self.set_all_gizmo_3d_visibility(visible=False)
@@ -165,23 +174,12 @@ class Gizmo3DSystem(System):
     def handle_event_mouse_leave_ui(self, event_data: tuple):
         self.gizmo_selection_enabled = True
 
-    def handle_event_mouse_move(self, event_data: tuple):
-
-        self.mouse_screen_position = event_data
-
-        if self.selected_entity_uid is None:
-            return
-
-        ray_origin, ray_direction, self.focused_camera_uid = self.screen2ray(screen_gl_pixels=event_data)
-        if self.focused_camera_uid is None:
-            return
-
-        if ray_origin is None or ray_direction is None:
-            return
-
-        self.state_handlers[self.gizmo_state](ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=False)
-
     def handle_event_mouse_button_press(self, event_data: tuple):
+
+        """
+        This event is called before the "entity_selected", when a entity is selected
+        """
+
         if event_data[constants.EVENT_INDEX_MOUSE_BUTTON_BUTTON] != constants.MOUSE_LEFT:
             return
 
@@ -199,12 +197,26 @@ class Gizmo3DSystem(System):
 
         self.state_handlers[self.gizmo_state](ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=True)
 
+    def handle_event_mouse_move(self, event_data: tuple):
+
+        # On the "mouse_move" event, the event data is already in gl_pixels coordinates
+        self.mouse_screen_position = event_data
+
+        if self.selected_entity_uid is None:
+            return
+
+        ray_origin, ray_direction, self.focused_camera_uid = self.screen2ray(screen_gl_pixels=event_data)
+        if self.focused_camera_uid is None:
+            return
+
+        if ray_origin is None or ray_direction is None:
+            return
+
+        self.state_handlers[self.gizmo_state](ray_origin=ray_origin, ray_direction=ray_direction, mouse_press=False)
+
     def handle_event_parameter_updated(self, event_data: tuple):
         if event_data[0] == "orientation":
-            if event_data[1] == constants.GIZMO_3D_ORIENTATION_GLOBAL:
-                self.gizmo_orientation = event_data[1]
-            if event_data[1] == constants.GIZMO_3D_ORIENTATION_LOCAL:
-                self.gizmo_orientation = event_data[1]
+            self.gizmo_orientation = event_data[1]
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         # When the LEFT MOUSE BUTTON is released, it should apply any transforms to the selected entity
@@ -232,8 +244,8 @@ class Gizmo3DSystem(System):
         if self.focused_gizmo_axis_index == -1:
             return
 
-        # PLANE COLLISION
-        # TODO: Add collision check with planes
+        # TODO:PLANE COLLISION
+
         self.gizmo_state = constants.GIZMO_3D_STATE_HOVERING_AXIS
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_ENTER_GIZMO_3D,
                                      event_data=(self.focused_gizmo_axis_index,), sender=self)
@@ -251,11 +263,11 @@ class Gizmo3DSystem(System):
             self.original_active_local_position = np.array(transform.position, dtype=np.float32)
             self.original_active_world_matrix = transform.world_matrix.copy()
             self.original_active_local_matrix = transform.local_matrix.copy()
+            self.local_axis_offset_point = self.get_projected_point_on_axis(ray_origin=ray_origin,
+                                                                            ray_direction=ray_direction)
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_GIZMO_3D_ACTIVATED,
                                          event_data=(self.focused_gizmo_axis_index,),
                                          sender=self)
-            self.local_axis_offset_point = self.get_world_point_on_axes(ray_origin=ray_origin,
-                                                                        ray_direction=ray_direction)
             return
 
         # Check if any other axis is now being hovered
@@ -275,42 +287,22 @@ class Gizmo3DSystem(System):
         pass
 
     def handle_state_translate_on_axis(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
-        """
-        Don't forget: Input values are in WORLD coordinates!
-        :param ray_origin:
-        :param ray_direction:
-        :param mouse_press:
-        :return:
-        """
 
-        # Determine where on the selected axis your mouse ray's closest point is
-        local_point_on_ray_0 = self.get_world_point_on_axes(ray_origin=ray_origin, ray_direction=ray_direction)
+        local_point_on_ray_0 = self.get_projected_point_on_axis(ray_origin=ray_origin, ray_direction=ray_direction)
         new_local_position = local_point_on_ray_0 - self.local_axis_offset_point + self.original_active_local_position
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
         selected_transform_component.position = tuple(new_local_position)
         selected_transform_component.input_values_updated = True
 
-    def handle_state_translate_on_plane(self, screen_gl_pixels: tuple, entering_state: bool):
-        """
-        Handles mouse interaction when translating along an Axis. If this is the first time entering the
-        state, use variable "entering_state" to allow the state to be initialised properly. This will happen
-        when the mouse is first pressed
-        :param screen_gl_pixels: current mouse location on screen
-        :param entering_state: bool, should be TRUE if called from the MOUSE PRESS event callback
-        :return:
-        """
-        pass
+    def handle_state_translate_on_plane(self, ray_origin: np.array, ray_direction: np.array, mouse_press: bool):
+
+        if self.focused_gizmo_plane == constants.GIZMO_3D_PLANE_CAMERA:
+
+            pass
 
     def handle_state_rotate_axis(self, screen_gl_pixels: tuple, entering_state: bool):
-        """
-        Handles mouse interaction when translating along an Axis. If this is the first time entering the
-        state, use variable "entering_state" to allow the state to be initialised properly. This will happen
-        when the mouse is first pressed
-        :param screen_gl_pixels: current mouse location on screen
-        :param entering_state: bool, should be TRUE if called from the MOUSE PRESS event callback
-        :return:
-        """
         pass
 
     # ========================================================================
@@ -324,6 +316,7 @@ class Gizmo3DSystem(System):
 
         # Get component pools for easy access
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        overlay_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
 
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
         selected_world_position = np.ascontiguousarray(selected_transform_component.world_matrix[:3, 3])
@@ -331,6 +324,7 @@ class Gizmo3DSystem(System):
         camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         for camera_entity_uid, camera_component in camera_pool.items():
 
+            overlay = overlay_pool[camera_entity_uid]
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_uid]
             gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
@@ -341,6 +335,8 @@ class Gizmo3DSystem(System):
             gizmo_scale = utils_camera.set_gizmo_scale(view_matrix=view_matrix, object_position=selected_world_position)
             viewport_height = camera_component.viewport_pixels[3]
             gizmo_scale *= constants.GIZMO_3D_VIEWPORT_SCALE_COEFFICIENT / viewport_height
+
+
 
             # Update gizmo's transform parameters for visual feedback
             if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_GLOBAL:
@@ -362,8 +358,15 @@ class Gizmo3DSystem(System):
         return True
 
     # ========================================================================
-    #                            Auxiliary functions
+    #                            Utility functions
     # ========================================================================
+
+    def update_camera_plane_xy_offset(self, ):
+        """
+        Incomplete
+        :return:
+        """
+        self.local_camera_plane_offset_xy
 
     def screen2ray(self, screen_gl_pixels: tuple) -> tuple:
         """
@@ -385,7 +388,7 @@ class Gizmo3DSystem(System):
 
         return ray_origin, ray_direction, active_camera_uid
 
-    def get_world_point_on_axes(self, ray_origin: np.array, ray_direction: np.array):
+    def get_projected_point_on_axis(self, ray_origin: np.array, ray_direction: np.array):
         """
         This function returns the local point on the selected
         :param ray_origin:
@@ -395,26 +398,28 @@ class Gizmo3DSystem(System):
 
         # TODO: [OPTIMIZE] Extract the vectors we want from the transform in the first instance
         axis_origin = np.ascontiguousarray(self.original_active_world_matrix[:3, 3])
-        axis_direction = np.ascontiguousarray(self.original_active_world_matrix[:3, self.focused_gizmo_axis_index])
+
+        # Select from which axis to take the direction vector from
+        if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_GLOBAL:
+            axis_direction = np.ascontiguousarray(self.gizmo_world_matrix[:3, self.focused_gizmo_axis_index])
+
+        if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_LOCAL:
+            axis_direction = np.ascontiguousarray(self.original_active_world_matrix[:3, self.focused_gizmo_axis_index])
+
         world_point_on_ray_0 = ray_intersection.ray2ray_nearest_point_on_ray_0(ray_0_origin=axis_origin,
                                                                                ray_0_direction=axis_direction,
                                                                                ray_1_origin=ray_origin,
                                                                                ray_1_direction=ray_direction)
 
-        # TODO: [OPTIMZE] This is convoluted. SOrt out parent access + inverse matrices should have been already calculated
-        inverse_parent_matrix = np.empty((4, 4), dtype=np.float32)
-        if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_GLOBAL:
-            mat4.fast_inverse(self.original_active_world_matrix, inverse_parent_matrix)
+        inverse_parent_matrix = np.eye(4, dtype=np.float32)
+        entity = self.component_pool.get_entity(entity_uid=self.selected_entity_uid)
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
-        if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_LOCAL:
-            entity = self.component_pool.get_entity(entity_uid=self.selected_entity_uid)
-            transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-
-            if entity.parent_uid is None:
-                inverse_parent_matrix = np.eye(4, dtype=np.float32)
-            else:
-                parent_world_matrix = transform_3d_pool[entity.parent_uid].world_matrix
-                mat4.fast_inverse(parent_world_matrix, inverse_parent_matrix)
+        if entity.parent_uid is None:
+            inverse_parent_matrix = np.eye(4, dtype=np.float32)
+        else:
+            parent_world_matrix = transform_3d_pool[entity.parent_uid].world_matrix
+            mat4.fast_inverse(parent_world_matrix, inverse_parent_matrix)
 
         return mat4.mul_vector3(in_mat4=inverse_parent_matrix, in_vec3=world_point_on_ray_0)
 
@@ -466,7 +471,7 @@ class Gizmo3DSystem(System):
         ray_direction, ray_origin = utils_camera.screen_pos2world_ray(
             viewport_coord_norm=viewport_position,
             camera_matrix=camera_matrix,
-            projection_matrix=projection_matrix)
+            inverse_projection_matrix=active_camera_component.get_inverse_projection_matrix())
 
         return ray_origin, ray_direction
 

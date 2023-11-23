@@ -63,10 +63,16 @@ This is a flexible solution, but not a very efficient one.
 ## Shaders to study
 https://shadered.org/view?s=0xMVU6DEAe
 
+## Bit of Offline brainstorming
+- Scenes need to be introduced to separate groups of 3d Elements. 
+  - 3D cameras in a scene render all objects in that 3D scene. Same for 2D cameras
+  - Render 2D scenes on top of 3D scenes?d
+
 ## ModernGL tips:
 - Valid formats for VBO: ['f', 'f1', 'f2', 'f4', 'f8', 'u', 'u1', 'u2', 'u4', 'i', 'i1', 'i2', 'i4', 'nf', 'nf1', 'nf2', 'nf4', 'nu', 'nu1', 'nu2', 'nu4', 'ni', 'ni1', 'ni2', 'ni4']
 
 ## Optimisation TODOs:
+- Scale should notbe applicable to orthographic projection!
 - If a component/system does not handle any graphics, make it 100% Numba-complient
 - Reduce number of uniform variable access. Maybe Uniform Array Object?
 - Separate meshes by layer in list/array so we don't have to go over all objects. Alternatively, consider multi-layed meshes

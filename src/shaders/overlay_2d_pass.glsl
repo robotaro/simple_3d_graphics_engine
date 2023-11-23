@@ -18,9 +18,7 @@ out vec4 gs_color;
 out vec2 gs_uv_min;
 out vec2 gs_uv_max;
 
-
 flat out int command_id;
-
 
 void main() {
 
@@ -173,6 +171,32 @@ void command_circle_edge(vec2 position, vec2 size, float edge){
     }
 }
 
+void command_line_segment(vec2 point_a, vec2 point_b, float edge){
+
+    vec2 dir = normalize(point_b - point_a);
+    vec2 offset = vec2(-dir.y, dir.x) * (edge / 2.0);
+
+    vec2 line0_a = point_a - offset;
+    vec2 line0_b = point_a + offset;
+    vec2 line1_a = point_b - offset;
+    vec2 line1_b = point_b + offset;
+
+    geometry_color = gs_color[0].rgba;
+
+    gl_Position = projection_matrix * vec4(line0_a, 0.0, 1.0);
+    EmitVertex();
+
+    gl_Position = projection_matrix * vec4(line0_b, 0.0, 1.0);
+    EmitVertex();
+
+    gl_Position = projection_matrix * vec4(line1_a, 0.0, 1.0);
+    EmitVertex();
+
+    gl_Position = projection_matrix * vec4(line1_b, 0.0, 1.0);
+    EmitVertex();
+
+}
+
 void main() {
 
     // Easy to read variables
@@ -181,11 +205,13 @@ void main() {
     float edge = gs_edge_width[0];
     command_id_float = gs_command_id[0];
 
+
     if (command_id_float == COMMAND_ID_AABB_FILLED) command_aabb_filled(position, size);
     else if (command_id_float == COMMAND_ID_AABB_EDGE) command_aabb_edge(position, size, edge);
     else if (command_id_float == COMMAND_ID_CHARACTER) command_character(position);
     else if (command_id_float == COMMAND_ID_AABB_TEXTURED) command_aabb_textured(position);
     else if (command_id_float == COMMAND_ID_CIRCLE_EDGE) command_circle_edge(position, size, edge);
+    else if (command_id_float == COMMAND_ID_LINE_SEGMENT) command_line_segment(position, size, edge);
 
     EndPrimitive();
 }
