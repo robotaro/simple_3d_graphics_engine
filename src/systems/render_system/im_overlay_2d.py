@@ -269,39 +269,40 @@ class ImOverlay2D:
     def add_line_segments(self,
                           points_a: np.ndarray,
                           points_b: np.ndarray,
-                          edge=1.0,
-                          color=(1.0, 1.0, 1.0, 1.0)):
+                          colors: np.ndarray,
+                          edge=1.0):
 
-        """This assumes both arrays have the same length
+        """
+        This assumes both points_a, points_b and colors have the same length!
         """
 
-        for i in range(points_a.shape[0]):
+        for point_index in range(points_a.shape[0]):
 
             # Check if you can still fit this ome more draw command before proceeding
             if self.num_draw_commands == constants.OVERLAY_2D_MAX_DRAW_COMMANDS:
                 return
 
-            index = self.num_draw_commands
+            cmd_index = self.num_draw_commands
 
             # Command ID
-            self.draw_commands[index, COL_INDEX_COMMAND_ID] = COMMAND_ID_LINE_SEGMENT
+            self.draw_commands[cmd_index, COL_INDEX_COMMAND_ID] = COMMAND_ID_LINE_SEGMENT
 
             # Point A
-            self.draw_commands[index, COL_INDEX_POINT_A_X] = points_a[i, 0]
-            self.draw_commands[index, COL_INDEX_POINT_A_Y] = points_a[i, 1]
+            self.draw_commands[cmd_index, COL_INDEX_POINT_A_X] = points_a[point_index, 0]
+            self.draw_commands[cmd_index, COL_INDEX_POINT_A_Y] = points_a[point_index, 1]
 
             # Point B
-            self.draw_commands[index, COL_INDEX_POINT_B_X] = points_b[i, 0]
-            self.draw_commands[index, COL_INDEX_POINT_B_Y] = points_b[i, 1]
+            self.draw_commands[cmd_index, COL_INDEX_POINT_B_X] = points_b[point_index, 0]
+            self.draw_commands[cmd_index, COL_INDEX_POINT_B_Y] = points_b[point_index, 1]
 
             # Color
-            self.draw_commands[index, COL_INDEX_COLOR_RED] = color[0]
-            self.draw_commands[index, COL_INDEX_COLOR_GREEN] = color[1]
-            self.draw_commands[index, COL_INDEX_COLOR_BLUE] = color[2]
-            self.draw_commands[index, COL_INDEX_COLOR_ALPHA] = color[3]
+            self.draw_commands[cmd_index, COL_INDEX_COLOR_RED] = colors[point_index, 0]
+            self.draw_commands[cmd_index, COL_INDEX_COLOR_GREEN] = colors[point_index, 1]
+            self.draw_commands[cmd_index, COL_INDEX_COLOR_BLUE] = colors[point_index, 2]
+            self.draw_commands[cmd_index, COL_INDEX_COLOR_ALPHA] = colors[point_index, 3]
 
             # Edge Width
-            self.draw_commands[index, COL_INDEX_EDGE_WIDTH] = edge
+            self.draw_commands[cmd_index, COL_INDEX_EDGE_WIDTH] = edge
 
             self.num_draw_commands += 1
 

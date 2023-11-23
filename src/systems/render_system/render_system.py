@@ -65,8 +65,9 @@ class RenderSystem(System):
         "_gamma_correction_enabled",
         "_shadows_enabled",
         "event_handlers",
-        "points_a",
-        "points_b"
+        "debug_points_a",
+        "debug_points_b",
+        "debug_colors"
     ]
 
     def __init__(self,
@@ -146,8 +147,10 @@ class RenderSystem(System):
         self._shadows_enabled = False
 
         # DEBUG 2D VARIABLES
-        self.points_a = np.random.rand(30, 2).astype(np.float32) * 300.0
-        self.points_b = np.random.rand(30, 2).astype(np.float32) * 300.0
+        self.debug_points_a = np.random.rand(30, 2).astype(np.float32) * 300.0
+        self.debug_points_b = np.random.rand(30, 2).astype(np.float32) * 300.0
+        self.debug_colors = np.random.rand(30, 4).astype(np.float32)
+        self.debug_colors[:, 3] = 1.0
 
         self.event_handlers = {
             constants.EVENT_ENTITY_SELECTED: self.handle_event_entity_selected,
@@ -585,7 +588,10 @@ class RenderSystem(System):
                 return
 
             # ============== [ DEBUG ] ========================
-            overlay_2d_component.im_overlay.add_line_segments(self.points_a, self.points_b, 2.0, (1., 1., 0., 1.0))
+            overlay_2d_component.im_overlay.add_line_segments(self.debug_points_a,
+                                                              self.debug_points_b,
+                                                              self.debug_colors,
+                                                              2.0, )
             #overlay_2d_component.im_overlay.add_aabb_filled(50., 50., 100., 100., (0., 0., 0., 1.0))
             #overlay_2d_component.im_overlay.add_text("this is a test, this is a test, this is a test, this is a test, this is a test, ", 50., 50.)
             #overlay_2d_component.im_overlay.add_circle_edge(100., 100., 25., 4., (1., 0., 1., 1.0))
