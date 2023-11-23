@@ -28,7 +28,6 @@ class Gizmo3DSystem(System):
         "original_active_local_scale",
         "camera2gizmo_map",
         "mouse_screen_position",
-
         "local_camera_plane_offset_xy",
         "gizmo_mode_global",
         "gizmo_selection_enabled",
@@ -363,7 +362,10 @@ class Gizmo3DSystem(System):
     # ========================================================================
 
     def update_camera_plane_xy_offset(self, ):
-
+        """
+        Incomplete
+        :return:
+        """
         self.local_camera_plane_offset_xy
 
     def screen2ray(self, screen_gl_pixels: tuple) -> tuple:
