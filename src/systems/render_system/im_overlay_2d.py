@@ -15,6 +15,7 @@ COMMAND_ID_AABB_TEXTURED = 2.0
 COMMAND_ID_CIRCLE_FILL = 3.0
 COMMAND_ID_CIRCLE_EDGE = 4.0
 COMMAND_ID_CHARACTER = 5.0
+COMMAND_ID_LINE_SEGMENT = 6.0
 
 # Command Array Column Indices
 COL_INDEX_COMMAND_ID = 0
@@ -22,6 +23,12 @@ COL_INDEX_X = 1
 COL_INDEX_Y = 2
 COL_INDEX_WIDTH = 3
 COL_INDEX_HEIGHT = 4
+
+COL_INDEX_POINT_A_X = 1
+COL_INDEX_POINT_A_Y = 2
+COL_INDEX_POINT_B_X = 3
+COL_INDEX_POINT_B_Y = 4
+
 COL_INDEX_RADIUS = 3  # Yep, same column for a different purpose on circles
 COL_INDEX_COLOR_RED = 5
 COL_INDEX_COLOR_GREEN = 6
@@ -258,6 +265,46 @@ class ImOverlay2D:
         self.draw_commands[index, COL_INDEX_EDGE_WIDTH] = edge_width
 
         self.num_draw_commands += 1
+
+    def add_line_segments(self,
+                          points_a: np.ndarray,
+                          points_b: np.ndarray,
+                          colors: np.ndarray,
+                          edge=1.0):
+
+        """
+        This assumes both points_a, points_b and colors have the same length!
+        """
+
+        for point_index in range(points_a.shape[0]):
+
+            # Check if you can still fit this ome more draw command before proceeding
+            if self.num_draw_commands == constants.OVERLAY_2D_MAX_DRAW_COMMANDS:
+                return
+
+            cmd_index = self.num_draw_commands
+
+            # Command ID
+            self.draw_commands[cmd_index, COL_INDEX_COMMAND_ID] = COMMAND_ID_LINE_SEGMENT
+
+            # Point A
+            self.draw_commands[cmd_index, COL_INDEX_POINT_A_X] = points_a[point_index, 0]
+            self.draw_commands[cmd_index, COL_INDEX_POINT_A_Y] = points_a[point_index, 1]
+
+            # Point B
+            self.draw_commands[cmd_index, COL_INDEX_POINT_B_X] = points_b[point_index, 0]
+            self.draw_commands[cmd_index, COL_INDEX_POINT_B_Y] = points_b[point_index, 1]
+
+            # Color
+            self.draw_commands[cmd_index, COL_INDEX_COLOR_RED] = colors[point_index, 0]
+            self.draw_commands[cmd_index, COL_INDEX_COLOR_GREEN] = colors[point_index, 1]
+            self.draw_commands[cmd_index, COL_INDEX_COLOR_BLUE] = colors[point_index, 2]
+            self.draw_commands[cmd_index, COL_INDEX_COLOR_ALPHA] = colors[point_index, 3]
+
+            # Edge Width
+            self.draw_commands[cmd_index, COL_INDEX_EDGE_WIDTH] = edge
+
+            self.num_draw_commands += 1
 
     def clear(self):
         self.num_draw_commands = 0

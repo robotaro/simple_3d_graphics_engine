@@ -64,7 +64,10 @@ class RenderSystem(System):
         "_directional_lights_enabled",
         "_gamma_correction_enabled",
         "_shadows_enabled",
-        "event_handlers"
+        "event_handlers",
+        "debug_points_a",
+        "debug_points_b",
+        "debug_colors"
     ]
 
     def __init__(self,
@@ -142,6 +145,12 @@ class RenderSystem(System):
         self._directional_lights_enabled = True
         self._gamma_correction_enabled = True
         self._shadows_enabled = False
+
+        # DEBUG 2D VARIABLES
+        self.debug_points_a = np.random.rand(30, 2).astype(np.float32) * 300.0
+        self.debug_points_b = np.random.rand(30, 2).astype(np.float32) * 300.0
+        self.debug_colors = np.random.rand(30, 4).astype(np.float32)
+        self.debug_colors[:, 3] = 1.0
 
         self.event_handlers = {
             constants.EVENT_ENTITY_SELECTED: self.handle_event_entity_selected,
@@ -252,12 +261,6 @@ class RenderSystem(System):
     # ========================================================================
     #                             Event Handling
     # ========================================================================
-
-    def on_event(self, event_type: int, event_data: tuple):
-
-        handler = self.event_handlers.get(event_type, None)
-        if handler is not None:
-            handler(event_data=event_data)
 
     def handle_event_entity_selected(self, event_data: tuple):
         self.selected_entity_id = event_data[0]
@@ -585,8 +588,9 @@ class RenderSystem(System):
                 return
 
             # ============== [ DEBUG ] ========================
+            #overlay_2d_component.im_overlay.add_line_segments(self.debug_points_a, self.debug_points_b, self.debug_colors, 2.0)
             #overlay_2d_component.im_overlay.add_aabb_filled(50., 50., 100., 100., (0., 0., 0., 1.0))
-            #overlay_2d_component.im_overlay.add_text("this is a test, ", 50., 50.)
+            #overlay_2d_component.im_overlay.add_text("this is a test, this is a test, this is a test, this is a test, this is a test, ", 50., 50.)
             #overlay_2d_component.im_overlay.add_circle_edge(100., 100., 25., 4., (1., 0., 1., 1.0))
 
             if overlay_2d_component.im_overlay.num_draw_commands == 0:
@@ -631,7 +635,6 @@ class RenderSystem(System):
 
         camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
 
-        # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
 
             # IMPORTANT: It uses the current bound framebuffer!
@@ -661,7 +664,6 @@ class RenderSystem(System):
 
             # Render
             mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(mode=mesh_component.render_mode)
-
 
     def render_shadow_mapping_pass(self, component_pool: ComponentPool):
 

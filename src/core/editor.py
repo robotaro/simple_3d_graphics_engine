@@ -2,10 +2,8 @@ import os
 import time
 import glfw
 import signal
-
 import moderngl
 import numpy as np
-from typing import List, Union
 
 # Systems
 from src.core import constants

@@ -1,3 +1,5 @@
+import numpy as np
+
 import moderngl
 from typing import Union
 
@@ -17,7 +19,10 @@ class Camera(Component):
         "orthographic_scale",
         "viewport_screen_ratio",
         "viewport_pixels",
-        "perspective"
+        "is_perspective",
+        "projection_matrix",
+        "inverse_projection_matrix",
+        "projection_matrix_dirty"
     ]
 
     def __init__(self, parameters, system_owned=False):
@@ -37,7 +42,12 @@ class Camera(Component):
         self.viewport_pixels = None
 
         # Flags
-        self.perspective = self.dict2bool(input_dict=self.parameters, key="perspective", default_value=True)
+        self.is_perspective = self.dict2bool(input_dict=self.parameters, key="perspective", default_value=True)
+
+        # Projection Matrix
+        self.projection_matrix = np.eye(4, dtype=np.float32)
+        self.inverse_projection_matrix = np.eye(4, dtype=np.float32)
+        self.projection_matrix_dirty = True
 
     def upload_uniforms(self, program: moderngl.Program):
         program["projection_matrix"].write(self.get_projection_matrix().T.tobytes())
@@ -49,34 +59,53 @@ class Camera(Component):
                                 int(self.viewport_screen_ratio[2] * window_size[0]),
                                 int(self.viewport_screen_ratio[3] * window_size[1]))
 
+        self.update_projection_matrix()
+
     def is_inside_viewport(self, screen_gl_position: tuple) -> bool:
         if self.viewport_pixels is None:
             return False
 
-        try:
-            flag_x = self.viewport_pixels[0] <= screen_gl_position[0] < (self.viewport_pixels[2] + self.viewport_pixels[0])
-            flag_y = self.viewport_pixels[1] <= screen_gl_position[1] < (self.viewport_pixels[3] + self.viewport_pixels[1])
-        except Exception:
-            g = 0
-
+        flag_x = self.viewport_pixels[0] <= screen_gl_position[0] < (self.viewport_pixels[2] + self.viewport_pixels[0])
+        flag_y = self.viewport_pixels[1] <= screen_gl_position[1] < (self.viewport_pixels[3] + self.viewport_pixels[1])
 
         return flag_x & flag_y
 
-    def get_projection_matrix(self):
+    def update_projection_matrix(self):
 
-        # TODO: [OPTIMIZE] This doesn't need to be recalculated every time. Only when the viewport changes!
+        if self.viewport_pixels is None:
+            return
 
         aspect_ratio = self.viewport_pixels[2] / self.viewport_pixels[3]
-
-        if self.perspective:
-            return utils_camera.perspective_projection(
+        if self.is_perspective:
+            # PERSPECTIVE
+            self.projection_matrix = utils_camera.perspective_projection(
                 fov_rad=self.y_fov_deg * constants.DEG2RAD,
                 aspect_ratio=aspect_ratio,
                 z_near=self.z_near,
                 z_far=self.z_far)
         else:
-            return utils_camera.orthographic_projection(
-                scale_x=self.orthographic_scale * aspect_ratio,
-                scale_y=self.orthographic_scale,
-                z_near=self.z_near,
-                z_far=self.z_far)
+            # ORTHOGRAPHIC
+            self.projection_matrix = utils_camera.orthographic_projection(
+                    scale_x=self.orthographic_scale * aspect_ratio,
+                    scale_y=self.orthographic_scale,
+                    z_near=self.z_near,
+                    z_far=self.z_far)
+
+        # Don't forget to update it inverse
+        self.inverse_projection_matrix = np.linalg.inv(self.projection_matrix)
+
+        self.projection_matrix_dirty = False
+
+    def get_projection_matrix(self) -> np.ndarray:
+
+        if self.projection_matrix_dirty:
+            self.update_projection_matrix()
+
+        return self.projection_matrix
+
+    def get_inverse_projection_matrix(self) -> np.ndarray:
+
+        if self.projection_matrix_dirty:
+            self.update_projection_matrix()
+
+        return self.inverse_projection_matrix
