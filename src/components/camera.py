@@ -96,9 +96,16 @@ class Camera(Component):
 
         self.projection_matrix_dirty = False
 
-    def get_projection_matrix(self):
+    def get_projection_matrix(self) -> np.ndarray:
 
         if self.projection_matrix_dirty:
             self.update_projection_matrix()
 
         return self.projection_matrix
+
+    def get_inverse_projection_matrix(self) -> np.ndarray:
+
+        if self.projection_matrix_dirty:
+            self.update_projection_matrix()
+
+        return self.inverse_projection_matrix

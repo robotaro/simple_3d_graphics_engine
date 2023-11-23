@@ -588,10 +588,7 @@ class RenderSystem(System):
                 return
 
             # ============== [ DEBUG ] ========================
-            overlay_2d_component.im_overlay.add_line_segments(self.debug_points_a,
-                                                              self.debug_points_b,
-                                                              self.debug_colors,
-                                                              2.0, )
+            #overlay_2d_component.im_overlay.add_line_segments(self.debug_points_a, self.debug_points_b, self.debug_colors, 2.0)
             #overlay_2d_component.im_overlay.add_aabb_filled(50., 50., 100., 100., (0., 0., 0., 1.0))
             #overlay_2d_component.im_overlay.add_text("this is a test, this is a test, this is a test, this is a test, this is a test, ", 50., 50.)
             #overlay_2d_component.im_overlay.add_circle_edge(100., 100., 25., 4., (1., 0., 1., 1.0))
@@ -638,7 +635,6 @@ class RenderSystem(System):
 
         camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
 
-        # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
 
             # IMPORTANT: It uses the current bound framebuffer!
@@ -668,7 +664,6 @@ class RenderSystem(System):
 
             # Render
             mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(mode=mesh_component.render_mode)
-
 
     def render_shadow_mapping_pass(self, component_pool: ComponentPool):
 

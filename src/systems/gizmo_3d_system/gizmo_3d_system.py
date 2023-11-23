@@ -337,6 +337,8 @@ class Gizmo3DSystem(System):
             viewport_height = camera_component.viewport_pixels[3]
             gizmo_scale *= constants.GIZMO_3D_VIEWPORT_SCALE_COEFFICIENT / viewport_height
 
+
+
             # Update gizmo's transform parameters for visual feedback
             if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_GLOBAL:
                 gizmo_transform_component.position = selected_transform_component.position
@@ -467,7 +469,7 @@ class Gizmo3DSystem(System):
         ray_direction, ray_origin = utils_camera.screen_pos2world_ray(
             viewport_coord_norm=viewport_position,
             camera_matrix=camera_matrix,
-            projection_matrix=projection_matrix)
+            inverse_projection_matrix=active_camera_component.get_inverse_projection_matrix())
 
         return ray_origin, ray_direction
 

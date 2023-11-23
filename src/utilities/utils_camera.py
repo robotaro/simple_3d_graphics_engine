@@ -96,7 +96,7 @@ def screen_gl_position_pixels2viewport_position(position_pixels: tuple, viewport
 @njit(cache=True)
 def screen_pos2world_ray(viewport_coord_norm: tuple,
                          camera_matrix: np.ndarray,
-                         projection_matrix: np.ndarray):
+                         inverse_projection_matrix: np.ndarray):
 
     """
     Viewport coordinates are +1 to the right, -1 to the left, +1 up and -1 down. Zero at the centre for both axes
@@ -106,21 +106,18 @@ def screen_pos2world_ray(viewport_coord_norm: tuple,
                           This is the transform of the camera in space, simply as you want the camera to be placed
                           in the scene. the view_matrix is the INVERSE of the camera_matrix :)
 
-    :param projection_matrix: (4, 4) <float32> perspective matrix
+    :param inverse_projection_matrix: (4, 4) <float32> inverse of the projection matrix
 
     :return:
     """
 
     # TODO: [BUG] Orthographic camera doesn't work
 
-    # TODO: [PERFORMANCE] You can provide the inverse project matrix directly, and calculate it once outside!
-
     # Create a 4D homogeneous clip space coordinate
     clip_coordinates = np.array([viewport_coord_norm[0], viewport_coord_norm[1], -1.0, 1.0], dtype=np.float32)
 
     # Inverse the projection matrix to get the view coordinates
-    inv_projection_matrix = np.linalg.inv(projection_matrix)
-    eye_coordinates = np.dot(inv_projection_matrix, clip_coordinates)
+    eye_coordinates = np.dot(inverse_projection_matrix, clip_coordinates)
     eye_coordinates = np.array([eye_coordinates[0], eye_coordinates[1], -1.0, 0.0], dtype=np.float32)
 
     # Inverse the view matrix to get the world coordinates
