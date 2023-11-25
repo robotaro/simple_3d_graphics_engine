@@ -2,12 +2,6 @@ import threading
 import time
 
 
-class Resource:
-
-    def __init__(self):
-        self.data_blocks = {}
-
-
 class ResourceWithThread:
     def __init__(self, path: str):
         self.path = path

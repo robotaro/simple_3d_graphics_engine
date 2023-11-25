@@ -1,11 +1,8 @@
-import os
-
 import numpy as np
 import numpy.random
 
 from src.core import constants
 from src.components.component import Component
-from src.core.data_management.data_block import DataBlock
 
 
 class DebugMesh(Component):

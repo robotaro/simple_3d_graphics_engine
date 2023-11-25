@@ -1,5 +1,6 @@
 # Math and Physics
 scipy
+pandas
 numba==0.56.2
 PyGLM==2.5.7        # Required for running examplesrendering as well
 warp-lang==0.10.1

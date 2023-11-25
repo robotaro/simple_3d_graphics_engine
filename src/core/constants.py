@@ -49,12 +49,14 @@ DEFAULT_SYSTEMS = [
 #                                Datablocks
 # =============================================================================
 
-DATA_BLOCK_FORMAT_GENERIC = "generic"
-DATA_BLOCK_FORMAT_POSITION3 = "position3"
-DATA_BLOCK_FORMAT_ROTATION_QUAT = "rotation_quat"
-DATA_BLOCK_FORMAT_SCALE3 = "scale3"
-DATA_BLOCK_FORMAT_TRANSFORM44 = "transform44"
-DATA_BLOCK_FORMAT_NORMAL = "normal"
+DATA_BLOCK_FORMAT_ARRAY = "array"
+DATA_BLOCK_FORMAT_ARRAY_2D = "array_2d"
+DATA_BLOCK_FORMAT_ARRAY_3D = "array_3d"
+DATA_BLOCK_FORMAT_VEC2 = "vec2"
+DATA_BLOCK_FORMAT_VEC3 = "vec3"
+DATA_BLOCK_FORMAT_VEC4 = "vec4"
+DATA_BLOCK_FORMAT_MAT3 = "mat3"
+DATA_BLOCK_FORMAT_MAT4 = "mat4"
 
 # =============================================================================
 #                               Imgui System

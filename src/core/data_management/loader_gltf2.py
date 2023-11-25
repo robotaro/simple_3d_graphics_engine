@@ -1,9 +1,7 @@
-import json
 import numpy as np
-import os
 
 from src.utilities import utils_gltf
-from src.core.data_management.data_block import DataBlock
+from src.core.data_block import DataBlock
 from src.core import constants
 
 
