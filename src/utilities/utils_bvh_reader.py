@@ -2,7 +2,39 @@ import re
 import pandas as pd
 import numpy as np
 
-from skeleton.skeleton_blueprint import *
+PARAMS_NAME = "name"
+PARAMS_PARENT = 'parent'
+PARAMS_POS_X = "position_x"
+PARAMS_POS_Y = "position_y"
+PARAMS_POS_Z = "position_z"
+PARAMS_ANGLE_OFFSET_X = "angle_offset_x"
+PARAMS_ANGLE_OFFSET_Y = "angle_offset_y"
+PARAMS_ANGLE_OFFSET_Z = "angle_offset_z"
+PARAMS_ANGLE_MIN_X = "angle_min_x"
+PARAMS_ANGLE_MIN_Y = "angle_min_y"
+PARAMS_ANGLE_MIN_Z = "angle_min_z"
+PARAMS_ANGLE_MAX_X = "angle_max_x"
+PARAMS_ANGLE_MAX_Y = "angle_max_y"
+PARAMS_ANGLE_MAX_Z = "angle_max_z"
+PARAMS_LENGTH = "length"  # Length on the Y direction to help with visualisation
+PARAMS_ROTATION_ORDER = "rotation_order"
+PARAMS_DEFAULT_ROTATION = 'xyz'
+PARAMS_COLUMNS = [PARAMS_NAME,
+                  PARAMS_PARENT,
+                  PARAMS_POS_X,
+                  PARAMS_POS_Y,
+                  PARAMS_POS_Z,
+                  PARAMS_ANGLE_OFFSET_X,
+                  PARAMS_ANGLE_OFFSET_Y,
+                  PARAMS_ANGLE_OFFSET_Z,
+                  PARAMS_ANGLE_MIN_X,
+                  PARAMS_ANGLE_MIN_Y,
+                  PARAMS_ANGLE_MIN_Z,
+                  PARAMS_ANGLE_MAX_X,
+                  PARAMS_ANGLE_MAX_Y,
+                  PARAMS_ANGLE_MAX_Z,
+                  PARAMS_LENGTH,
+                  PARAMS_ROTATION_ORDER]
 
 JOINTS_DF_KEY_LABEL = 'label'
 JOINTS_DF_KEY_PARENT_INDEX = 'parent_index'
@@ -36,6 +68,8 @@ class BVHReader:
             'Zrotation': 'z'
         }
 
+        self.bones = dict()
+
         # Original data from the .bvh
         self.num_frames = 0
 
@@ -68,7 +102,7 @@ class BVHReader:
         end_site = False
         animation_columns = []
         animation_data = None
-        frame_time = 0.0
+        frame_period = 0.0
         frame_index = 0
 
         file = open(fpath, "r")
@@ -98,8 +132,8 @@ class BVHReader:
             match_channels = re.match(r"\s*CHANNELS\s+(\d+)", line)
             if match_channels:
                 channels_list = line.split()[2:]
-                animation_columns.extend([f'{joint_name_list[-1]}_{channel_map[key]}' for key in channels_list])
-                rotation_order = ''.join([rotation_map[key] for key in channels_list])
+                animation_columns.extend([f'{joint_name_list[-1]}_{self.channel_map[key]}' for key in channels_list])
+                rotation_order = ''.join([self.rotation_map[key] for key in channels_list])
                 rot_order_list.append(rotation_order)
                 continue
 
@@ -126,7 +160,7 @@ class BVHReader:
 
             match_frame_time = re.match("\s*Frame Time:\s+([\d\.]+)", line)
             if match_frame_time:
-                frame_time = np.float32(match_frame_time.group(1))
+                frame_period = np.float32(match_frame_time.group(1))
                 continue
 
             # If you got here, it means you finished with the skeleton
@@ -154,7 +188,6 @@ class BVHReader:
         animation_df = pd.DataFrame(columns=animation_columns, data=animation_data)
 
         # Build a immediate child dependency list for using during bone length calculation
-        generator = SkeletonBlueprintGenerator()
         children_lists = [[] for i in range(joints_df.index.size)]
         for index, joint in joints_df.iterrows():
             parent_index = joint[JOINTS_DF_KEY_PARENT_INDEX]
@@ -184,7 +217,7 @@ class BVHReader:
             parent_name = joints_df.at[parent_index, JOINTS_DF_KEY_LABEL] if parent_index > -1 else ''
 
             # Add new bone
-            generator.add_bone(name=bone_name,
+            self.add_bone(name=bone_name,
                                parent=parent_name,
                                pos_x=joint[JOINTS_DF_KEY_OFFSET_X],
                                pos_y=joint[JOINTS_DF_KEY_OFFSET_Y],
@@ -192,7 +225,78 @@ class BVHReader:
                                length=bone_length,
                                rot_order=joint[JOINTS_DF_KEY_ROTATION_ORDER])
 
-        blueprint_df = generator.create_blueprint()
+        skeleton_df = self.create_skeleton_df()
 
-        return blueprint_df, animation_df, frame_time
+        return skeleton_df, animation_df, frame_period
+
+    def add_bone(self, name: str, parent='',
+                 pos_x=0.0, pos_y=0.0, pos_z=0.0,
+                 min_rot_x=0.0, min_rot_y=0.0, min_rot_z=0.0,
+                 max_rot_x=0.0, max_rot_y=0.0, max_rot_z=0.0,
+                 rot_offset_x=0.0, rot_offset_y=0.0, rot_offset_z=0.0,
+                 length=0.0, rot_order=PARAMS_DEFAULT_ROTATION):
+
+        # WARNING: Only one node must have the parent name empty ('') to denote the root node
+
+        self.bones[name] = {PARAMS_NAME: name,
+                            PARAMS_PARENT: parent,
+                            PARAMS_POS_X: pos_x,
+                            PARAMS_POS_Y: pos_y,
+                            PARAMS_POS_Z: pos_z,
+                            PARAMS_ANGLE_OFFSET_X: rot_offset_x,
+                            PARAMS_ANGLE_OFFSET_Y: rot_offset_y,
+                            PARAMS_ANGLE_OFFSET_Z: rot_offset_z,
+                            PARAMS_LENGTH: length,
+                            PARAMS_ROTATION_ORDER: rot_order}
+
+    def create_skeleton_df(self) -> pd.DataFrame:
+
+        # Step 1 ) Process root bone
+        root_bone_names = []
+        for key in self.bones.keys():
+            if self.bones[key][PARAMS_PARENT] == '':
+                root_bone_names.append(key)
+        if len(root_bone_names) == 0:
+            raise Exception('[ERROR] There is no root bone')
+        if len(root_bone_names) > 1:
+            raise Exception('[ERROR] There are more than one root bones')
+
+        # Step 2 ) Process all remaining bones
+        num_bones = len(self.bones.keys())
+        bone_names_to_check = [root_bone_names[0]]  # Add the root bone to start with
+        bone_counter = -1
+        processed_bones = []
+        while len(bone_names_to_check) > 0:
+
+            if bone_counter > num_bones:
+                raise Exception('[ERROR] There seems to be a loop in the bone hierarchy O_O')
+
+            # Remove current bone from list to be checked
+            current_bone_name = bone_names_to_check[0]
+            bone_names_to_check.remove(current_bone_name)
+
+            # And add to processed list
+            current_bone = self.bones[current_bone_name]
+            processed_bones.append(current_bone)
+
+            # Now update its parent index
+            parent_found = False
+            for index, bone in enumerate(processed_bones):
+                if bone[PARAMS_NAME] == current_bone[PARAMS_PARENT]:
+                    current_bone[PARAMS_PARENT] = index
+                    parent_found = True
+            if not parent_found:
+                current_bone[PARAMS_PARENT] = -1
+
+            # Get all bones whose parent matches this bone name
+            for name in self.bones.keys():
+                if self.bones[name][PARAMS_PARENT] == current_bone_name:
+                    bone_names_to_check.append(name)
+
+            bone_counter += 1
+
+        # Step 3) Convert list of dictionary into its final blueprint form
+        bones_df = pd.DataFrame(processed_bones)
+
+        return bones_df
 

@@ -70,23 +70,13 @@ class RenderSystem(System):
         "debug_colors"
     ]
 
-    def __init__(self,
-                 logger: logging.Logger,
-                 component_pool: ComponentPool,
-                 event_publisher: EventPublisher,
-                 action_publisher: ActionPublisher,
-                 parameters: dict,
-                 **kwargs):
-        super().__init__(logger=logger,
-                         component_pool=component_pool,
-                         event_publisher=event_publisher,
-                         action_publisher=action_publisher,
-                         parameters=parameters)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.ctx = kwargs["context"]
         self.buffer_size = kwargs["buffer_size"]
-        self.shader_program_library = ShaderProgramLibrary(context=self.ctx, logger=logger)
-        self.font_library = FontLibrary(logger=logger)
+        self.shader_program_library = ShaderProgramLibrary(context=self.ctx, logger=self.logger)
+        self.font_library = FontLibrary(logger=self.logger)
 
         # Internal components (different from normal components)
         self.framebuffers = {}

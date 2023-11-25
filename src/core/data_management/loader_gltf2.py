@@ -27,9 +27,6 @@ class LoaderGLTF2:
         return new_resource
 
 
-
-
-
     def load_nodes(self, header: dict) -> dict:
 
         nodes = header[GLTF_NODE]

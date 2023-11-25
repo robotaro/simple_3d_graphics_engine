@@ -31,18 +31,8 @@ class InputControlSystem(System):
         "pan_right"
     ]
 
-    def __init__(self,
-                 logger: logging.Logger,
-                 component_pool: ComponentPool,
-                 event_publisher: EventPublisher,
-                 action_publisher: ActionPublisher,
-                 parameters: dict,
-                 **kwargs):
-        super().__init__(logger=logger,
-                         component_pool=component_pool,
-                         event_publisher=event_publisher,
-                         action_publisher=action_publisher,
-                         parameters=parameters)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.mouse_x_past = None
         self.mouse_y_past = None

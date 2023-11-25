@@ -43,18 +43,8 @@ class Gizmo3DSystem(System):
         "gizmo_mode",
         "gizmo_orientation"]
 
-    def __init__(self, logger: logging.Logger,
-                 component_pool: ComponentPool,
-                 event_publisher: EventPublisher,
-                 action_publisher: ActionPublisher,
-                 parameters: dict,
-                 **kwargs):
-
-        super().__init__(logger=logger,
-                         component_pool=component_pool,
-                         event_publisher=event_publisher,
-                         action_publisher=action_publisher,
-                         parameters=parameters)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.entity_ray_intersection_list = []
         self.camera2gizmo_map = {}

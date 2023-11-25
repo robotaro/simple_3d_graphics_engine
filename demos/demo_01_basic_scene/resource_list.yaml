@@ -1,0 +1,2 @@
+dragon: "meshes/dragon.obj"
+walk_animation: "bvh/walk.bvh"

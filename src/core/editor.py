@@ -14,10 +14,15 @@ from src.systems.gizmo_3d_system.gizmo_3d_system import Gizmo3DSystem
 from src.systems.transform_system.transform_system import TransformSystem
 from src.systems.input_control_system.input_control_system import InputControlSystem
 from src.systems.import_system.import_system import ImportSystem
+
+from src.utilities import utils_logging, utils_xml2scene, utils_io
+
+# Core Modules
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
 from src.core.component_pool import ComponentPool
-from src.utilities import utils_logging, utils_xml2scene
+from src.core.resource_manager import ResourceManager
+
 
 # Debug
 import cProfile, pstats, io
@@ -47,6 +52,7 @@ class Editor:
                  "component_pool",
                  "event_publisher",
                  "action_publisher",
+                 "resource_manager",
                  "close_application",
                  "profiling_update_period",
                  "editor_num_updates",
@@ -68,10 +74,12 @@ class Editor:
         self.window_title = window_title
         self.vertical_sync = vertical_sync
 
-        # Core Variables
-        self.component_pool = ComponentPool(logger=self.logger)  # Must be created before systems
-        self.event_publisher = EventPublisher(logger=self.logger)  # Must be created before systems
-        self.action_publisher = ActionPublisher(logger=self.logger)  # Must be created before systems
+        # Core modules - MUST BE CREATED BEFORE ANY SYSTEM!
+        self.component_pool = ComponentPool(logger=self.logger)
+        self.event_publisher = EventPublisher(logger=self.logger)
+        self.action_publisher = ActionPublisher(logger=self.logger)
+        self.resource_manager = ResourceManager(logger=self.logger)
+
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -126,12 +134,6 @@ class Editor:
         glfw.set_window_size_callback(self.window_glfw, self._glfw_callback_window_resize)
         glfw.set_framebuffer_size_callback(self.window_glfw, self._glfw_callback_framebuffer_size)
         glfw.set_drop_callback(self.window_glfw, self._glfw_callback_drop_files)
-
-        # Set application icon - Disabled for now
-        #icon_fpath = os.path.join(constants.IMAGES_DIR, "anime_eyes.png")
-        #icon_image = Image.open(icon_fpath)
-        #icon = Image.frombytes(icon_image.tobytes(), icon_image.size, icon_image.mode)
-        #glfw.set_window_icon(self.window_glfw, 1, [icon_image])
 
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
@@ -312,6 +314,7 @@ class Editor:
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
                 action_publisher=self.action_publisher,
+                resource_manager=self.resource_manager,
                 parameters=parameters,
                 context=self.ctx,
                 buffer_size=self.buffer_size)
@@ -322,6 +325,7 @@ class Editor:
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
                 action_publisher=self.action_publisher,
+                resource_manager=self.resource_manager,
                 parameters=parameters,
                 window_glfw=self.window_glfw)
 
@@ -331,6 +335,7 @@ class Editor:
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
                 action_publisher=self.action_publisher,
+                resource_manager=self.resource_manager,
                 parameters=parameters)
 
         if system_name == Gizmo3DSystem.name:
@@ -339,6 +344,7 @@ class Editor:
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
                 action_publisher=self.action_publisher,
+                resource_manager=self.resource_manager,
                 parameters=parameters)
 
         if system_name == TransformSystem.name:
@@ -347,6 +353,7 @@ class Editor:
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
                 action_publisher=self.action_publisher,
+                resource_manager=self.resource_manager,
                 parameters=parameters)
 
         if system_name == ImportSystem.name:
@@ -355,6 +362,7 @@ class Editor:
                 component_pool=self.component_pool,
                 event_publisher=self.event_publisher,
                 action_publisher=self.action_publisher,
+                resource_manager=self.resource_manager,
                 parameters=parameters)
 
         if new_system is None:
@@ -380,7 +388,14 @@ class Editor:
             clean_scene_xml_fpath = scene_xml_fpath.replace("\\", os.sep).replace("/", os.sep)
             fpath = os.path.join(constants.ROOT_DIR, clean_scene_xml_fpath)
 
-        scene_blueprint = utils_xml2scene.load_scene_from_xml(xml_fpath=fpath)
+        scene_blueprint, scene_resources = utils_xml2scene.load_scene_from_xml(xml_fpath=fpath)
+
+        # Load scene resource, if any
+        for resource_uid, resource_fpath in scene_resources.items():
+            resource_fpath = utils_io.validate_resource_filepath(fpath=resource_fpath)
+            self.resource_manager.load(resource_uid=resource_uid, fpath=resource_fpath)
+
+        # Add entities to current scene
         for entity_blueprint in scene_blueprint["scene"]["entity"]:
             self.component_pool.add_entity(entity_blueprint=entity_blueprint)
 
