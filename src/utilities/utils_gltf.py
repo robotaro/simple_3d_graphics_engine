@@ -189,6 +189,7 @@ def load_meshes(header: dict, accessor_arrays: list) -> list:
     return meshes
 
 
+# TODO: Remove this function and use the RESOURCE MANAGER INSTEAD
 def debug_load_gltf_meshes(gltf_fpath: str) -> list:
     header, data, _ = load_gltf_parts(gltf_fpath=gltf_fpath)
     accessor_arrays = extract_accessor_arrays(header=header, data=data)

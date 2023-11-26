@@ -50,9 +50,10 @@ DEFAULT_SYSTEMS = [
 # =============================================================================
 
 RESOURCE_TYPE_MESH = "mesh"
+RESOURCE_TYPE_SCENE = "scene"
 RESOURCE_TYPE_SKELETON = "skeleton"
 
-RESOURCE_BVH_ROT_ORDER_MAP = {
+RESOURCE_BVH_ROTATION_ORDER_MAP = {
     "xyz": 0,
     "xzy": 1,
     "yxz": 2,

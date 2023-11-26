@@ -1,5 +1,6 @@
 import os
 import logging
+from typing import Union
 import numpy as np
 
 # Specifuc libraries for certain extensions
@@ -8,7 +9,7 @@ import trimesh
 from src.core import constants
 from src.core.data_block import DataBlock
 
-from src.utilities import utils_obj, utils_bvh_reader
+from src.utilities import utils_obj, utils_bvh_reader, utils_gltf
 
 
 class Resource:
@@ -38,6 +39,8 @@ class ResourceManager:
         self.extension_handlers = {
             "obj": self.load_obj,
             "bvh": self.load_bvh,
+            "gltf": self.load_gltf,
+            "glb": self.load_gltf
         }
 
     def load(self, resource_uid: str, fpath: str):
@@ -53,40 +56,57 @@ class ResourceManager:
         # Execute main loading operation here
         handler(resource_uid, fpath)
 
-    def load_obj(self, resource_uid: str, fpath: str) -> None:
-
-        mesh = trimesh.load(fpath)
+    def create_mesh_resource(self,
+                             resource_uid: str,
+                             vertices: np.ndarray,
+                             normals: np.ndarray,
+                             faces: np.ndarray,
+                             uvs: Union[np.ndarray, None]):
 
         new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
 
         new_resource.data_blocks["vertices"] = DataBlock(
-            data_shape=mesh.vertices.shape,
+            data_shape=vertices.shape,
             data_type=np.float32,
             data_format=constants.DATA_BLOCK_FORMAT_VEC3)
-        new_resource.data_blocks["vertices"].data[:] = mesh.vertices
+        new_resource.data_blocks["vertices"].data[:] = vertices
 
         new_resource.data_blocks["normals"] = DataBlock(
-            data_shape=mesh.vertex_normals.shape,
-            data_type=mesh.vertex_normals.dtype,
+            data_shape=normals.shape,
+            data_type=np.float32,
             data_format=constants.DATA_BLOCK_FORMAT_VEC3)
-        new_resource.data_blocks["normals"].data[:] = mesh.vertices
+        new_resource.data_blocks["normals"].data[:] = normals
 
         new_resource.data_blocks["faces"] = DataBlock(
-            data_shape=mesh.faces.shape,
+            data_shape=faces.shape,
             data_type=np.int32,
             data_format=constants.DATA_BLOCK_FORMAT_VEC3)
-        new_resource.data_blocks["faces"].data[:] = mesh.faces
+        new_resource.data_blocks["faces"].data[:] = faces
 
-        if "uv" in mesh.visual.__dict__:
+        if uvs is not None:
             new_resource.data_blocks["uv"] = DataBlock(
-                data_shape=mesh.visual.uv.shape,
+                data_shape=uvs.shape,
                 data_type=np.float32,
                 data_format=constants.DATA_BLOCK_FORMAT_VEC2)
-            new_resource.data_blocks["uv"].data[:] = mesh.visual.uv
+            new_resource.data_blocks["uv"].data[:] = uvs
 
         self.resources[resource_uid] = new_resource
 
-    def load_bvh(self, resource_uid: str, fpath: str) -> Resource:
+    def load_obj(self, resource_uid: str, fpath: str) -> None:
+
+        mesh = trimesh.load(fpath)
+
+        uvs = mesh.visual.uv if "uv" in mesh.visual.__dict__ else None
+
+        self.create_mesh_resource(resource_uid=resource_uid,
+                                  vertices=mesh.vertices,
+                                  normals=mesh.vertex_normals,
+                                  faces=mesh.faces,
+                                  uvs=uvs)
+
+        g = 0
+
+    def load_bvh(self, resource_uid: str, fpath: str):
 
         bvh_reader = utils_bvh_reader.BVHReader()
         skeleton_df, animation_df, frame_period = bvh_reader.load(fpath=fpath)
@@ -134,7 +154,7 @@ class ResourceManager:
             data_shape=(num_bones,),
             data_type=np.int32,
             data_format=constants.DATA_BLOCK_FORMAT_ARRAY)
-        vectorized_conversion = np.vectorize(constants.RESOURCE_BVH_ROT_ORDER_MAP.get)
+        vectorized_conversion = np.vectorize(constants.RESOURCE_BVH_ROTATION_ORDER_MAP.get)
         rotation_order_integers = vectorized_conversion(skeleton_df["rotation_order"].values)
         new_resource.data_blocks["rotation_order"].data[:] = rotation_order_integers
 
@@ -158,7 +178,7 @@ class ResourceManager:
         new_rotation_datablock.data[:] = 0
         new_rotation_datablock.metadata["frame_period"] = frame_period
 
-        # Sort all postion-related animation data according to the order of the bones in the skeleton
+        # Sort all position-related animation data according to the order of the bones in the skeleton
         for current_bone_index, current_bone_name in enumerate(bone_names):
 
             related_columns = [name for name in animation_columns if current_bone_name in name]
@@ -184,3 +204,38 @@ class ResourceManager:
 
         new_resource.data_blocks["animation_position"] = new_position_datablock
         new_resource.data_blocks["animation_rotation"] = new_rotation_datablock
+
+        self.resources[resource_uid] = new_resource
+
+    def load_gltf(self, resource_uid: str, fpath: str) -> None:
+
+        """
+        This function operates a little differently form other resource loading funcitons. Given that the
+        GLTF standard can hold many different types of data, each type of data is loaded as a separate
+        resource. For example, each mesh will be its own MESH resource, node animation will be a SKELETON resource,
+        etc. All resources will be named under the provide resource_uid group like "provided_uid/NEW_RESOURCE"
+        :param resource_uid: string, unique identified for all ersources
+        :param fpath:
+        :return: None
+        """
+
+        new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
+
+        gltf_header, gltf_data, gltf_dependencies = utils_gltf.load_gltf_parts(gltf_fpath=fpath)
+        accessor_arrays = utils_gltf.extract_accessor_arrays(header=gltf_header, data=gltf_data)
+
+        # Create meshes
+        meshes = utils_gltf.load_meshes(header=gltf_header, accessor_arrays=accessor_arrays)
+        for mesh_index, mesh in enumerate(meshes):
+
+            # TODO: UVs are not yet implemented
+            mesh_uid = f"{resource_uid}/mesh_{mesh_index}"
+            self.create_mesh_resource(resource_uid=mesh_uid,
+                                      vertices=mesh["positions"],
+                                      normals=mesh["normals"],
+                                      faces=mesh["indices"],
+                                      uvs=None)
+
+        # Create skeletons
+
+        g = 0
