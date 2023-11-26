@@ -5,7 +5,7 @@ import numpy as np
 # Constants
 GLTF_MESHES = "meshes"
 GLTF_PRIMITIVES = "primitives"
-GLTF_NODE = "nodes"
+GLTF_NODES = "nodes"
 GLTF_ROTATION = "rotation"
 GLTF_TRANSLATION = "translation"
 GLTF_SCALE = "scale"
@@ -48,6 +48,12 @@ GLTF_DATA_FORMAT_SIZE_MAP = {
     "MAT2": 4,
     "MAT3": 9,
     "MAT4": 16}
+
+GLTF_INTERPOLATION_MAP = {
+    "LINEAR": 0,
+    "STEP": 1,
+    "CUBICSPLINE": 2}
+
 
 RENDERING_MODES = {
     0: "points",
@@ -187,6 +193,51 @@ def load_meshes(header: dict, accessor_arrays: list) -> list:
         )
 
     return meshes
+
+
+def load_nodes(header: dict, accessor_arrays: list,  scene_index=None) -> dict:
+
+    # First, select which scene to take the meshes from
+    if scene_index is None:
+        scene_index = header["scene"] if "scene" in header else 0
+
+    gltf_nodes = header[GLTF_NODES]
+    num_nodes = len(gltf_nodes)
+
+    node_parent_index = np.empty((num_nodes, ), dtype=np.int32)
+    node_matrix = np.empty((num_nodes, 4, 4), dtype=np.float32)
+    node_translation = np.empty((num_nodes, 3), dtype=np.float32)
+    node_rotation_quat = np.empty((num_nodes, 4), dtype=np.float32)
+    node_scale = np.empty((num_nodes, 3), dtype=np.float32)
+
+    for current_index, node in enumerate(gltf_nodes):
+
+        for child_index in node.get("children", []):
+            node_parent_index[child_index] = current_index
+
+        node_matrix[current_index, :, :] = np.eye(4, dtype=np.float32)
+        if "matrix" in node:
+            # GLTF matrices are COLUMN-MAJOR, hence the transpose at the end
+            node_matrix[current_index, :, :] = np.reshape(np.array(node["matrix"]), (4, 4)).T
+
+        if "translation" in node:
+            node_translation[current_index, :] = np.array(node["translation"])
+
+        if "rotation" in node:
+            node_rotation_quat[current_index, :] = np.array(node["rotation"])
+
+        if "scale" in node:
+            node_scale[current_index, :] = np.array(node["scale"])
+
+    return {"parent_index": node_parent_index,
+            "matrix": node_matrix,
+            "translation": node_translation,
+            "rotation_quat": node_rotation_quat,
+            "scale": node_scale}
+
+def load_animations(header: dict, accessor_arrays: list) -> list:
+
+    pass
 
 
 # TODO: Remove this function and use the RESOURCE MANAGER INSTEAD

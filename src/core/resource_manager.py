@@ -104,8 +104,6 @@ class ResourceManager:
                                   faces=mesh.faces,
                                   uvs=uvs)
 
-        g = 0
-
     def load_bvh(self, resource_uid: str, fpath: str):
 
         bvh_reader = utils_bvh_reader.BVHReader()
@@ -236,6 +234,8 @@ class ResourceManager:
                                       faces=mesh["indices"],
                                       uvs=None)
 
-        # Create skeletons
+        # Create Nodes
+        nodes = utils_gltf.load_nodes(header=gltf_header, accessor_arrays=accessor_arrays)
 
+        # Create animations
         g = 0
