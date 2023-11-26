@@ -59,7 +59,7 @@ class BVHReader:
             'Zrotation': 'rot_z'
         }
 
-        self.rotation_map = {
+        self.rotation_order_map = {
             'Xposition': '',
             'Yposition': '',
             'Zposition': '',
@@ -133,7 +133,7 @@ class BVHReader:
             if match_channels:
                 channels_list = line.split()[2:]
                 animation_columns.extend([f'{joint_name_list[-1]}_{self.channel_map[key]}' for key in channels_list])
-                rotation_order = ''.join([self.rotation_map[key] for key in channels_list])
+                rotation_order = ''.join([self.rotation_order_map[key] for key in channels_list])
                 rot_order_list.append(rotation_order)
                 continue
 

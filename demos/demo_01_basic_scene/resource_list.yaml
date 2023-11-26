@@ -1,2 +1,3 @@
 dragon: "meshes/dragon.obj"
+woman_bye_animation: "bvh/dataset-1_guide_feminine_001.bvh"
 walk_animation: "bvh/walk.bvh"
