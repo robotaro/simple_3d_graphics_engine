@@ -5,6 +5,7 @@ import numpy as np
 
 # Specifuc libraries for certain extensions
 import trimesh
+from pygltflib import GLTF2
 
 from src.core import constants
 from src.core.data_block import DataBlock
@@ -217,6 +218,55 @@ class ResourceManager:
         :return: None
         """
 
+        directory = os.path.dirname(fpath)
+
+        # Mapping GLTF component types to NumPy data types
+        COMPONENT_TYPE_TO_NUMPY = {
+            5120: np.int8,  # BYTE
+            5121: np.uint8,  # UNSIGNED_BYTE
+            5122: np.int16,  # SHORT
+            5123: np.uint16,  # UNSIGNED_SHORT
+            5125: np.uint32,  # UNSIGNED_INT
+            5126: np.float32  # FLOAT
+        }
+
+        # Function to read binary data from a buffer
+        def read_binary_data(gltf, bufferViewIndex):
+            bufferView = gltf.bufferViews[bufferViewIndex]
+            buffer = gltf.buffers[bufferView.buffer]
+
+            # If the buffer contains a URI, it's an external file
+            if buffer.uri:
+                with open(os.path.join(directory, buffer.uri), 'rb') as f:
+                    f.seek(bufferView.byteOffset)
+                    return f.read(bufferView.byteLength)
+            # Otherwise, the buffer is embedded in the GLTF file
+            else:
+                return buffer.data[bufferView.byteOffset:bufferView.byteOffset + bufferView.byteLength]
+
+        # Load the GLTF file
+        gltf = GLTF2().load(fpath)
+
+        # Access the animations
+        for animation in gltf.animations:
+            print(f"Animation: {animation.name}")
+            for channel in animation.channels:
+                sampler = animation.samplers[channel.sampler]
+                input_accessor = gltf.accessors[sampler.input]
+                output_accessor = gltf.accessors[sampler.output]
+
+                # Load keyframe data
+                input_binary_data = read_binary_data(gltf, input_accessor.bufferView)
+                output_binary_data = read_binary_data(gltf, output_accessor.bufferView)
+
+                input_data = np.frombuffer(input_binary_data,
+                                           dtype=COMPONENT_TYPE_TO_NUMPY[input_accessor.componentType])
+                output_data = np.frombuffer(output_binary_data,
+                                            dtype=COMPONENT_TYPE_TO_NUMPY[output_accessor.componentType])
+
+            print(f"Keyframe Times: {input_data}")
+            print(f"Keyframe Values: {output_data}")
+
         new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
 
         gltf_header, gltf_data, gltf_dependencies = utils_gltf.load_gltf_parts(gltf_fpath=fpath)
@@ -238,4 +288,5 @@ class ResourceManager:
         nodes = utils_gltf.load_nodes(header=gltf_header, accessor_arrays=accessor_arrays)
 
         # Create animations
+
         g = 0
