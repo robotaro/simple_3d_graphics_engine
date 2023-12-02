@@ -120,28 +120,91 @@ class GLTFLoader:
             return None
 
         for animation in self.gltf.animations:
-            print(f"Animation: {animation.name}")
+
             for channel in animation.channels:
 
                 sampler = animation.samplers[channel.sampler]
                 input_accessor = self.gltf.accessors[sampler.input]
                 output_accessor = self.gltf.accessors[sampler.output]
 
-                # Load keyframe data
                 input_binary_data = self.read_binary_data(input_accessor.bufferView)
                 output_binary_data = self.read_binary_data(output_accessor.bufferView)
 
-                input_data = np.frombuffer(input_binary_data,
-                                           dtype=GLTF_DATA_TYPE_MAP[input_accessor.componentType])
-                output_data = np.frombuffer(output_binary_data,
-                                            dtype=GLTF_DATA_TYPE_MAP[output_accessor.componentType])
+                input_data = np.frombuffer(input_binary_data, dtype=GLTF_DATA_TYPE_MAP[input_accessor.componentType])
+                output_data = np.frombuffer(output_binary_data,  dtype=GLTF_DATA_TYPE_MAP[output_accessor.componentType])
 
-            print(f"Keyframe Times: {input_data}")
-            print(f"Keyframe Values: {output_data}")
+    def load_nodes(self):
+        if not self.__file_loaded:
+            return None
 
-        g = 0
+        nodes = []
+        for node in self.gltf.nodes:
+            node_data = {
+                'name': getattr(node, 'name', None),
+                'translation': np.array(getattr(node, 'translation', [0, 0, 0])),
+                'rotation': np.array(getattr(node, 'rotation', [0, 0, 0, 1])),
+                'scale': np.array(getattr(node, 'scale', [1, 1, 1])),
+                'matrix': np.array(getattr(node, 'matrix', np.eye(4))),
+                'children': getattr(node, 'children', []),
+                'mesh': getattr(node, 'mesh', None),
+                'skin': getattr(node, 'skin', None)
+            }
+            nodes.append(node_data)
+        return nodes
+
+    def load_meshes(self):
+        if not self.__file_loaded:
+            return None
+
+        meshes = []
+        for mesh in self.gltf.meshes:
+            combined_indices = []
+            combined_vertices = []
+            combined_normals = []
+            combined_uvs = []
+            vertex_count = 0
+
+            for primitive in mesh.primitives:
+
+                # Extract data for each primitive
+                indices = self.extract_data_from_accessor(primitive.indices)
+                vertices = self.extract_data_from_accessor(primitive.attributes.get('POSITION'))
+                normals = self.extract_data_from_accessor(primitive.attributes.get('NORMAL'))
+                uvs = self.extract_data_from_accessor(primitive.attributes.get('TEXCOORD_0'))
+
+                # Adjust indices and concatenate data
+                if indices is not None:
+                    combined_indices.extend(indices + vertex_count)
+                if vertices is not None:
+                    combined_vertices.extend(vertices)
+                    vertex_count += len(vertices)
+                if normals is not None:
+                    combined_normals.extend(normals)
+                if uvs is not None:
+                    combined_uvs.extend(uvs)
+
+            # Store the combined data for the mesh
+            meshes.append({
+                'name': getattr(mesh, 'name', None),
+                'indices': np.array(combined_indices),
+                'vertices': np.array(combined_vertices),
+                'normals': np.array(combined_normals),
+                'uvs': np.array(combined_uvs)
+            })
+
+        return meshes
+
+    def extract_data_from_accessor(self, accessor_index):
+        if accessor_index is None:
+            return None
+        accessor = self.gltf.accessors[accessor_index]
+        binary_data = self.read_binary_data(accessor.bufferView)
+        return np.frombuffer(binary_data, dtype=GLTF_DATA_TYPE_MAP[accessor.componentType])
 
 # Usage
 loader = GLTFLoader()
 loader.load(r"D:\git_repositories\alexandrepv\simple_3d_graphics_engine\resources\meshes\BrainStem.gltf")
 loader.get_animation()
+nodes = loader.load_nodes()
+meshs = loader.load_meshes()
+g = 0

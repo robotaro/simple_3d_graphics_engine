@@ -12,7 +12,7 @@ sphinx-rtd-theme==1.3.0
 # Core modules
 moderngl==5.7.4
 glfw==2.5.5
-numpy==1.21.6
+numpy==1.26.2
 
 # Geometry Libraries
 trimesh==3.22.3  # 3D geometry operations (requires scipy)
@@ -23,7 +23,7 @@ PyYAML==6.0  # Consider this over omegaconf==2.3.0?
 
 # 3D Loading models
 pywavefront==1.3.3  # OBJ only
-pygltflib==1.15.3   # GLTF and GLB
+#pygltflib==1.15.3   # GLTF and GLB
 
 # Image loading
 Pillow==10.0.0
@@ -44,5 +44,5 @@ flake8==6.0.0
 
 # [Debugging and Profiling]
 matplotlib==3.6.2
-CProfileV==1.0.7
+#CProfileV==1.0.7
 scalene==1.5.31.1

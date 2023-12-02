@@ -5,7 +5,7 @@ import numpy as np
 
 # Specifuc libraries for certain extensions
 import trimesh
-from pygltflib import GLTF2
+#from pygltflib import GLTF2
 
 from src.core import constants
 from src.core.data_block import DataBlock
