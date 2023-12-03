@@ -142,6 +142,9 @@ def extract_accessor_arrays(header: dict, data: bytes):
 
         accessor_array = acessor_data.reshape((-1, *data_shape)) if accessor["type"] != "SCALAR" else acessor_data
 
+        data_min = np.min(accessor_array, axis=0)
+        data_max = np.max(accessor_array, axis=0)
+
         accessors_arrays.append(accessor_array)
 
     return accessors_arrays

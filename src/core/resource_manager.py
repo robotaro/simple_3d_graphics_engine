@@ -231,7 +231,7 @@ class ResourceManager:
         }
 
         # Function to read binary data from a buffer
-        def read_binary_data(gltf, bufferViewIndex):
+        """def read_binary_data(gltf, bufferViewIndex):
             bufferView = gltf.bufferViews[bufferViewIndex]
             buffer = gltf.buffers[bufferView.buffer]
 
@@ -289,4 +289,4 @@ class ResourceManager:
 
         # Create animations
 
-        g = 0
+        g = 0"""

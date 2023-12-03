@@ -2,6 +2,9 @@ import os
 import json
 import numpy as np
 
+# DEBUG
+import matplotlib.pyplot as plt
+
 # Constants
 GLTF_MESHES = "meshes"
 GLTF_PRIMITIVES = "primitives"
@@ -40,7 +43,7 @@ GLTF_DATA_SHAPE_MAP = {
     "MAT3": (3, 3),
     "MAT4": (4, 4)}
 
-GLTF_DATA_NUM_COLUMNS_MAP = {
+GLTF_DATA_NUM_ELEMENTS_MAP = {
     "SCALAR": 1,
     "VEC2": 2,
     "VEC3": 3,
@@ -72,11 +75,17 @@ RENDERING_MODES = {
 
 class GLTFLoader:
 
+    __slots__ =[
+        "gltf_header",
+        "gltf_buffer_view_data",
+        "gltf_dependencies",
+        "scenes"
+    ]
+
     def __init__(self):
         self.gltf_header = None
-        self.gltf_data = None
+        self.gltf_buffer_view_data = []
         self.gltf_dependencies = None
-
         self.scenes = []
 
     def load(self, gltf_fpath: str):
@@ -95,17 +104,22 @@ class GLTFLoader:
         target_bin_data_size = self.gltf_header[GLTF_BUFFERS][0][GLTF_BYTE_LENGTH]
 
         with open(bin_fpath, "rb") as file:
-            self.gltf_data = file.read()
-
-        if target_bin_data_size != len(self.gltf_data):
-            raise Exception(f"[ERROR] Loaded GLTF binary data from {bin_fpath} has {len(self.gltf_data)} bytes, "
-                            f"but was expected to have {target_bin_data_size} bytes")
+            gltf_data = file.read()
+            self.gltf_buffer_view_data = [self.select_data_using_buffer_view(buffer_view=buffer_view,
+                                                                             gltf_data=gltf_data)
+                                          for buffer_view in self.gltf_header[GLTF_BUFFER_VIEWS]]
 
         # Load dependencies
         # TODO: Load any textures that are listed in the gltf_hedear
-        g = 0
 
-    def read_data(self, accessor: dict):
+    def get_accessor(self, index: int):
+
+        if self.gltf_header is None:
+            return None
+
+        return self.gltf_header["accessors"][index]
+
+    def get_data(self, accessor: dict, validate_data=True):
         """
         This function reads the parts of the binary array in memory (loaded from the .bin file) and re-interprets
         the raw bytes into numpy arrays according to the accessor's specified data parameters.
@@ -113,26 +127,36 @@ class GLTFLoader:
         :return:
         """
 
-        if self.gltf_data is None:
+        if self.gltf_header is None:
             return None
 
-        buffer_view_index = accessor["bufferView"]
-        buffer_view = self.gltf_header["bufferViews"][buffer_view_index]
-        offset_bytes = buffer_view["byteOffset"]
-        length_bytes = buffer_view["byteLength"]
-        data_type = GLTF_COMPONENT_TYPE_MAP[accessor["componentType"]]
+        buffer_view_data = self.gltf_buffer_view_data[accessor["bufferView"]]
+        accessor_offset = accessor["byteOffset"]
         data_shape = GLTF_DATA_SHAPE_MAP[accessor["type"]]
-        length_elements = length_bytes // np.dtype(data_type).itemsize
+        data_type = GLTF_COMPONENT_TYPE_MAP[accessor["componentType"]]
+        data_format_size = GLTF_DATA_NUM_ELEMENTS_MAP[accessor["type"]]
+        num_elements = accessor["count"]
 
-        data_numpy = np.frombuffer(self.gltf_data,
-                                   dtype=data_type,
-                                   count=length_elements,
-                                   offset=offset_bytes)
+        data = np.frombuffer(buffer=buffer_view_data,
+                             offset=accessor_offset,
+                             count=num_elements * data_format_size,
+                             dtype=data_type)
 
-        if data_shape == (1, ):
-            return data_numpy
+        data_reshaped = data.reshape((-1, *data_shape)) if accessor["type"] != "SCALAR" else data
 
-        data_reshaped = np.reshape(data_numpy, (-1, *data_shape))
+        if validate_data:
+            target_data_min = np.array(accessor["min"], dtype=data_type)
+            target_data_max = np.array(accessor["max"], dtype=data_type)
+
+            data_min = np.min(data_reshaped, axis=0).flatten()
+            data_max = np.max(data_reshaped, axis=0).flatten()
+
+            if not np.isclose(target_data_min, data_min).all():
+                print(f"[WARNING] Minimum values differ from loaded ones for accessor {accessor}")
+
+            if not np.isclose(target_data_max, data_max).all():
+                print(f"[WARNING] Maximum values differ from loaded ones for accessor {accessor}")
+
         if accessor["type"] in ["MAT2", "MAT3", "MAT4"]:
             # Transposing is required for the matrix as they are laid ou COLUMN-MAJOR in bytes, but stored
             # as ROW-MAJOR in the numpy arrays
@@ -140,9 +164,37 @@ class GLTFLoader:
 
         return data_reshaped
 
+    def select_data_using_buffer_view(self, buffer_view: dict, gltf_data: bytes) -> bytes:
+
+        """
+        Returns a CONTIGUOUS data array that you can then use your np.frombuffer to extrac tthe data you need
+        :param buffer_view:
+        :param data:
+        :return:
+        """
+
+        # Extract buffer view properties
+        byte_offset = buffer_view.get("byteOffset", 0)
+        byte_length = buffer_view["byteLength"]
+        byte_stride = buffer_view.get("byteStride", 0)  # Optional
+
+        # Calculate the starting and ending byte positions in the binary data
+        last_byte = byte_offset + byte_length
+
+        if byte_stride == 0:
+            # If byteStride is not specified, read all the data in one go
+            loaded_data = gltf_data[byte_offset:last_byte]
+        else:
+            # If byteStride is specified, read data element by element
+            num_elements = byte_length // byte_stride
+            loaded_data = b''.join(gltf_data[byte_offset + i * byte_stride:byte_offset + (i + 1) * byte_stride]
+                                   for i in range(num_elements))
+
+        return loaded_data
+
     def get_animation(self, index: int):
 
-        if self.gltf_data is None:
+        if self.gltf_header is None:
             return None
 
         animation_header = self.gltf_header["animations"][index]
@@ -156,7 +208,7 @@ class GLTFLoader:
             output_accessor = self.gltf_header["accessors"][sampler["output"]]
             channels[channel["target"]["path"]].append(
                 {"node_index": channel["target"]["node"],
-                 "animation_data": self.read_data(accessor=output_accessor)})
+                 "animation_data": self.get_data(accessor=output_accessor)})
 
             all_input_accessors.append(self.gltf_header["accessors"][sampler["input"]])
 
@@ -166,13 +218,13 @@ class GLTFLoader:
             raise Exception(f"All animation channels should be taking their timestamps from the same buffer view, "
                             f"and there are {len(unique_input_buffer_views)} sources instead.")
 
-        timestamps = self.read_data(accessor=all_input_accessors[0])
+        timestamps = self.get_data(accessor=all_input_accessors[0])
 
         return channels, timestamps
 
     def get_nodes(self) -> dict:
 
-        if self.gltf_data is None:
+        if self.gltf_header is None:
             return None
 
         # GPT 4
@@ -227,57 +279,39 @@ class GLTFLoader:
 
         }
 
-    def get_mesh(self, index: int) -> dict:
-        if self.gltf_data is None:
+    def get_all_meshes(self) -> list:
+        if self.gltf_header is None:
             return None
 
         meshes = []
         for mesh in self.gltf_header["meshes"]:
-            combined_indices = []
-            combined_vertices = []
-            combined_normals = []
-            combined_uvs = []
-            vertex_count = 0
 
+            new_mesh = []
             for primitive in mesh["primitives"]:
+                indices = self.get_data(accessor=self.get_accessor(primitive["indices"]))
 
-                # Extract data for each primitive
-                indices = self.extract_data_from_accessor(primitive["indices"])
-                vertices = self.extract_data_from_accessor(primitive["POSITION"])
-                normals = self.extract_data_from_accessor(primitive["NORMAL"])
-                uvs = self.extract_data_from_accessor(primitive["TEXCOORD_0"])
+                # DEBUG
+                #print(primitive["indices"], indices[0:30])
 
-                # Adjust indices and concatenate data
-                if indices is not None:
-                    combined_indices.extend(indices + vertex_count)
-                if vertices is not None:
-                    combined_vertices.extend(vertices)
-                    vertex_count += len(vertices)
-                if normals is not None:
-                    combined_normals.extend(normals)
-                if uvs is not None:
-                    combined_uvs.extend(uvs)
+                attributes = {key: self.get_data(accessor=self.get_accessor(primitive["attributes"][key])) for key
+                              in primitive["attributes"].keys()}
+                new_mesh.append({
+                    "indices": indices,
+                    "attributes": attributes})
 
-            # Store the combined data for the mesh
-            meshes.append({
-                'name': getattr(mesh, 'name', None),
-                'indices': np.array(combined_indices),
-                'vertices': np.array(combined_vertices),
-                'normals': np.array(combined_normals),
-                'uvs': np.array(combined_uvs)
-            })
+            meshes.append(new_mesh)
 
         return meshes
 
     def get_skins(self):
-        if self.gltf_data is None:
+        if self.gltf_header is None:
             return None
 
         skins = []
         for skin in self.gltf_header["skins"]:
             joints = skin["joints"]
             inverse_bind_matrices_accessor = self.gltf_header["accessors"][skin["inverseBindMatrices"]]
-            inverse_bind_matrices_data = self.read_data(accessor=inverse_bind_matrices_accessor)
+            inverse_bind_matrices_data = self.get_data(accessor=inverse_bind_matrices_accessor)
 
             # Convert to a suitable format, e.g., 4x4 matrices
             inverse_bind_matrices = inverse_bind_matrices_data.reshape((-1, 4, 4))
@@ -290,18 +324,13 @@ class GLTFLoader:
 
         return skins
 
-    def extract_data_from_accessor(self, accessor_index):
-        if accessor_index is None:
-            return None
-        accessor = self.gltf.accessors[accessor_index]
-        binary_data = self.read_binary_data(accessor.bufferView)
-        return np.frombuffer(binary_data, dtype=GLTF_COMPONENT_TYPE_MAP[accessor.componentType])
 
 # Usage
 loader = GLTFLoader()
-loader.load(r"D:\git_repositories\alexandrepv\simple_3d_graphics_engine\resources\meshes\laiku_from_python.gltf")
+loader.load(r"D:\git_repositories\alexandrepv\simple_3d_graphics_engine\resources\meshes\BrainStem.gltf")
+#loader.load(r"D:\git_repositories\alexandrepv\simple_3d_graphics_engine\resources\meshes\laiku_from_python.gltf")
 animation = loader.get_animation(index=-1)
 skins = loader.get_skins()
 nodes = loader.get_nodes()
-mesh = loader.get_mesh(index=-1)
+meshes = loader.get_all_meshes()
 g = 0
