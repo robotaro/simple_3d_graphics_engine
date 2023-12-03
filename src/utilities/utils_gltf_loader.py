@@ -40,7 +40,7 @@ GLTF_DATA_SHAPE_MAP = {
     "MAT3": (3, 3),
     "MAT4": (4, 4)}
 
-GLTF_DATA_NUM_ELEMENTS_MAP = {
+GLTF_DATA_NUM_COLUMNS_MAP = {
     "SCALAR": 1,
     "VEC2": 2,
     "VEC3": 3,
@@ -58,7 +58,6 @@ GLTF_INTERPOLATION_MAP = {
     "LINEAR": 0,
     "STEP": 1,
     "CUBICSPLINE": 2}
-
 
 RENDERING_MODES = {
     0: "points",
@@ -119,19 +118,27 @@ class GLTFLoader:
 
         buffer_view_index = accessor["bufferView"]
         buffer_view = self.gltf_header["bufferViews"][buffer_view_index]
-        offset = buffer_view["byteOffset"]
-        length = buffer_view["byteLength"]
-        data = self.gltf_data[offset:offset + length]
+        offset_bytes = buffer_view["byteOffset"]
+        length_bytes = buffer_view["byteLength"]
         data_type = GLTF_COMPONENT_TYPE_MAP[accessor["componentType"]]
-        num_columns = GLTF_DATA_NUM_ELEMENTS_MAP[accessor["type"]]
+        data_shape = GLTF_DATA_SHAPE_MAP[accessor["type"]]
+        length_elements = length_bytes // np.dtype(data_type).itemsize
 
-        if num_columns == 1:
-            return np.frombuffer(data, dtype=data_type)
+        data_numpy = np.frombuffer(self.gltf_data,
+                                   dtype=data_type,
+                                   count=length_elements,
+                                   offset=offset_bytes)
 
-        # TODO: If the data are matrices, they need to be transposed because in GLTF the memory is laid out
-        #       as COLUMN-MAJOR!
+        if data_shape == (1, ):
+            return data_numpy
 
-        return np.reshape(np.frombuffer(data, dtype=data_type), (-1, num_columns))
+        data_reshaped = np.reshape(data_numpy, (-1, *data_shape))
+        if accessor["type"] in ["MAT2", "MAT3", "MAT4"]:
+            # Transposing is required for the matrix as they are laid ou COLUMN-MAJOR in bytes, but stored
+            # as ROW-MAJOR in the numpy arrays
+            data_reshaped = np.transpose(data_reshaped, (0, 2, 1))
+
+        return data_reshaped
 
     def get_animation(self, index: int):
 
