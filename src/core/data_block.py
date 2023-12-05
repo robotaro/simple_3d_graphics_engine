@@ -11,9 +11,7 @@ class DataBlock:
 
     __slots__ = [
         "metadata",
-        "data",
-        "format"
-    ]
+        "data"]
 
     def __init__(self, data: np.ndarray, metadata=None, copy_data=True):
         self.metadata = {} if metadata is None else metadata

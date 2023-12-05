@@ -90,6 +90,13 @@ class GLTFreader:
 
     def load(self, gltf_fpath: str):
 
+        """
+        Loads the header and binary information form the GLTF file. Currently, it assumes there is only
+        ONE scene. If there are more the one scene it will throw an error
+        :param gltf_fpath: str, absolute path to the input GLTF file
+        :return:
+        """
+
         # Then, read it in my own way
         filename = os.path.basename(gltf_fpath)
         _, extension = os.path.splitext(filename)
@@ -97,6 +104,10 @@ class GLTFreader:
         # Load Header
         with open(gltf_fpath, "r") as file:
             self.gltf_header = json.load(file)
+
+            # Make sure we only have one scene
+            if len(self.gltf_header["scenes"]) > 1:
+                raise ValueError("[ERROR] Only one scene per GLTF is supported")
 
         # Load binary data
         gltf_dir = os.path.dirname(gltf_fpath)
