@@ -19,7 +19,7 @@ class DataBlock:
         self.metadata = {} if metadata is None else metadata
         self.data = data.copy() if copy_data else data
 
-    def save_to_hdf5(self, hdf5_group: h5py.Group):
+    def to_hdf5(self, hdf5_group: h5py.Group):
         if self.data is None:
             raise ValueError("DataBlock data has not been initialized")
 
@@ -31,7 +31,7 @@ class DataBlock:
             dataset.attrs[key] = value
 
     @classmethod
-    def load_from_hdf5(cls, hdf5_dataset: h5py.Dataset):
+    def from_hdf5(cls, hdf5_dataset: h5py.Dataset):
         # Load data from the HDF5 dataset
         data = hdf5_dataset[...]
 

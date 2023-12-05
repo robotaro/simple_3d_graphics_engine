@@ -16,12 +16,14 @@ class Resource:
 
     __slots__ = [
         "resource_type",
-        "data_blocks"
+        "data_blocks",
+        "metadata"
     ]
 
-    def __init__(self, resource_type: str):
+    def __init__(self, resource_type: str, metadata=None):
         self.resource_type = resource_type
         self.data_blocks = {}
+        self.metadata = {} if metadata is None else metadata
 
 
 class ResourceManager:
@@ -54,53 +56,19 @@ class ResourceManager:
         # Execute main loading operation here
         handler(resource_uid, fpath)
 
-    def create_mesh_resource(self,
-                             resource_uid: str,
-                             vertices: np.ndarray,
-                             normals: np.ndarray,
-                             faces: np.ndarray,
-                             uvs: Union[np.ndarray, None]):
-
-        new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
-
-        new_resource.data_blocks["vertices"] = DataBlock(
-            data_shape=vertices.shape,
-            data_type=np.float32,
-            data_format=constants.DATA_BLOCK_FORMAT_VEC3)
-        new_resource.data_blocks["vertices"].data[:] = vertices
-
-        new_resource.data_blocks["normals"] = DataBlock(
-            data_shape=normals.shape,
-            data_type=np.float32,
-            data_format=constants.DATA_BLOCK_FORMAT_VEC3)
-        new_resource.data_blocks["normals"].data[:] = normals
-
-        new_resource.data_blocks["faces"] = DataBlock(
-            data_shape=faces.shape,
-            data_type=np.int32,
-            data_format=constants.DATA_BLOCK_FORMAT_VEC3)
-        new_resource.data_blocks["faces"].data[:] = faces
-
-        if uvs is not None:
-            new_resource.data_blocks["uv"] = DataBlock(
-                data_shape=uvs.shape,
-                data_type=np.float32,
-                data_format=constants.DATA_BLOCK_FORMAT_VEC2)
-            new_resource.data_blocks["uv"].data[:] = uvs
-
-        self.resources[resource_uid] = new_resource
-
     def load_obj(self, resource_uid: str, fpath: str) -> None:
 
         mesh = trimesh.load(fpath)
 
-        uvs = mesh.visual.uv if "uv" in mesh.visual.__dict__ else None
+        new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
+        new_resource.data_blocks["vertices"] = DataBlock(data=mesh.vertices)
+        new_resource.data_blocks["normals"] = DataBlock(data=mesh.vertex_normals)
+        new_resource.data_blocks["faces"] = DataBlock(data=mesh.faces)
 
-        self.create_mesh_resource(resource_uid=resource_uid,
-                                  vertices=mesh.vertices,
-                                  normals=mesh.vertex_normals,
-                                  faces=mesh.faces,
-                                  uvs=uvs)
+        if "uv" in mesh.visual.__dict__:
+            new_resource.data_blocks["uv"] = DataBlock(data=mesh.visual.uv)
+
+        self.resources[resource_uid] = new_resource
 
     def load_bvh(self, resource_uid: str, fpath: str):
 
@@ -114,65 +82,28 @@ class ResourceManager:
 
         # =========================[ Skeleton ]=========================
 
-        # Parent Index
-        new_resource.data_blocks["parent_index"] = DataBlock(
-            data_shape=(num_bones,),
-            data_type=np.int32,
-            data_format=constants.DATA_BLOCK_FORMAT_ARRAY)
-        new_resource.data_blocks["parent_index"].data[:] = skeleton_df["parent"].values
-        new_resource.data_blocks["parent_index"].metadata["bone_names"] = bone_names
+        new_resource.data_blocks["parent_index"] = DataBlock(data=skeleton_df["parent"].values, metadata=bone_names)
 
-        # Bone Position Offset
-        new_resource.data_blocks["position_offset"] = DataBlock(
-            data_shape=(num_bones, 3),
-            data_type=np.float32,
-            data_format=constants.DATA_BLOCK_FORMAT_VEC3)
-        new_resource.data_blocks["position_offset"].data[:] = skeleton_df[
-            ["position_x", "position_y", "position_z"]].values
+        pos_offset = skeleton_df[["position_x", "position_y", "position_z"]].values
+        new_resource.data_blocks["position_offset"] = DataBlock(data=pos_offset)
 
-        # Bone Rotation Offset
-        new_resource.data_blocks["rotation_offset"] = DataBlock(
-            data_shape=(num_bones, 3),
-            data_type=np.float32,
-            data_format=constants.DATA_BLOCK_FORMAT_VEC3)
-        new_resource.data_blocks["rotation_offset"].data[:] = skeleton_df[
-            ["angle_offset_x", "angle_offset_y", "angle_offset_z"]].values
+        rot_offset = skeleton_df[["angle_offset_x", "angle_offset_y", "angle_offset_z"]].values
+        new_resource.data_blocks["rotation_offset"] = DataBlock(data=rot_offset)
 
-        # Bone Length
-        new_resource.data_blocks["length"] = DataBlock(
-            data_shape=(num_bones, ),
-            data_type=np.float32,
-            data_format=constants.DATA_BLOCK_FORMAT_ARRAY)
-        new_resource.data_blocks["length"].data[:] = skeleton_df["length"].values
+        new_resource.data_blocks["length"] = DataBlock(data=skeleton_df["length"].values)
 
-        # Bone Rotation Order
-        new_resource.data_blocks["rotation_order"] = DataBlock(
-            data_shape=(num_bones,),
-            data_type=np.int32,
-            data_format=constants.DATA_BLOCK_FORMAT_ARRAY)
         vectorized_conversion = np.vectorize(constants.RESOURCE_BVH_ROTATION_ORDER_MAP.get)
         rotation_order_integers = vectorized_conversion(skeleton_df["rotation_order"].values)
-        new_resource.data_blocks["rotation_order"].data[:] = rotation_order_integers
+        new_resource.data_blocks["rotation_order"] = DataBlock(data=rotation_order_integers)
 
         # =========================[ Animation ]=========================
         num_frames = animation_df.index.size
 
         # Position Animation (if any)
+        metadata = {"frame_period": frame_period}
         new_shape = (num_frames, num_bones, 3)
-        new_position_datablock = DataBlock(
-            data_shape=new_shape,
-            data_type=np.float32,
-            data_format=constants.DATA_BLOCK_FORMAT_VEC3)
-        new_position_datablock.data[:] = 0
-        new_position_datablock.metadata["frame_period"] = frame_period
-
-        # Rotation Animation
-        new_rotation_datablock = DataBlock(
-            data_shape=new_shape,
-            data_type=np.float32,
-            data_format=constants.DATA_BLOCK_FORMAT_VEC3)
-        new_rotation_datablock.data[:] = 0
-        new_rotation_datablock.metadata["frame_period"] = frame_period
+        new_position_datablock = DataBlock(data=np.zeros(new_shape, dtype=np.float32), metadata=metadata)
+        new_rotation_datablock = DataBlock(data=np.zeros(new_shape, dtype=np.float32), metadata=metadata)
 
         # Sort all position-related animation data according to the order of the bones in the skeleton
         for current_bone_index, current_bone_name in enumerate(bone_names):
