@@ -5,12 +5,11 @@ import numpy as np
 
 # Specifuc libraries for certain extensions
 import trimesh
-#from pygltflib import GLTF2
 
 from src.core import constants
 from src.core.data_block import DataBlock
 
-from src.utilities import utils_obj, utils_bvh_reader, utils_gltf
+from src.utilities import utils_obj, utils_bvh_reader, utils_gltf, utils_gltf_reader
 
 
 class Resource:
@@ -30,8 +29,7 @@ class ResourceManager:
     __slots__ = [
         "logger",
         "resources",
-        "extension_handlers"
-    ]
+        "extension_handlers"]
 
     def __init__(self, logger: logging.Logger):
 
@@ -40,11 +38,10 @@ class ResourceManager:
         self.extension_handlers = {
             "obj": self.load_obj,
             "bvh": self.load_bvh,
-            "gltf": self.load_gltf,
-            "glb": self.load_gltf
+            "gltf": self.load_gltf
         }
 
-    def load(self, resource_uid: str, fpath: str):
+    def load_resource(self, resource_uid: str, fpath: str):
 
         _, extension = os.path.splitext(fpath)
         extension_no_dot = extension.strip(".")
@@ -218,75 +215,7 @@ class ResourceManager:
         :return: None
         """
 
-        directory = os.path.dirname(fpath)
+        gltf_reader = utils_gltf_reader.GLTFreader()
+        gltf_reader.load(gltf_fpath=fpath)
 
-        # Mapping GLTF component types to NumPy data types
-        COMPONENT_TYPE_TO_NUMPY = {
-            5120: np.int8,  # BYTE
-            5121: np.uint8,  # UNSIGNED_BYTE
-            5122: np.int16,  # SHORT
-            5123: np.uint16,  # UNSIGNED_SHORT
-            5125: np.uint32,  # UNSIGNED_INT
-            5126: np.float32  # FLOAT
-        }
-
-        # Function to read binary data from a buffer
-        """def read_binary_data(gltf, bufferViewIndex):
-            bufferView = gltf.bufferViews[bufferViewIndex]
-            buffer = gltf.buffers[bufferView.buffer]
-
-            # If the buffer contains a URI, it's an external file
-            if buffer.uri:
-                with open(os.path.join(directory, buffer.uri), 'rb') as f:
-                    f.seek(bufferView.byteOffset)
-                    return f.read(bufferView.byteLength)
-            # Otherwise, the buffer is embedded in the GLTF file
-            else:
-                return buffer.data[bufferView.byteOffset:bufferView.byteOffset + bufferView.byteLength]
-
-        # Load the GLTF file
-        gltf = GLTF2().load(fpath)
-
-        # Access the animations
-        for animation in gltf.animations:
-            print(f"Animation: {animation.name}")
-            for channel in animation.channels:
-                sampler = animation.samplers[channel.sampler]
-                input_accessor = gltf.accessors[sampler.input]
-                output_accessor = gltf.accessors[sampler.output]
-
-                # Load keyframe data
-                input_binary_data = read_binary_data(gltf, input_accessor.bufferView)
-                output_binary_data = read_binary_data(gltf, output_accessor.bufferView)
-
-                input_data = np.frombuffer(input_binary_data,
-                                           dtype=COMPONENT_TYPE_TO_NUMPY[input_accessor.componentType])
-                output_data = np.frombuffer(output_binary_data,
-                                            dtype=COMPONENT_TYPE_TO_NUMPY[output_accessor.componentType])
-
-            print(f"Keyframe Times: {input_data}")
-            print(f"Keyframe Values: {output_data}")
-
-        new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
-
-        gltf_header, gltf_data, gltf_dependencies = utils_gltf.load_gltf_parts(gltf_fpath=fpath)
-        accessor_arrays = utils_gltf.extract_accessor_arrays(header=gltf_header, data=gltf_data)
-
-        # Create meshes
-        meshes = utils_gltf.load_meshes(header=gltf_header, accessor_arrays=accessor_arrays)
-        for mesh_index, mesh in enumerate(meshes):
-
-            # TODO: UVs are not yet implemented
-            mesh_uid = f"{resource_uid}/mesh_{mesh_index}"
-            self.create_mesh_resource(resource_uid=mesh_uid,
-                                      vertices=mesh["positions"],
-                                      normals=mesh["normals"],
-                                      faces=mesh["indices"],
-                                      uvs=None)
-
-        # Create Nodes
-        nodes = utils_gltf.load_nodes(header=gltf_header, accessor_arrays=accessor_arrays)
-
-        # Create animations
-
-        g = 0"""
+        g = 0

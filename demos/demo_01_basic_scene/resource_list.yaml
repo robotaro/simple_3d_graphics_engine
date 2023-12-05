@@ -1,4 +1,5 @@
-#dragon: "meshes/dragon.obj"
-#woman_bye_animation: "bvh/dataset-1_guide_feminine_001.bvh"
-#walk_animation: "bvh/walk.bvh"
+dragon: "meshes/dragon.obj"
+woman_walk_animation: "bvh/dataset-1_guide_feminine_001.bvh"
+walk_animation: "bvh/walk.bvh"
 brain_stem: "meshes/BrainStem.gltf"
+female_body: "meshes/female_body_gesture_practice.glb"

@@ -376,7 +376,7 @@ class Editor:
         # And finally add the new system to the roster
         self.systems.append(new_system)
 
-    def load_scene(self, scene_xml_fpath: str):
+    def load_scene_from_xml(self, scene_xml_fpath: str):
 
         # Check if path is absolute
         fpath = None
@@ -393,11 +393,14 @@ class Editor:
         # Load scene resource, if any
         for resource_uid, resource_fpath in scene_resources.items():
             resource_fpath = utils_io.validate_resource_filepath(fpath=resource_fpath)
-            self.resource_manager.load(resource_uid=resource_uid, fpath=resource_fpath)
+            self.resource_manager.load_resource(resource_uid=resource_uid, fpath=resource_fpath)
 
         # Add entities to current scene
         for entity_blueprint in scene_blueprint["scene"]["entity"]:
             self.component_pool.add_entity(entity_blueprint=entity_blueprint)
+
+    def load_scene_from_hdf5(self, scene_h5_fpath: str):
+        pass
 
     def initialise_components(self):
 

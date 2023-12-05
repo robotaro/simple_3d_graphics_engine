@@ -62,18 +62,6 @@ RESOURCE_BVH_ROTATION_ORDER_MAP = {
     "zyx": 5
 }
 
-# =============================================================================
-#                                  Datablocks
-# =============================================================================
-
-DATA_BLOCK_FORMAT_ARRAY = "array"
-DATA_BLOCK_FORMAT_ARRAY_2D = "array_2d"
-DATA_BLOCK_FORMAT_ARRAY_3D = "array_3d"
-DATA_BLOCK_FORMAT_VEC2 = "vec2"
-DATA_BLOCK_FORMAT_VEC3 = "vec3"
-DATA_BLOCK_FORMAT_VEC4 = "vec4"
-DATA_BLOCK_FORMAT_MAT3 = "mat3"
-DATA_BLOCK_FORMAT_MAT4 = "mat4"
 
 # =============================================================================
 #                               Imgui System

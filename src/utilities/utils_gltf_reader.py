@@ -73,7 +73,7 @@ RENDERING_MODES = {
 }
 
 
-class GLTFLoader:
+class GLTFreader:
 
     __slots__ =[
         "gltf_header",
@@ -110,7 +110,7 @@ class GLTFLoader:
                                           for buffer_view in self.gltf_header[GLTF_BUFFER_VIEWS]]
 
         # Load dependencies
-        # TODO: Load any textures that are listed in the gltf_hedear
+        # TODO: Load any textures that are listed in the gltf_header
 
     def get_accessor(self, index: int):
 
@@ -142,14 +142,14 @@ class GLTFLoader:
                              count=num_elements * data_format_size,
                              dtype=data_type)
 
-        data_reshaped = data.reshape((-1, *data_shape)) if accessor["type"] != "SCALAR" else data
+        data = data.reshape((-1, *data_shape)) if accessor["type"] != "SCALAR" else data
 
         if validate_data:
             target_data_min = np.array(accessor["min"], dtype=data_type)
             target_data_max = np.array(accessor["max"], dtype=data_type)
 
-            data_min = np.min(data_reshaped, axis=0).flatten()
-            data_max = np.max(data_reshaped, axis=0).flatten()
+            data_min = np.min(data, axis=0).flatten()
+            data_max = np.max(data, axis=0).flatten()
 
             if not np.isclose(target_data_min, data_min).all():
                 print(f"[WARNING] Minimum values differ from loaded ones for accessor {accessor}")
@@ -160,14 +160,14 @@ class GLTFLoader:
         if accessor["type"] in ["MAT2", "MAT3", "MAT4"]:
             # Transposing is required for the matrix as they are laid ou COLUMN-MAJOR in bytes, but stored
             # as ROW-MAJOR in the numpy arrays
-            data_reshaped = np.transpose(data_reshaped, (0, 2, 1))
+            data_reshaped = np.transpose(data, (0, 2, 1))
 
-        return data_reshaped
+        return data
 
     def select_data_using_buffer_view(self, buffer_view: dict, gltf_data: bytes) -> bytes:
 
         """
-        Returns a CONTIGUOUS data array that you can then use your np.frombuffer to extrac tthe data you need
+        Returns a CONTIGUOUS data array that you can then use your np.frombuffer to extrac the data you need
         :param buffer_view:
         :param data:
         :return:
@@ -289,10 +289,6 @@ class GLTFLoader:
             new_mesh = []
             for primitive in mesh["primitives"]:
                 indices = self.get_data(accessor=self.get_accessor(primitive["indices"]))
-
-                # DEBUG
-                #print(primitive["indices"], indices[0:30])
-
                 attributes = {key: self.get_data(accessor=self.get_accessor(primitive["attributes"][key])) for key
                               in primitive["attributes"].keys()}
                 new_mesh.append({
@@ -323,14 +319,3 @@ class GLTFLoader:
             skins.append(skin_data)
 
         return skins
-
-
-# Usage
-loader = GLTFLoader()
-loader.load(r"D:\git_repositories\alexandrepv\simple_3d_graphics_engine\resources\meshes\BrainStem.gltf")
-#loader.load(r"D:\git_repositories\alexandrepv\simple_3d_graphics_engine\resources\meshes\laiku_from_python.gltf")
-animation = loader.get_animation(index=-1)
-skins = loader.get_skins()
-nodes = loader.get_nodes()
-meshes = loader.get_all_meshes()
-g = 0
