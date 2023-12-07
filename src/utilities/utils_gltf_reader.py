@@ -203,6 +203,14 @@ class GLTFreader:
 
         return loaded_data
 
+    def get_material(self, index: int):
+
+        if self.gltf_header is None:
+            return None
+
+        return self.gltf_header["materials"][index]
+
+
     def get_animation(self, index: int):
 
         if self.gltf_header is None:
@@ -300,10 +308,13 @@ class GLTFreader:
             new_mesh = []
             for primitive in mesh["primitives"]:
                 indices = self.get_data(accessor=self.get_accessor(primitive["indices"]))
+
+
                 attributes = {key: self.get_data(accessor=self.get_accessor(primitive["attributes"][key])) for key
                               in primitive["attributes"].keys()}
                 new_mesh.append({
                     "indices": indices,
+                    "material_index": primitive["material"],
                     "attributes": attributes})
 
             meshes.append(new_mesh)
