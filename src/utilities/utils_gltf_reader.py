@@ -62,7 +62,7 @@ GLTF_INTERPOLATION_MAP = {
     "STEP": 1,
     "CUBICSPLINE": 2}
 
-RENDERING_MODES = {
+PRIMITIVE_RENDERING_MODES = {
     0: "points",
     1: "lines",
     2: "line_loop",
@@ -305,21 +305,50 @@ class GLTFreader:
         meshes = []
         for mesh in self.gltf_header["meshes"]:
 
-            new_mesh = []
+            unique_primitive_render_modes = set([primitive["mode"] for primitive in mesh["primitives"]])
+            if len(unique_primitive_render_modes) > 1:
+                raise Exception(f"[ERROR] There are a mix of render modes between primitives. "
+                                f"There should be only one: {[PRIMITIVE_RENDERING_MODES[value] for value in unique_primitive_render_modes]}")
+
+            new_mesh = {
+                "indices": [],
+                "render_mode": PRIMITIVE_RENDERING_MODES[list(unique_primitive_render_modes)[0]],
+                "attributes": {}}
+
+            sum_num_vertices = 0
+
+            # Combine all primitives into one single mesh
             for primitive in mesh["primitives"]:
-                indices = self.get_data(accessor=self.get_accessor(primitive["indices"]))
 
+                # Get data in right formate from primitive
+                primitive_indices = self.get_data(accessor=self.get_accessor(primitive["indices"]))
 
-                attributes = {key: self.get_data(accessor=self.get_accessor(primitive["attributes"][key])) for key
-                              in primitive["attributes"].keys()}
-                new_mesh.append({
-                    "indices": indices,
-                    "material_index": primitive["material"],
-                    "attributes": attributes})
+                # Create new keys in current buffer with
+                for attr_key in primitive["attributes"].keys():
+                    # TODO: Consider what would happen if one primitive has a new attribute.
+                    #       I think this would screw up the indices
+                    new_mesh["attributes"][attr_key] = new_mesh["attributes"].get(attr_key, [])
+
+                # Append new vertices, normals etc to current list, but indices must be shifted because we'll
+                # concatenating primitives at the end
+                new_mesh["indices"].append(primitive_indices + sum_num_vertices)
+                for attr_key, accessor_index in primitive["attributes"].items():
+                    data = self.get_data(accessor=self.get_accessor(accessor_index))
+                    new_mesh["attributes"][attr_key].append(data)
+                    if attr_key == "POSITION":
+                        sum_num_vertices += data.shape[0] # Update the primitive index offset of this attribute is vertices
+
+            # Concatenate all the meshes internal arrays into one per attribute
+            new_mesh["indices"] = np.concatenate(new_mesh["indices"])
+            for attr_key, attr_value in new_mesh["attributes"].items():
+                new_mesh["attributes"][attr_key] = np.concatenate(attr_value, axis=0)
 
             meshes.append(new_mesh)
 
         return meshes
+
+    def get_all_materials(self):
+        return self.gltf_header["materials"]
 
     def get_skins(self):
         if self.gltf_header is None:

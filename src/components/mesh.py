@@ -14,13 +14,13 @@ class Mesh(Component):
         "normals",
         "colors",
         "uvs",
-        "faces",
+        "indices",
         "vaos",
         "vbo_vertices",
         "vbo_normals",
         "vbo_colors",
         "vbo_uvs",
-        "ibo_faces",
+        "ibo_indices",
         "render_mode",
         "layer",
         "visible",
@@ -34,7 +34,7 @@ class Mesh(Component):
         self.normals = None
         self.colors = None
         self.uvs = None
-        self.faces = None
+        self.indices = None
 
         # GPU (VRAM) Vertex Data
         self.vaos = {}
@@ -42,7 +42,7 @@ class Mesh(Component):
         self.vbo_normals = None
         self.vbo_colors = None
         self.vbo_uvs = None
-        self.ibo_faces = None
+        self.ibo_indices = None
 
         self.render_mode = Component.dict2map(input_dict=self.parameters,
                                               map_dict=constants.MESH_RENDER_MODES,
@@ -83,8 +83,8 @@ class Mesh(Component):
             self.vbo_uvs = ctx.buffer(self.uvs.astype("f4").tobytes())
             vbo_declaration_list.append((self.vbo_uvs, "2f", constants.SHADER_INPUT_UV))
 
-        if self.faces is not None:
-            self.ibo_faces = ctx.buffer(self.faces.astype("i4").tobytes())
+        if self.indices is not None:
+            self.ibo_indices = ctx.buffer(self.indices.astype("i4").tobytes())
 
         # Create VAOs
         for program_name in constants.SHADER_PASSES_LIST:
@@ -92,10 +92,10 @@ class Mesh(Component):
             program = shader_library[program_name]
 
             # TODO: I think one version serves both if ibo_faces is None. Default value seems ot be None as well
-            if self.ibo_faces is None:
+            if self.ibo_indices is None:
                 self.vaos[program_name] = ctx.vertex_array(program, vbo_declaration_list)
             else:
-                self.vaos[program_name] = ctx.vertex_array(program, vbo_declaration_list, self.ibo_faces)
+                self.vaos[program_name] = ctx.vertex_array(program, vbo_declaration_list, self.ibo_indices)
 
         self.initialised = True
 
@@ -116,8 +116,8 @@ class Mesh(Component):
         if self.vbo_uvs:
             self.vbo_uvs.release()
 
-        if self.ibo_faces:
-            self.ibo_faces.release()
+        if self.ibo_indices:
+            self.ibo_indices.release()
 
     """def upload_buffers(self) -> None:
     
@@ -207,4 +207,4 @@ class Mesh(Component):
         self.vertices = v
         self.normals = n
         self.uvs = u
-        self.faces = f
+        self.indices = f

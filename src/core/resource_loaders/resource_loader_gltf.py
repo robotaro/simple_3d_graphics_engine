@@ -15,17 +15,21 @@ class ResourceLoaderGLTF(ResourceLoader):
         gltf_reader = utils_gltf_reader.GLTFreader()
         gltf_reader.load(gltf_fpath=fpath)
 
-        for mesh in gltf_reader.get_all_meshes():
+        for mesh_index, mesh in enumerate(gltf_reader.get_all_meshes()):
+
             new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
-            new_resource.data_blocks["vertices"] = DataBlock(data=mesh.vertices)
-            new_resource.data_blocks["normals"] = DataBlock(data=mesh.vertex_normals)
-            new_resource.data_blocks["faces"] = DataBlock(data=mesh.faces)
+            new_resource.metadata["render_mode"] = mesh["render_mode"]
+            mesh_attrs = mesh["attributes"]
 
-            if "uv" in mesh.visual.__dict__:
-                new_resource.data_blocks["uv"] = DataBlock(data=mesh.visual.uv)
+            if "indices" in mesh:
+                new_resource.data_blocks["indices"] = DataBlock(data=mesh["indices"])
 
-        complete_id = f"{resource_uid}/mesh_0"
+            if "POSITION" in mesh_attrs:
+                new_resource.data_blocks["vertices"] = mesh_attrs["POSITION"]
 
-        self.all_resources[complete_id] = new_resource
+            if "NORMAL" in mesh_attrs:
+                new_resource.data_blocks["normals"] = mesh_attrs["NORMAL"]
+
+            self.all_resources[f"{resource_uid}/mesh_{mesh_index}"] = new_resource
 
         return True

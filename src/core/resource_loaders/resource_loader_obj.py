@@ -18,13 +18,11 @@ class ResourceLoaderOBJ(ResourceLoader):
         new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
         new_resource.data_blocks["vertices"] = DataBlock(data=mesh.vertices)
         new_resource.data_blocks["normals"] = DataBlock(data=mesh.vertex_normals)
-        new_resource.data_blocks["faces"] = DataBlock(data=mesh.faces)
+        new_resource.data_blocks["indices"] = DataBlock(data=mesh.faces)
     
         if "uv" in mesh.visual.__dict__:
             new_resource.data_blocks["uv"] = DataBlock(data=mesh.visual.uv)
 
-        complete_id = f"{resource_uid}/mesh_0"
-
-        self.all_resources[complete_id] = new_resource
+        self.all_resources[f"{resource_uid}/mesh_0"] = new_resource
 
         return True
