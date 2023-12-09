@@ -13,6 +13,7 @@ GLTF_NODES = "nodes"
 GLTF_ROTATION = "rotation"
 GLTF_TRANSLATION = "translation"
 GLTF_SCALE = "scale"
+GLTF_ANIMATIONS = "animations"
 GLTF_MATRIX = "matrix"
 GLTF_SKIN = "skin"
 GLTF_CHILDREN = "children"
@@ -89,6 +90,13 @@ class GLTFReader:
         self.gltf_dependencies = None
         self.scenes = []
 
+    @property
+    def num_animations(self) -> int:
+        if self.gltf_header is None:
+            raise Exception("[ERROR] GLTF file hasn't been loaded yet")
+
+        return len(self.gltf_header[GLTF_ANIMATIONS]) if GLTF_ANIMATIONS in self.gltf_header else 0
+
     def load(self, gltf_fpath: str):
 
         """
@@ -110,7 +118,6 @@ class GLTFReader:
 
         # Load dependencies
         # TODO: Load any textures that are listed in the gltf_header
-
 
     def __load_gltf(self, fpath) -> None:
 
@@ -250,23 +257,23 @@ class GLTFReader:
 
         return self.gltf_header["materials"][index]
 
-    def get_animation(self, index: int):
+    def get_animation(self, index: int) -> dict:
 
         if self.gltf_header is None:
             return None
 
         animation_header = self.gltf_header["animations"][index]
         all_input_accessors = []
-        channels = {"translation": [], "rotation": [], "scale": []}
+        animation = {"translation": [], "rotation": [], "scale": [], "timestamps": None}
 
         # Animation channels
         for channel in animation_header["channels"]:
 
             sampler = animation_header["samplers"][channel["sampler"]]
             output_accessor = self.gltf_header["accessors"][sampler["output"]]
-            channels[channel["target"]["path"]].append(
+            animation[channel["target"]["path"]].append(
                 {"node_index": channel["target"]["node"],
-                 "animation_data": self.get_data(accessor=output_accessor)})
+                 "data": self.get_data(accessor=output_accessor)})
 
             all_input_accessors.append(self.gltf_header["accessors"][sampler["input"]])
 
@@ -276,66 +283,40 @@ class GLTFReader:
             raise Exception(f"All animation channels should be taking their timestamps from the same buffer view, "
                             f"and there are {len(unique_input_buffer_views)} sources instead.")
 
-        timestamps = self.get_data(accessor=all_input_accessors[0])
+        animation["timestamps"] = self.get_data(accessor=all_input_accessors[0])
 
-        return channels, timestamps
+        return animation
 
-    def get_nodes(self) -> dict:
+    def get_nodes(self) -> list:
 
         if self.gltf_header is None:
             return None
 
         # GPT 4
         nodes = []
-        for node in self.gltf_header["nodes"]:
+        for gltf_node in self.gltf_header["nodes"]:
             node_data = {
-                'name': node.get('name', None),
-                'translation': np.array(node.get('translation', [0, 0, 0])),
-                'rotation': np.array(node.get('rotation', [0, 0, 0, 1])),
-                'scale': np.array(node.get('scale', [1, 1, 1])),
-                'matrix': np.array(node.get('matrix', np.eye(4))),
-                'children': node.get('children', []),
-                'mesh': node.get('mesh', None),
-                'skin': node.get('skin', None)
+                'name': gltf_node.get('name', None),
+                'translation': np.array(gltf_node.get('translation', [0, 0, 0]), dtype=np.float32),
+                'rotation': np.array(gltf_node.get('rotation', [0, 0, 0, 1]), dtype=np.float32),
+                'scale': np.array(gltf_node.get('scale', [1, 1, 1]), dtype=np.float32),
+                'matrix': np.array(gltf_node.get('matrix', np.eye(4)), dtype=np.float32),
+                'children_indices': gltf_node.get('children', []),
+                'mesh_index': gltf_node.get('mesh', None),
+                'skin_index': gltf_node.get('skin', None)
             }
             nodes.append(node_data)
 
-        # Mine
-        num_nodes = len(self.gltf_header[GLTF_NODES])
-        node_name = []
-        node_parent_index = np.ones((num_nodes,), dtype=np.int32) * -1
-        node_matrix = np.empty((num_nodes, 4, 4), dtype=np.float32)
-        node_translation = np.empty((num_nodes, 3), dtype=np.float32)
-        node_rotation_quat = np.empty((num_nodes, 4), dtype=np.float32)
-        node_scale = np.empty((num_nodes, 3), dtype=np.float32)
+        # Find out the parent indices to help out with future node re-organisation
+        for current_index, node in enumerate(nodes):
+            parent_indices = [parent_index for parent_index, sample_node in enumerate(nodes)
+                              if current_index in sample_node["children_indices"]]
+            if len(parent_indices) > 1:
+                raise Exception("[ERROR] There should only be one parent per node!")
 
-        for current_index, node in enumerate(self.gltf_header[GLTF_NODES]):
+            node["parent_index"] = parent_indices[0] if len(parent_indices) == 1 else None
 
-            for child_index in node.get("children", []):
-                node_parent_index[child_index] = current_index
-
-            node_matrix[current_index, :, :] = np.eye(4, dtype=np.float32)
-            if "name" in node:
-                # GLTF matrices are COLUMN-MAJOR, hence the transpose at the end
-                node_name.append(node["name"])
-
-            if "matrix" in node:
-                # GLTF matrices are COLUMN-MAJOR, hence the transpose at the end
-                node_matrix[current_index, :, :] = np.reshape(np.array(node["matrix"]), (4, 4)).T
-
-            if "translation" in node:
-                node_translation[current_index, :] = np.array(node["translation"])
-
-            if "rotation" in node:
-                node_rotation_quat[current_index, :] = np.array(node["rotation"])
-
-            if "scale" in node:
-                node_scale[current_index, :] = np.array(node["scale"])
-
-        # TODO: Complete this
-        return {
-
-        }
+        return nodes
 
     def get_all_meshes(self) -> list:
         if self.gltf_header is None:

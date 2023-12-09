@@ -224,6 +224,10 @@ class ImguiSystem(System):
                     if item3.selected:
                         self.gui_tab_gizmo_3d()
 
+                with imgui.begin_tab_item("Resources") as item4:
+                    if item4.selected:
+                        self.gui_tab_resources()
+
         # imgui.set_window_position(300, 150)
         imgui.set_window_size(500, 500)
 
@@ -370,3 +374,11 @@ class ImguiSystem(System):
                 max_value=constants.RENDER_MODE_LIGHTING_LIT)
 
             imgui.spacing()
+
+    def gui_tab_resources(self):
+
+        resource_ids = list(self.resource_manager.resources.keys())
+        resource_ids.sort()
+
+        for resource_id in resource_ids:
+            imgui.text(resource_id)
