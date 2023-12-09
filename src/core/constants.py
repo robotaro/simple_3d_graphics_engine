@@ -329,6 +329,9 @@ COMPONENT_TYPE_GIZMO_3D = 11
 COMPONENT_TYPE_ROBOT = 12
 COMPONENT_TYPE_DEBUG_MESH = 13
 
+# Universal arguments for all components
+COMPONENT_ARG_RESOURCE_ID = "resource_id"
+
 # Mesh Component Arguments
 COMPONENT_ARG_MESH_SHAPE = "shape"
 COMPONENT_ARG_MESH_FPATH = "fpath"

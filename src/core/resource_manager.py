@@ -23,7 +23,8 @@ class ResourceManager:
         self.resource_loaders = {
             ".obj": ResourceLoaderOBJ(all_resources=self.resources),
             ".bvh": ResourceLoaderBVH(all_resources=self.resources),
-            ".gltf": ResourceLoaderGLTF(all_resources=self.resources)}
+            ".gltf": ResourceLoaderGLTF(all_resources=self.resources),
+            ".glb": ResourceLoaderGLTF(all_resources=self.resources)}
 
     def load_resource(self, resource_uid: str, fpath: str) -> bool:
 
@@ -31,8 +32,7 @@ class ResourceManager:
 
         loader = self.resource_loaders.get(extension, None)
         if loader is None:
-            self.logger.error(f"Extension '{extension}' not currently supported")
-            return False
+            raise Exception(f"Extension '{extension}' not currently supported")
 
         # Execute main loading operation here
         return loader.load(resource_uid=resource_uid, fpath=fpath)

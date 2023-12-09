@@ -1,5 +1,6 @@
 import os
 import json
+import struct
 import numpy as np
 
 # DEBUG
@@ -73,7 +74,7 @@ PRIMITIVE_RENDERING_MODES = {
 }
 
 
-class GLTFreader:
+class GLTFReader:
 
     __slots__ =[
         "gltf_header",
@@ -101,8 +102,20 @@ class GLTFreader:
         filename = os.path.basename(gltf_fpath)
         _, extension = os.path.splitext(filename)
 
+        if extension == ".gltf":
+            self.__load_gltf(fpath=gltf_fpath)
+
+        if extension == ".glb":
+            self.__load_glb(fpath=gltf_fpath)
+
+        # Load dependencies
+        # TODO: Load any textures that are listed in the gltf_header
+
+
+    def __load_gltf(self, fpath) -> None:
+
         # Load Header
-        with open(gltf_fpath, "r") as file:
+        with open(fpath, "r") as file:
             self.gltf_header = json.load(file)
 
             # Make sure we only have one scene
@@ -110,18 +123,45 @@ class GLTFreader:
                 raise ValueError("[ERROR] Only one scene per GLTF is supported")
 
         # Load binary data
-        gltf_dir = os.path.dirname(gltf_fpath)
+        gltf_dir = os.path.dirname(fpath)
         bin_fpath = os.path.join(gltf_dir, self.gltf_header[GLTF_BUFFERS][0][GLTF_URI])
         target_bin_data_size = self.gltf_header[GLTF_BUFFERS][0][GLTF_BYTE_LENGTH]
 
+        # read and process binary data
         with open(bin_fpath, "rb") as file:
-            gltf_data = file.read()
-            self.gltf_buffer_view_data = [self.select_data_using_buffer_view(buffer_view=buffer_view,
-                                                                             gltf_data=gltf_data)
-                                          for buffer_view in self.gltf_header[GLTF_BUFFER_VIEWS]]
 
-        # Load dependencies
-        # TODO: Load any textures that are listed in the gltf_header
+            self.__process_binary_data(binary_data=file.read())
+
+    def __load_glb(self, fpath):
+
+        with open(fpath, 'rb') as file:
+
+            # Read binary file header
+            magic, version, length = struct.unpack('<4sII', file.read(12))
+
+            if magic != b'glTF':
+                raise ValueError('File is not a valid GLB format')
+
+            # Read the GLTF header
+            chunk_length, chunk_type = struct.unpack('<II', file.read(8))
+            if chunk_type != 0x4E4F534A:
+                raise ValueError('Expected a JSON chunk')
+
+            self.gltf_header = json.loads(file.read(chunk_length))
+
+            # Read the binary chunk header (if any)
+            chunk_length, chunk_type = struct.unpack('<II', file.read(8))
+            if chunk_type != 0x004E4942:
+                raise ValueError('Expected a BIN chunk')
+
+            # Read and process the binary data
+            self.__process_binary_data(binary_data=file.read(chunk_length))
+
+    def __process_binary_data(self, binary_data: bytes) -> None:
+        self.gltf_buffer_view_data = [self.select_data_using_buffer_view(buffer_view=buffer_view,
+                                                                         gltf_data=binary_data)
+                                      for buffer_view in self.gltf_header[GLTF_BUFFER_VIEWS]]
+        g = 0
 
     def get_accessor(self, index: int):
 
@@ -142,7 +182,7 @@ class GLTFreader:
             return None
 
         buffer_view_data = self.gltf_buffer_view_data[accessor["bufferView"]]
-        accessor_offset = accessor["byteOffset"]
+        accessor_offset = accessor.get("byteOffset", 0)
         data_shape = GLTF_DATA_SHAPE_MAP[accessor["type"]]
         data_type = GLTF_COMPONENT_TYPE_MAP[accessor["componentType"]]
         data_format_size = GLTF_DATA_NUM_ELEMENTS_MAP[accessor["type"]]
@@ -155,7 +195,7 @@ class GLTFreader:
 
         data = data.reshape((-1, *data_shape)) if accessor["type"] != "SCALAR" else data
 
-        if validate_data:
+        if validate_data and "min" in accessor and "max" in accessor:
             target_data_min = np.array(accessor["min"], dtype=data_type)
             target_data_max = np.array(accessor["max"], dtype=data_type)
 
@@ -209,7 +249,6 @@ class GLTFreader:
             return None
 
         return self.gltf_header["materials"][index]
-
 
     def get_animation(self, index: int):
 

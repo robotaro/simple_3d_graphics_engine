@@ -60,7 +60,7 @@ class Mesh(Component):
         if self.initialised:
             return
 
-        self.generate_shape()
+        self.load_mesh(resource_manager=kwargs["resource_manager"])
 
         ctx = kwargs["ctx"]
         shader_library = kwargs["shader_library"]
@@ -140,13 +140,13 @@ class Mesh(Component):
 
         # TODO: Consider the case where the number of vertices changes and so the number of faces"""
 
-    def generate_shape(self) -> None:
+    def load_mesh(self, resource_manager) -> None:
 
         shape = self.parameters.get(constants.COMPONENT_ARG_MESH_SHAPE, None)
-        fpath = self.parameters.get(constants.COMPONENT_ARG_MESH_FPATH, None)
+        resource_id = self.parameters.get(constants.COMPONENT_ARG_RESOURCE_ID, None)
 
-        if shape is not None and fpath is not None:
-            raise KeyError("Both shape and fpath have been specified! You either specify the shape or the mesh.")
+        if shape is not None and resource_id is not None:
+            raise KeyError("Both shape and resource ID have been specified! You either specify the shape or the mesh.")
 
         # To avoid warnings
         v, n, u, f = None, None, None, None
@@ -184,25 +184,11 @@ class Mesh(Component):
                                                            sections=sections, radius=radius)
 
         # Load an existing mesh file
-        if fpath is not None:
-
-            valid_fpath = utils_io.validate_resource_filepath(fpath=fpath)
-
-            _, mesh_extension = os.path.splitext(valid_fpath)
-
-            scale = Component.dict2float(input_dict=self.parameters, key="scale", default_value=1.0)
-
-            if mesh_extension == ".obj":
-                v, n, u, f = utils_mesh_3d.from_obj(fpath=valid_fpath, scale=scale)
-
-            if mesh_extension == ".glb":
-                v, n, u, f = utils_mesh_3d.from_gltf(fpath=valid_fpath, scale=scale)
-
-            if mesh_extension == ".gltf":
-                meshes = utils_gltf.debug_load_gltf_meshes(gltf_fpath=valid_fpath)
-                v = meshes[0]["positions"]
-                n = meshes[0]["normals"]
-                f = meshes[0]["indices"]
+        if resource_id is not None:
+            mesh_resource = resource_manager.resources[resource_id]
+            v = mesh_resource.data_blocks["vertices"].data
+            n = mesh_resource.data_blocks["normals"].data
+            f = mesh_resource.data_blocks["indices"].data
 
         self.vertices = v
         self.normals = n
