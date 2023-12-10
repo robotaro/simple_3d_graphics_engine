@@ -26,6 +26,7 @@ SYSTEM_NAME_IMGUI = "imgui_system"
 SYSTEM_NAME_INPUT_CONTROL = "input_control_system"
 SYSTEM_NAME_GIZMO_3D = "gizmo_3d_system"
 SYSTEM_NAME_IMPORT = "import_system"
+SYSTEM_NAME_SKELETON = "skeleton_system"
 
 AVAILABLE_SYSTEMS = [
     SYSTEM_NAME_TRANSFORM,
@@ -37,10 +38,10 @@ AVAILABLE_SYSTEMS = [
 ]
 
 DEFAULT_SYSTEMS = [
-    SYSTEM_NAME_IMPORT,
     SYSTEM_NAME_INPUT_CONTROL,
     SYSTEM_NAME_GIZMO_3D,
     SYSTEM_NAME_TRANSFORM,  # Must go BEFORE render system to read the transforms before they are shown!
+    SYSTEM_NAME_SKELETON,
     SYSTEM_NAME_RENDER,
     SYSTEM_NAME_IMGUI  # Must come AFTER the render system to add the GUI to the final render
 ]
@@ -331,6 +332,7 @@ COMPONENT_TYPE_COLLIDER = 10
 COMPONENT_TYPE_GIZMO_3D = 11
 COMPONENT_TYPE_ROBOT = 12
 COMPONENT_TYPE_DEBUG_MESH = 13
+COMPONENT_TYPE_SKELETON = 14
 
 # Universal arguments for all components
 COMPONENT_ARG_RESOURCE_ID = "resource_id"

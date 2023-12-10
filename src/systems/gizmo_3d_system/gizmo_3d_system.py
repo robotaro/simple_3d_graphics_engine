@@ -326,6 +326,9 @@ class Gizmo3DSystem(System):
             viewport_height = camera_component.viewport_pixels[3]
             gizmo_scale *= constants.GIZMO_3D_VIEWPORT_SCALE_COEFFICIENT / viewport_height
             gizmo_transform_component.scale = (gizmo_scale, gizmo_scale, gizmo_scale)
+
+            # TODO: [OPTIMISE] Seting this flag to TRUE every frame, even when nothing changes, wastes CPU time.
+            #       It causes the transform_3d to recalcalculate its matrices at every frame.
             gizmo_transform_component.input_values_updated = True
 
             # Update gizmo's transform parameters for visual feedback

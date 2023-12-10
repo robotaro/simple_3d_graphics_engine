@@ -15,7 +15,7 @@ from src.components.directional_light import DirectionalLight
 from src.components.gizmo_3d import Gizmo3D
 from src.components.robot import Robot
 from src.components.debug_mesh import DebugMesh
-
+from src.components.skeleton import Skeleton
 
 class Entity:
 
@@ -54,6 +54,7 @@ class ComponentPool:
         constants.COMPONENT_TYPE_GIZMO_3D: Gizmo3D,
         constants.COMPONENT_TYPE_ROBOT: Robot,
         constants.COMPONENT_TYPE_DEBUG_MESH: DebugMesh,
+        constants.COMPONENT_TYPE_SKELETON: Skeleton,
     }
 
     COMPONENT_NAME_MAP = {
@@ -69,7 +70,8 @@ class ComponentPool:
         "collider": constants.COMPONENT_TYPE_COLLIDER,
         "gizmo_3d": constants.COMPONENT_TYPE_GIZMO_3D,
         "robot": constants.COMPONENT_TYPE_ROBOT,
-        "debug_mesh": constants.COMPONENT_TYPE_DEBUG_MESH
+        "debug_mesh": constants.COMPONENT_TYPE_DEBUG_MESH,
+        "skeleton": constants.COMPONENT_TYPE_SKELETON
     }
 
     __slots__ = [

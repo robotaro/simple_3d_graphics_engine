@@ -81,22 +81,10 @@ class Transform3D(Component):
             return
 
         if self.input_values_updated:
-            if isinstance(self.scale, float):
-                g = 0
-            if len(self.scale) < 3:
-                g = 0
             self.local_matrix = mat4.create_transform_euler_xyz(
                 np.array(self.position, dtype=np.float32),
                 np.array(self.rotation, dtype=np.float32),
                 np.array(self.scale, dtype=np.float32),)
-            """self.local_matrix = mat4.compute_transform(
-                position=self.position,
-                rotation_rad=self.rotation,
-                scale=self.scale,
-                order="xyz"
-            )"""
-            # DEBUG
-            print("Input values updated")
             self.input_values_updated = False
 
     def move(self, delta_position: np.array):

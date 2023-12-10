@@ -5,33 +5,14 @@ from src.core import constants
 from src.components.component import Component
 from src.utilities import utils_urdf, utils_mjcf, utils_io
 
-PARAMS_NAME = "name"
-PARAMS_PARENT = "parent"
-PARAMS_POS_X = "position_x"
-PARAMS_POS_Y = "position_y"
-PARAMS_POS_Z = "position_z"
-PARAMS_ANGLE_OFFSET_X = "angle_offset_x"
-PARAMS_ANGLE_OFFSET_Y = "angle_offset_y"
-PARAMS_ANGLE_OFFSET_Z = "angle_offset_z"
-PARAMS_LENGTH = "length"  # Length on the Y direction to help with visualisation
-PARAMS_ROTATION_ORDER = "rotation_order"
-PARAMS_DEFAULT_ROTATION = 'xyz'
-PARAMS_COLUMNS = [PARAMS_NAME,
-                  PARAMS_PARENT,
-                  PARAMS_POS_X,
-                  PARAMS_POS_Y,
-                  PARAMS_POS_Z,
-                  PARAMS_ANGLE_OFFSET_X,
-                  PARAMS_ANGLE_OFFSET_Y,
-                  PARAMS_ANGLE_OFFSET_Z,
-                  PARAMS_LENGTH,
-                  PARAMS_ROTATION_ORDER]
-
-
 class Skeleton(Component):
 
     __slots__ = [
-        "joints"
+        "joints",
+        "num_bones",
+        "world_matrices",
+        "local_matrices",
+
     ]
 
     _type = constants.COMPONENT_TYPE_ROBOT
@@ -39,10 +20,14 @@ class Skeleton(Component):
     def __init__(self, parameters, system_owned=False):
         super().__init__(parameters=parameters, system_owned=system_owned)
 
-
         self.joints = None
+        self.num_bones = Component.dict2int(input_dict=parameters, key="num_bones", default_value=1)
+        matrix_shape = (self.num_bones, 4, 4)
+        self.local_matrices = np.empty(matrix_shape, dtype=np.float32)
+        self.world_matrices = np.empty(matrix_shape, dtype=np.float32)
 
     def initialise(self, **kwargs):
+
 
         pass
 
