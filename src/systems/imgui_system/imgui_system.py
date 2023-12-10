@@ -326,7 +326,7 @@ class ImguiSystem(System):
         camera = camera_pool.get(self.selected_entity_uid, None)
         if camera and not camera.system_owned:
             imgui.text(f"Camera")
-            _, camera.perspective = imgui.checkbox("Perspective", camera.perspective)
+            _, camera.is_perspective = imgui.checkbox("Perspective", camera.is_perspective)
 
         # [ Transform 3D ]
         transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)

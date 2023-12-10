@@ -4,7 +4,7 @@ import struct
 import numpy as np
 
 # DEBUG
-import matplotlib.pyplot as plt
+from src.math import mat4
 
 # Constants
 GLTF_MESHES = "meshes"
@@ -133,10 +133,13 @@ class GLTFReader:
         gltf_dir = os.path.dirname(fpath)
         bin_fpath = os.path.join(gltf_dir, self.gltf_header[GLTF_BUFFERS][0][GLTF_URI])
         target_bin_data_size = self.gltf_header[GLTF_BUFFERS][0][GLTF_BYTE_LENGTH]
+        binary_size = os.path.getsize(bin_fpath)
+
+        if target_bin_data_size != binary_size:
+            raise Exception("[ERROR] Binay file size does not match size descriped inside its JSON counter-part")
 
         # read and process binary data
         with open(bin_fpath, "rb") as file:
-
             self.__process_binary_data(binary_data=file.read())
 
     def __load_glb(self, fpath):
@@ -168,7 +171,6 @@ class GLTFReader:
         self.gltf_buffer_view_data = [self.select_data_using_buffer_view(buffer_view=buffer_view,
                                                                          gltf_data=binary_data)
                                       for buffer_view in self.gltf_header[GLTF_BUFFER_VIEWS]]
-        g = 0
 
     def get_accessor(self, index: int):
 
@@ -296,15 +298,23 @@ class GLTFReader:
         nodes = []
         for gltf_node in self.gltf_header["nodes"]:
             node_data = {
-                'name': gltf_node.get('name', None),
+                'name': gltf_node.get('name', ""),
                 'translation': np.array(gltf_node.get('translation', [0, 0, 0]), dtype=np.float32),
                 'rotation': np.array(gltf_node.get('rotation', [0, 0, 0, 1]), dtype=np.float32),
                 'scale': np.array(gltf_node.get('scale', [1, 1, 1]), dtype=np.float32),
-                'matrix': np.array(gltf_node.get('matrix', np.eye(4)), dtype=np.float32),
                 'children_indices': gltf_node.get('children', []),
-                'mesh_index': gltf_node.get('mesh', None),
-                'skin_index': gltf_node.get('skin', None)
-            }
+                'mesh_index': gltf_node.get('mesh', -1),
+                'skin_index': gltf_node.get('skin', -1)}
+
+            # If "matrix" is defined, update translation, rotation and scale to reflect that
+            if "matrix" in gltf_node:
+                gltf_matrix = np.reshape(np.array(gltf_node['matrix'], dtype=np.float32), (4, 4)).T
+                mat4.matrix_decomposition(
+                    gltf_matrix,
+                    node_data["translation"],
+                    node_data["rotation"],
+                    node_data["scale"])
+
             nodes.append(node_data)
 
         # Find out the parent indices to help out with future node re-organisation
@@ -314,7 +324,7 @@ class GLTFReader:
             if len(parent_indices) > 1:
                 raise Exception("[ERROR] There should only be one parent per node!")
 
-            node["parent_index"] = parent_indices[0] if len(parent_indices) == 1 else None
+            node["parent_index"] = parent_indices[0] if len(parent_indices) == 1 else -1
 
         return nodes
 

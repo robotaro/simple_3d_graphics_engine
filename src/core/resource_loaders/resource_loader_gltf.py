@@ -13,12 +13,20 @@ class ResourceLoaderGLTF(ResourceLoader):
     def __init__(self, all_resources: dict):
         super().__init__(all_resources=all_resources)
 
-    def load(self, resource_uid: str, fpath: str) -> bool:
-        gltf_reader = utils_gltf_reader.GLTFReader()
-        gltf_reader.load(gltf_fpath=fpath)
+        self.gltf_reader = None
 
-        # Meshes
-        for mesh_index, mesh in enumerate(gltf_reader.get_all_meshes()):
+    def load(self, resource_uid: str, fpath: str) -> bool:
+        self.gltf_reader = utils_gltf_reader.GLTFReader()
+        self.gltf_reader.load(gltf_fpath=fpath)
+
+        self.__load_mesh_resources(resource_uid=resource_uid)
+        self.__load_node_resources(resource_uid=resource_uid)
+        self.__load_animation_resources(resource_uid=resource_uid)
+
+        return True
+
+    def __load_mesh_resources(self, resource_uid: str):
+        for mesh_index, mesh in enumerate(self.gltf_reader.get_all_meshes()):
 
             new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
             new_resource.metadata["render_mode"] = mesh["render_mode"]
@@ -41,49 +49,104 @@ class ResourceLoaderGLTF(ResourceLoader):
 
             self.all_resources[f"{resource_uid}/mesh_{mesh_index}"] = new_resource
 
-        # Nodes
-        nodes = gltf_reader.get_nodes()
+    def __load_node_resources(self, resource_uid: str):
+        nodes = self.gltf_reader.get_nodes()
 
-        # Animation
-        for animation_index in range(gltf_reader.num_animations):
+        num_nodes = len(nodes)
+        max_num_children = max(set(len(node["children_indices"]) for node in nodes))
+
+        new_resource = Resource(resource_type=constants.RESOURCE_TYPE_NODES_GLTF,
+                                metadata={"node_names": nodes})
+
+        new_resource.data_blocks["parent_index"] = DataBlock(
+            data=np.empty((num_nodes,), dtype=np.int16))
+
+        new_resource.data_blocks["num_children"] = DataBlock(
+            data=np.empty((num_nodes,), dtype=np.int16))
+
+        new_resource.data_blocks["children_indices"] = DataBlock(
+            data=np.empty((num_nodes, max_num_children), dtype=np.int16))
+
+        new_resource.data_blocks["translation"] = DataBlock(
+            data=np.empty((num_nodes, 3), dtype=np.float32),
+            metadata={"order": ["x", "y", "z"]})
+
+        new_resource.data_blocks["rotation"] = DataBlock(
+            data=np.empty((num_nodes, 4), dtype=np.float32),
+            metadata={"order": ["x", "y", "z", "w"], "type": "quaternion"})
+
+        new_resource.data_blocks["scale"] = DataBlock(
+            data=np.empty((num_nodes, 3), dtype=np.float32),
+            metadata={"order": ["x", "y", "z"]})
+
+        new_resource.data_blocks["skin_index"] = DataBlock(
+            data=np.empty((num_nodes, ), dtype=np.int16))
+
+        new_resource.data_blocks["mesh_index"] = DataBlock(
+            data=np.empty((num_nodes,), dtype=np.int16))
+
+        for node_index, node in enumerate(nodes):
+            num_children = len(node["children_indices"])
+            new_resource.data_blocks["translation"].data[node_index, :] = node["translation"]
+            new_resource.data_blocks["rotation"].data[node_index, :] = node["rotation"]
+            new_resource.data_blocks["scale"].data[node_index, :] = node["scale"]
+            new_resource.data_blocks["num_children"].data[node_index] = num_children
+            new_resource.data_blocks["children_indices"].data[node_index, :num_children] = node["children_indices"]
+            new_resource.data_blocks["parent_index"].data[node_index] = node["parent_index"]
+            new_resource.data_blocks["mesh_index"].data[node_index] = node["mesh_index"]
+            new_resource.data_blocks["skin_index"].data[node_index] = node["skin_index"]
+
+        self.all_resources[f"{resource_uid}/nodes_0"] = new_resource
+
+    def __load_animation_resources(self, resource_uid: str):
+
+        for animation_index in range(self.gltf_reader.num_animations):
 
             new_resource = Resource(resource_type=constants.RESOURCE_TYPE_ANIMATION)
-            animation = gltf_reader.get_animation(index=animation_index)
+            animation = self.gltf_reader.get_animation(index=animation_index)
 
             # The data from gltf_reader needs to be re-organised in order to keep all animation data
             # pertaining to a node contiguous
 
-            # Step 1) Find all unique node indices and sort them
+            # Find all unique node indices and sort them
             translation_node_indices = [node_data["node_index"] for node_data in animation["translation"]]
             rotation_node_indices = [node_data["node_index"] for node_data in animation["rotation"]]
             scale_node_indices = [node_data["node_index"] for node_data in animation["scale"]]
             unique_node_indices = list(set(translation_node_indices + rotation_node_indices + scale_node_indices))
             unique_node_indices.sort()
 
-            # Step 2) Store node indices and timestamps
+            # Store node indices and timestamps
             new_resource.data_blocks["node_indices"] = DataBlock(data=np.array(unique_node_indices, dtype=np.int32))
             new_resource.data_blocks["timestamps"] = DataBlock(data=animation["timestamps"])
 
-            # Step 3) Store channel data into bit matrix
-            num_nodes = len(unique_node_indices)
+            # Store channel data into bit matrix
+            num_node_tracks = len(unique_node_indices)
             num_timestamps = animation["timestamps"].size
 
+            # Create empty datablocks first
             new_resource.data_blocks["translation"] = DataBlock(
-                data=np.ndarray((num_nodes, num_timestamps, 3), dtype=np.float32),
-                metadata={"order": ["x", "y", "z"]})
-            new_resource.data_blocks["rotation"] = DataBlock(
-                data=np.ndarray((num_nodes, num_timestamps, 4), dtype=np.float32),
-                metadata={"order": ["x", "y", "z", "w"], "type": "quaternion"})
-            new_resource.data_blocks["scale"] = DataBlock(
-                data=np.ndarray((num_nodes, num_timestamps, 3), dtype=np.float32),
+                data=np.empty((num_timestamps, num_node_tracks, 3), dtype=np.float32),
                 metadata={"order": ["x", "y", "z"]})
 
+            new_resource.data_blocks["rotation"] = DataBlock(
+                data=np.empty((num_timestamps, num_node_tracks, 4), dtype=np.float32),
+                metadata={"order": ["x", "y", "z", "w"], "type": "quaternion"})
+
+            new_resource.data_blocks["scale"] = DataBlock(
+                data=np.empty((num_timestamps, num_node_tracks, 3), dtype=np.float32),
+                metadata={"order": ["x", "y", "z"]})
+
+            # And populate them with their respective animation data after
             for node_index in unique_node_indices:
                 for channel_name in constants.RESOURCE_ANIMATION_GLTF_CHANNELS:
-                    selected_node_data = [node["data"] for node in animation[channel_name]
-                                          if node["node_index"] == node_index][0]
-                    new_resource.data_blocks[channel_name] = selected_node_data
+                    node_sub_index = np.where(new_resource.data_blocks["node_indices"].data == node_index)[0]
 
+                    channel_data = [node["data"] for node in animation[channel_name]
+                                    if node["node_index"] == node_index][0]
+
+                    reshaped_channel_data = np.reshape(channel_data, (channel_data.shape[0], 1, channel_data.shape[1]))
+
+                    new_resource.data_blocks[channel_name].data[:, node_sub_index, :] = reshaped_channel_data
+
+            # Finally, add the new animation resource
             self.all_resources[f"{resource_uid}/animation_{animation_index}"] = new_resource
-
-        return True

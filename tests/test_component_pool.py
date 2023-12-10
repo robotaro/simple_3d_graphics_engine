@@ -15,9 +15,6 @@ def test_constructor():
     pool = ComponentPool(logger=logger)
     assert pool.entity_uid_counter == constants.COMPONENT_POOL_STARTING_ID_COUNTER
     assert pool.entities == {}
-    assert pool.transform_3d_components == {}
-    assert pool.mesh_components == {}
-    assert pool.camera_components == {}
 
 
 def test_create_entity():

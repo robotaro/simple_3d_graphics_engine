@@ -33,7 +33,6 @@
         <transform_3d position="2.0 2.0 2.0" rotation="45 90 0" degrees="true"/>
     </entity>
 
-    <!--
     <entity name="female body">
         <mesh resource_id="female_body/mesh_0" scale="2"/>
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
@@ -51,7 +50,6 @@
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
         <transform_3d position="-2 0 0" rotation="-90 0 0" degrees="true"/>
     </entity>
-    -->
 
     <entity name="braim_stem">
         <mesh resource_id="brain_stem/mesh_0" scale="1"/>
@@ -61,8 +59,8 @@
 
     <entity name="dragon">
         <mesh resource_id="dragon/mesh_0" scale="1"/>
-        <material diffuse="tab10_red" shininess_factor="32.0"/>
-        <transform_3d position="-2 0 1" rotation="0 0 0" degrees="true"/>
+        <material diffuse="blue" shininess_factor="32.0"/>
+        <transform_3d position="2 0 0" rotation="0 0 0" degrees="true"/>
     </entity>
 
     <entity name="capsule">

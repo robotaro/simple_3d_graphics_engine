@@ -72,13 +72,19 @@ class ComponentPool:
         "debug_mesh": constants.COMPONENT_TYPE_DEBUG_MESH
     }
 
+    __slots__ = [
+        "logger",
+        "entity_uid_counter",
+        "entities",
+        "component_master_pool"
+    ]
+
     def __init__(self, logger: logging.Logger):
 
         self.logger = logger
 
         # TODO: We start from 2 to make it easy to discern the background [0, 1]
         self.entity_uid_counter = constants.COMPONENT_POOL_STARTING_ID_COUNTER
-
         self.entities = {}
         self.component_master_pool = {component_type: {} for component_type, _ in ComponentPool.COMPONENT_CLASS_MAP.items()}
 

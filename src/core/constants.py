@@ -50,9 +50,9 @@ DEFAULT_SYSTEMS = [
 # =============================================================================
 
 RESOURCE_TYPE_MESH = "mesh"
-RESOURCE_TYPE_SCENE = "scene"
 RESOURCE_TYPE_SKELETON = "skeleton"
 RESOURCE_TYPE_ANIMATION = "animation"
+RESOURCE_TYPE_NODES_GLTF = "nodes"
 RESOURCE_TYPE_ANIMATION_BVH = "animation_bvh"
 
 RESOURCE_ANIMATION_GLTF_CHANNELS = ["translation", "rotation", "scale"]

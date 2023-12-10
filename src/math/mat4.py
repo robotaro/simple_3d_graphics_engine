@@ -129,7 +129,14 @@ def mul_vector3(in_mat4: np.ndarray, in_vec3: np.array) -> np.array:
 @njit(cache=True)
 def mul_vectors3(in_mat4: np.ndarray, in_vec3_array: np.ndarray, out_vec3_array: np.ndarray):
     for i in range(in_vec3_array.shape[0]):
-        out_vec3_array[i, :] = np.dot(in_mat4[:3, :3], in_vec3_array[i, :]) + in_mat4[:3, 3]
+        #out_vec3_array[i, :] = np.dot(in_mat4[:3, :3], in_vec3_array[i, :]) + in_mat4[:3, 3]
+
+        # Chat GPT4 suggestion to replace the np.dot because of the warnings
+        for j in range(3):  # Iterate over each component of the vector
+            out_vec3_array[i, j] = (in_mat4[j, 0] * in_vec3_array[i, 0] +
+                                    in_mat4[j, 1] * in_vec3_array[i, 1] +
+                                    in_mat4[j, 2] * in_vec3_array[i, 2] +
+                                    in_mat4[j, 3])
 
 
 @njit(cache=True)
@@ -159,6 +166,62 @@ def compute_transform_not_so_useful(pos: tuple, rot: tuple, scale: float):
     scale = np.diag([scale, scale, scale, 1])
 
     return (trans @ rotation @ scale).astype("f4")
+
+
+#@njit((float32[:], float32[:], float32[:], float32[:, :]), cache=True)
+def matrix_composition(translation_in, rotation_in, scale_in, matrix_out):
+    """
+    Constructs a 4x4 homogeneous transformation matrix from translation, rotation (quaternion), and scale.
+
+    :param translation_in: Translation vector (3 elements).
+    :param rotation_in: Rotation quaternion (4 elements).
+    :param scale_in: Scale factors (3 elements).
+    :param matrix_out: Output 4x4 matrix.
+    """
+
+    # Rotation (Quaternion to Matrix)
+    x, y, z, w = rotation_in
+    x2 = x * x
+    y2 = y * y
+    z2 = z * z
+    rot_matrix = np.array([
+        [1 - 2 * y2 - 2 * z2, 2 * x * y - 2 * z * w, 2 * x * z + 2 * y * w],
+        [2 * x * y + 2 * z * w, 1 - 2 * x2 - 2 * z2, 2 * y * z - 2 * x * w],
+        [2 * x * z - 2 * y * w, 2 * y * z + 2 * x * w, 1 - 2 * x2 - 2 * y2]
+    ], dtype=np.float32)
+
+    # Scale
+    scale_matrix = np.diag(scale_in).astype(np.float32)
+
+    # Combine Rotation and Scale
+    rs_matrix = np.dot(rot_matrix, scale_matrix)
+
+    # Construct 4x4 Matrix
+    matrix_out[:3, :3] = rs_matrix
+    matrix_out[:3, 3] = translation_in
+    matrix_out[3, :] = np.array([0, 0, 0, 1], dtype=np.float32)
+
+
+@njit((float32[:, :], float32[:], float32[:], float32[:]), cache=True)
+def matrix_decomposition(matrix_in, translation_out, rotation_out, scale_out):
+
+    # WARNING: This function was created by ChatGPT4!!!!!
+
+    # Translation
+    translation_out[:] = matrix_in[0:3, 3]
+
+    # Scale
+    scale_out[:] = np.array([np.linalg.norm(matrix_in[0:3, i]) for i in range(3)])
+
+    # Remove scale from matrix to isolate rotation
+    rot_matrix = np.array([[matrix_in[i, j] / scale_out[j] for j in range(3)] for i in range(3)])
+
+    # Rotation (Quaternion) - Using the conversion formula
+    qw = np.sqrt(1 + rot_matrix[0, 0] + rot_matrix[1, 1] + rot_matrix[2, 2]) / 2
+    qx = (rot_matrix[2, 1] - rot_matrix[1, 2]) / (4 * qw)
+    qy = (rot_matrix[0, 2] - rot_matrix[2, 0]) / (4 * qw)
+    qz = (rot_matrix[1, 0] - rot_matrix[0, 1]) / (4 * qw)
+    rotation_out[:] = np.array([qx, qy, qz, qw])
 
 
 def create(position: np.array, rotation: mat3):
@@ -225,7 +288,7 @@ def look_at_inverse(position: np.array, target: np.array, up: np.array):
     return rot @ trans
 
 
-@njit(cache=True)
+#@njit(cache=True)
 def perspective_projection(fovy_rad: float, aspect: float, near: float, far: float):
 
     """
