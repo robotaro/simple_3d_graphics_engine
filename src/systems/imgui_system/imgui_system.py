@@ -1,7 +1,7 @@
 import glfw
 import moderngl
 import imgui
-import logging
+import json
 from imgui.integrations.glfw import GlfwRenderer
 
 from src.core import constants
@@ -19,11 +19,12 @@ class ImguiSystem(System):
         "selected_entity_uid",
         "selected_entity_name",
         "selected_entity_components",
+        "selected_resource_uid",
+        "selected_resource",
         "past_window_hover",
         "_exit_popup_open",
         "system_profiling_event_data",
-        "gizmo_mode"
-    ]
+        "gizmo_mode"]
 
     name = constants.SYSTEM_NAME_IMGUI
 
@@ -35,6 +36,9 @@ class ImguiSystem(System):
         self.selected_entity_uid = -1
         self.selected_entity_name = ""
         self.selected_entity_components = []
+        self.selected_resource_uid = -1
+        self.selected_resource = None
+
         self.past_window_hover = False
 
         # Profiling
@@ -380,5 +384,36 @@ class ImguiSystem(System):
         resource_ids = list(self.resource_manager.resources.keys())
         resource_ids.sort()
 
+        flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP
+
+        imgui.spacing()
+
         for resource_id in resource_ids:
-            imgui.text(resource_id)
+
+            # Draw the selectable item
+            (opened, selected) = imgui.selectable(resource_id, selected=False, flags=flags)
+
+            if selected:
+                # Here the entity selection is initiated from the GUI, so you publish the respective event now.
+                self.selected_resource_uid = resource_id
+                self.selected_resource = self.resource_manager.resources[resource_id]
+
+        imgui.spacing()
+        imgui.separator()
+        imgui.spacing()
+
+        if self.selected_resource is None:
+            return
+
+        imgui.text(f"[ Resource ] '{self.selected_resource_uid}'")
+        imgui.spacing()
+
+        for data_blocks_name, data_block in self.selected_resource.data_blocks.items():
+
+            imgui.text(f"DataBlock : '{data_blocks_name}' ")
+            imgui.text(f" - Shape: {data_block.data.shape}")
+            imgui.text(f" - Data Type: {data_block.data.dtype}")
+            imgui.spacing()
+
+
+
