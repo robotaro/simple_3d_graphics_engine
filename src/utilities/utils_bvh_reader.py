@@ -160,7 +160,7 @@ class BVHReader:
 
             match_frame_time = re.match("\s*Frame Time:\s+([\d\.]+)", line)
             if match_frame_time:
-                frame_period = np.float32(match_frame_time.group(1))
+                frame_period = float(match_frame_time.group(1))
                 continue
 
             # If you got here, it means you finished with the skeleton

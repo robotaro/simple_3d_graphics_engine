@@ -411,8 +411,9 @@ class ImguiSystem(System):
         for data_blocks_name, data_block in self.selected_resource.data_blocks.items():
 
             imgui.text(f"DataBlock : '{data_blocks_name}' ")
-            imgui.text(f" - Shape: {data_block.data.shape}")
-            imgui.text(f" - Data Type: {data_block.data.dtype}")
+            imgui.text(f" - DataShape: {data_block.data.shape}")
+            imgui.text(f" - DataType: {data_block.data.dtype}")
+            imgui.text(f" - Metadata: {json.dumps(data_block.metadata, indent=2)}")
             imgui.spacing()
 
 
