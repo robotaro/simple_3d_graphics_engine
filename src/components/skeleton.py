@@ -95,10 +95,6 @@ class Skeleton(Component):
             self.world_matrices[current_node_index, :, :] = parent_matrix @ self.local_matrices[current_node_index, :, :]
             next_node_indices.extend(children_indices)
 
-    def __check_if_ready(self):
-        if not self.__ready:
-            raise Exception('[ERROR] Skeleton not yet generated from blueprint')
-
         # ========================================================
         #                   Setters and getters
         # ========================================================

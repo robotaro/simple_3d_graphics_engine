@@ -24,13 +24,13 @@ class ResourceLoaderBVH(ResourceLoader):
 
         skeleton_resource = Resource(resource_type=constants.RESOURCE_TYPE_SKELETON)
 
-        skeleton_resource.data_blocks["parent_index"] = DataBlock(data=skeleton_df["parent"].values,
+        skeleton_resource.data_blocks["parent_index"] = DataBlock(data=skeleton_df["parent"].values.astype(np.int32),
                                                                   metadata={"bone_names": bone_names})
 
         pos_offset = skeleton_df[["position_x", "position_y", "position_z"]].values
         skeleton_resource.data_blocks["position_offset"] = DataBlock(data=pos_offset)
 
-        rot_offset = skeleton_df[["angle_offset_x", "angle_offset_y", "angle_offset_z"]].values
+        rot_offset = skeleton_df[["angle_offset_x", "angle_offset_y", "angle_offset_z"]].values.astype(np.float32)
         skeleton_resource.data_blocks["rotation_offset"] = DataBlock(data=rot_offset)
 
         skeleton_resource.data_blocks["length"] = DataBlock(data=skeleton_df["length"].values)
@@ -86,3 +86,7 @@ class ResourceLoaderBVH(ResourceLoader):
 
         self.all_resources[complete_id] = animation_resource
         return True
+
+    import numpy as np
+    from scipy.spatial.transform import Rotation
+
