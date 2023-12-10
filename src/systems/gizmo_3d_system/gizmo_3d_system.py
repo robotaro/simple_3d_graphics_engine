@@ -206,6 +206,7 @@ class Gizmo3DSystem(System):
 
     def handle_event_parameter_updated(self, event_data: tuple):
         if event_data[0] == "orientation":
+            print(f"orientation changed: {event_data[1]}")
             self.gizmo_orientation = event_data[1]
 
     def handle_event_mouse_button_release(self, event_data: tuple):
@@ -314,7 +315,6 @@ class Gizmo3DSystem(System):
         camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         for camera_entity_uid, camera_component in camera_pool.items():
 
-            overlay = overlay_pool[camera_entity_uid]
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_uid]
             gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
@@ -325,21 +325,17 @@ class Gizmo3DSystem(System):
             gizmo_scale = utils_camera.set_gizmo_scale(view_matrix=view_matrix, object_position=selected_world_position)
             viewport_height = camera_component.viewport_pixels[3]
             gizmo_scale *= constants.GIZMO_3D_VIEWPORT_SCALE_COEFFICIENT / viewport_height
-
-
+            gizmo_transform_component.scale = (gizmo_scale, gizmo_scale, gizmo_scale)
+            gizmo_transform_component.input_values_updated = True
 
             # Update gizmo's transform parameters for visual feedback
             if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_GLOBAL:
                 gizmo_transform_component.position = selected_transform_component.position
                 gizmo_transform_component.rotation = (0, 0, 0)
-                gizmo_transform_component.scale = gizmo_scale
-                gizmo_transform_component.input_values_updated = True
 
             if self.gizmo_orientation == constants.GIZMO_3D_ORIENTATION_LOCAL:
                 gizmo_transform_component.position = selected_transform_component.position
                 gizmo_transform_component.rotation = selected_transform_component.rotation
-                gizmo_transform_component.scale = gizmo_scale
-                gizmo_transform_component.input_values_updated = True
 
             if self.gizmo_state in (constants.GIZMO_3D_STATE_NOT_HOVERING, constants.GIZMO_3D_STATE_HOVERING_AXIS):
                 self.dehighlight_gizmo(camera_uid=camera_entity_uid)
@@ -483,7 +479,7 @@ class Gizmo3DSystem(System):
             ray_direction=ray_direction,
             points_a=points_a,
             points_b=self.gizmo_transformed_axes,
-            radius=np.float32(0.1 * gizmo_transform_component.scale),
+            radius=np.float32(0.1 * gizmo_transform_component.scale[0]),
             output_distances=intersection_distances)
 
         # Retrieve sub-indices of any axes being intersected by the mouse ray

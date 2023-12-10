@@ -341,9 +341,9 @@ class ImguiSystem(System):
                                                                   *transform.rotation,
                                                                   constants.IMGUI_DRAG_FLOAT_PRECISION)
             transform.input_values_updated |= value_updated
-            value_updated, transform.scale = imgui.drag_float("Scale",
-                                                              transform.scale,
-                                                              constants.IMGUI_DRAG_FLOAT_PRECISION)
+            value_updated, transform.scale = imgui.drag_float3("Scale",
+                                                               *transform.scale,
+                                                               constants.IMGUI_DRAG_FLOAT_PRECISION)
             transform.input_values_updated |= value_updated
 
             imgui.spacing()

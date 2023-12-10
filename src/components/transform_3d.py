@@ -32,9 +32,16 @@ class Transform3D(Component):
                                                    key="rotation",
                                                    default_value=(0.0, 0.0, 0.0))
 
-        self.scale = Component.dict2float(input_dict=self.parameters,
-                                          key="scale",
-                                          default_value=1.0)
+        self.scale = Component.dict2tuple_float(input_dict=self.parameters,
+                                                key="scale",
+                                                default_value=(1.0, 1.0, 1.0))
+
+        if len(self.scale) == 1:
+            self.scale = (self.scale[0], self.scale[0], self.scale[0])
+
+        if len(self.scale) == 2:
+            raise Exception("[ERROR] Input scale from parameters contains 2 values. Please make sure you have"
+                            "either 1 or 3")
 
         self.degrees = Component.dict2bool(input_dict=self.parameters,
                                            key="degrees",
@@ -74,16 +81,22 @@ class Transform3D(Component):
             return
 
         if self.input_values_updated:
+            if isinstance(self.scale, float):
+                g = 0
+            if len(self.scale) < 3:
+                g = 0
             self.local_matrix = mat4.create_transform_euler_xyz(
                 np.array(self.position, dtype=np.float32),
                 np.array(self.rotation, dtype=np.float32),
-                self.scale)
+                np.array(self.scale, dtype=np.float32),)
             """self.local_matrix = mat4.compute_transform(
                 position=self.position,
                 rotation_rad=self.rotation,
                 scale=self.scale,
                 order="xyz"
             )"""
+            # DEBUG
+            print("Input values updated")
             self.input_values_updated = False
 
     def move(self, delta_position: np.array):

@@ -55,8 +55,8 @@ def compute_transform(position: tuple, rotation_rad: tuple, scale=1.0, order='xy
     return transform
 
 
-@njit(float32[:, :](float32[:], float32[:], float32))
-def create_transform_euler_xyz(position: np.array, rotation: np.array, scale: float):
+@njit(float32[:, :](float32[:], float32[:], float32[:]))
+def create_transform_euler_xyz(position: np.array, rotation: np.array, scale: np.array):
 
     """
     Euler XYZ performs the rotation in the following order: R(z) @ R(y) @ R(x)
@@ -76,17 +76,17 @@ def create_transform_euler_xyz(position: np.array, rotation: np.array, scale: fl
     transform = np.eye(4, dtype=np.float32)
 
     # From wiki: https://en.wikipedia.org/wiki/Rotation_matrix
-    transform[0, 0] = cy * cz * scale
-    transform[0, 1] = (sx * sy * cz - cx * sz) * scale
-    transform[0, 2] = (cx * sy * cz + sx * sz) * scale
+    transform[0, 0] = cy * cz * scale[0]
+    transform[0, 1] = (sx * sy * cz - cx * sz) * scale[1]
+    transform[0, 2] = (cx * sy * cz + sx * sz) * scale[2]
 
-    transform[1, 0] = cy * sz * scale
-    transform[1, 1] = (sx * sy * sz + cx * cz) * scale
-    transform[1, 2] = (cx * sy * sz - sx * cz) * scale
+    transform[1, 0] = cy * sz * scale[0]
+    transform[1, 1] = (sx * sy * sz + cx * cz) * scale[1]
+    transform[1, 2] = (cx * sy * sz - sx * cz) * scale[2]
 
-    transform[2, 0] = -sy * scale
-    transform[2, 1] = sx * cy * scale
-    transform[2, 2] = cx * cy * scale
+    transform[2, 0] = -sy * scale[0]
+    transform[2, 1] = sx * cy * scale[1]
+    transform[2, 2] = cx * cy * scale[2]
 
     transform[:3, 3] = position
 
@@ -169,18 +169,18 @@ def compute_transform_not_so_useful(pos: tuple, rot: tuple, scale: float):
 
 
 @njit((float32[:], float32[:], float32[:], float32[:, :]), cache=True)
-def matrix_composition(translation_in, rotation_in, scale_in, matrix_out):
+def matrix_composition(translation_in, rotation_quat_in, scale_in, matrix_out):
     """
     Constructs a 4x4 homogeneous transformation matrix from translation, rotation (quaternion), and scale.
 
     :param translation_in: Translation vector (3 elements).
-    :param rotation_in: Rotation quaternion (4 elements).
+    :param rotation_quat_in: Rotation quaternion (4 elements).
     :param scale_in: Scale factors (3 elements).
     :param matrix_out: Output 4x4 matrix.
     """
 
     # Rotation (Quaternion to Matrix)
-    x, y, z, w = rotation_in
+    x, y, z, w = rotation_quat_in
     x2 = x * x
     y2 = y * y
     z2 = z * z
@@ -203,13 +203,13 @@ def matrix_composition(translation_in, rotation_in, scale_in, matrix_out):
 
 
 @njit((float32[:, :], float32[:], float32[:], float32[:]), cache=True)
-def matrix_decomposition(matrix_in, translation_out, rotation_out, scale_out) -> None:
+def matrix_decomposition(matrix_in, translation_out, rotation_quat_out, scale_out) -> None:
     """
     [NOTE] Function created by ChatGPT4, but modified and tested by me.
 
     :param matrix_in: np.ndarray, (4, 4) <float32>
     :param translation_out: np.array, (3, ) <float32>
-    :param rotation_out: np.array, (4, ) <float32>
+    :param rotation_quat_out: np.array, (4, ) <float32>
     :param scale_out: np.array, (3, ) <float32>
     :return: None
     """
@@ -228,7 +228,7 @@ def matrix_decomposition(matrix_in, translation_out, rotation_out, scale_out) ->
     qx = (rot_matrix[2, 1] - rot_matrix[1, 2]) / (4 * qw)
     qy = (rot_matrix[0, 2] - rot_matrix[2, 0]) / (4 * qw)
     qz = (rot_matrix[1, 0] - rot_matrix[0, 1]) / (4 * qw)
-    rotation_out[:] = np.array([qx, qy, qz, qw])
+    rotation_quat_out[:] = np.array([qx, qy, qz, qw])
 
 
 def create(position: np.array, rotation: mat3):
