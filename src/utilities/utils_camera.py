@@ -12,55 +12,7 @@ def set_gizmo_scale(view_matrix: np.ndarray, object_position: np.array) -> float
     scale = np.abs(view_position[2]) * constants.GIZMO_3D_ANGLE_TANGENT_COEFFICIENT
     return scale
 
-
 @njit(cache=True)
-def world_pos2viewport_position(view_matrix: np.ndarray,
-                                projection_matrix: np.ndarray,
-                                world_position: np.array) -> np.array:
-
-    """view_projection_position = mat4.mul_vector3(in_mat4=projection_matrix @ view_matrix, in_vec3=world_position)
-
-    # Z-Zc=F
-    # X' = X * (F/Z)
-    # Y' = Y * (F/Z)
-
-    coefficient = (view_projection_position[2] - camera_position[2]) / view_projection_position[2]
-    screen_x = view_projection_position[0] * coefficient
-    screen_y = view_projection_position[1] * coefficient
-
-    return screen_x, screen_y
-    """
-
-    # Transform the object's world position to its respective 2D projected space
-    projected_position = mat4.mul_vector3(projection_matrix @ view_matrix, world_position)
-
-    # Perform perspective divide
-    projected_position /= projected_position[2]
-
-    # The x and y coordinates on the screen are now the first two elements of projected_position
-    screen_coordinates = projected_position[:2]
-
-    return screen_coordinates
-
-
-@njit(cache=True)
-def world_pos2screen_pixels(view_matrix: np.ndarray,
-                            viewport_pixels: tuple,
-                            projection_matrix: np.ndarray,
-                            world_position: np.array):
-
-    viewport_position = world_pos2viewport_position(view_matrix=view_matrix,
-                                                    projection_matrix=projection_matrix,
-                                                    world_position=world_position)
-
-    # TODO: Y-axis is reversed to get positive Y-axis pointing up. Check if this is because of the projection matrix
-    screen_x = viewport_pixels[2] * (viewport_position[0] + 1.0) / 2.0
-    screen_y = viewport_pixels[3] * (-viewport_position[1] + 1.0) / 2.0
-
-    return screen_x, screen_y
-
-
-#@njit(cache=True)
 def screen_gl_position_pixels2viewport_position(position_pixels: tuple, viewport_pixels: tuple) -> tuple:
 
     """

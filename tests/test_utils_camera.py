@@ -11,7 +11,6 @@ def test_screen_gl_position_pixels2viewport_position():
     :return:
     """
 
-
     test_conditions = [
         # gl_pixels    viewport_pixels  target_viewport_position
         ((400, 450), (0, 0, 800, 900), (0, 0)),
@@ -28,8 +27,8 @@ def test_screen_gl_position_pixels2viewport_position():
 
 def test_screen_to_world_ray():
 
-    view_matrix = np.eye(4, dtype=np.float32)
-    view_matrix[:3, 3] = np.array([0, 0, 5])
+    camera_matrix = np.eye(4, dtype=np.float32)
+    camera_matrix[:3, 3] = np.array([0, 0, 5])
 
     projection_matrix = utils_camera.perspective_projection(
         fov_rad=45.0 * np.pi / 180.0,
@@ -50,41 +49,10 @@ def test_screen_to_world_ray():
         target_ray_origin = np.array(conditions[2], dtype=np.float32)
 
         result_ray_direction, result_ray_origin = utils_camera.screen_pos2world_ray(
-            camera_matrix=view_matrix,
-            projection_matrix=projection_matrix,
-            viewport_coord_norm=viewport_coord)
+            viewport_coord,
+            camera_matrix,
+            projection_matrix)
 
         np.testing.assert_array_equal(target_ray_direction, result_ray_direction)
         np.testing.assert_array_equal(target_ray_origin, result_ray_origin)
-
-
-def test_world_pos2viewport_position():
-
-    camera_position = np.array([0, 0, 5], dtype=np.float32)
-    camera_matrix = np.eye(4, dtype=np.float32)
-    camera_matrix[:3, 3] = camera_position
-    view_matrix = np.linalg.inv(camera_matrix)
-
-    projection_matrix = utils_camera.perspective_projection(
-        fov_rad=45.0 * np.pi / 180.0,
-        z_near=0.1,
-        z_far=100.0,
-        aspect_ratio=1)
-
-    test_world_positions = [
-        (0, 0, 0),
-        (0, 2.5, 5)
-    ]
-    target_screen_coordinates = [
-        np.array([0, 0], dtype=np.float32),
-        np.array([0, 1.2548383], dtype=np.float32)
-        # TODO: THis still not covering it properly! WHy is the Y axis inverted??? FIND OUT!
-    ]
-
-    for world_position, target in zip(test_world_positions, target_screen_coordinates):
-
-        result = utils_camera.world_pos2viewport_position(world_position=np.array(world_position, dtype=np.float32),
-                                                          projection_matrix=projection_matrix,
-                                                          view_matrix=view_matrix)
-        np.testing.assert_array_equal(target, result)
 

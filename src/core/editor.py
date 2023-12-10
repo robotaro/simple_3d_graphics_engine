@@ -393,7 +393,6 @@ class Editor:
         # Load scene resource, if any
         for resource_uid, resource_fpath in scene_resources.items():
             resource_fpath = utils_io.validate_resource_filepath(fpath=resource_fpath)
-            print(resource_fpath)
             self.resource_manager.load_resource(resource_uid=resource_uid, fpath=resource_fpath)
 
         # Add entities to current scene

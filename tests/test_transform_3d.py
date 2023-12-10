@@ -73,12 +73,7 @@ def test_parameter_position(condition_1_parameters):
 
 def test_parameter_rotation(condition_1_parameters):
     transform = Transform3D(parameters=condition_1_parameters)
-    assert transform.rotation == (0.0, 0.7853981633974475, 0.0)
-
-
-def test_parameter_mode(condition_1_parameters):
-    transform = Transform3D(parameters=condition_1_parameters)
-    assert transform.mode == "euler_xyz"
+    assert transform.rotation == (0.0, 0.7853981633974483, 0.0)
 
 
 def test_parameter_degrees(condition_1_parameters):

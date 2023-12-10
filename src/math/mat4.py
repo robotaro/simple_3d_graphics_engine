@@ -129,14 +129,14 @@ def mul_vector3(in_mat4: np.ndarray, in_vec3: np.array) -> np.array:
 @njit(cache=True)
 def mul_vectors3(in_mat4: np.ndarray, in_vec3_array: np.ndarray, out_vec3_array: np.ndarray):
     for i in range(in_vec3_array.shape[0]):
-        #out_vec3_array[i, :] = np.dot(in_mat4[:3, :3], in_vec3_array[i, :]) + in_mat4[:3, 3]
+        out_vec3_array[i, :] = np.dot(in_mat4[:3, :3], in_vec3_array[i, :]) + in_mat4[:3, 3]
 
         # Chat GPT4 suggestion to replace the np.dot because of the warnings
-        for j in range(3):  # Iterate over each component of the vector
-            out_vec3_array[i, j] = (in_mat4[j, 0] * in_vec3_array[i, 0] +
-                                    in_mat4[j, 1] * in_vec3_array[i, 1] +
-                                    in_mat4[j, 2] * in_vec3_array[i, 2] +
-                                    in_mat4[j, 3])
+        #for j in range(3):  # Iterate over each component of the vector
+        #    out_vec3_array[i, j] = (in_mat4[j, 0] * in_vec3_array[i, 0] +
+        #                            in_mat4[j, 1] * in_vec3_array[i, 1] +
+        #                            in_mat4[j, 2] * in_vec3_array[i, 2] +
+        #                            in_mat4[j, 3])
 
 
 @njit(cache=True)
@@ -168,7 +168,7 @@ def compute_transform_not_so_useful(pos: tuple, rot: tuple, scale: float):
     return (trans @ rotation @ scale).astype("f4")
 
 
-#@njit((float32[:], float32[:], float32[:], float32[:, :]), cache=True)
+@njit((float32[:], float32[:], float32[:], float32[:, :]), cache=True)
 def matrix_composition(translation_in, rotation_in, scale_in, matrix_out):
     """
     Constructs a 4x4 homogeneous transformation matrix from translation, rotation (quaternion), and scale.
@@ -203,15 +203,22 @@ def matrix_composition(translation_in, rotation_in, scale_in, matrix_out):
 
 
 @njit((float32[:, :], float32[:], float32[:], float32[:]), cache=True)
-def matrix_decomposition(matrix_in, translation_out, rotation_out, scale_out):
+def matrix_decomposition(matrix_in, translation_out, rotation_out, scale_out) -> None:
+    """
+    [NOTE] Function created by ChatGPT4, but modified and tested by me.
 
-    # WARNING: This function was created by ChatGPT4!!!!!
+    :param matrix_in: np.ndarray, (4, 4) <float32>
+    :param translation_out: np.array, (3, ) <float32>
+    :param rotation_out: np.array, (4, ) <float32>
+    :param scale_out: np.array, (3, ) <float32>
+    :return: None
+    """
 
     # Translation
-    translation_out[:] = matrix_in[0:3, 3]
+    translation_out[:] = matrix_in[:3, 3]
 
     # Scale
-    scale_out[:] = np.array([np.linalg.norm(matrix_in[0:3, i]) for i in range(3)])
+    scale_out[:] = np.array([np.linalg.norm(matrix_in[:3, i]) for i in range(3)])
 
     # Remove scale from matrix to isolate rotation
     rot_matrix = np.array([[matrix_in[i, j] / scale_out[j] for j in range(3)] for i in range(3)])
@@ -231,7 +238,7 @@ def create(position: np.array, rotation: mat3):
     mat[:3, 3] = position
     return mat
 
-
+@njit
 def normalize(x):
     return x / np.linalg.norm(x)
 

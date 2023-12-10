@@ -17,7 +17,6 @@ class Transform3D(Component):
         "rotation",
         "scale",
         "degrees",
-        "mode",
         "input_values_updated",
         "local_matrix_updated"
     ]
@@ -37,22 +36,14 @@ class Transform3D(Component):
                                           key="scale",
                                           default_value=1.0)
 
-        self.mode = Component.dict2string(input_dict=self.parameters,
-                                          key="rotation_mode",
-                                          default_value=constants.TRANSFORM_3D_ROTATION_MODE_EULER_XYZ)
-
-        self.mode = Component.dict2string(input_dict=self.parameters,
-                                          key="coordinate_mode",
-                                          default_value=constants.TRANSFORM_3D_COORDINATE_MODE_GLOBAL)
-
         self.degrees = Component.dict2bool(input_dict=self.parameters,
                                            key="degrees",
                                            default_value=False)
 
         if self.degrees:
             self.rotation = (np.radians(self.rotation[0]),
-                             np.radians(self.rotation[1]) * constants.DEG2RAD,
-                             self.rotation[2] * constants.DEG2RAD)
+                             np.radians(self.rotation[1]),
+                             np.radians(self.rotation[2]))
 
         self.local_matrix = np.eye(4, dtype=np.float32)
         self.world_matrix = np.eye(4, dtype=np.float32)
