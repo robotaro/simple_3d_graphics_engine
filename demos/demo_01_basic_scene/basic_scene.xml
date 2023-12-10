@@ -55,7 +55,7 @@
         <mesh resource_id="brain_stem/mesh_0" scale="1"/>
         <material diffuse="tab10_blue" shininess_factor="32.0"/>
         <transform_3d position="0 0 0" rotation="-90 0 0" degrees="true"/>
-        <skeleton resource_id=""/>
+        <skeleton resource_id="brain_stem/nodes_0"/>
     </entity>
 
     <entity name="dragon">

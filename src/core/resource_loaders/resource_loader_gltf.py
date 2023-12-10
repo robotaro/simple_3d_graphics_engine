@@ -20,7 +20,7 @@ class ResourceLoaderGLTF(ResourceLoader):
         self.gltf_reader.load(gltf_fpath=fpath)
 
         self.__load_mesh_resources(resource_uid=resource_uid)
-        self.__load_node_resources(resource_uid=resource_uid)
+        self.__load_nodes_resources(resource_uid=resource_uid)
         self.__load_animation_resources(resource_uid=resource_uid)
 
         return True
@@ -49,14 +49,23 @@ class ResourceLoaderGLTF(ResourceLoader):
 
             self.all_resources[f"{resource_uid}/mesh_{mesh_index}"] = new_resource
 
-    def __load_node_resources(self, resource_uid: str):
+    def __load_nodes_resources(self, resource_uid: str):
         nodes = self.gltf_reader.get_nodes()
 
         num_nodes = len(nodes)
         max_num_children = max(set(len(node["children_indices"]) for node in nodes))
 
+        # Get (or generate) node names if necessary
+        node_names = []
+        for node_index, node in enumerate(nodes):
+            gltf_node_name = node.get("name", "")
+            if len(gltf_node_name) > 0:
+                node_names.append(gltf_node_name)
+                continue
+            node_names.append(f"node_{node_index}")
+
         new_resource = Resource(resource_type=constants.RESOURCE_TYPE_NODES_GLTF,
-                                metadata={"node_names": nodes})
+                                metadata={"node_names": node_names})
 
         new_resource.data_blocks["parent_index"] = DataBlock(
             data=np.empty((num_nodes,), dtype=np.int16))
