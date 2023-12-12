@@ -14,7 +14,8 @@ class ResourceManager:
     __slots__ = [
         "logger",
         "resources",
-        "resource_loaders"]
+        "resource_loaders"
+    ]
 
     def __init__(self, logger: logging.Logger):
 
@@ -24,7 +25,9 @@ class ResourceManager:
             ".obj": ResourceLoaderOBJ(all_resources=self.resources),
             ".bvh": ResourceLoaderBVH(all_resources=self.resources),
             ".gltf": ResourceLoaderGLTF(all_resources=self.resources),
-            ".glb": ResourceLoaderGLTF(all_resources=self.resources)}
+            ".glb": ResourceLoaderGLTF(all_resources=self.resources),
+            ".mesh_blueprint":
+        }
 
     def load_resource(self, resource_uid: str, fpath: str) -> bool:
 
@@ -36,3 +39,4 @@ class ResourceManager:
 
         # Execute main loading operation here
         return loader.load(resource_uid=resource_uid, fpath=fpath)
+

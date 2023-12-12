@@ -132,7 +132,7 @@ class ResourceLoaderGLTF(ResourceLoader):
             num_node_tracks = len(unique_node_indices)
             num_timestamps = animation["timestamps"].size
 
-            # Create empty datablocks first
+            # Create empty data blocks first
             new_resource.data_blocks["translation"] = DataBlock(
                 data=np.empty((num_timestamps, num_node_tracks, 3), dtype=np.float32),
                 metadata={"order": ["x", "y", "z"]})

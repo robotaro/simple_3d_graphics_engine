@@ -56,6 +56,7 @@ def create_capsule(height: float, radius: float, count: tuple) -> tuple:
 
     return vertices, normals, uvs, indices
 
+
 def convert_faces_to_triangles(vertices, uvs, faces):
     """
     From ChatGPT: This function takes the input vertices and UVs that share common vertex normals and
