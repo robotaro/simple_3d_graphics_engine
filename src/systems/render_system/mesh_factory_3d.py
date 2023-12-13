@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import trimesh
 
@@ -42,15 +44,18 @@ class MeshFactory3D:
     primitives.
     """
 
-    def __init__(self, default_color=DEFAULT_COLOR,
-                 default_transform=np.eye(4, dtype=np.float32),
+    def __init__(self,
+                 default_color=DEFAULT_COLOR,
                  use_triangle_normals=True):
         self.default_color = default_color
         self.use_triangle_normals = use_triangle_normals
 
-    def generate_mesh(self, shapes: list, ):
+    def generate_mesh(self, shapes: list):
 
-        primitives = []
+        vertices_list = []
+        normals_list = []
+        colors_list = []
+        indices_list = []
 
         for shape_index, shape in enumerate(shapes):
 
@@ -60,44 +65,55 @@ class MeshFactory3D:
 
             transform_list = shape.get(KEY_TRANSFORM, [])
             transform = np.reshape(np.array(transform_list, dtype=np.float32)) \
-                        if len(transform_list) == 0 else np.eye(4, dtype=np.float32)
+                                   if len(transform_list) == 0 else np.eye(4, dtype=np.float32)
 
             if shape_name == KEY_SHAPE_CYLINDER:
-                primitives.append(self.create_cylinder(
+                vertices, normals, colors, indices = self.create_cylinder(
                     color=shape.get(KEY_COLOR, self.default_color),
                     radius=shape.get(KEY_RADIUS, DEFAULT_RADIUS),
                     sections=shape.get(KEY_SECTIONS, DEFAULT_CYLINDER_SECTIONS),
                     point_a=shape.get(KEY_POINT_A, (0, 0, 0)),
                     point_b=shape.get(KEY_POINT_B, (0, 0, DEFAULT_HEIGHT)),
-                    transform=transform))
+                    transform=transform)
 
             elif shape_name == KEY_SHAPE_BOX:
-                primitives.append(self.create_box(
+                vertices, normals, colors, indices = self.create_box(
                     width=shape.get(KEY_WIDTH, 1.0),
                     height=shape.get(KEY_HEIGHT, 1.0),
                     depth=shape.get(KEY_DEPTH, 1.0),
                     color=shape.get(KEY_COLOR, self.default_color),
-                    transform=transform))
+                    transform=transform)
 
             elif shape_name == KEY_SHAPE_ICOSPHERE:
-                primitives.append(self.create_icosphere(
+                vertices, normals, colors, indices = self.create_icosphere(
                     radius=shape.get(KEY_RADIUS, DEFAULT_RADIUS),
                     subdivisions=shape.get(KEY_SEGMENTS, 2),
                     color=shape.get(KEY_COLOR, self.default_color),
-                    transform=transform))
+                    transform=transform)
 
             elif shape_name == KEY_SHAPE_CAPSULE:
-                primitives.append(self.create_capsule(
+                vertices, normals, colors, indices = self.create_capsule(
                     height=shape.get(KEY_HEIGHT, 2.0),
                     radius=shape.get(KEY_RADIUS, DEFAULT_RADIUS),
                     count=shape.get(KEY_SECTIONS, (8, 8)),
                     color=shape.get(KEY_COLOR, self.default_color),
-                    transform=transform))
+                    transform=transform)
             else:
                 raise Exception(f"[ERROR] Shape '{shape_name}' not supported")
 
-        # Assemble final mesh here
-        g = 0
+            vertices_list.append(vertices)
+            normals_list.append(normals)
+            colors_list.append(colors)
+            if indices is not None:
+                indices_list.append(indices)
+
+        # And Assemble final mesh here
+        return {
+            KEY_PRIMITIVE_VERTICES: np.concatenate(vertices_list, axis=0),
+            KEY_PRIMITIVE_NORMALS: np.concatenate(vertices_list, axis=0),
+            KEY_PRIMITIVE_COLORS: np.concatenate(colors_list, axis=0),
+            KEY_PRIMITIVE_INDICES: np.concatenate(indices_list, axis=0) if len(indices_list) > 0 else None
+        }
 
     def create_cylinder(self,
                         point_a: tuple,
@@ -105,7 +121,7 @@ class MeshFactory3D:
                         radius: float,
                         sections: int,
                         color: tuple,
-                        transform: np.ndarray) -> dict:
+                        transform: np.ndarray) -> tuple:
         primitive = trimesh.creation.cylinder(segment=(point_a, point_b),
                                               radius=radius,
                                               sections=sections)
@@ -119,14 +135,13 @@ class MeshFactory3D:
             vertices, normals, uvs = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,
                                                                               uvs=None,
                                                                               faces=indices)
+            indices = None
 
         colors = np.tile(np.array(color, dtype=np.float32), (vertices.shape[0], 1))
 
-        return{KEY_PRIMITIVE_VERTICES: vertices,
-               KEY_PRIMITIVE_NORMALS: normals,
-               KEY_PRIMITIVE_COLORS: colors}
+        return vertices, normals, colors, indices
 
-    def create_box(self, width: float, height: float, depth: float, color: tuple, transform: np.ndarray):
+    def create_box(self, width: float, height: float, depth: float, color: tuple, transform: np.ndarray) -> tuple:
         if color is None:
             color = self.default_color
 
@@ -141,14 +156,13 @@ class MeshFactory3D:
             vertices, normals, _ = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,
                                                                             uvs=None,
                                                                             faces=indices)
+            indices = None
 
         colors = np.tile(np.array(color, dtype=np.float32), (vertices.shape[0], 1))
 
-        return {KEY_PRIMITIVE_VERTICES: vertices,
-                KEY_PRIMITIVE_NORMALS: normals,
-                KEY_PRIMITIVE_COLORS: colors}
+        return vertices, normals, colors, indices
 
-    def create_icosphere(self, radius: float, subdivisions: int, color: tuple, transform: np.ndarray):
+    def create_icosphere(self, radius: float, subdivisions: int, color: tuple, transform: np.ndarray)-> tuple:
         if color is None:
             color = self.default_color
 
@@ -165,11 +179,9 @@ class MeshFactory3D:
 
         colors = np.tile(np.array(color, dtype=np.float32), (vertices.shape[0], 1))
 
-        return {KEY_PRIMITIVE_VERTICES: vertices,
-                KEY_PRIMITIVE_NORMALS: normals,
-                KEY_PRIMITIVE_COLORS: colors}
+        return vertices, normals, colors, indices
 
-    def create_capsule(self, height: float, radius: float, count: tuple, color: tuple, transform: np.ndarray):
+    def create_capsule(self, height: float, radius: float, count: tuple, color: tuple, transform: np.ndarray) -> tuple:
         if color is None:
             color = self.default_color
 
@@ -186,9 +198,7 @@ class MeshFactory3D:
 
         colors = np.tile(np.array(color, dtype=np.float32), (vertices.shape[0], 1))
 
-        return {KEY_PRIMITIVE_VERTICES: vertices,
-                KEY_PRIMITIVE_NORMALS: normals,
-                KEY_PRIMITIVE_COLORS: colors}
+        return vertices, normals, colors, indices
 
     def __get_cylinder(self, parameters: dict):
         pass
@@ -248,5 +258,8 @@ table_shapes = [
         "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.9, 0, 0.4, 1]
     }
 ]
+t0 = time.perf_counter()
 mesh = factory.generate_mesh(shapes=table_shapes)
+t1 = time.perf_counter()
+print(t1-t0)
 g = 0
