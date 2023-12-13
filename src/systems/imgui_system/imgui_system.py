@@ -381,7 +381,7 @@ class ImguiSystem(System):
 
     def gui_tab_resources(self):
 
-        resource_ids = list(self.resource_manager.resources.keys())
+        resource_ids = list(self.data_manager.data_groups.keys())
         resource_ids.sort()
 
         flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP
@@ -396,7 +396,7 @@ class ImguiSystem(System):
             if selected:
                 # Here the entity selection is initiated from the GUI, so you publish the respective event now.
                 self.selected_resource_uid = resource_id
-                self.selected_resource = self.resource_manager.resources[resource_id]
+                self.selected_resource = self.data_manager.data_groups[resource_id]
 
         imgui.spacing()
         imgui.separator()

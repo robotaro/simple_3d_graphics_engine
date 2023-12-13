@@ -60,7 +60,7 @@ class Mesh(Component):
         if self.initialised:
             return
 
-        self.create_mesh(resource_manager=kwargs["resource_manager"])
+        self.create_mesh(data_manager=kwargs[constants.MODULE_NAME_DATA_MANAGER])
 
         ctx = kwargs["ctx"]
         shader_library = kwargs["shader_library"]
@@ -140,7 +140,7 @@ class Mesh(Component):
 
         # TODO: Consider the case where the number of vertices changes and so the number of faces"""
 
-    def create_mesh(self, resource_manager) -> None:
+    def create_mesh(self, data_manager) -> None:
 
         shape = self.parameters.get(constants.COMPONENT_ARG_MESH_SHAPE, None)
         resource_id = self.parameters.get(constants.COMPONENT_ARG_RESOURCE_ID, None)
@@ -185,7 +185,7 @@ class Mesh(Component):
 
         # Load an existing mesh file
         if resource_id is not None:
-            mesh_resource = resource_manager.resources[resource_id]
+            mesh_resource = data_manager.data_groups[resource_id]
             v = mesh_resource.data_blocks["vertices"].data
             n = mesh_resource.data_blocks["normals"].data
             f = mesh_resource.data_blocks["indices"].data

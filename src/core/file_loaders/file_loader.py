@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class ResourceLoader(ABC):
+class FileLoader(ABC):
 
     __slots__ = [
         "all_resources"]

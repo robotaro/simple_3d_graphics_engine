@@ -34,7 +34,7 @@ class Skeleton(Component):
         if resource_id is None:
             raise Exception(f"[ERROR] Skeleton component has no 'resource_id' argument defined")
 
-        resource = kwargs["resource_manager"].resources.get(resource_id, None)
+        resource = kwargs[constants.MODULE_NAME_DATA_MANAGER].data_groups.get(resource_id, None)
         if resource is None:
             raise Exception(f"[ERROR] No resource '{resource_id}' found in the resource manager")
 

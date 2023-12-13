@@ -5,7 +5,7 @@ from collections import deque
 from src.core.component_pool import ComponentPool
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
-from src.core.resource_manager import ResourceManager
+from src.core.data_manager import DataManager
 
 
 class System:
@@ -14,7 +14,7 @@ class System:
         "logger",
         "event_publisher",
         "action_publisher",
-        "resource_manager",
+        "data_manager",
         "component_pool",
         "action_queue",
         "current_action",
@@ -32,14 +32,14 @@ class System:
                  component_pool: ComponentPool,
                  event_publisher: EventPublisher,
                  action_publisher: ActionPublisher,
-                 resource_manager: ResourceManager,
+                 data_manager: DataManager,
                  parameters: dict,
                  **kwargs):
 
         self.logger = logger
         self.event_publisher = event_publisher
         self.action_publisher = action_publisher
-        self.resource_manager = resource_manager
+        self.data_manager = data_manager
         self.action_queue = deque()
         self.current_action = None
         self.component_pool = component_pool

@@ -1,14 +1,13 @@
 import numpy as np
 
 from src.core import constants
-from src.core.resource_loaders.resource import Resource
 from src.core.data_block import DataBlock
-from src.core.resource_loaders.resource_loader import ResourceLoader
-
+from src.core.data_group import DataGroup
+from src.core.file_loaders.file_loader import FileLoader
 from src.utilities import utils_gltf_reader
 
 
-class ResourceLoaderGLTF(ResourceLoader):
+class FileLoaderGLTF(FileLoader):
 
     def __init__(self, all_resources: dict):
         super().__init__(all_resources=all_resources)
@@ -28,7 +27,7 @@ class ResourceLoaderGLTF(ResourceLoader):
     def __load_mesh_resources(self, resource_uid: str):
         for mesh_index, mesh in enumerate(self.gltf_reader.get_all_meshes()):
 
-            new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
+            new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_MESH)
             new_resource.metadata["render_mode"] = mesh["render_mode"]
             mesh_attrs = mesh["attributes"]
 
@@ -64,8 +63,8 @@ class ResourceLoaderGLTF(ResourceLoader):
                 continue
             node_names.append(f"node_{node_index}")
 
-        new_resource = Resource(resource_type=constants.RESOURCE_TYPE_NODES_GLTF,
-                                metadata={"node_names": node_names})
+        new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_NODES_GLTF,
+                                 metadata={"node_names": node_names})
 
         new_resource.data_blocks["parent_index"] = DataBlock(
             data=np.empty((num_nodes,), dtype=np.int16))
@@ -111,7 +110,7 @@ class ResourceLoaderGLTF(ResourceLoader):
 
         for animation_index in range(self.gltf_reader.num_animations):
 
-            new_resource = Resource(resource_type=constants.RESOURCE_TYPE_ANIMATION)
+            new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_ANIMATION)
             animation = self.gltf_reader.get_animation(index=animation_index)
 
             # The data from gltf_reader needs to be re-organised in order to keep all animation data

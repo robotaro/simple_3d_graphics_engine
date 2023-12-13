@@ -1,12 +1,12 @@
 import trimesh
 
 from src.core import constants
-from src.core.resource_loaders.resource import Resource
 from src.core.data_block import DataBlock
-from src.core.resource_loaders.resource_loader import ResourceLoader
+from src.core.data_group import DataGroup
+from src.core.file_loaders.file_loader import FileLoader
 
 
-class ResourceLoaderOBJ(ResourceLoader):
+class FileLoaderOBJ(FileLoader):
     
     def __init__(self, all_resources: dict):
         super().__init__(all_resources=all_resources)
@@ -15,7 +15,7 @@ class ResourceLoaderOBJ(ResourceLoader):
     
         mesh = trimesh.load(fpath)
 
-        new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
+        new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_MESH)
         new_resource.data_blocks["vertices"] = DataBlock(data=mesh.vertices)
         new_resource.data_blocks["normals"] = DataBlock(data=mesh.vertex_normals)
         new_resource.data_blocks["indices"] = DataBlock(data=mesh.faces)

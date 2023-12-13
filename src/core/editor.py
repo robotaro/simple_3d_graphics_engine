@@ -22,7 +22,7 @@ from src.utilities import utils_logging, utils_xml2scene, utils_io
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
 from src.core.component_pool import ComponentPool
-from src.core.resource_manager import ResourceManager
+from src.core.data_manager import DataManager
 
 
 # Debug
@@ -54,7 +54,7 @@ class Editor:
                  "component_pool",
                  "event_publisher",
                  "action_publisher",
-                 "resource_manager",
+                 "data_manager",
                  "close_application",
                  "profiling_update_period",
                  "editor_num_updates",
@@ -80,7 +80,7 @@ class Editor:
         self.component_pool = ComponentPool(logger=self.logger)
         self.event_publisher = EventPublisher(logger=self.logger)
         self.action_publisher = ActionPublisher(logger=self.logger)
-        self.resource_manager = ResourceManager(logger=self.logger)
+        self.data_manager = DataManager(logger=self.logger)
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -329,7 +329,7 @@ class Editor:
             component_pool=self.component_pool,
             event_publisher=self.event_publisher,
             action_publisher=self.action_publisher,
-            resource_manager=self.resource_manager,
+            data_manager=self.data_manager,
             parameters=parameters,
             context=self.ctx,
             buffer_size=self.buffer_size)
@@ -358,7 +358,7 @@ class Editor:
         # Load scene resource, if any
         for resource_uid, resource_fpath in scene_resources.items():
             resource_fpath = utils_io.validate_resource_filepath(fpath=resource_fpath)
-            self.resource_manager.load_resource(resource_uid=resource_uid, fpath=resource_fpath)
+            self.data_manager.load_file(data_group_id=resource_uid, fpath=resource_fpath)
 
         # Add entities to current scene
         for entity_blueprint in scene_blueprint["scene"]["entity"]:
@@ -377,7 +377,7 @@ class Editor:
                 component.initialise(ctx=self.ctx,
                                      shader_library=render_system.shader_program_library,
                                      font_library=render_system.font_library,
-                                     resource_manager=self.resource_manager)
+                                     data_manager=self.data_manager)
 
     def release_components(self):
         for component_id, components in self.component_pool.component_storage_map.items():

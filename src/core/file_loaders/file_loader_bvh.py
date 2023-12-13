@@ -2,12 +2,12 @@ import numpy as np
 from src.utilities import utils_bvh_reader
 
 from src.core import constants
-from src.core.resource_loaders.resource import Resource
 from src.core.data_block import DataBlock
-from src.core.resource_loaders.resource_loader import ResourceLoader
+from src.core.data_group import DataGroup
+from src.core.file_loaders.file_loader import FileLoader
 
 
-class ResourceLoaderBVH(ResourceLoader):
+class FileLoaderBVH(FileLoader):
 
     def __init__(self, all_resources: dict):
         super().__init__(all_resources=all_resources)
@@ -22,7 +22,7 @@ class ResourceLoaderBVH(ResourceLoader):
 
         # =========================[ Skeleton ]=========================
 
-        skeleton_resource = Resource(resource_type=constants.RESOURCE_TYPE_SKELETON)
+        skeleton_resource = DataGroup(archetype=constants.RESOURCE_TYPE_SKELETON)
 
         skeleton_resource.data_blocks["parent_index"] = DataBlock(data=skeleton_df["parent"].values.astype(np.int32),
                                                                   metadata={"bone_names": bone_names})
@@ -45,7 +45,7 @@ class ResourceLoaderBVH(ResourceLoader):
 
         # =========================[ Animation ]=========================
 
-        animation_resource = Resource(resource_type=constants.RESOURCE_TYPE_ANIMATION_BVH)
+        animation_resource = DataGroup(archetype=constants.RESOURCE_TYPE_ANIMATION_BVH)
 
         num_frames = animation_df.index.size
 
@@ -86,7 +86,3 @@ class ResourceLoaderBVH(ResourceLoader):
 
         self.all_resources[complete_id] = animation_resource
         return True
-
-    import numpy as np
-    from scipy.spatial.transform import Rotation
-
