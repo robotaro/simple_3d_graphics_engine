@@ -110,7 +110,7 @@ class MeshFactory3D:
         # And Assemble final mesh here
         return {
             KEY_PRIMITIVE_VERTICES: np.concatenate(vertices_list, axis=0),
-            KEY_PRIMITIVE_NORMALS: np.concatenate(vertices_list, axis=0),
+            KEY_PRIMITIVE_NORMALS: np.concatenate(normals_list, axis=0),
             KEY_PRIMITIVE_COLORS: np.concatenate(colors_list, axis=0),
             KEY_PRIMITIVE_INDICES: np.concatenate(indices_list, axis=0) if len(indices_list) > 0 else None
         }
