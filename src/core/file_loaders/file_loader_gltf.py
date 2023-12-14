@@ -9,8 +9,8 @@ from src.utilities import utils_gltf_reader
 
 class FileLoaderGLTF(FileLoader):
 
-    def __init__(self, all_resources: dict):
-        super().__init__(all_resources=all_resources)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.gltf_reader = None
 
@@ -46,7 +46,7 @@ class FileLoaderGLTF(FileLoader):
             if "WEIGHTS_0" in mesh_attrs:
                 new_resource.data_blocks["weights"] = DataBlock(data=mesh_attrs["WEIGHTS_0"])
 
-            self.all_resources[f"{resource_uid}/mesh_{mesh_index}"] = new_resource
+            self.external_data_groups[f"{resource_uid}/mesh_{mesh_index}"] = new_resource
 
     def __load_nodes_resources(self, resource_uid: str):
         nodes = self.gltf_reader.get_nodes()
@@ -104,7 +104,7 @@ class FileLoaderGLTF(FileLoader):
             new_resource.data_blocks["mesh_index"].data[node_index] = node["mesh_index"]
             new_resource.data_blocks["skin_index"].data[node_index] = node["skin_index"]
 
-        self.all_resources[f"{resource_uid}/nodes_0"] = new_resource
+        self.external_data_groups[f"{resource_uid}/nodes_0"] = new_resource
 
     def __load_animation_resources(self, resource_uid: str):
 
@@ -157,4 +157,4 @@ class FileLoaderGLTF(FileLoader):
                     new_resource.data_blocks[channel_name].data[:, node_sub_index, :] = reshaped_channel_data
 
             # Finally, add the new animation resource
-            self.all_resources[f"{resource_uid}/animation_{animation_index}"] = new_resource
+            self.external_data_groups[f"{resource_uid}/animation_{animation_index}"] = new_resource

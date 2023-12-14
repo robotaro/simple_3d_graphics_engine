@@ -8,8 +8,8 @@ from src.core.file_loaders.file_loader import FileLoader
 
 class FileLoaderOBJ(FileLoader):
     
-    def __init__(self, all_resources: dict):
-        super().__init__(all_resources=all_resources)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
     
     def load(self, resource_uid: str, fpath: str) -> bool:
     
@@ -23,6 +23,6 @@ class FileLoaderOBJ(FileLoader):
         if "uv" in mesh.visual.__dict__:
             new_resource.data_blocks["uv"] = DataBlock(data=mesh.visual.uv)
 
-        self.all_resources[f"{resource_uid}/mesh_0"] = new_resource
+        self.external_data_groups[f"{resource_uid}/mesh_0"] = new_resource
 
         return True

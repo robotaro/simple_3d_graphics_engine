@@ -6,57 +6,6 @@ import pywavefront
 from src.core import constants
 
 
-def create_box(width=1.0, height=1.0, depth=1.0):
-
-    result = trimesh.creation.box()
-    vertices = np.array(result.vertices).astype('f4')
-    indices = np.array(result.faces).astype('i4')
-
-    vertices *= np.array((width, height, depth), dtype=np.float32)
-
-    new_vertices, new_normals, _ = convert_faces_to_triangles(vertices=vertices, uvs=None, faces=indices)
-
-    return new_vertices, new_normals, None, None
-
-
-def create_icosphere(radius: float, subdivisions: int) -> tuple:
-
-    result = trimesh.creation.icosphere(radius=radius, subdivisions=subdivisions)
-
-    vertices = np.array(result.vertices).astype('f4')
-    normals = np.array(result.vertex_normals).astype('f4')
-    uvs = None
-    indices = np.array(result.faces).astype('i4')
-
-    return vertices, normals, uvs, indices
-
-
-def create_cylinder(point_a: tuple, point_b:tuple, radius: float, sections: int) -> tuple:
-
-    result = trimesh.creation.cylinder(segment=(point_a, point_b), radius=radius, sections=sections)
-
-    vertices = np.array(result.vertices).astype('f4')
-    indices = np.array(result.faces).astype('i4')
-
-    new_vertices, new_normals, new_uvs = convert_faces_to_triangles(vertices=vertices, uvs=None, faces=indices)
-
-    return new_vertices, new_normals, None, None
-
-
-def create_capsule(height: float, radius: float, count: tuple) -> tuple:
-
-    # Incomplete !!!
-
-    result = trimesh.creation.capsule(height, radius, count, None)
-
-    vertices = np.array(result.vertices).astype('f4')
-    normals = np.array(result.vertex_normals).astype('f4')
-    uvs = None
-    indices = np.array(result.faces).astype('i4')
-
-    return vertices, normals, uvs, indices
-
-
 def convert_faces_to_triangles(vertices, uvs, faces):
     """
     From ChatGPT: This function takes the input vertices and UVs that share common vertex normals and

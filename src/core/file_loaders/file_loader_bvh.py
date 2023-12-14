@@ -9,8 +9,8 @@ from src.core.file_loaders.file_loader import FileLoader
 
 class FileLoaderBVH(FileLoader):
 
-    def __init__(self, all_resources: dict):
-        super().__init__(all_resources=all_resources)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def load(self, resource_uid: str, fpath: str) -> bool:
 
@@ -41,7 +41,7 @@ class FileLoaderBVH(FileLoader):
 
         complete_id = f"{resource_uid}/skeleton_0"
 
-        self.all_resources[complete_id] = skeleton_resource
+        self.external_data_groups[complete_id] = skeleton_resource
 
         # =========================[ Animation ]=========================
 
@@ -82,7 +82,5 @@ class FileLoaderBVH(FileLoader):
         animation_resource.data_blocks["animation_position"] = new_position_datablock
         animation_resource.data_blocks["animation_rotation"] = new_rotation_datablock
 
-        complete_id = f"{resource_uid}/animation_0"
-
-        self.all_resources[complete_id] = animation_resource
+        self.external_data_groups[f"{resource_uid}/animation_0"] = animation_resource
         return True

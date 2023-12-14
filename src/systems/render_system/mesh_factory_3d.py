@@ -120,8 +120,15 @@ class MeshFactory3D:
                         point_b: tuple,
                         radius: float,
                         sections: int,
-                        color: tuple,
-                        transform: np.ndarray) -> tuple:
+                        color=None,
+                        transform=None) -> tuple:
+
+        if color is None:
+            color = self.default_color
+
+        if transform is None:
+            transform = np.eye(4, dtype=np.float32)
+
         primitive = trimesh.creation.cylinder(segment=(point_a, point_b),
                                               radius=radius,
                                               sections=sections)
@@ -132,7 +139,7 @@ class MeshFactory3D:
         mat4.mul_vectors3(transform, vertices, vertices)
 
         if self.use_triangle_normals:
-            vertices, normals, uvs = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,
+            vertices, normals, _ = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,
                                                                               uvs=None,
                                                                               faces=indices)
             indices = None
@@ -141,16 +148,19 @@ class MeshFactory3D:
 
         return vertices, normals, colors, indices
 
-    def create_box(self, width: float, height: float, depth: float, color: tuple, transform: np.ndarray) -> tuple:
+    def create_box(self, width: float, height: float, depth: float, color=None, transform=None) -> tuple:
         if color is None:
             color = self.default_color
+
+        if transform is None:
+            transform = np.eye(4, dtype=np.float32)
 
         box = trimesh.creation.box(extents=(width, height, depth))
 
         vertices = np.array(box.vertices).astype('f4')
         normals = np.array(box.vertex_normals).astype('f4')
         indices = np.array(box.faces).astype('i4')
-        mat4.mul_vectors3(transform, vertices, vertices)
+        #mat4.mul_vectors3(transform, vertices, vertices)
 
         if self.use_triangle_normals:
             vertices, normals, _ = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,
@@ -162,39 +172,49 @@ class MeshFactory3D:
 
         return vertices, normals, colors, indices
 
-    def create_icosphere(self, radius: float, subdivisions: int, color: tuple, transform: np.ndarray)-> tuple:
+    def create_icosphere(self, radius: float, subdivisions: int, color=None, transform=None)-> tuple:
         if color is None:
             color = self.default_color
+
+        if transform is None:
+            transform = np.eye(4, dtype=np.float32)
 
         icosphere = trimesh.creation.icosphere(radius=radius, subdivisions=subdivisions)
 
         vertices = np.array(icosphere.vertices).astype('f4')
         normals = np.array(icosphere.vertex_normals).astype('f4')
         indices = np.array(icosphere.faces).astype('i4')
-        mat4.mul_vectors3(transform, vertices, vertices)
+        #mat4.mul_vectors3(transform, vertices, vertices)
 
         if self.use_triangle_normals:
             vertices, normals, _ = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,
+                                                                            uvs=None,
                                                                             faces=indices)
+            indices = None
 
         colors = np.tile(np.array(color, dtype=np.float32), (vertices.shape[0], 1))
 
         return vertices, normals, colors, indices
 
-    def create_capsule(self, height: float, radius: float, count: tuple, color: tuple, transform: np.ndarray) -> tuple:
+    def create_capsule(self, height: float, radius: float, count: tuple, color=None, transform=None) -> tuple:
         if color is None:
             color = self.default_color
+
+        if transform is None:
+            transform = np.eye(4, dtype=np.float32)
 
         capsule = trimesh.creation.capsule(height=height, radius=radius, count=count)
 
         vertices = np.array(capsule.vertices).astype('f4')
         normals = np.array(capsule.vertex_normals).astype('f4')
         indices = np.array(capsule.faces).astype('i4')
-        mat4.mul_vectors3(transform, vertices, vertices)
+        #mat4.mul_vectors3(transform, vertices, vertices)
 
         if self.use_triangle_normals:
             vertices, normals, _ = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,
+                                                                            uvs=None,
                                                                             faces=indices)
+            indices = None
 
         colors = np.tile(np.array(color, dtype=np.float32), (vertices.shape[0], 1))
 
@@ -205,7 +225,7 @@ class MeshFactory3D:
 
 
 # DEBUG
-factory = MeshFactory3D()
+#factory = MeshFactory3D()
 table_shapes = [
     # Tabletop (a box)
     {
@@ -258,8 +278,8 @@ table_shapes = [
         "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.9, 0, 0.4, 1]
     }
 ]
-t0 = time.perf_counter()
-mesh = factory.generate_mesh(shapes=table_shapes)
-t1 = time.perf_counter()
-print(t1-t0)
-g = 0
+#t0 = time.perf_counter()
+#mesh = factory.generate_mesh(shapes=table_shapes)
+#t1 = time.perf_counter()
+#print(t1-t0)
+#g = 0

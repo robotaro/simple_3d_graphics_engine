@@ -1,8 +1,9 @@
-import os
+import numpy as np
 
 from src.core import constants
 from src.components.component import Component
 from src.utilities import utils_mesh_3d, utils_io, utils_gltf
+from src.systems.render_system.mesh_factory_3d import MeshFactory3D
 
 
 class Mesh(Component):
@@ -140,6 +141,9 @@ class Mesh(Component):
 
         # TODO: Consider the case where the number of vertices changes and so the number of faces"""
 
+    def update_vbo_vertices(self, new_vertices: np.ndarray):
+        pass
+
     def create_mesh(self, data_manager) -> None:
 
         shape = self.parameters.get(constants.COMPONENT_ARG_MESH_SHAPE, None)
@@ -148,49 +152,62 @@ class Mesh(Component):
         if shape is not None and resource_id is not None:
             raise KeyError("Both shape and resource ID have been specified! You either specify the shape or the mesh.")
 
-        # To avoid warnings
-        v, n, u, f = None, None, None, None
-
-        # Create a new mesh
-        if shape is not None:
-            if shape == constants.MESH_SHAPE_BOX:
-                width = Component.dict2float(input_dict=self.parameters, key="width", default_value=1.0)
-                height = Component.dict2float(input_dict=self.parameters, key="height", default_value=1.0)
-                depth = Component.dict2float(input_dict=self.parameters, key="depth", default_value=1.0)
-                v, n, u, f = utils_mesh_3d.create_box(width=width, height=height, depth=depth)
-
-            if shape == constants.MESH_SHAPE_ICOSPHERE:
-                radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
-                subdivisions = Component.dict2int(input_dict=self.parameters, key="subdivisions", default_value=3)
-                v, n, u, f = utils_mesh_3d.create_icosphere(radius=radius, subdivisions=subdivisions)
-
-            if shape == constants.MESH_SHAPE_CAPSULE:
-                height = Component.dict2float(input_dict=self.parameters, key="height", default_value=1.0)
-                radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.25)
-                count = Component.dict2tuple_int(input_dict=self.parameters, key="count", default_value=(16, 16))
-                v, n, u, f = utils_mesh_3d.create_capsule(height=height, radius=radius, count=count)
-
-            if shape == constants.MESH_SHAPE_CYLINDER:
-                point_a = Component.dict2tuple_float(input_dict=self.parameters,
-                                                     key="point_a",
-                                                     default_value=(0.0, 0.0, 0.0))
-                point_b = Component.dict2tuple_float(input_dict=self.parameters,
-                                                     key="point_b",
-                                                     default_value=(0.0, 1.0, 0.0))
-                radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
-                sections = Component.dict2int(input_dict=self.parameters, key="sections", default_value=32)
-
-                v, n, u, f = utils_mesh_3d.create_cylinder(point_a=point_a, point_b=point_b,
-                                                           sections=sections, radius=radius)
 
         # Load an existing mesh file
         if resource_id is not None:
             mesh_resource = data_manager.data_groups[resource_id]
-            v = mesh_resource.data_blocks["vertices"].data
-            n = mesh_resource.data_blocks["normals"].data
-            f = mesh_resource.data_blocks["indices"].data
+            self.vertices = mesh_resource.data_blocks["vertices"].data
+            self.normals = mesh_resource.data_blocks["normals"].data
+            self.indices = mesh_resource.data_blocks["indices"].data
+            return
 
-        self.vertices = v
-        self.normals = n
-        self.uvs = u
-        self.indices = f
+        # Create a new mesh
+        if shape is None:
+            raise Exception("[ERROR] Both resource_id and shape specification are None. Please provide one.")
+
+        mesh_factory = MeshFactory3D()
+
+        if shape == constants.MESH_SHAPE_BOX:
+            width = Component.dict2float(input_dict=self.parameters, key="width", default_value=1.0)
+            height = Component.dict2float(input_dict=self.parameters, key="height", default_value=1.0)
+            depth = Component.dict2float(input_dict=self.parameters, key="depth", default_value=1.0)
+
+            mesh = mesh_factory.create_box(width=width, height=height, depth=depth)
+            self.vertices = mesh[0]
+            self.normals = mesh[1]
+            self.indices = mesh[3]
+
+        if shape == constants.MESH_SHAPE_ICOSPHERE:
+            radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
+            subdivisions = Component.dict2int(input_dict=self.parameters, key="subdivisions", default_value=3)
+
+            mesh = mesh_factory.create_icosphere(radius=radius, subdivisions=subdivisions)
+            self.vertices = mesh[0]
+            self.normals = mesh[1]
+            self.indices = mesh[3]
+
+        if shape == constants.MESH_SHAPE_CAPSULE:
+            height = Component.dict2float(input_dict=self.parameters, key="height", default_value=1.0)
+            radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.25)
+            count = Component.dict2tuple_int(input_dict=self.parameters, key="count", default_value=(16, 16))
+
+            mesh = mesh_factory.create_capsule(height=height, radius=radius, count=count)
+            self.vertices = mesh[0]
+            self.normals = mesh[1]
+            self.indices = mesh[3]
+
+        if shape == constants.MESH_SHAPE_CYLINDER:
+            point_a = Component.dict2tuple_float(input_dict=self.parameters,
+                                                 key="point_a",
+                                                 default_value=(0.0, 0.0, 0.0))
+            point_b = Component.dict2tuple_float(input_dict=self.parameters,
+                                                 key="point_b",
+                                                 default_value=(0.0, 1.0, 0.0))
+            radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
+            sections = Component.dict2int(input_dict=self.parameters, key="sections", default_value=32)
+
+            mesh = mesh_factory.create_cylinder(point_a=point_a, point_b=point_b, sections=sections, radius=radius)
+            self.vertices = mesh[0]
+            self.normals = mesh[1]
+            self.indices = mesh[3]
+

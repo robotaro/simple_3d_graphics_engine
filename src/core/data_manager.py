@@ -47,9 +47,11 @@ class DataManager:
         # Execute main loading operation here
         return loader.load(resource_uid=data_group_id, fpath=fpath)
 
-    def add_resource(self, resource_uid: str, data_group: dict, overwrite=True):
+    def add_data_group(self, data_group_id: str, data_group: dict, overwrite=True):
 
-        if not overwrite and resource_uid in self.data_groups:
-            raise ValueError(f"[ERROR] DataGroup ID {resource_uid}")
+        if not overwrite and data_group_id in self.data_groups:
+            raise ValueError(f"[ERROR] DataGroup ID {data_group_id} already exists")
+
+        self.data_groups[data_group_id] = data_group
 
 
