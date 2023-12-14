@@ -1,15 +1,10 @@
 import os
-import numpy as np
 import logging
-import h5py
-
-# Resource loaders
-from src.core.data_block import DataBlock
-from src.core.data_group import DataGroup
 
 from src.core.file_loaders.file_loader_obj import FileLoaderOBJ
 from src.core.file_loaders.file_loader_bvh import FileLoaderBVH
 from src.core.file_loaders.file_loader_gltf import FileLoaderGLTF
+from src.core.file_loaders.file_loader_mesh_blueprint import FileLoaderMeshBlueprint
 
 
 class DataManager:
@@ -34,6 +29,7 @@ class DataManager:
             ".bvh": FileLoaderBVH(all_resources=self.data_groups),
             ".gltf": FileLoaderGLTF(all_resources=self.data_groups),
             ".glb": FileLoaderGLTF(all_resources=self.data_groups),
+            ".mesh_blueprint": FileLoaderMeshBlueprint(all_resources=self.data_groups)
         }
 
     def load_file(self, data_group_id: str, fpath: str) -> bool:

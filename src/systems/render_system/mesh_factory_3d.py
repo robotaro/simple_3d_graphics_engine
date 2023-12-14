@@ -50,14 +50,14 @@ class MeshFactory3D:
         self.default_color = default_color
         self.use_triangle_normals = use_triangle_normals
 
-    def generate_mesh(self, shapes: list):
+    def generate_mesh(self, shape_list: list):
 
         vertices_list = []
         normals_list = []
         colors_list = []
         indices_list = []
 
-        for shape_index, shape in enumerate(shapes):
+        for shape_index, shape in enumerate(shape_list):
 
             shape_name = shape.get(KEY_NAME, None)
             if shape_name is None:
@@ -160,7 +160,7 @@ class MeshFactory3D:
         vertices = np.array(box.vertices).astype('f4')
         normals = np.array(box.vertex_normals).astype('f4')
         indices = np.array(box.faces).astype('i4')
-        #mat4.mul_vectors3(transform, vertices, vertices)
+        mat4.mul_vectors3(transform, vertices, vertices)
 
         if self.use_triangle_normals:
             vertices, normals, _ = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,
@@ -184,7 +184,7 @@ class MeshFactory3D:
         vertices = np.array(icosphere.vertices).astype('f4')
         normals = np.array(icosphere.vertex_normals).astype('f4')
         indices = np.array(icosphere.faces).astype('i4')
-        #mat4.mul_vectors3(transform, vertices, vertices)
+        mat4.mul_vectors3(transform, vertices, vertices)
 
         if self.use_triangle_normals:
             vertices, normals, _ = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,
@@ -208,7 +208,7 @@ class MeshFactory3D:
         vertices = np.array(capsule.vertices).astype('f4')
         normals = np.array(capsule.vertex_normals).astype('f4')
         indices = np.array(capsule.faces).astype('i4')
-        #mat4.mul_vectors3(transform, vertices, vertices)
+        mat4.mul_vectors3(transform, vertices, vertices)
 
         if self.use_triangle_normals:
             vertices, normals, _ = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,

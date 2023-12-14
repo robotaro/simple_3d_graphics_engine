@@ -152,16 +152,15 @@ class Mesh(Component):
         if shape is not None and resource_id is not None:
             raise KeyError("Both shape and resource ID have been specified! You either specify the shape or the mesh.")
 
-
         # Load an existing mesh file
         if resource_id is not None:
             mesh_resource = data_manager.data_groups[resource_id]
             self.vertices = mesh_resource.data_blocks["vertices"].data
             self.normals = mesh_resource.data_blocks["normals"].data
-            self.indices = mesh_resource.data_blocks["indices"].data
+            if "indices" in mesh_resource.data_blocks:
+                self.indices = mesh_resource.data_blocks["indices"].data
             return
 
-        # Create a new mesh
         if shape is None:
             raise Exception("[ERROR] Both resource_id and shape specification are None. Please provide one.")
 
@@ -176,6 +175,7 @@ class Mesh(Component):
             self.vertices = mesh[0]
             self.normals = mesh[1]
             self.indices = mesh[3]
+            return
 
         if shape == constants.MESH_SHAPE_ICOSPHERE:
             radius = Component.dict2float(input_dict=self.parameters, key="radius", default_value=0.5)
@@ -185,6 +185,7 @@ class Mesh(Component):
             self.vertices = mesh[0]
             self.normals = mesh[1]
             self.indices = mesh[3]
+            return
 
         if shape == constants.MESH_SHAPE_CAPSULE:
             height = Component.dict2float(input_dict=self.parameters, key="height", default_value=1.0)
@@ -195,6 +196,7 @@ class Mesh(Component):
             self.vertices = mesh[0]
             self.normals = mesh[1]
             self.indices = mesh[3]
+            return
 
         if shape == constants.MESH_SHAPE_CYLINDER:
             point_a = Component.dict2tuple_float(input_dict=self.parameters,
@@ -210,4 +212,5 @@ class Mesh(Component):
             self.vertices = mesh[0]
             self.normals = mesh[1]
             self.indices = mesh[3]
+            return
 

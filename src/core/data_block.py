@@ -13,7 +13,7 @@ class DataBlock:
         "metadata",
         "data"]
 
-    def __init__(self, data: np.ndarray, metadata=None, copy_data=True):
+    def __init__(self, data: np.ndarray, metadata=None, copy_data=False):
         self.metadata = {} if metadata is None else metadata
         self.data = data.copy() if copy_data else data
 
