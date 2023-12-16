@@ -1,3 +1,4 @@
+import numpy as np
 import moderngl
 
 from src.core import constants
@@ -55,12 +56,28 @@ class Material(Component):
         # State Variables - Can be changed by events
         self.state_highlighted = False
 
-    def upload_uniforms(self, program: moderngl.Program):
-        program["material.diffuse"].value = self.diffuse_highlight if self.state_highlighted else self.diffuse
-        program["material.specular"].value = self.specular
-        program["material.shininess_factor"] = self.shininess_factor
-        program["color_source"] = self.color_source
-        program["lighting_mode"] = self.lighting_mode
+    def upload_uniforms(self, material_ubo: moderngl.UniformBlock):
+
+        # TODO: [OPTIMISE] No data conversion should be done. All materials should come from an array
+        # Prepare the data with appropriate padding
+        material_struct_data = [
+            list(self.diffuse) + [0.0],  # Padding for vec3
+            [0.0, 0.0, 0.0, 0.0],  # Padding for vec3
+            list(self.specular) + [0.0],  # Padding for vec3
+            [self.shininess_factor,
+             self.metalic_factor,
+             self.roughness_factor,
+             0.0]  # Grouped as vec4
+        ]
+
+        # Flatten the list to a single array
+        flattened_data = [item for sublist in material_struct_data for item in sublist]
+
+        # Create a NumPy array with the correct dtype
+        material_struct = np.array(flattened_data, dtype='f4')
+
+        # Write the data to the UBO
+        material_ubo.write(material_struct.tobytes())
 
     def is_transparent(self) -> bool:
         return self.alpha == 1.0

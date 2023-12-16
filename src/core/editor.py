@@ -21,7 +21,7 @@ from src.utilities import utils_logging, utils_xml2scene, utils_io
 # Core Modules
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
-from src.core.component_pool import ComponentPool
+from src.core.scene import ComponentPool
 from src.core.data_manager import DataManager
 
 

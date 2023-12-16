@@ -7,7 +7,7 @@ from src.core import constants
 from src.systems.system import System
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
-from src.core.component_pool import ComponentPool
+from src.core.scene import ComponentPool
 
 from src.systems.import_system.loading_task import FileDataInterface
 from src.systems.import_system.loading_task_obj import LoadingTaskObj

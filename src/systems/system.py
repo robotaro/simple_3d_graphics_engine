@@ -2,7 +2,7 @@ import logging
 import moderngl
 from collections import deque
 
-from src.core.component_pool import ComponentPool
+from src.core.scene import ComponentPool
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
 from src.core.data_manager import DataManager

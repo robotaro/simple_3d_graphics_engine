@@ -8,7 +8,7 @@ from src.core import constants
 from src.systems.system import System
 from src.systems.render_system.shader_program_library import ShaderProgramLibrary
 from src.systems.render_system.font_library import FontLibrary
-from src.core.component_pool import ComponentPool
+from src.core.scene import ComponentPool
 from src.geometry_3d import ready_to_render
 from src.math import mat4
 
@@ -36,6 +36,7 @@ class RenderSystem(System):
         "forward_pass_texture_depth",
         "forward_pass_framebuffer",
         "debug_forward_pass_framebuffer",
+        "material_ubo",
         "overlay_pass_texture_color",
         "overlay_pass_texture_depth",
         "overlay_pass_framebuffer",
@@ -92,6 +93,9 @@ class RenderSystem(System):
 
         # Debug Forward Pass
         self.debug_forward_pass_framebuffer = None
+
+        # Materials
+        self.material_ubo = None
 
         # Overlay 3D Pass
         self.overlay_pass_texture_color = None
@@ -176,6 +180,10 @@ class RenderSystem(System):
         # Setup fullscreen quad textures
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
                                                            program=self.shader_program_library["screen_quad"])
+
+        # Material UBO
+        self.material_ubo = self.ctx.buffer(reserve=64)
+        self.material_ubo.bind_to_uniform_block(binding=0)
 
         self.create_framebuffers(window_size=self.buffer_size)
         return True
@@ -441,7 +449,7 @@ class RenderSystem(System):
                 #       The program will keep its variable states!
                 material_component = material_pool[mesh_entity_uid]
                 if material_component is not None:
-                    material_component.upload_uniforms(program=program)
+                    material_component.upload_uniforms(material_ubo=self.material_ubo)
 
                 mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_FORWARD_PASS)
 

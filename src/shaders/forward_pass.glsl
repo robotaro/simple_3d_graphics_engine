@@ -1,15 +1,12 @@
-#version 400
+#version 430
 
 #if defined VERTEX_SHADER
 
-struct Material {
-    vec3 diffuse;
-    vec3 ambient;
-    vec3 specular;
-    float shininess_factor;
-    float metallic_factor;
-    float roughness_factor;
-};
+#define RENDER_MODE_COLOR_SOURCE_SINGLE 0
+#define RENDER_MODE_COLOR_SOURCE_BUFFER 1
+#define RENDER_MODE_COLOR_SOURCE_UV 2
+
+#include definition_material.glsl
 
 struct GlobalAmbient
 {
@@ -19,8 +16,14 @@ struct GlobalAmbient
     float strength;
 };
 
+// Input VBOs
 in vec3 in_vert;
 in vec3 in_normal;
+in vec3 in_color;
+
+layout (std140, binding = 0) uniform MaterialBlock {
+    Material material;
+} uboMaterial;
 
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
@@ -35,15 +38,6 @@ uniform GlobalAmbient global = GlobalAmbient(
     vec3(1.0, 1.0, 1.0),
     vec3(0.0, 0.0, 0.0),
     1.0
-);
-
-uniform Material material = Material(
-    vec3(0.85, 0.85, 0.85), // Default diffuse color (e.g., gray)
-    vec3(1.0, 1.0, 1.0),    // Default ambient color
-    vec3(1.0, 1.0, 1.0),    // Default specular color
-    0.5,                    // Default shininess factor
-    1.0,                    // Default metallic factor
-    0.0                     // Default roughness factor
 );
 
 uniform vec3 hemisphere_up_color = vec3(1.0, 1.0, 1.0);
@@ -63,7 +57,7 @@ void main() {
     v_world_position = (model_matrix * vec4(v_local_position, 1.0)).xyz;
     v_world_normal = mat3(transpose(inverse(model_matrix))) * in_normal;  // World normal
     v_view_position = view_matrix[3].xyz;
-    v_material = material;
+    v_material = uboMaterial.material;
 
     // Make sure global ambient direction is unit length
     vec3 hemisphere_light_direction = normalize(hemisphere_light_direction);
@@ -73,7 +67,9 @@ void main() {
 
     vec3 base_color = vec3(0.0);
     if (color_source == 0){
-        base_color = material.diffuse;
+        base_color = uboMaterial.material.diffuse;
+    } else if(color_source == 1) {
+        base_color = in_color;
     }
 
     // Calculate global ambient colour
@@ -88,35 +84,9 @@ void main() {
 #define MAX_DIRECTIONAL_LIGHTS 4
 #define MAX_POINT_LIGHTS 8
 
-// Already defined in the vertex shader
-struct Material {
-    vec3 diffuse;
-    vec3 ambient;
-    vec3 specular;
-    float shininess_factor;
-    float metallic_factor;
-    float roughness_factor;
-};
-
-struct PointLight {
-    vec3 position;
-    vec3 diffuse;
-    vec3 specular;
-    vec3 attenuation_coeffs;
-    float intensity;
-    bool enabled;
-};
-
-struct DirectionalLight {
-    vec3 direction;
-    vec3 diffuse;
-    vec3 specular;
-    float strength;
-    mat4 matrix;
-    sampler2D shadow_map;
-    bool shadow_enabled;
-    bool enabled;
-};
+#include definition_material.glsl
+#include definition_point_light.glsl
+#include definition_directional_light.glsl
 
 // Output buffers (Textures)
 layout(location=0) out vec4 out_fragment_color;
@@ -159,10 +129,10 @@ uniform int num_directional_lights = 0;
 
 uniform PointLight point_lights[MAX_POINT_LIGHTS];
 uniform DirectionalLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
+uniform sampler2D shadow_maps[MAX_DIRECTIONAL_LIGHTS]; // Assuming one shadow map per light
 
 vec3 calculate_directional_light(DirectionalLight light, vec3 material_color, vec3 normal, vec3 viewDir);
 vec3 calculate_point_light(PointLight light, vec3 normal, vec3 material_color, vec3 fragPos, vec3 viewDir);
-//float shadow_calculation(sampler2DShadow shadow_map, vec4 frag_pos_light_space, vec3 light_dir, vec3 normal);
 float shadow_calculation(mat4 light_view_projection_matrix, sampler2D shadow_map, float normal);
 
 void main() {
@@ -205,10 +175,11 @@ void main() {
             // Shadow
             if (shadows_enabled)
             {
+                // Shadows are disabled for now
                 float nl = clamp(dot(normal, directional_lights[i].direction), 0.0, 1.0);
                 float shadow = shadow_calculation(
                     directional_lights[i].matrix,
-                    directional_lights[i].shadow_map,
+                    shadow_maps[i],
                     nl);
 
                 shadow = clamp(shadow, 0.0, 1.0);
