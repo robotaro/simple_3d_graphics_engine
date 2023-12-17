@@ -11,15 +11,15 @@ class Material(Component):
 
     _material_dtype = np.dtype([
         ('diffuse', '3f4'),
-        ('padding_0', 'f4'),
+        ('color_source', 'i4'),
         ('diffuse_highlight', '3f4'),
-        ('padding_1', 'f4'),
+        ('lighting_mode', 'i4'),
         ('specular', '3f4'),
-        ('padding_2', 'f4'),
+        ('padding_0', 'f4'),
         ('shininess_factor', 'f4'),
         ('metalic_factor', 'f4'),
         ('roughness_factor', 'f4'),
-        ('padding', 'f4')
+        ('padding_1', 'f4')
     ], align=True)
 
     __slots__ = [
@@ -66,13 +66,15 @@ class Material(Component):
                                                                  default_value=1.0)
 
         # Render modes
-        self.color_source = Component.dict2map(input_dict=self.parameters, key="color_source",
-                                               map_dict=constants.COLOR_SOURCE_MAP,
-                                               default_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE)
-        self.lighting_mode = Component.dict2map(input_dict=self.parameters, key="lighting_mode",
-                                                map_dict=constants.LIGHTING_MODE_MAP,
-                                                default_value=constants.RENDER_MODE_LIGHTING_LIT)
-        self.alpha = Component.dict2float(input_dict=self.parameters, key="alpha", default_value=1.0)
+        self.ubo_data['color_source'] = Component.dict2map(input_dict=self.parameters, key="color_source",
+                                                           map_dict=constants.COLOR_SOURCE_MAP,
+                                                           default_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE)
+        self.ubo_data['lighting_mode'] = Component.dict2map(input_dict=self.parameters, key="lighting_mode",
+                                                            map_dict=constants.LIGHTING_MODE_MAP,
+                                                            default_value=constants.RENDER_MODE_LIGHTING_LIT)
+        self.alpha = Component.dict2float(input_dict=self.parameters,
+                                          key="alpha",
+                                          default_value=1.0)
 
         # State Variables - Can be changed by events
         self.state_highlighted = False

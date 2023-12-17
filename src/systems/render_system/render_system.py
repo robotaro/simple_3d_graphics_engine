@@ -134,9 +134,9 @@ class RenderSystem(System):
         self.shadow_map_depth_texture = None
         self.shadow_map_framebuffer = None
 
-        # Flags
         self._sample_entity_location = None
 
+        # Flags
         self._ambient_hemisphere_light_enabled = True
         self._point_lights_enabled = True
         self._directional_lights_enabled = False
@@ -405,6 +405,14 @@ class RenderSystem(System):
 
         camera_entity_uids = self.component_pool.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
 
+        program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
+
+        program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
+        program["directional_lights_enabled"].value = self._directional_lights_enabled
+        program["point_lights_enabled"].value = self._point_lights_enabled
+        program["gamma_correction_enabled"].value = self._gamma_correction_enabled
+        program["shadows_enabled"].value = self._shadows_enabled
+
         # Every Render pass operates on the OFFSCREEN buffers only
         for camera_uid in camera_entity_uids:
 
@@ -432,8 +440,6 @@ class RenderSystem(System):
                 moderngl.ONE,
                 moderngl.ONE)
 
-            program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
-
             # Setup camera
             camera_component.upload_uniforms(program=program)
             program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
@@ -457,11 +463,6 @@ class RenderSystem(System):
 
                 # Update Mesh uniforms
                 program["entity_id"].value = mesh_entity_uid
-                program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
-                program["directional_lights_enabled"].value = self._directional_lights_enabled
-                program["point_lights_enabled"].value = self._point_lights_enabled
-                program["gamma_correction_enabled"].value = self._gamma_correction_enabled
-                program["shadows_enabled"].value = self._shadows_enabled
 
                 # TODO: Technically, you only need to upload the material once since it doesn't change.
                 #       The program will keep its variable states!

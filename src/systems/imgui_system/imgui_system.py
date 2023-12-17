@@ -388,16 +388,16 @@ class ImguiSystem(System):
                                                                         "%.3f")
             material.dirty |= updated
 
-            updated, material.color_source = imgui.slider_int(
+            updated, material.ubo_data["color_source"] = imgui.slider_int(
                 "Color Source",
-                material.color_source,
+                material.ubo_data["color_source"],
                 min_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE,
                 max_value=constants.RENDER_MODE_COLOR_SOURCE_UV)
             material.dirty |= updated
 
-            updated, material.lighting_mode = imgui.slider_int(
+            updated, material.ubo_data["lighting_mode"] = imgui.slider_int(
                 "Lighting Mode",
-                material.lighting_mode,
+                material.ubo_data["lighting_mode"],
                 min_value=constants.RENDER_MODE_LIGHTING_SOLID,
                 max_value=constants.RENDER_MODE_LIGHTING_LIT)
             material.dirty |= updated

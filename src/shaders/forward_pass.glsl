@@ -1,5 +1,7 @@
 #version 430
 
+//================================================[ Vertex Shader ]=====================================================
+
 #if defined VERTEX_SHADER
 
 #define RENDER_MODE_COLOR_SOURCE_SINGLE 0
@@ -38,8 +40,6 @@ uniform mat4 dir_light_view_matrix;
 
 uniform vec3 camera_position;
 uniform int material_index = 0;
-uniform int color_source = 0;
-uniform int lighting_mode = 1;
 
 uniform GlobalAmbient global = GlobalAmbient(
     vec3(0.0, 1.0, 0.0),
@@ -57,7 +57,6 @@ out vec3 v_world_normal;
 out vec3 v_world_position;
 out vec3 v_camera_position;
 out vec3 v_ambient_color;
-out Material v_material;
 
 void main() {
 
@@ -67,7 +66,8 @@ void main() {
     v_world_position = (model_matrix * vec4(v_local_position, 1.0)).xyz;
     v_world_normal = mat3(transpose(inverse(model_matrix))) * in_normal;  // TODO: Check if this is correct
     v_camera_position = camera_position;
-    v_material = ubo_materials.material[material_index];
+
+    Material material = ubo_materials.material[material_index];
 
     // Make sure global ambient direction is unit length
     vec3 hemisphere_light_direction = normalize(hemisphere_light_direction);
@@ -76,9 +76,9 @@ void main() {
     float cos_theta = dot(hemisphere_light_direction, v_world_normal);
 
     vec3 base_color = vec3(0.0);
-    if (color_source == 0){
+    if (material.color_source == 0){
         base_color = ubo_materials.material[material_index].diffuse;
-    } else if(color_source == 1) {
+    } else if(material.color_source == 1) {
         base_color = in_color;
     }
 
@@ -88,9 +88,10 @@ void main() {
 
     gl_Position = projection_matrix * view_matrix * model_matrix * vec4(v_local_position, 1.0);
 }
-
+//===============================================[ Fragment Shader ]====================================================
 #elif defined FRAGMENT_SHADER
 
+#define MAX_MATERIALS 32
 #define MAX_POINT_LIGHTS 8
 #define MAX_DIRECTIONAL_LIGHTS 4
 
@@ -110,11 +111,15 @@ in vec3 v_world_normal;
 in vec3 v_camera_position;
 in vec3 v_world_position;
 in vec3 v_ambient_color;
-in Material v_material;
+
+layout (std140, binding = 0) uniform MaterialBlock {
+    Material material[MAX_MATERIALS];
+} ubo_materials;
 
 layout (std140, binding = 1) uniform PointLightBlock {
     PointLight point_light[MAX_POINT_LIGHTS];
 } ubo_point_lights;
+
 
 // Entity details
 uniform int entity_id;
@@ -126,10 +131,7 @@ uniform bool point_lights_enabled = true;
 uniform bool directional_lights_enabled = true;
 uniform bool gamma_correction_enabled = true;
 uniform bool shadows_enabled = false;
-
-uniform int color_source = 0;
-uniform int lighting_mode = 1;
-
+uniform int  material_index = 0;
 uniform mat4 model_matrix;
 
 uniform float gamma = 2.2;
@@ -143,37 +145,38 @@ uniform int num_directional_lights = 0;
 uniform DirectionalLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
 uniform sampler2D shadow_maps[MAX_DIRECTIONAL_LIGHTS]; // Assuming one shadow map per light
 
-vec3 calculate_directional_light(DirectionalLight light, vec3 material_color, vec3 normal, vec3 viewDir);
-vec3 calculate_point_light(PointLight light, vec3 normal, vec3 material_color, vec3 fragPos, vec3 viewDir);
+vec3 calculate_directional_light(DirectionalLight light, Material material, vec3 material_color, vec3 normal, vec3 viewDir);
+vec3 calculate_point_light(PointLight light, Material material, vec3 normal, vec3 material_color, vec3 fragPos, vec3 viewDir);
 float shadow_calculation(mat4 light_view_projection_matrix, sampler2D shadow_map, float normal);
 
 void main() {
 
+    Material material = ubo_materials.material[material_index];
     vec3 normal = normalize(v_world_normal);  // TODO: Consider not doint this per fragment. Assume normas ar unitary
     vec3 view_direction = normalize(v_camera_position - v_world_position);
-
     vec3 color_rgb = vec3(0.0);
 
     vec3 base_color = vec3(0.0);
-    if (color_source == 0){
-        base_color = v_material.diffuse;
+    if (material.color_source == 0){
+        base_color = material.diffuse;
     }
 
-    if (lighting_mode == 0){
+    if (material.lighting_mode == 0){
         color_rgb = base_color;
     }
 
     // Ambient Lighting
-    if (ambient_hemisphere_light_enabled && lighting_mode == 1)
+    if (ambient_hemisphere_light_enabled && material.lighting_mode == 1)
         color_rgb += v_ambient_color;
 
     // Point lights
-    if (point_lights_enabled && lighting_mode == 1)
+    if (point_lights_enabled && material.lighting_mode == 1)
         for(int i = 0; i < MAX_POINT_LIGHTS; i++)
         {
             if(ubo_point_lights.point_light[i].enabled == 0.0) continue;
             color_rgb += calculate_point_light(
                 ubo_point_lights.point_light[i],
+                material,
                 base_color,
                 normal,
                 v_world_position,
@@ -181,13 +184,13 @@ void main() {
         }
 
     // Directional lighting
-    if (directional_lights_enabled && lighting_mode == 1)
+    if (directional_lights_enabled && material.lighting_mode == 1)
         for(int i = 0; i < num_directional_lights; i++)
         {
             if (!directional_lights[i].enabled) continue;
 
             // Light
-            vec3 dir_light = calculate_directional_light(directional_lights[i], base_color, normal, view_direction);
+            vec3 dir_light = calculate_directional_light(directional_lights[i], material, base_color, normal, view_direction);
 
             // Shadow
             if (shadows_enabled)
@@ -207,7 +210,7 @@ void main() {
         }
 
     // Gamma correction
-    if (gamma_correction_enabled && lighting_mode == 1)
+    if (gamma_correction_enabled && material.lighting_mode == 1)
         color_rgb = pow(color_rgb, vec3(1.0 / gamma));
 
     out_fragment_color = vec4(color_rgb, 1.0);
@@ -216,7 +219,7 @@ void main() {
     out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
 
-vec3 calculate_directional_light(DirectionalLight light, vec3 material_color, vec3 normal, vec3 viewDir)
+vec3 calculate_directional_light(DirectionalLight light, Material material, vec3 material_color, vec3 normal, vec3 viewDir)
 {
     vec3 lightDir = normalize(-light.direction);
 
@@ -225,16 +228,16 @@ vec3 calculate_directional_light(DirectionalLight light, vec3 material_color, ve
 
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), v_material.shininess_factor);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess_factor);
 
     // Combine results
     vec3 diffuse  = light.diffuse * diff * material_color;
-    vec3 specular = light.specular * spec * v_material.specular;
+    vec3 specular = light.specular * spec * material.specular;
 
     return diffuse + specular;
 }
 
-vec3 calculate_point_light(PointLight light, vec3 material_color, vec3 normal, vec3 fragPos, vec3 viewDir)
+vec3 calculate_point_light(PointLight light, Material material, vec3 material_color, vec3 normal, vec3 fragPos, vec3 viewDir)
 {
     // Direction
     vec3 lightDir = normalize(light.position - fragPos);
@@ -244,7 +247,7 @@ vec3 calculate_point_light(PointLight light, vec3 material_color, vec3 normal, v
 
     // specular shading
     vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), v_material.shininess_factor);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess_factor);
 
     // attenuation
     float distance    = length(light.position - fragPos);
@@ -254,7 +257,7 @@ vec3 calculate_point_light(PointLight light, vec3 material_color, vec3 normal, v
 
     // combine results
     vec3 diffuse  = light.diffuse  * diff * material_color;
-    vec3 specular = light.specular * spec * v_material.specular;
+    vec3 specular = light.specular * spec * material.specular;
     diffuse  *= attenuation;
     specular *= attenuation;
     return  diffuse + specular;
