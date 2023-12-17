@@ -562,7 +562,8 @@ class RenderSystem(System):
                 # TODO: Technically, you only need to upload the material once since it doesn't change.
                 #       The program will keep its variable states!
                 if material is not None:
-                    program["color_diffuse"].value = material.diffuse_highlight if material.state_highlighted else material.diffuse
+                    program["color_diffuse"].value = material.ubo_data["diffuse_highlight"].flatten() \
+                        if material.state_highlighted else material.ubo_data["diffuse"].flatten()
 
                 # Render the mesh
                 mesh_component.vaos[constants.SHADER_PROGRAM_OVERLAY_3D_PASS].render(mode=mesh_component.render_mode)

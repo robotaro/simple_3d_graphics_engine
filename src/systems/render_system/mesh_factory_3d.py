@@ -172,7 +172,7 @@ class MeshFactory3D:
 
         return vertices, normals, colors, indices
 
-    def create_icosphere(self, radius: float, subdivisions: int, color=None, transform=None)-> tuple:
+    def create_icosphere(self, radius: float, subdivisions: int, color=None, transform=None) -> tuple:
         if color is None:
             color = self.default_color
 

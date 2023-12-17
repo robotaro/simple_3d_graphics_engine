@@ -1,12 +1,12 @@
 struct Material {
     vec3 diffuse;
-    float padding00;
-    vec3 ambient;
-    float padding01;
+    float padding_0;
+    vec3 diffuse_highlight;
+    float padding_1;
     vec3 specular;
-    float padding02;
+    float padding_2;
     float shininess_factor;
     float metallic_factor;
     float roughness_factor;
-    float padding03;
+    float padding_3;
 };

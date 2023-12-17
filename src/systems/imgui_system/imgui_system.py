@@ -357,25 +357,41 @@ class ImguiSystem(System):
         material = material_pool.get(self.selected_entity_uid, None)
         if material and not material.system_owned:
             imgui.text(f"Material")
-            _, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
-            _, material.diffuse_highlight = imgui.color_edit3("Diffuse Highlight", *material.diffuse_highlight)
-            _, material.specular = imgui.color_edit3("Specular", *material.specular)
-            _, material.shininess_factor = imgui.drag_float("Shininess Factor",
-                                                            material.shininess_factor,
-                                                            0.05,
-                                                            0.0,
-                                                            32.0,
-                                                            "%.3f")
-            _, material.color_source = imgui.slider_int(
+
+            diffuse = tuple(material.ubo_data["diffuse"].flatten())
+            updated, material.ubo_data["diffuse"][:] = imgui.color_edit3("Diffuse", *diffuse)
+            material.dirty |= updated
+
+            diffuse_highlight = tuple(material.ubo_data["diffuse_highlight"].flatten())
+            updated, material.ubo_data["diffuse_highlight"][:] = imgui.color_edit3("Diffuse Highlight", *diffuse_highlight)
+            material.dirty |= updated
+
+            specular = tuple(material.ubo_data["specular"].flatten())
+            updated, material.ubo_data["specular"][:] = imgui.color_edit3("Specular", *specular)
+            material.dirty |= updated
+
+            updated, material.ubo_data["shininess_factor"] = imgui.drag_float("Shininess Factor",
+                                                                        material.ubo_data["shininess_factor"],
+                                                                        0.05,
+                                                                        0.0,
+                                                                        32.0,
+                                                                        "%.3f")
+            material.dirty |= updated
+
+            updated, material.color_source = imgui.slider_int(
                 "Color Source",
                 material.color_source,
                 min_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE,
                 max_value=constants.RENDER_MODE_COLOR_SOURCE_UV)
-            _, material.lighting_mode = imgui.slider_int(
+            material.dirty |= updated
+
+            updated, material.lighting_mode = imgui.slider_int(
                 "Lighting Mode",
                 material.lighting_mode,
                 min_value=constants.RENDER_MODE_LIGHTING_SOLID,
                 max_value=constants.RENDER_MODE_LIGHTING_LIT)
+            material.dirty |= updated
+
 
             imgui.spacing()
 
