@@ -7,6 +7,7 @@
 #define RENDER_MODE_COLOR_SOURCE_UV 2
 
 #define MAX_MATERIALS 32
+#define MAX_TRANSFORMS 128
 
 #include definition_material.glsl
 
@@ -27,9 +28,12 @@ layout (std140, binding = 0) uniform MaterialBlock {
     Material material[MAX_MATERIALS];
 } ubo_materials;
 
+layout (std140, binding = 3) uniform TransformBlock {
+    mat4 transforms[MAX_TRANSFORMS];
+}ubo_transforms;
+
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
-uniform mat4 model_matrix;
 uniform mat4 dir_light_view_matrix;
 
 uniform vec3 camera_position;
@@ -57,9 +61,11 @@ out Material v_material;
 
 void main() {
 
+    mat4 model_matrix = ubo_transforms.transforms[gl_InstanceID];
+
     v_local_position = in_vert;
     v_world_position = (model_matrix * vec4(v_local_position, 1.0)).xyz;
-    v_world_normal = mat3(transpose(inverse(model_matrix))) * in_normal;  // World normal
+    v_world_normal = mat3(transpose(inverse(model_matrix))) * in_normal;  // TODO: Check if this is correct
     v_camera_position = camera_position;
     v_material = ubo_materials.material[material_index];
 
@@ -87,7 +93,6 @@ void main() {
 
 #define MAX_POINT_LIGHTS 8
 #define MAX_DIRECTIONAL_LIGHTS 4
-
 
 #include definition_material.glsl
 #include definition_point_light.glsl

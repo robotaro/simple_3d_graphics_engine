@@ -1,4 +1,5 @@
 import numpy as np
+import moderngl
 
 from src.math import mat4
 from src.core.component import Component
@@ -17,7 +18,8 @@ class Transform3D(Component):
         "scale",
         "degrees",
         "input_values_updated",
-        "local_matrix_updated"
+        "local_matrix_updated",
+        "dirty"
     ]
 
     def __init__(self, parameters, system_owned=False):
@@ -56,6 +58,7 @@ class Transform3D(Component):
         self.inverse_world_matrix = np.eye(4, dtype=np.float32)  # DOesn't get update correctly for some reason
         self.input_values_updated = True
         self.local_matrix_updated = False
+        self.dirty = True
 
     def update(self) -> None:
         """
@@ -85,6 +88,15 @@ class Transform3D(Component):
                 np.array(self.rotation, dtype=np.float32),
                 np.array(self.scale, dtype=np.float32),)
             self.input_values_updated = False
+
+    def update_ubo(self, ubo: moderngl.UniformBlock):
+
+        #if not self.dirty:
+        #    return
+
+        # Write the data to the UBO
+        ubo.write(self.world_matrix.T.tobytes(), offset=0)
+        #self.dirty = False
 
     def move(self, delta_position: np.array):
         self.position += delta_position

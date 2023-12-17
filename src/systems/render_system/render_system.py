@@ -39,6 +39,7 @@ class RenderSystem(System):
         "materials_ubo",
         "point_lights_ubo",
         "directional_lights_ubo",
+        "transforms_ubo",
         "overlay_pass_texture_color",
         "overlay_pass_texture_depth",
         "overlay_pass_framebuffer",
@@ -100,6 +101,7 @@ class RenderSystem(System):
         self.materials_ubo = None
         self.point_lights_ubo = None
         self.directional_lights_ubo = None
+        self.transforms_ubo = None
 
         # Overlay 3D Pass
         self.overlay_pass_texture_color = None
@@ -194,6 +196,10 @@ class RenderSystem(System):
         zero_data = np.zeros(total_bytes, dtype='uint8')
         self.point_lights_ubo = self.ctx.buffer(data=zero_data.tobytes())
         self.point_lights_ubo.bind_to_uniform_block(binding=constants.UBO_BINDING_POINT_LIGHTS)
+
+        total_bytes = constants.SCENE_POINT_TRANSFORM_SIZE_BYTES * constants.SCENE_MAX_NUM_TRANSFORMS
+        self.transforms_ubo = self.ctx.buffer(reserve=total_bytes)
+        self.transforms_ubo.bind_to_uniform_block(binding=constants.UBO_BINDING_TRANSFORMS)
 
         self.create_framebuffers(window_size=self.buffer_size)
         return True
@@ -446,9 +452,11 @@ class RenderSystem(System):
                 if not mesh_component.visible or mesh_component.layer == constants.RENDER_SYSTEM_LAYER_OVERLAY:
                     continue
 
-                # Mesh uniforms
+                # Update Transform UBO
+                transform_3d_pool[mesh_entity_uid].update_ubo(ubo=self.transforms_ubo)
+
+                # Update Mesh uniforms
                 program["entity_id"].value = mesh_entity_uid
-                program["model_matrix"].write(transform_3d_pool[mesh_entity_uid].world_matrix.T.tobytes())
                 program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
                 program["directional_lights_enabled"].value = self._directional_lights_enabled
                 program["point_lights_enabled"].value = self._point_lights_enabled
