@@ -36,7 +36,9 @@ class RenderSystem(System):
         "forward_pass_texture_depth",
         "forward_pass_framebuffer",
         "debug_forward_pass_framebuffer",
-        "material_ubo",
+        "materials_ubo",
+        "point_lights_ubo",
+        "directional_lights_ubo",
         "overlay_pass_texture_color",
         "overlay_pass_texture_depth",
         "overlay_pass_framebuffer",
@@ -94,8 +96,10 @@ class RenderSystem(System):
         # Debug Forward Pass
         self.debug_forward_pass_framebuffer = None
 
-        # Materials
-        self.material_ubo = None
+        # UBOs
+        self.materials_ubo = None
+        self.point_lights_ubo = None
+        self.directional_lights_ubo = None
 
         # Overlay 3D Pass
         self.overlay_pass_texture_color = None
@@ -181,9 +185,14 @@ class RenderSystem(System):
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
                                                            program=self.shader_program_library["screen_quad"])
 
-        # Material UBO
-        self.material_ubo = self.ctx.buffer(reserve=constants.SCENE_MATERIAL_STRUCT_SIZE_BYTES * 32)
-        self.material_ubo.bind_to_uniform_block(binding=0)
+        # UBOs
+        total_bytes = constants.SCENE_MATERIAL_STRUCT_SIZE_BYTES * constants.SCENE_MAX_NUM_MATERIALS
+        self.materials_ubo = self.ctx.buffer(reserve=total_bytes)
+        self.materials_ubo.bind_to_uniform_block(binding=constants.UBO_BINDING_MATERIALS)
+
+        total_bytes = constants.SCENE_POINT_LIGHT_STRUCT_SIZE_BYTES * constants.SCENE_MAX_NUM_POINT_LIGHTS
+        self.point_lights_ubo = self.ctx.buffer(reserve=total_bytes)
+        self.point_lights_ubo.bind_to_uniform_block(binding=constants.UBO_BINDING_POINT_LIGHTS)
 
         self.create_framebuffers(window_size=self.buffer_size)
         return True
@@ -450,7 +459,7 @@ class RenderSystem(System):
                 material_component = material_pool[mesh_entity_uid]
                 if material_component is not None:
                     program["material_index"].value = material_component.ubo_index
-                    material_component.update_ubo(material_ubo=self.material_ubo)
+                    material_component.update_ubo(ubo=self.materials_ubo)
 
                 mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_FORWARD_PASS)
 
@@ -459,17 +468,10 @@ class RenderSystem(System):
     def upload_uniforms_point_lights(self, program: moderngl.Program):
 
         point_light_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
         program["num_point_lights"].value = len(point_light_pool)
         for index, (mesh_entity_uid, point_light_component) in enumerate(point_light_pool.items()):
-            light_transform = transform_3d_pool[mesh_entity_uid]
-
-            program[f"point_lights[{index}].position"] = light_transform.position
-            program[f"point_lights[{index}].diffuse"] = point_light_component.diffuse
-            program[f"point_lights[{index}].specular"] = point_light_component.specular
-            program[f"point_lights[{index}].attenuation_coeffs"] = point_light_component.attenuation_coeffs
-            program[f"point_lights[{index}].enabled"] = point_light_component.enabled
+            point_light_component.update_ubo(ubo=self.point_lights_ubo)
 
     def upload_uniforms_directional_lights(self, program: moderngl.Program):
 

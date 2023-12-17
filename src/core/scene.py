@@ -62,8 +62,9 @@ class Scene:
         "entity_uid_counter",
         "entities",
         "component_master_pool",
-        "entity_id2material_index_map",
-        "available_material_indices"
+        "available_point_light_indices",
+        "available_directional_light_indices",
+        "available_material_indices",
     ]
 
     def __init__(self, logger: logging.Logger):
@@ -75,8 +76,9 @@ class Scene:
         self.entities = {}
         self.component_master_pool = {component_type: {} for component_type, _ in Scene.COMPONENT_CLASS_MAP.items()}
 
-        self.entity_id2material_index_map = {}
         self.available_material_indices = [i for i in reversed(range(constants.SCENE_MAX_NUM_MATERIALS))]
+        self.available_point_light_indices = [i for i in reversed(range(constants.SCENE_MAX_NUM_POINT_LIGHTS))]
+        self.available_directional_light_indices = [i for i in reversed(range(constants.SCENE_MAX_NUM_DIRECTIONAL_LIGHTS))]
 
     def add_entity(self, entity_blueprint: dict, parent_entity_uid=None, system_owned=False) -> int:
 
@@ -116,6 +118,12 @@ class Scene:
         # TODO: This should expanded to all components that will be uploaded to the UBOs
         if component_type == constants.COMPONENT_TYPE_MATERIAL:
             parameters["ubo_index"] = self.available_material_indices.pop()
+
+        if component_type == constants.COMPONENT_TYPE_POINT_LIGHT:
+            parameters["ubo_index"] = self.available_point_light_indices.pop()
+
+        if component_type == constants.COMPONENT_TYPE_POINT_LIGHT:
+            parameters["ubo_index"] = self.available_point_light_indices.pop()
 
         # Safety
         if component_pool is None:

@@ -1,8 +1,10 @@
 struct PointLight {
     vec3 position;
+    float padding_0;
     vec3 diffuse;
-    vec3 specular;
-    vec3 attenuation_coeffs;
     float intensity;
-    bool enabled;
+    vec3 specular;
+    float enabled;
+    vec3 attenuation_coeffs;
+    float padding_1;
 };

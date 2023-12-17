@@ -392,7 +392,6 @@ class ImguiSystem(System):
                 max_value=constants.RENDER_MODE_LIGHTING_LIT)
             material.dirty |= updated
 
-
             imgui.spacing()
 
     def gui_tab_resources(self):

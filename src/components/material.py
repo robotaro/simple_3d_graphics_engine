@@ -42,7 +42,6 @@ class Material(Component):
     def __init__(self, parameters, system_owned=False):
         super().__init__(parameters=parameters, system_owned=system_owned)
 
-        # TODO: Make this official
         self.ubo_index = parameters.get("ubo_index", 0)
         self.ubo_data = np.empty((1,), dtype=Material._material_dtype)
 
@@ -79,14 +78,13 @@ class Material(Component):
         self.state_highlighted = False
         self.dirty = True
 
-    def update_ubo(self, material_ubo: moderngl.UniformBlock):
+    def update_ubo(self, ubo: moderngl.UniformBlock):
 
         if not self.dirty:
             return
 
         # Write the data to the UBO
-        material_ubo.write(self.ubo_data.tobytes(),
-                           offset=self.ubo_index * constants.SCENE_MATERIAL_STRUCT_SIZE_BYTES)
+        ubo.write(self.ubo_data.tobytes(), offset=self.ubo_index * constants.SCENE_MATERIAL_STRUCT_SIZE_BYTES)
         self.dirty = False
 
     def is_transparent(self) -> bool:

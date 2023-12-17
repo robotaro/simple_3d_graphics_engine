@@ -23,7 +23,6 @@ in vec3 in_vert;
 in vec3 in_normal;
 in vec3 in_color;
 
-
 layout (std140, binding = 0) uniform MaterialBlock {
     Material material[MAX_MATERIALS];
 } ubo_materials;
@@ -85,8 +84,9 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
-#define MAX_DIRECTIONAL_LIGHTS 4
 #define MAX_POINT_LIGHTS 8
+#define MAX_DIRECTIONAL_LIGHTS 4
+
 
 #include definition_material.glsl
 #include definition_point_light.glsl
@@ -105,6 +105,10 @@ in vec3 v_view_position;
 in vec3 v_world_position;
 in vec3 v_ambient_color;
 in Material v_material;
+
+layout (std140, binding = 1) uniform PointLightBlock {
+    Material material[MAX_POINT_LIGHTS];
+} ubo_materials;
 
 // Entity details
 uniform int entity_id;
@@ -163,7 +167,7 @@ void main() {
     if (point_lights_enabled && lighting_mode == 1)
         for(int i = 0; i < num_point_lights; i++)
         {
-            if(!point_lights[i].enabled) continue;
+            if(point_lights[i].enabled == 0.0) continue;
             color_rgb += calculate_point_light(point_lights[i], base_color, normal, v_world_position, view_direction);
         }
 
