@@ -21,7 +21,7 @@ from src.utilities import utils_logging, utils_xml2scene, utils_io
 # Core Modules
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
-from src.core.scene import ComponentPool
+from src.core.scene import Scene
 from src.core.data_manager import DataManager
 
 
@@ -77,7 +77,7 @@ class Editor:
         self.vertical_sync = vertical_sync
 
         # Core modules - MUST BE CREATED BEFORE ANY SYSTEM!
-        self.component_pool = ComponentPool(logger=self.logger)
+        self.component_pool = Scene(logger=self.logger)
         self.event_publisher = EventPublisher(logger=self.logger)
         self.action_publisher = ActionPublisher(logger=self.logger)
         self.data_manager = DataManager(logger=self.logger)

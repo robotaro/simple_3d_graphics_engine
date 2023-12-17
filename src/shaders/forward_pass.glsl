@@ -6,6 +6,8 @@
 #define RENDER_MODE_COLOR_SOURCE_BUFFER 1
 #define RENDER_MODE_COLOR_SOURCE_UV 2
 
+#define MAX_MATERIALS 32
+
 #include definition_material.glsl
 
 struct GlobalAmbient
@@ -21,15 +23,17 @@ in vec3 in_vert;
 in vec3 in_normal;
 in vec3 in_color;
 
+
 layout (std140, binding = 0) uniform MaterialBlock {
-    Material material;
-} uboMaterial;
+    Material material[MAX_MATERIALS];
+} ubo_materials;
 
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
 uniform mat4 model_matrix;
 uniform mat4 dir_light_view_matrix;
 
+uniform int material_index = 0;
 uniform int color_source = 0;
 uniform int lighting_mode = 1;
 
@@ -57,7 +61,7 @@ void main() {
     v_world_position = (model_matrix * vec4(v_local_position, 1.0)).xyz;
     v_world_normal = mat3(transpose(inverse(model_matrix))) * in_normal;  // World normal
     v_view_position = view_matrix[3].xyz;
-    v_material = uboMaterial.material;
+    v_material = ubo_materials.material[material_index];
 
     // Make sure global ambient direction is unit length
     vec3 hemisphere_light_direction = normalize(hemisphere_light_direction);
@@ -67,7 +71,7 @@ void main() {
 
     vec3 base_color = vec3(0.0);
     if (color_source == 0){
-        base_color = uboMaterial.material.diffuse;
+        base_color = ubo_materials.material[material_index].diffuse;
     } else if(color_source == 1) {
         base_color = in_color;
     }

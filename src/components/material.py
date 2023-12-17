@@ -2,14 +2,26 @@ import numpy as np
 import moderngl
 
 from src.core import constants
-from src.components.component import Component
+from src.core.component import Component
 
 
 class Material(Component):
 
     _type = constants.COMPONENT_TYPE_MESH  # TODO: I think I don't need to set the type as I can use the class itself
 
+    _material_dtype = np.dtype([
+        ('diffuse', '4f4'),
+        ('ambient', '4f4'),
+        ('specular', '4f4'),
+        ('shininess_factor', 'f4'),
+        ('metalic_factor', 'f4'),
+        ('roughness_factor', 'f4'),
+        ('padding', 'f4')  # Padding to align to vec4
+    ], align=True)
+
     __slots__ = [
+        "ubo_index",
+        "material_data",
         "diffuse",
         "diffuse_highlight",
         "specular",
@@ -20,11 +32,16 @@ class Material(Component):
         "color_source",
         "lighting_mode",
         "alpha",
-        "state_highlighted"
+        "state_highlighted",
+        "dirty"
     ]
 
     def __init__(self, parameters, system_owned=False):
         super().__init__(parameters=parameters, system_owned=system_owned)
+
+        # TODO: Make this official
+        self.ubo_index = parameters.get("ubo_index", 0)
+        self.material_data = np.empty((1, ), dtype=Material._material_dtype)
 
         # Colors
         self.diffuse = Component.dict2color(input_dict=self.parameters, key="diffuse", default_value=(0.85, 0.85, 0.85))
@@ -55,29 +72,22 @@ class Material(Component):
 
         # State Variables - Can be changed by events
         self.state_highlighted = False
+        self.dirty = True
 
-    def upload_uniforms(self, material_ubo: moderngl.UniformBlock):
+    def update_ubo(self, material_ubo: moderngl.UniformBlock):
 
-        # TODO: [OPTIMISE] No data conversion should be done. All materials should come from an array
-        # Prepare the data with appropriate padding
-        material_struct_data = [
-            list(self.diffuse) + [0.0],  # Padding for vec3
-            [0.0, 0.0, 0.0, 0.0],  # Padding for vec3
-            list(self.specular) + [0.0],  # Padding for vec3
-            [self.shininess_factor,
-             self.metalic_factor,
-             self.roughness_factor,
-             0.0]  # Grouped as vec4
-        ]
+        if not self.dirty:
+            return
 
-        # Flatten the list to a single array
-        flattened_data = [item for sublist in material_struct_data for item in sublist]
-
-        # Create a NumPy array with the correct dtype
-        material_struct = np.array(flattened_data, dtype='f4')
+        # TODO: This only needs to up updated
+        self.material_data['diffuse'] = (*self.diffuse, 0)
+        self.material_data['ambient'] = (0, 0, 0, 0)
+        self.material_data['specular'] = (*self.specular, 0)
 
         # Write the data to the UBO
-        material_ubo.write(material_struct.tobytes())
+        material_ubo.write(self.material_data.tobytes(),
+                           offset=self.ubo_index * constants.SCENE_MATERIAL_STRUCT_SIZE_BYTES)
+        self.dirty = False
 
     def is_transparent(self) -> bool:
         return self.alpha == 1.0

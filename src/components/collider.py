@@ -1,6 +1,6 @@
 import numpy as np
 
-from src.components.component import Component
+from src.core.component import Component
 
 
 class Collider(Component):

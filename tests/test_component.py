@@ -1,4 +1,4 @@
-from src.components.component import Component
+from src.core.component import Component
 
 
 def test_dict2int():

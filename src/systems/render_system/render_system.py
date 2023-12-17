@@ -8,7 +8,7 @@ from src.core import constants
 from src.systems.system import System
 from src.systems.render_system.shader_program_library import ShaderProgramLibrary
 from src.systems.render_system.font_library import FontLibrary
-from src.core.scene import ComponentPool
+from src.core.scene import Scene
 from src.geometry_3d import ready_to_render
 from src.math import mat4
 
@@ -132,8 +132,8 @@ class RenderSystem(System):
         self._sample_entity_location = None
 
         self._ambient_hemisphere_light_enabled = True
-        self._point_lights_enabled = True
-        self._directional_lights_enabled = True
+        self._point_lights_enabled = False
+        self._directional_lights_enabled = False
         self._gamma_correction_enabled = True
         self._shadows_enabled = False
 
@@ -182,7 +182,7 @@ class RenderSystem(System):
                                                            program=self.shader_program_library["screen_quad"])
 
         # Material UBO
-        self.material_ubo = self.ctx.buffer(reserve=64)
+        self.material_ubo = self.ctx.buffer(reserve=constants.SCENE_MATERIAL_STRUCT_SIZE_BYTES * 32)
         self.material_ubo.bind_to_uniform_block(binding=0)
 
         self.create_framebuffers(window_size=self.buffer_size)
@@ -449,7 +449,8 @@ class RenderSystem(System):
                 #       The program will keep its variable states!
                 material_component = material_pool[mesh_entity_uid]
                 if material_component is not None:
-                    material_component.upload_uniforms(material_ubo=self.material_ubo)
+                    program["material_index"].value = material_component.ubo_index
+                    material_component.update_ubo(material_ubo=self.material_ubo)
 
                 mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_FORWARD_PASS)
 
@@ -660,7 +661,7 @@ class RenderSystem(System):
             # Render
             mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(mode=mesh_component.render_mode)
 
-    def render_shadow_mapping_pass(self, component_pool: ComponentPool):
+    def render_shadow_mapping_pass(self, component_pool: Scene):
 
         # TODO: This function's code is old and won't probably work!
 

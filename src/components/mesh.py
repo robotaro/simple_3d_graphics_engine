@@ -1,8 +1,7 @@
 import numpy as np
 
 from src.core import constants
-from src.components.component import Component
-from src.utilities import utils_mesh_3d, utils_io, utils_gltf
+from src.core.component import Component
 from src.systems.render_system.mesh_factory_3d import MeshFactory3D
 
 

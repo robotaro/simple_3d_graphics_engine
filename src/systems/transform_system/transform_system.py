@@ -3,7 +3,7 @@ import moderngl
 import logging
 
 from src.core import constants
-from src.core.scene import ComponentPool
+from src.core.scene import Scene
 from src.systems.system import System
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher

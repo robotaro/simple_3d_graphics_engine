@@ -2,7 +2,7 @@ import logging
 import moderngl
 from collections import deque
 
-from src.core.scene import ComponentPool
+from src.core.scene import Scene
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
 from src.core.data_manager import DataManager
@@ -29,7 +29,7 @@ class System:
 
     def __init__(self,
                  logger: logging.Logger,
-                 component_pool: ComponentPool,
+                 component_pool: Scene,
                  event_publisher: EventPublisher,
                  action_publisher: ActionPublisher,
                  data_manager: DataManager,

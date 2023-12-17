@@ -1,8 +1,7 @@
 import numpy as np
 
-from src.core import constants
 from src.math import mat4
-from src.components.component import Component
+from src.core.component import Component
 
 
 class Transform3D(Component):

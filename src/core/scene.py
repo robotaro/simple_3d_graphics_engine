@@ -1,8 +1,10 @@
+import numpy as np
 import logging
 from typing import Union
 
 from src.core import constants
-from src.components.component import Component
+from src.core.entity import Entity
+from src.core.component import Component
 from src.components.transform_3d import Transform3D
 from src.components.collider import Collider
 from src.components.mesh import Mesh
@@ -17,29 +19,10 @@ from src.components.robot import Robot
 from src.components.debug_mesh import DebugMesh
 from src.components.skeleton import Skeleton
 
-class Entity:
-
-    __slots__ = [
-        "name",
-        "root_parent_uid",
-        "parent_uid",
-        "children_uids",
-        "system_owned"
-    ]
-
-    def __init__(self, name="", parent=None, system_owned=False):
-        self.name = name
-        self.root_parent_uid = None  # TODO: This should be filled during initialisation, or when the entity tree is modified
-        self.parent_uid = parent
-        self.children_uids = []
-        self.system_owned = system_owned
-
-    @property
-    def has_parent(self):
-        return self.parent_uid is not None
+MAX_POINT_LIGHTS = 8
 
 
-class ComponentPool:
+class Scene:
 
     COMPONENT_CLASS_MAP = {
         constants.COMPONENT_TYPE_TRANSFORM_3D: Transform3D,
@@ -78,7 +61,9 @@ class ComponentPool:
         "logger",
         "entity_uid_counter",
         "entities",
-        "component_master_pool"
+        "component_master_pool",
+        "entity_id2material_index_map",
+        "available_material_indices"
     ]
 
     def __init__(self, logger: logging.Logger):
@@ -88,7 +73,10 @@ class ComponentPool:
         # TODO: We start from 2 to make it easy to discern the background [0, 1]
         self.entity_uid_counter = constants.COMPONENT_POOL_STARTING_ID_COUNTER
         self.entities = {}
-        self.component_master_pool = {component_type: {} for component_type, _ in ComponentPool.COMPONENT_CLASS_MAP.items()}
+        self.component_master_pool = {component_type: {} for component_type, _ in Scene.COMPONENT_CLASS_MAP.items()}
+
+        self.entity_id2material_index_map = {}
+        self.available_material_indices = [i for i in reversed(range(constants.SCENE_MAX_NUM_MATERIALS))]
 
     def add_entity(self, entity_blueprint: dict, parent_entity_uid=None, system_owned=False) -> int:
 
@@ -110,7 +98,7 @@ class ComponentPool:
         # And add components after
         for component in entity_blueprint["components"]:
 
-            component_type = ComponentPool.COMPONENT_NAME_MAP.get(component["name"], None)
+            component_type = Scene.COMPONENT_NAME_MAP.get(component["name"], None)
             if component_type is None:
                 self.logger.error(f"Component {component['name']} is not supported.")
                 continue
@@ -125,14 +113,18 @@ class ComponentPool:
     def add_component(self, entity_uid: int, component_type: int, parameters: dict, system_owned=False):
         component_pool = self.component_master_pool.get(component_type, None)
 
+        # TODO: This should expanded to all components that will be uploaded to the UBOs
+        if component_type == constants.COMPONENT_TYPE_MATERIAL:
+            parameters["ubo_index"] = self.available_material_indices.pop()
+
         # Safety
         if component_pool is None:
             raise KeyError(f"[ERROR] Component type '{component_type}' not supported")
         if entity_uid in component_pool:
             raise KeyError(f"[ERROR] Component type '{component_type}' already exists in component pool")
 
-        component_pool[entity_uid] = ComponentPool.COMPONENT_CLASS_MAP[component_type](parameters=parameters,
-                                                                                       system_owned=system_owned)
+        component_pool[entity_uid] = Scene.COMPONENT_CLASS_MAP[component_type](parameters=parameters,
+                                                                               system_owned=system_owned)
         return component_pool[entity_uid]
 
     def remove_component(self, entity_uid: int, component_type: int) -> bool:
@@ -142,6 +134,10 @@ class ComponentPool:
             return False
 
         component_pool = self.component_master_pool.get(component_type, None)
+
+        # TODO: This should expanded to all components that will be uploaded to the UBOs
+        if component_type == constants.COMPONENT_TYPE_MATERIAL:
+            self.available_material_indices.append(component_pool[entity_uid].ubo_index)
 
         # Safety
         if component_pool is None:

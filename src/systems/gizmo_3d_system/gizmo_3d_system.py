@@ -5,7 +5,7 @@ import numpy as np
 from src.core import constants
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
-from src.core.scene import ComponentPool
+from src.core.scene import Scene
 from src.math import ray_intersection, mat4
 from src.utilities import utils_camera
 from src.systems.system import System
