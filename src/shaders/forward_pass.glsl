@@ -120,7 +120,6 @@ layout (std140, binding = 1) uniform PointLightBlock {
     PointLight point_light[MAX_POINT_LIGHTS];
 } ubo_point_lights;
 
-
 // Entity details
 uniform int entity_id;
 uniform int entity_render_mode;
@@ -174,6 +173,7 @@ void main() {
         for(int i = 0; i < MAX_POINT_LIGHTS; i++)
         {
             if(ubo_point_lights.point_light[i].enabled == 0.0) continue;
+
             color_rgb += calculate_point_light(
                 ubo_point_lights.point_light[i],
                 material,

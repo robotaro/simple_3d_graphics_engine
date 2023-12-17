@@ -118,7 +118,7 @@
         <transform_3d position="-3 0 3" degrees="true"/>
     </entity>
 
-    <entity name="Red Sphere">
+    <entity name="Table">
         <!-- <mesh shape="icosphere" radius="0.5" subdivisions="4"/> -->
         <mesh resource_id="table/mesh_0"/>
         <collider shape="sphere" radius="0.5"/>

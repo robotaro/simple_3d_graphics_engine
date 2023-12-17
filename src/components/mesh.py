@@ -113,6 +113,9 @@ class Mesh(Component):
         if self.vbo_normals:
             self.vbo_normals.release()
 
+        if self.vbo_colors:
+            self.vbo_colors.release()
+
         if self.vbo_uvs:
             self.vbo_uvs.release()
 
@@ -156,6 +159,8 @@ class Mesh(Component):
             mesh_resource = data_manager.data_groups[resource_id]
             self.vertices = mesh_resource.data_blocks["vertices"].data
             self.normals = mesh_resource.data_blocks["normals"].data
+            if "colors" in mesh_resource.data_blocks:
+                self.colors = mesh_resource.data_blocks["colors"].data
             if "indices" in mesh_resource.data_blocks:
                 self.indices = mesh_resource.data_blocks["indices"].data
             return

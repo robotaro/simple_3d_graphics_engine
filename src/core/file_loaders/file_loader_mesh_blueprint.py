@@ -22,6 +22,7 @@ class FileLoaderMeshBlueprint(FileLoader):
             new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_MESH)
             new_resource.data_blocks["vertices"] = DataBlock(data=new_mesh["vertices"])
             new_resource.data_blocks["normals"] = DataBlock(data=new_mesh["normals"])
+            new_resource.data_blocks["colors"] = DataBlock(data=new_mesh["colors"])
             if new_mesh["indices"] is not None:
                 new_resource.data_blocks["indices"] = DataBlock(data=new_mesh["indices"])
 
