@@ -48,11 +48,15 @@ class TransformSystem(System):
 
             if entity.parent_uid is None:
                 transform.world_matrix = transform.local_matrix
+                mat4.even_faster_inverse(in_mat4=transform.world_matrix,
+                                         out_mat4=transform.inverse_world_matrix)
                 continue
 
             # TODO: Think of a way to minimise necessary updates. Probably do it when we move to DOD
             parent_transform = transform_3d_pool[entity.parent_uid]
             transform.world_matrix = parent_transform.world_matrix @ transform.local_matrix
+            mat4.even_faster_inverse(in_mat4=transform.world_matrix,
+                                     out_mat4=transform.inverse_world_matrix)
 
         # ================= Process actions =================
 

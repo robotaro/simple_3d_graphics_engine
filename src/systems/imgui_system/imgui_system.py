@@ -303,25 +303,35 @@ class ImguiSystem(System):
         point_light_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
         point_light = point_light_pool.get(self.selected_entity_uid, None)
         if point_light and not point_light.system_owned:
-            imgui.text(f"Colors")
-            _, point_light.diffuse = imgui.drag_float3("Diffuse Color",
-                                                       *point_light.diffuse,
-                                                       0.005,
-                                                       0.0,
-                                                       1.0,
-                                                       "%.3f")
-            _, point_light.specular = imgui.drag_float3("Specular Color",
-                                                        *point_light.specular,
-                                                        0.005,
-                                                        0.0,
-                                                        1.0,
-                                                        "%.3f")
-            _, point_light.attenuation_coeffs = imgui.drag_float3("Attenuation Coeffs.",
-                                                                  *point_light.attenuation_coeffs,
-                                                                  0.005,
-                                                                  0.0,
-                                                                  100.0,
-                                                                  "%.3f")
+            imgui.text(f"Point Light")
+
+            position = tuple(point_light.ubo_data["position"].flatten())
+            updated, point_light.ubo_data["position"][:] = imgui.drag_float3("Light Position",
+                                                                             *position,
+                                                                             0.005,
+                                                                             -1000.0,
+                                                                             1000.0,
+                                                                             "%.3f")
+            point_light.dirty |= updated
+
+            diffuse = tuple(point_light.ubo_data["diffuse"].flatten())
+            updated, point_light.ubo_data["diffuse"][:] = imgui.color_edit3("Light Diffuse", *diffuse)
+            point_light.dirty |= updated
+
+            specular = tuple(point_light.ubo_data["specular"].flatten())
+            updated, point_light.ubo_data["specular"][:] = imgui.color_edit3("Light Specular", *specular)
+            point_light.dirty |= updated
+
+            attenuation_coeffs = tuple(point_light.ubo_data["attenuation_coeffs"].flatten())
+            updated, point_light.ubo_data["attenuation_coeffs"][:] = imgui.drag_float3("Attenuation Coeffs.",
+                                                                                       *attenuation_coeffs,
+                                                                                       0.005,
+                                                                                       0.0,
+                                                                                       100.0,
+                                                                                       "%.3f")
+            point_light.dirty |= updated
+
+            #_, camera.is_perspective = imgui.checkbox("Perspective", camera.is_perspective)
 
             imgui.spacing()
 
@@ -359,7 +369,7 @@ class ImguiSystem(System):
             imgui.text(f"Material")
 
             diffuse = tuple(material.ubo_data["diffuse"].flatten())
-            updated, material.ubo_data["diffuse"][:] = imgui.color_edit3("Diffuse", *diffuse)
+            updated, material.ubo_data["diffuse"][:] = imgui.color_edit3("Material Diffuse", *diffuse)
             material.dirty |= updated
 
             diffuse_highlight = tuple(material.ubo_data["diffuse_highlight"].flatten())

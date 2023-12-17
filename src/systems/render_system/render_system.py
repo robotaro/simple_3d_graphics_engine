@@ -136,7 +136,7 @@ class RenderSystem(System):
         self._sample_entity_location = None
 
         self._ambient_hemisphere_light_enabled = True
-        self._point_lights_enabled = False
+        self._point_lights_enabled = True
         self._directional_lights_enabled = False
         self._gamma_correction_enabled = True
         self._shadows_enabled = False
@@ -191,7 +191,8 @@ class RenderSystem(System):
         self.materials_ubo.bind_to_uniform_block(binding=constants.UBO_BINDING_MATERIALS)
 
         total_bytes = constants.SCENE_POINT_LIGHT_STRUCT_SIZE_BYTES * constants.SCENE_MAX_NUM_POINT_LIGHTS
-        self.point_lights_ubo = self.ctx.buffer(reserve=total_bytes)
+        zero_data = np.zeros(total_bytes, dtype='uint8')
+        self.point_lights_ubo = self.ctx.buffer(data=zero_data.tobytes())
         self.point_lights_ubo.bind_to_uniform_block(binding=constants.UBO_BINDING_POINT_LIGHTS)
 
         self.create_framebuffers(window_size=self.buffer_size)
@@ -429,7 +430,7 @@ class RenderSystem(System):
 
             # Setup camera
             camera_component.upload_uniforms(program=program)
-            program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
+            program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
 
             # Setup lights
             self.upload_uniforms_point_lights(program=program)
@@ -469,7 +470,6 @@ class RenderSystem(System):
 
         point_light_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
 
-        program["num_point_lights"].value = len(point_light_pool)
         for index, (mesh_entity_uid, point_light_component) in enumerate(point_light_pool.items()):
             point_light_component.update_ubo(ubo=self.point_lights_ubo)
 
@@ -508,7 +508,7 @@ class RenderSystem(System):
 
             program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
             camera_component.upload_uniforms(program=program)
-            program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
+            program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
 
             debug_mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_DEBUG_FORWARD_PASS)
 
@@ -542,7 +542,7 @@ class RenderSystem(System):
 
             # Setup camera
             camera_component.upload_uniforms(program=program)
-            program["view_matrix"].write(camera_transform.world_matrix.T.tobytes())
+            program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
 
             # Render meshes
             for mesh_entity_uid, mesh_component in mesh_pool.items():
@@ -658,7 +658,7 @@ class RenderSystem(System):
             # Upload uniforms
             program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
             camera_component.upload_uniforms(program=program)
-            program["view_matrix"].write(transform_3d_pool[camera_uid].world_matrix.T.tobytes())
+            program["view_matrix"].write(transform_3d_pool[camera_uid].inverse_world_matrix.T.tobytes())
             program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
 
             # Render
@@ -696,7 +696,7 @@ class RenderSystem(System):
             light_transform = component_pool.get_component(entity_uid=directional_light_uid,
                                                            component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
-            program["view_matrix"].write(light_transform.world_matrix.T.tobytes())
+            program["view_matrix"].write(light_transform.inverse_world_matrix.T.tobytes())
             program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
 
             mesh_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(mesh_component.render_mode)

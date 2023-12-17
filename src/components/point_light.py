@@ -38,6 +38,9 @@ class PointLight(Component):
         self.ubo_index = parameters.get("ubo_index", 0)
         self.ubo_data = np.empty((1,), dtype=PointLight._material_dtype)
 
+        self.ubo_data["position"] = Component.dict2tuple_float(input_dict=self.parameters,
+                                                               key="position",
+                                                               default_value=(0.0, 0.0, 0.0))
         self.ubo_data["diffuse"] = Component.dict2tuple_float(input_dict=self.parameters,
                                                               key="diffuse",
                                                               default_value=(1.0, 1.0, 1.0))
@@ -47,9 +50,12 @@ class PointLight(Component):
         self.ubo_data["attenuation_coeffs"] = Component.dict2tuple_float(input_dict=parameters,
                                                                          key="attenuation_coeffs",
                                                                          default_value=(1.0, 0.09, 0.032))
-
-        self.ubo_data["intensity"] = Component.dict2float(input_dict=self.parameters, key="intensity", default_value=0.8)
-        self.ubo_data["enabled"] = Component.dict2bool(input_dict=self.parameters, key="enabled", default_value=True)
+        self.ubo_data["intensity"] = Component.dict2float(input_dict=self.parameters,
+                                                          key="intensity",
+                                                          default_value=0.8)
+        self.ubo_data["enabled"] = Component.dict2bool(input_dict=self.parameters,
+                                                       key="enabled",
+                                                       default_value=True)
 
         self.dirty = True
 

@@ -25,7 +25,7 @@ out vec3 v_color;
 
 void main() {
 
-    mat4 mvp = projection_matrix * inverse(view_matrix) * gs_transforms[gl_InvocationID];
+    mat4 mvp = projection_matrix * view_matrix * gs_transforms[gl_InvocationID];
 
     // X Axis (Red)
     gl_Position = mvp * vec4(0, 0, 0, 1);

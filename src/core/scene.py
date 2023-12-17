@@ -122,8 +122,8 @@ class Scene:
         if component_type == constants.COMPONENT_TYPE_POINT_LIGHT:
             parameters["ubo_index"] = self.available_point_light_indices.pop()
 
-        if component_type == constants.COMPONENT_TYPE_POINT_LIGHT:
-            parameters["ubo_index"] = self.available_point_light_indices.pop()
+        if component_type == constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT:
+            parameters["ubo_index"] = self.available_directional_light_indices.pop()
 
         # Safety
         if component_pool is None:

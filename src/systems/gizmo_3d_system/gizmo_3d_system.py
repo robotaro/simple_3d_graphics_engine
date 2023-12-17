@@ -319,7 +319,7 @@ class Gizmo3DSystem(System):
             gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
             camera_matrix = transform_3d_pool[camera_entity_uid].world_matrix
-            view_matrix = np.empty((4, 4), dtype=np.float32)
+            view_matrix = np.eye(4, dtype=np.float32)
             mat4.even_faster_inverse(in_mat4=camera_matrix, out_mat4=view_matrix)
 
             gizmo_scale = utils_camera.set_gizmo_scale(view_matrix=view_matrix, object_position=selected_world_position)
@@ -448,7 +448,6 @@ class Gizmo3DSystem(System):
                           out_vec3_array=self.gizmo_transformed_axes)
 
         camera_matrix = transform_3d_pool[active_camera_uid].world_matrix
-        projection_matrix = active_camera_component.get_projection_matrix()
 
         viewport_position = utils_camera.screen_gl_position_pixels2viewport_position(
             position_pixels=self.mouse_screen_position,

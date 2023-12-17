@@ -10,7 +10,7 @@ uniform mat4 model_matrix;
 
 void main() {
     // TODO: Remove inverse vie matrix and move to the CPU
-    gl_Position = projection_matrix * inverse(view_matrix) * model_matrix * vec4(in_vert, 1.0);
+    gl_Position = projection_matrix * view_matrix * model_matrix * vec4(in_vert, 1.0);
 }
 
 #elif defined FRAGMENT_SHADER

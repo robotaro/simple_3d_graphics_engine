@@ -32,6 +32,7 @@ uniform mat4 view_matrix;
 uniform mat4 model_matrix;
 uniform mat4 dir_light_view_matrix;
 
+uniform vec3 camera_position;
 uniform int material_index = 0;
 uniform int color_source = 0;
 uniform int lighting_mode = 1;
@@ -50,7 +51,7 @@ uniform vec3 hemisphere_light_direction = vec3(0.0, 1.0, 0.0);
 out vec3 v_local_position;
 out vec3 v_world_normal;
 out vec3 v_world_position;
-out vec3 v_view_position;
+out vec3 v_camera_position;
 out vec3 v_ambient_color;
 out Material v_material;
 
@@ -59,7 +60,7 @@ void main() {
     v_local_position = in_vert;
     v_world_position = (model_matrix * vec4(v_local_position, 1.0)).xyz;
     v_world_normal = mat3(transpose(inverse(model_matrix))) * in_normal;  // World normal
-    v_view_position = view_matrix[3].xyz;
+    v_camera_position = camera_position;
     v_material = ubo_materials.material[material_index];
 
     // Make sure global ambient direction is unit length
@@ -79,7 +80,7 @@ void main() {
     float alpha = 0.5 + (0.5 * cos_theta);
     v_ambient_color = alpha * global.top * base_color + (1.0 - alpha) * global.bottom * base_color;
 
-    gl_Position = projection_matrix * inverse(view_matrix) * model_matrix * vec4(v_local_position, 1.0);
+    gl_Position = projection_matrix * view_matrix * model_matrix * vec4(v_local_position, 1.0);
 }
 
 #elif defined FRAGMENT_SHADER
@@ -101,14 +102,14 @@ layout(location=3) out vec4 out_fragment_entity_info;
 // Input Buffers
 in vec3 v_local_position;
 in vec3 v_world_normal;
-in vec3 v_view_position;
+in vec3 v_camera_position;
 in vec3 v_world_position;
 in vec3 v_ambient_color;
 in Material v_material;
 
 layout (std140, binding = 1) uniform PointLightBlock {
-    Material material[MAX_POINT_LIGHTS];
-} ubo_materials;
+    PointLight point_light[MAX_POINT_LIGHTS];
+} ubo_point_lights;
 
 // Entity details
 uniform int entity_id;
@@ -132,10 +133,8 @@ uniform float gamma = 2.2;
 uniform mat4 view_matrix;
 
 // Lights
-uniform int num_point_lights = 0;
 uniform int num_directional_lights = 0;
 
-uniform PointLight point_lights[MAX_POINT_LIGHTS];
 uniform DirectionalLight directional_lights[MAX_DIRECTIONAL_LIGHTS];
 uniform sampler2D shadow_maps[MAX_DIRECTIONAL_LIGHTS]; // Assuming one shadow map per light
 
@@ -146,7 +145,7 @@ float shadow_calculation(mat4 light_view_projection_matrix, sampler2D shadow_map
 void main() {
 
     vec3 normal = normalize(v_world_normal);  // TODO: Consider not doint this per fragment. Assume normas ar unitary
-    vec3 view_direction = normalize(v_view_position - v_world_position);
+    vec3 view_direction = normalize(v_camera_position - v_world_position);
 
     vec3 color_rgb = vec3(0.0);
 
@@ -165,10 +164,15 @@ void main() {
 
     // Point lights
     if (point_lights_enabled && lighting_mode == 1)
-        for(int i = 0; i < num_point_lights; i++)
+        for(int i = 0; i < MAX_POINT_LIGHTS; i++)
         {
-            if(point_lights[i].enabled == 0.0) continue;
-            color_rgb += calculate_point_light(point_lights[i], base_color, normal, v_world_position, view_direction);
+            if(ubo_point_lights.point_light[i].enabled == 0.0) continue;
+            color_rgb += calculate_point_light(
+                ubo_point_lights.point_light[i],
+                base_color,
+                normal,
+                v_world_position,
+                view_direction);
         }
 
     // Directional lighting
