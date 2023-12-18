@@ -413,6 +413,7 @@ class RenderSystem(System):
         camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         mesh_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
         transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        multi_transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MULTI_TRANSFORM_3D)
         material_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
 
         # Every Render pass operates on the OFFSCREEN buffers only
@@ -457,6 +458,10 @@ class RenderSystem(System):
                 if transform is not None:
                     transform.update_ubo(ubo=self.transforms_ubo)
 
+                multi_transform = multi_transform_3d_pool.get(mesh_entity_uid, None)
+                if multi_transform is not None:
+                    multi_transform.update_ubo(ubo=self.transforms_ubo)
+
                 # Update Mesh uniforms
                 program["entity_id"].value = mesh_entity_uid
 
@@ -499,7 +504,6 @@ class RenderSystem(System):
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
         camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-        multi_transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MULTI_TRANSFORM_3D)
         mesh_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
         material_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
 
@@ -533,15 +537,9 @@ class RenderSystem(System):
                     continue
 
                 mesh_transform = transform_3d_pool.get(mesh_entity_uid, None)
-
                 program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
 
-
                 material = material_pool.get(mesh_entity_uid, None)
-
-                # Upload uniforms
-
-
                 if material is not None:
                     program["color_diffuse"].value = material.ubo_data["diffuse_highlight"].flatten() \
                         if material.state_highlighted else material.ubo_data["diffuse"].flatten()

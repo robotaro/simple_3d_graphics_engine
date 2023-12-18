@@ -156,13 +156,13 @@ class Mesh(Component):
 
         # Load an existing mesh file
         if resource_id is not None:
-            mesh_resource = data_manager.data_groups[resource_id]
-            self.vertices = mesh_resource.data_blocks["vertices"].data
-            self.normals = mesh_resource.data_blocks["normals"].data
-            if "colors" in mesh_resource.data_blocks:
-                self.colors = mesh_resource.data_blocks["colors"].data
-            if "indices" in mesh_resource.data_blocks:
-                self.indices = mesh_resource.data_blocks["indices"].data
+            data_group = data_manager.data_groups[resource_id]
+            self.vertices = data_group.data_blocks["vertices"].data
+            self.normals = data_group.data_blocks["normals"].data
+            if "colors" in data_group.data_blocks:
+                self.colors = data_group.data_blocks["colors"].data
+            if "indices" in data_group.data_blocks:
+                self.indices = data_group.data_blocks["indices"].data
             return
 
         if shape is None:

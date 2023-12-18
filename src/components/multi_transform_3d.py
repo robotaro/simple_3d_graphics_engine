@@ -2,6 +2,7 @@ import numpy as np
 import moderngl
 
 
+from src.math import mat4
 from src.core import constants
 from src.core.component import Component
 
@@ -28,7 +29,51 @@ class MultiTransform3D(Component):
         if resource_id is None:
             return
 
-        self.world_matrices = data_manager.data_groups[resource_id]
+        nodes_data_group = data_manager.data_groups[resource_id]
+
+        # Copy any relevant data from resource
+        num_children = nodes_data_group.data_blocks["num_children"].data.copy()
+        children_indices = nodes_data_group.data_blocks["children_indices"].data.copy()
+        parent_indices = nodes_data_group.data_blocks["parent_index"].data.copy()
+
+        # Allocate memory for bone matrices
+        num_bones = nodes_data_group.data_blocks["parent_index"].data.size
+        matrix_shape = (num_bones, 4, 4)
+        local_matrices = np.empty(matrix_shape, dtype=np.float32)
+        self.world_matrices = np.empty(matrix_shape, dtype=np.float32)
+
+        # Calculate local matrices
+        for bone_index in range(num_bones):
+            mat4.matrix_composition(
+                nodes_data_group.data_blocks["translation"].data[bone_index, :],
+                nodes_data_group.data_blocks["rotation"].data[bone_index, :],
+                nodes_data_group.data_blocks["scale"].data[bone_index, :],
+                local_matrices[bone_index, :, :])
+
+        # First find the root node:
+        root_nodes = [node_index for node_index, parent_index in enumerate(parent_indices) if parent_index == -1]
+        if len(root_nodes) == 0:
+            raise Exception("[ERROR] No root node (one with parent_index equals -1) was found")
+
+        next_node_indices = root_nodes
+
+        while len(next_node_indices) > 0:
+
+            current_node_index = next_node_indices.pop()
+            parent_index = parent_indices[current_node_index]
+            updated_children_indices = [children_indices[current_node_index, sub_index]
+                                for sub_index in range(num_children[current_node_index])]
+
+            if parent_index == -1:
+                parent_matrix = np.eye(4, dtype=np.float32)
+            else:
+                parent_matrix = self.world_matrices[parent_index, :, :]
+
+            self.world_matrices[current_node_index, :, :] = parent_matrix @ local_matrices[current_node_index, :, :]
+            next_node_indices.extend(updated_children_indices)
+
+        # Finally transpose the matrices in the array to align memory with
+        self.world_matrices = self.world_matrices.transpose((0, 2, 1))
         self.dirty = True
 
     def update_ubo(self, ubo: moderngl.UniformBlock):
