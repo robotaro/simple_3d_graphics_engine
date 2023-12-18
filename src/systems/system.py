@@ -15,7 +15,7 @@ class System:
         "event_publisher",
         "action_publisher",
         "data_manager",
-        "component_pool",
+        "scene",
         "action_queue",
         "current_action",
         "parameters",
@@ -29,7 +29,7 @@ class System:
 
     def __init__(self,
                  logger: logging.Logger,
-                 component_pool: Scene,
+                 scene: Scene,
                  event_publisher: EventPublisher,
                  action_publisher: ActionPublisher,
                  data_manager: DataManager,
@@ -42,7 +42,7 @@ class System:
         self.data_manager = data_manager
         self.action_queue = deque()
         self.current_action = None
-        self.component_pool = component_pool
+        self.scene = scene
         self.parameters = parameters
 
         # Event handling variables

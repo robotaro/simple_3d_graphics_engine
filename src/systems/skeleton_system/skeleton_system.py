@@ -69,7 +69,7 @@ class SkeletonSystem(System):
 
         # Populate list out-of-order
         uid2index = {}
-        for index, (entity_uid, entity) in enumerate(self.component_pool.entities.items()):
+        for index, (entity_uid, entity) in enumerate(self.scene.entities.items()):
             uid2index[entity_uid] = index
             temp_update_order.append((entity_uid, entity.parent_uid if entity.parent_uid is not None else -1))
 

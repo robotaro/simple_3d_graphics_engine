@@ -36,13 +36,15 @@ class TransformSystem(System):
             self.update_transform_tree()
             self.update_tree = False
 
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
         # TODO: [OPTIMIZE] Not all world matrices need to be recreated all the time! Take the dirty flags into account!
         for entity_uid in self.entity_uid_update_order:
 
-            entity = self.component_pool.entities[entity_uid]
-            transform = transform_3d_pool[entity_uid]
+            entity = self.scene.entities[entity_uid]
+            transform = transform_3d_pool.get(entity_uid, None)
+            if transform is None:
+                continue
 
             transform.update()
 
@@ -72,7 +74,7 @@ class TransformSystem(System):
 
         # Populate list out-of-order
         uid2index = {}
-        for index, (entity_uid, entity) in enumerate(self.component_pool.entities.items()):
+        for index, (entity_uid, entity) in enumerate(self.scene.entities.items()):
             uid2index[entity_uid] = index
             temp_update_order.append((entity_uid, entity.parent_uid if entity.parent_uid is not None else -1))
 

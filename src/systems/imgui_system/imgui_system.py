@@ -119,10 +119,10 @@ class ImguiSystem(System):
 
     def select_entity(self, entity_uid: int):
         self.selected_entity_uid = entity_uid
-        entity = self.component_pool.entities.get(self.selected_entity_uid, None)
+        entity = self.scene.entities.get(self.selected_entity_uid, None)
         if entity is not None:
             self.selected_entity_name = entity.name
-        self.selected_entity_components = self.component_pool.get_all_components(entity_uid=entity_uid)
+        self.selected_entity_components = self.scene.get_all_components(entity_uid=entity_uid)
 
     def publish_events(self):
         # Enable/Disable mouse buttons to other systems if it is hovering on any Imgui windows
@@ -269,7 +269,7 @@ class ImguiSystem(System):
         imgui.text(f"[ All Scene Entities ]")
         imgui.spacing()
 
-        for entity_uid, entity in self.component_pool.entities.items():
+        for entity_uid, entity in self.scene.entities.items():
 
             # Do not show any entities created and managed by the systems. They are required for them to work.
             if entity.system_owned:
@@ -300,7 +300,7 @@ class ImguiSystem(System):
         # ======================================================================
 
         # [ Point Light ]
-        point_light_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
+        point_light_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
         point_light = point_light_pool.get(self.selected_entity_uid, None)
         if point_light and not point_light.system_owned:
             imgui.text(f"Point Light")
@@ -336,14 +336,14 @@ class ImguiSystem(System):
             imgui.spacing()
 
         # [ Camera ]
-        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         camera = camera_pool.get(self.selected_entity_uid, None)
         if camera and not camera.system_owned:
             imgui.text(f"Camera")
             _, camera.is_perspective = imgui.checkbox("Perspective", camera.is_perspective)
 
         # [ Transform 3D ]
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
         transform = transform_3d_pool.get(self.selected_entity_uid, None)
         if transform and not transform.system_owned:
             imgui.text(f"Transform")
@@ -363,7 +363,7 @@ class ImguiSystem(System):
             imgui.spacing()
 
         # [ Material]
-        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+        material_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
         material = material_pool.get(self.selected_entity_uid, None)
         if material and not material.system_owned:
             imgui.text(f"Material")

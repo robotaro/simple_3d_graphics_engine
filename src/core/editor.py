@@ -51,7 +51,7 @@ class Editor:
                  "camera_components",
                  "system_class_map",
                  "systems",
-                 "component_pool",
+                 "scene",
                  "event_publisher",
                  "action_publisher",
                  "data_manager",
@@ -77,7 +77,7 @@ class Editor:
         self.vertical_sync = vertical_sync
 
         # Core modules - MUST BE CREATED BEFORE ANY SYSTEM!
-        self.component_pool = Scene(logger=self.logger)
+        self.scene = Scene(logger=self.logger)
         self.event_publisher = EventPublisher(logger=self.logger)
         self.action_publisher = ActionPublisher(logger=self.logger)
         self.data_manager = DataManager(logger=self.logger)
@@ -326,7 +326,7 @@ class Editor:
         new_system = selected_system_class(
             logger=self.logger,
             window_glfw=self.window_glfw,
-            component_pool=self.component_pool,
+            scene=self.scene,
             event_publisher=self.event_publisher,
             action_publisher=self.action_publisher,
             data_manager=self.data_manager,
@@ -362,7 +362,7 @@ class Editor:
 
         # Add entities to current scene
         for entity_blueprint in scene_blueprint["scene"]["entity"]:
-            self.component_pool.add_entity(entity_blueprint=entity_blueprint)
+            self.scene.add_entity(entity_blueprint=entity_blueprint)
 
     def load_scene_from_hdf5(self, scene_h5_fpath: str):
         pass
@@ -372,7 +372,7 @@ class Editor:
         # TODO: This is SORT OF a hack. Please think of a way to make this universal
         render_system = [system for system in self.systems if isinstance(system, RenderSystem)][0]
 
-        for _, pool in self.component_pool.component_master_pool.items():
+        for _, pool in self.scene.component_master_pool.items():
             for entity_uid, component in pool.items():
                 component.initialise(ctx=self.ctx,
                                      shader_library=render_system.shader_program_library,
@@ -380,7 +380,7 @@ class Editor:
                                      data_manager=self.data_manager)
 
     def release_components(self):
-        for component_id, components in self.component_pool.component_storage_map.items():
+        for component_id, components in self.scene.component_storage_map.items():
             for entity_uid, component in components.items():
                 component.release()
 

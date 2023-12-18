@@ -18,6 +18,7 @@ from src.components.gizmo_3d import Gizmo3D
 from src.components.robot import Robot
 from src.components.debug_mesh import DebugMesh
 from src.components.skeleton import Skeleton
+from src.components.multi_transform_3d import MultiTransform3D
 
 MAX_POINT_LIGHTS = 8
 
@@ -38,6 +39,7 @@ class Scene:
         constants.COMPONENT_TYPE_ROBOT: Robot,
         constants.COMPONENT_TYPE_DEBUG_MESH: DebugMesh,
         constants.COMPONENT_TYPE_SKELETON: Skeleton,
+        constants.COMPONENT_TYPE_MULTI_TRANSFORM_3D: MultiTransform3D,
     }
 
     COMPONENT_NAME_MAP = {
@@ -54,7 +56,8 @@ class Scene:
         "gizmo_3d": constants.COMPONENT_TYPE_GIZMO_3D,
         "robot": constants.COMPONENT_TYPE_ROBOT,
         "debug_mesh": constants.COMPONENT_TYPE_DEBUG_MESH,
-        "skeleton": constants.COMPONENT_TYPE_SKELETON
+        "skeleton": constants.COMPONENT_TYPE_SKELETON,
+        "multi_transform_3d": constants.COMPONENT_TYPE_MULTI_TRANSFORM_3D
     }
 
     __slots__ = [
