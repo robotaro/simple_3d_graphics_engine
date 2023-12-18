@@ -119,8 +119,7 @@
     </entity>
 
     <entity name="Table">
-        <!-- <mesh shape="icosphere" radius="0.5" subdivisions="4"/> -->
-        <mesh resource_id="table/mesh_0"/>
+        <mesh resource_id="gizmo/mesh_0"/>
         <collider shape="sphere" radius="0.5"/>
         <transform_3d position="2 0 2"/>
         <material diffuse="tab10_red" diffuse_highlight="tab10_orange" shininess_factor="32.0"/>

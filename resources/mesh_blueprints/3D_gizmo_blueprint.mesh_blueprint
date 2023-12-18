@@ -1,0 +1,117 @@
+[
+    {
+        "name": "cylinder",
+        "color": [
+            1.0,
+            0.0,
+            0.0
+        ],
+        "radius": 0.01,
+        "point_a": [
+            0,
+            0,
+            0
+        ],
+        "point_b": [
+            0.1,
+            0,
+            0
+        ],
+        "sections": 16
+    },
+    {
+        "name": "cone",
+        "color": [
+            1.0,
+            0.0,
+            0.0
+        ],
+        "radius": 0.02,
+        "height": 0.03,
+        "sections": 16,
+        "transform": [0, 0, 1, 0.1,
+                      0, 1, 0, 0,
+                      -1, 0, 0, 0,
+                      0, 0, 0, 1]
+    },
+    {
+        "name": "cylinder",
+        "color": [
+            0.0,
+            1.0,
+            0.0
+        ],
+        "radius": 0.01,
+        "point_a": [
+            0,
+            0,
+            0
+        ],
+        "point_b": [
+            0,
+            0.1,
+            0
+        ],
+        "sections": 16
+    },
+    {
+        "name": "cone",
+        "color": [
+            0.0,
+            1.0,
+            0.0
+        ],
+        "radius": 0.02,
+        "height": 0.03,
+        "sections": 16,
+        "transform": [1, 0, 0, 0,
+                      0, 0, 1, 0.1,
+                      0, -1, 0, 0,
+                      0, 0, 0, 1]
+    },
+    {
+        "name": "cylinder",
+        "color": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "radius": 0.01,
+        "point_a": [
+            0,
+            0,
+            0
+        ],
+        "point_b": [
+            0,
+            0,
+            0.1
+        ],
+        "sections": 16
+    },
+    {
+        "name": "cone",
+        "color": [
+            0.0,
+            0.0,
+            1.0
+        ],
+        "radius": 0.02,
+        "height": 0.03,
+        "sections": 16,
+        "transform": [1, 0, 0, 0,
+                      0, 1, 0, 0,
+                      0, 0, 1, 0.1,
+                      0, 0, 0, 1]
+    },
+    {
+        "name": "icosphere",
+        "color": [
+            1.0,
+            1.0,
+            1.0
+        ],
+        "radius": 0.02,
+        "segments": 2
+    }
+]

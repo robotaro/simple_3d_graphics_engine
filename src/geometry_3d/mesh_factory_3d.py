@@ -27,6 +27,7 @@ KEY_PRIMITIVE_INDICES = "indices"
 
 KEY_SHAPE_CYLINDER = "cylinder"
 KEY_SHAPE_BOX = "box"
+KEY_SHAPE_CONE = "cone"
 KEY_SHAPE_ICOSPHERE = "icosphere"
 KEY_SHAPE_CAPSULE = "capsule"
 
@@ -64,8 +65,7 @@ class MeshFactory3D:
                 raise ValueError(f"[ERROR] Shape does not have a '{KEY_NAME}' field")
 
             transform_list = shape.get(KEY_TRANSFORM, [])
-            transform = np.reshape(np.array(transform_list, dtype=np.float32)) \
-                                   if len(transform_list) == 0 else np.eye(4, dtype=np.float32)
+            transform = np.eye(4, dtype=np.float32) if len(transform_list) == 0 else np.reshape(np.array(transform_list, dtype=np.float32), (4, 4))
 
             if shape_name == KEY_SHAPE_CYLINDER:
                 vertices, normals, colors, indices = self.create_cylinder(
@@ -81,6 +81,14 @@ class MeshFactory3D:
                     width=shape.get(KEY_WIDTH, 1.0),
                     height=shape.get(KEY_HEIGHT, 1.0),
                     depth=shape.get(KEY_DEPTH, 1.0),
+                    color=shape.get(KEY_COLOR, self.default_color),
+                    transform=transform)
+
+            elif shape_name == KEY_SHAPE_CONE:
+                vertices, normals, colors, indices = self.create_cone(
+                    height=shape.get(KEY_HEIGHT, DEFAULT_HEIGHT),
+                    radius=shape.get(KEY_RADIUS, DEFAULT_RADIUS),
+                    sections=shape.get(KEY_SECTIONS, DEFAULT_CYLINDER_SECTIONS),
                     color=shape.get(KEY_COLOR, self.default_color),
                     transform=transform)
 
@@ -172,6 +180,30 @@ class MeshFactory3D:
 
         return vertices, normals, colors, indices
 
+    def create_cone(self, radius: float, height: float, sections: int, color=None, transform=None) -> tuple:
+        if color is None:
+            color = self.default_color
+
+        if transform is None:
+            transform = np.eye(4, dtype=np.float32)
+
+        box = trimesh.creation.cone(radius=radius, height=height, sections=sections)
+
+        vertices = np.array(box.vertices).astype('f4')
+        normals = np.array(box.vertex_normals).astype('f4')
+        indices = np.array(box.faces).astype('i4')
+        mat4.mul_vectors3(transform, vertices, vertices)
+
+        if self.use_triangle_normals:
+            vertices, normals, _ = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,
+                                                                            uvs=None,
+                                                                            faces=indices)
+            indices = None
+
+        colors = np.tile(np.array(color, dtype=np.float32), (vertices.shape[0], 1))
+
+        return vertices, normals, colors, indices
+
     def create_icosphere(self, radius: float, subdivisions: int, color=None, transform=None) -> tuple:
         if color is None:
             color = self.default_color
@@ -222,64 +254,3 @@ class MeshFactory3D:
 
     def __get_cylinder(self, parameters: dict):
         pass
-
-
-# DEBUG
-#factory = MeshFactory3D()
-table_shapes = [
-    # Tabletop (a box)
-    {
-        KEY_NAME: KEY_SHAPE_BOX,
-        KEY_WIDTH: 2.0,  # Tabletop width
-        KEY_HEIGHT: 0.1,  # Tabletop thickness
-        KEY_DEPTH: 1.0,  # Tabletop depth
-        KEY_COLOR: (0.8, 0.6, 0.4),  # Brown color
-        KEY_POINT_A: (0, 0.95, 0),
-        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0.95, 0, 1]
-    },
-    # Leg 1 (a cylinder)
-    {
-        KEY_NAME: KEY_SHAPE_CYLINDER,
-        KEY_RADIUS: 0.1,  # Leg radius
-        KEY_POINT_A: (-0.9, 0, -0.4),  # Bottom point of the leg
-        KEY_POINT_B: (-0.9, 0.9, -0.4),  # Top point of the leg (just below the tabletop)
-        KEY_SECTIONS: DEFAULT_CYLINDER_SECTIONS,
-        KEY_COLOR: (0.5, 0.3, 0.2),
-        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.9, 0, -0.4, 1]
-    },
-    # Leg 2
-    {
-        KEY_NAME: KEY_SHAPE_CYLINDER,
-        KEY_RADIUS: 0.1,
-        KEY_POINT_A: (-0.9, 0, 0.4),
-        KEY_POINT_B: (-0.9, 0.9, 0.4),
-        KEY_SECTIONS: DEFAULT_CYLINDER_SECTIONS,
-        KEY_COLOR: (0.5, 0.3, 0.2),
-        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.9, 0, 0.4, 1]
-    },
-    # Leg 3
-    {
-        KEY_NAME: KEY_SHAPE_CYLINDER,
-        KEY_RADIUS: 0.1,
-        KEY_POINT_A: (0.9, 0, -0.4),
-        KEY_POINT_B: (0.9, 0.9, -0.4),
-        KEY_SECTIONS: DEFAULT_CYLINDER_SECTIONS,
-        KEY_COLOR: (0.5, 0.3, 0.2),
-        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.9, 0, -0.4, 1]
-    },
-    # Leg 4
-    {
-        KEY_NAME: KEY_SHAPE_CYLINDER,
-        KEY_RADIUS: 0.1,
-        KEY_POINT_A: (0.9, 0, 0.4),
-        KEY_POINT_B: (0.9, 0.9, 0.4),
-        KEY_SECTIONS: DEFAULT_CYLINDER_SECTIONS,
-        KEY_COLOR: (0.5, 0.3, 0.2),
-        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.9, 0, 0.4, 1]
-    }
-]
-#t0 = time.perf_counter()
-#mesh = factory.generate_mesh(shapes=table_shapes)
-#t1 = time.perf_counter()
-#print(t1-t0)
-#g = 0

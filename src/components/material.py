@@ -45,7 +45,6 @@ class Material(Component):
         self.ubo_index = parameters.get("ubo_index", 0)
         self.ubo_data = np.empty((1,), dtype=Material._material_dtype)
 
-        # Colors
         self.ubo_data['diffuse'] = Component.dict2color(input_dict=self.parameters,
                                                         key="diffuse",
                                                         default_value=(0.85, 0.85, 0.85))
@@ -64,8 +63,6 @@ class Material(Component):
         self.ubo_data['roughness_factor'] = Component.dict2float(input_dict=self.parameters,
                                                                  key="roughness_factor",
                                                                  default_value=1.0)
-
-        # Render modes
         self.ubo_data['color_source'] = Component.dict2map(input_dict=self.parameters, key="color_source",
                                                            map_dict=constants.COLOR_SOURCE_MAP,
                                                            default_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE)

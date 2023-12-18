@@ -4,7 +4,7 @@ from src.core import constants
 from src.core.data_block import DataBlock
 from src.core.data_group import DataGroup
 from src.core.file_loaders.file_loader import FileLoader
-from src.systems.render_system.mesh_factory_3d import MeshFactory3D
+from src.geometry_3d.mesh_factory_3d import MeshFactory3D
 
 
 class FileLoaderMeshBlueprint(FileLoader):

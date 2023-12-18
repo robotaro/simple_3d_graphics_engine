@@ -2,7 +2,7 @@ import numpy as np
 
 from src.core import constants
 from src.core.component import Component
-from src.systems.render_system.mesh_factory_3d import MeshFactory3D
+from src.geometry_3d.mesh_factory_3d import MeshFactory3D
 
 
 class Mesh(Component):
