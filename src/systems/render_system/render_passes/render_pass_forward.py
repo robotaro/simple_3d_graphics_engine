@@ -7,7 +7,7 @@ from src.systems.render_system.render_pass import RenderPass
 
 class RenderPassForward(RenderPass):
 
-    _name = "forward_pass"
+    name = "forward_pass"
 
     __slots__ = [
         "forward_pass_texture_color",
@@ -64,7 +64,8 @@ class RenderPassForward(RenderPass):
                scene: Scene,
                materials_ubo: moderngl.Buffer,
                point_lights_ubo: moderngl.Buffer,
-               transforms_ubo: moderngl.Buffer):
+               transforms_ubo: moderngl.Buffer,
+               selected_entity_uid: int):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 

@@ -9,6 +9,8 @@ from src.systems.system import System
 from src.systems.render_system.shader_program_library import ShaderProgramLibrary
 from src.systems.render_system.font_library import FontLibrary
 from src.systems.render_system.render_passes.render_pass_forward import RenderPassForward
+from src.systems.render_system.render_passes.render_pass_overlay import RenderPassOverlay
+from src.systems.render_system.render_passes.render_pass_selection import RenderPassSelection
 from src.core.scene import Scene
 from src.geometry_3d import ready_to_render
 from src.math import mat4
@@ -31,18 +33,14 @@ class RenderSystem(System):
         "quads",
         "render_passes",
         "forward_render_pass",
+        "overlay_render_pass",
+        "selection_render_pass",
         "fullscreen_selected_texture",
         "debug_forward_pass_framebuffer",
         "materials_ubo",
         "point_lights_ubo",
         "directional_lights_ubo",
         "transforms_ubo",
-        "overlay_pass_texture_color",
-        "overlay_pass_texture_depth",
-        "overlay_pass_framebuffer",
-        "selection_pass_texture_color",
-        "selection_pass_texture_depth",
-        "selection_pass_framebuffer",
         "picker_buffer",
         "picker_program",
         "picker_output",
@@ -79,25 +77,22 @@ class RenderSystem(System):
         self.fullscreen_selected_texture = 0  # Color is selected by default
 
         # Render Passes
-        self.forward_render_pass = RenderPassForward(ctx=self.ctx, shader_program_library=self.shader_program_library)
+        self.forward_render_pass = RenderPassForward(ctx=self.ctx,
+                                                     shader_program_library=self.shader_program_library)
+        self.overlay_render_pass = RenderPassOverlay(ctx=self.ctx,
+                                                     shader_program_library=self.shader_program_library)
+        self.selection_render_pass = RenderPassSelection(ctx=self.ctx,
+                                                         shader_program_library=self.shader_program_library)
         self.render_passes = [
-            self.forward_render_pass]
+            self.forward_render_pass,
+            self.overlay_render_pass,
+            self.selection_render_pass]
 
         # UBOs
         self.materials_ubo = None
         self.point_lights_ubo = None
         self.directional_lights_ubo = None
         self.transforms_ubo = None
-
-        # Overlay 3D Pass
-        self.overlay_pass_texture_color = None
-        self.overlay_pass_texture_depth = None
-        self.overlay_pass_framebuffer = None
-
-        # Selection Pass
-        self.selection_pass_texture_color = None
-        self.selection_pass_texture_depth = None
-        self.selection_pass_framebuffer = None
 
         # Fragment Picking - altogether for now
         self.picker_buffer = None
@@ -188,39 +183,6 @@ class RenderSystem(System):
         for render_pass in self.render_passes:
             render_pass.create_framebuffers(window_size=window_size)
 
-        self._release_all_framebuffers_and_textures()
-
-        # Overlay 3D Pass
-        self.overlay_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
-        self.overlay_pass_texture_depth = self.ctx.depth_texture(size=window_size)
-        self.overlay_pass_framebuffer = self.ctx.framebuffer(
-            color_attachments=[self.overlay_pass_texture_color],
-            depth_attachment=self.overlay_pass_texture_depth)
-
-        # Selection Pass
-        self.selection_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
-        self.selection_pass_texture_color.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.selection_pass_texture_color.repeat_x = False  # This prevents outlining from spilling over to the other edge
-        self.selection_pass_texture_color.repeat_y = False
-        self.selection_pass_texture_depth = self.ctx.depth_texture(size=window_size)
-        self.selection_pass_framebuffer = self.ctx.framebuffer(
-            color_attachments=[self.selection_pass_texture_color],
-            depth_attachment=self.selection_pass_texture_depth)
-
-    def _release_all_framebuffers_and_textures(self):
-
-        def safe_release(mgl_object):
-            if mgl_object is not None:
-                mgl_object.release()
-
-        safe_release(self.overlay_pass_texture_color)
-        safe_release(self.overlay_pass_texture_depth)
-        safe_release(self.overlay_pass_framebuffer)
-
-        safe_release(self.selection_pass_texture_color)
-        safe_release(self.selection_pass_texture_depth)
-        safe_release(self.selection_pass_framebuffer)
-
     # ========================================================================
     #                             Event Handling
     # ========================================================================
@@ -283,8 +245,8 @@ class RenderSystem(System):
                                          sender=self)
 
             # Clear all pixels that represent any selected objects
-            self.selection_pass_framebuffer.use()
-            self.selection_pass_framebuffer.clear(depth=1.0)
+            self.selection_render_pass.framebuffer.use()
+            self.selection_render_pass.framebuffer.clear(depth=1.0)
             return
 
         self.event_publisher.publish(event_type=constants.EVENT_ENTITY_SELECTED,
@@ -312,19 +274,13 @@ class RenderSystem(System):
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
-        # Initialise object on the GPU if they haven't been already
-
-        # Render shadow texture (if enabled)
         for render_pass in self.render_passes:
             render_pass.render(
                 scene=self.scene,
                 materials_ubo=self.materials_ubo,
                 point_lights_ubo=self.point_lights_ubo,
-                transforms_ubo=self.transforms_ubo)
-
-        self.render_overlay_3d_pass()
-        self.render_overlay_2d_pass()
-        self.render_selection_pass(selected_entity_uid=self.selected_entity_id)
+                transforms_ubo=self.transforms_ubo,
+                selected_entity_uid=self.selected_entity_id)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
         self.render_to_screen()
@@ -351,154 +307,6 @@ class RenderSystem(System):
     # =========================================================================
     #                           Render Passes
     # =========================================================================
-
-
-
-
-
-    def render_overlay_3d_pass(self):
-
-        self.overlay_pass_framebuffer.use()
-
-        # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
-        camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-        mesh_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
-        material_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
-
-        # Every Render pass operates on the OFFSCREEN buffers only
-        camera_entity_uids = self.scene.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
-        for camera_uid in camera_entity_uids:
-
-            camera_component = camera_pool[camera_uid]
-            camera_transform = transform_3d_pool[camera_uid]
-            self.overlay_pass_framebuffer.viewport = camera_component.viewport_pixels
-
-            # Clear context (you need to use the use() first to bind it!)
-            self.overlay_pass_framebuffer.clear(
-                color=(-1.0, -1.0, -1.0),
-                alpha=1.0,
-                depth=1.0,
-                viewport=camera_component.viewport_pixels)
-
-            program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_3D_PASS]
-
-            # Setup camera
-            camera_component.upload_uniforms(program=program)
-            program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
-
-            # Render meshes
-            for mesh_entity_uid, mesh_component in mesh_pool.items():
-
-                if (not mesh_component.visible or
-                        mesh_component.layer != constants.RENDER_SYSTEM_LAYER_OVERLAY or
-                        mesh_component.exclusive_to_camera_uid != camera_uid):
-                    continue
-
-                mesh_transform = transform_3d_pool.get(mesh_entity_uid, None)
-                program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
-
-                material = material_pool.get(mesh_entity_uid, None)
-                if material is not None:
-                    program["color_diffuse"].value = material.ubo_data["diffuse_highlight"].flatten() \
-                        if material.state_highlighted else material.ubo_data["diffuse"].flatten()
-
-                # Render the mesh
-                mesh_component.vaos[constants.SHADER_PROGRAM_OVERLAY_3D_PASS].render(mode=mesh_component.render_mode)
-
-    def render_overlay_2d_pass(self):
-
-        self.overlay_pass_framebuffer.use()
-        # Note: There is no framebuffer.clear() because it is done on the 3D pass. This may change in the future
-
-        camera_entity_uids = self.scene.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
-
-        # Every Render pass operates on the OFFSCREEN buffers only
-        for camera_uid in camera_entity_uids:
-
-            overlay_2d_component = self.scene.get_component(entity_uid=camera_uid,
-                                                            component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
-
-            if overlay_2d_component is None:
-                return
-
-            # ============== [ DEBUG ] ========================
-            #overlay_2d_component.im_overlay.add_line_segments(self.debug_points_a, self.debug_points_b, self.debug_colors, 2.0)
-            #overlay_2d_component.im_overlay.add_aabb_filled(50., 50., 100., 100., (0., 0., 0., 1.0))
-            #overlay_2d_component.im_overlay.add_text("this is a test, this is a test, this is a test, this is a test, this is a test, ", 50., 50.)
-            #overlay_2d_component.im_overlay.add_circle_edge(100., 100., 25., 4., (1., 0., 1., 1.0))
-
-            if overlay_2d_component.im_overlay.num_draw_commands == 0:
-                return
-
-            camera_component = self.scene.get_component(entity_uid=camera_uid,
-                                                        component_type=constants.COMPONENT_TYPE_CAMERA)
-
-            self.overlay_pass_framebuffer.viewport = camera_component.viewport_pixels
-            self.ctx.disable(moderngl.DEPTH_TEST)
-
-            # Upload uniforms TODO: Move this to render system
-            overlay_projection_matrix = mat4.orthographic_projection(
-                left=0,
-                top=0,
-                right=camera_component.viewport_pixels[2],
-                bottom=camera_component.viewport_pixels[3],
-                near=-1,
-                far=1)
-
-            # Upload uniforms
-            program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_2D_PASS]
-            program["projection_matrix"].write(overlay_projection_matrix.T.tobytes())
-
-            # Upload VBOs
-            overlay_2d_component.update_buffer()
-
-            # Render
-            self.textures[overlay_2d_component.font_name].use(location=0)
-            overlay_2d_component.vao.render(mode=moderngl.POINTS)
-
-            # And don#t forget to clear the buffer for the next frame of commands
-            overlay_2d_component.im_overlay.clear()
-
-    def render_selection_pass(self, selected_entity_uid: int):
-
-        # TODO: Numbers between 0 and 1 are background colors, so we assume they are NULL selection
-        if selected_entity_uid is None or selected_entity_uid <= 1:
-            return
-
-        self.selection_pass_framebuffer.use()
-
-        camera_entity_uids = self.scene.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
-
-        for camera_uid in camera_entity_uids:
-
-            # IMPORTANT: It uses the current bound framebuffer!
-            camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-            camera_component = camera_pool[camera_uid]
-
-            self.selection_pass_framebuffer.viewport = camera_component.viewport_pixels
-            self.selection_pass_framebuffer.clear(depth=1.0, viewport=camera_component.viewport_pixels)
-
-            mesh_component = self.scene.get_component(entity_uid=selected_entity_uid,
-                                                      component_type=constants.COMPONENT_TYPE_MESH)
-            if mesh_component is None:
-                return
-
-            transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-
-            # Safety checks before we go any further!
-            renderable_transform = transform_3d_pool[selected_entity_uid]
-            if renderable_transform is None:
-                return
-
-            # Upload uniforms
-            program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
-            camera_component.upload_uniforms(program=program)
-            program["view_matrix"].write(transform_3d_pool[camera_uid].inverse_world_matrix.T.tobytes())
-            program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
-
-            # Render
-            mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(mode=mesh_component.render_mode)
 
     def render_shadow_mapping_pass(self, component_pool: Scene):
 
@@ -552,8 +360,8 @@ class RenderSystem(System):
         self.forward_render_pass.forward_pass_texture_normal.use(location=1)
         self.forward_render_pass.forward_pass_texture_viewpos.use(location=2)
         self.forward_render_pass.forward_pass_texture_entity_info.use(location=3)
-        self.selection_pass_texture_color.use(location=4)
-        self.overlay_pass_texture_color.use(location=5)
+        self.selection_render_pass.texture_color.use(location=4)
+        self.overlay_render_pass.texture_color.use(location=5)
         self.forward_render_pass.forward_pass_texture_depth.use(location=6)
 
         quad_vao = self.quads["fullscreen"]['vao']

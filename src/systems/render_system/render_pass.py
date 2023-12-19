@@ -27,7 +27,8 @@ class RenderPass(ABC):
                scene: Scene,
                materials_ubo: moderngl.Buffer,
                point_lights_ubo: moderngl.Buffer,
-               transforms_ubo: moderngl.Buffer):
+               transforms_ubo: moderngl.Buffer,
+               selected_entity_uid: int):
         pass
 
     @abstractmethod
