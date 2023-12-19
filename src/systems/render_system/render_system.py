@@ -8,6 +8,7 @@ from src.core import constants
 from src.systems.system import System
 from src.systems.render_system.shader_program_library import ShaderProgramLibrary
 from src.systems.render_system.font_library import FontLibrary
+from src.systems.render_system.render_passes.render_pass_forward import RenderPassForward
 from src.core.scene import Scene
 from src.geometry_3d import ready_to_render
 from src.math import mat4
@@ -28,13 +29,9 @@ class RenderSystem(System):
         "vaos",
         "ibos",
         "quads",
+        "render_passes",
+        "forward_render_pass",
         "fullscreen_selected_texture",
-        "forward_pass_texture_color",
-        "forward_pass_texture_normal",
-        "forward_pass_texture_viewpos",
-        "forward_pass_texture_entity_info",
-        "forward_pass_texture_depth",
-        "forward_pass_framebuffer",
         "debug_forward_pass_framebuffer",
         "materials_ubo",
         "point_lights_ubo",
@@ -60,11 +57,6 @@ class RenderSystem(System):
         "shadow_map_depth_texture",
         "shadow_map_framebuffer",
         "_sample_entity_location",
-        "_ambient_hemisphere_light_enabled",
-        "_point_lights_enabled",
-        "_directional_lights_enabled",
-        "_gamma_correction_enabled",
-        "_shadows_enabled",
         "event_handlers",
         "debug_points_a",
         "debug_points_b",
@@ -86,16 +78,10 @@ class RenderSystem(System):
 
         self.fullscreen_selected_texture = 0  # Color is selected by default
 
-        # Forward Pass
-        self.forward_pass_texture_color = None
-        self.forward_pass_texture_normal = None
-        self.forward_pass_texture_viewpos = None
-        self.forward_pass_texture_entity_info = None
-        self.forward_pass_texture_depth = None
-        self.forward_pass_framebuffer = None
-
-        # Debug Forward Pass
-        self.debug_forward_pass_framebuffer = None
+        # Render Passes
+        self.forward_render_pass = RenderPassForward(ctx=self.ctx, shader_program_library=self.shader_program_library)
+        self.render_passes = [
+            self.forward_render_pass]
 
         # UBOs
         self.materials_ubo = None
@@ -135,13 +121,6 @@ class RenderSystem(System):
         self.shadow_map_framebuffer = None
 
         self._sample_entity_location = None
-
-        # Flags
-        self._ambient_hemisphere_light_enabled = True
-        self._point_lights_enabled = True
-        self._directional_lights_enabled = False
-        self._gamma_correction_enabled = True
-        self._shadows_enabled = False
 
         # DEBUG 2D VARIABLES
         self.debug_points_a = np.random.rand(30, 2).astype(np.float32) * 300.0
@@ -206,26 +185,10 @@ class RenderSystem(System):
 
     def create_framebuffers(self, window_size: tuple):
 
+        for render_pass in self.render_passes:
+            render_pass.create_framebuffers(window_size=window_size)
+
         self._release_all_framebuffers_and_textures()
-
-        # Forward Pass
-        self.forward_pass_texture_color = self.ctx.texture(size=window_size, components=4)
-        self.forward_pass_texture_normal = self.ctx.texture(size=window_size, components=4, dtype='f4')
-        self.forward_pass_texture_viewpos = self.ctx.texture(size=window_size, components=4, dtype='f4')
-        self.forward_pass_texture_entity_info = self.ctx.texture(size=window_size, components=4, dtype='f4')
-        self.forward_pass_texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.forward_pass_texture_depth = self.ctx.depth_texture(size=window_size)
-        self.forward_pass_framebuffer = self.ctx.framebuffer(
-            color_attachments=[self.forward_pass_texture_color,
-                               self.forward_pass_texture_normal,
-                               self.forward_pass_texture_viewpos,
-                               self.forward_pass_texture_entity_info],
-            depth_attachment=self.forward_pass_texture_depth)
-
-        # Debug Forward Pass
-        self.debug_forward_pass_framebuffer = self.ctx.framebuffer(
-            color_attachments=[self.forward_pass_texture_color],
-            depth_attachment=self.forward_pass_texture_depth)
 
         # Overlay 3D Pass
         self.overlay_pass_texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
@@ -249,15 +212,6 @@ class RenderSystem(System):
         def safe_release(mgl_object):
             if mgl_object is not None:
                 mgl_object.release()
-
-        safe_release(self.forward_pass_texture_color)
-        safe_release(self.forward_pass_texture_normal)
-        safe_release(self.forward_pass_texture_viewpos)
-        safe_release(self.forward_pass_texture_entity_info)
-        safe_release(self.forward_pass_texture_depth)
-        safe_release(self.forward_pass_framebuffer)
-
-        safe_release(self.debug_forward_pass_framebuffer)
 
         safe_release(self.overlay_pass_texture_color)
         safe_release(self.overlay_pass_texture_depth)
@@ -312,7 +266,7 @@ class RenderSystem(System):
         mouse_position = (int(event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X]),
                           int(event_data[constants.EVENT_INDEX_MOUSE_BUTTON_Y_OPENGL]))
         self.picker_program['texel_pos'].value = mouse_position  # (x, y)
-        self.forward_pass_texture_entity_info.use(location=0)
+        self.forward_render_pass.forward_pass_texture_entity_info.use(location=0)
 
         self.picker_vao.transform(
             self.picker_buffer,
@@ -346,30 +300,34 @@ class RenderSystem(System):
 
         # Light debugging modes
         if glfw.KEY_1 == key_value:
-            self._ambient_hemisphere_light_enabled = not self._ambient_hemisphere_light_enabled
+            self.forward_render_pass.ambient_hemisphere_light_enabled = not self.forward_render_pass.ambient_hemisphere_light_enabled
         if glfw.KEY_2 == key_value:
-            self._point_lights_enabled = not self._point_lights_enabled
+            self.forward_render_pass.point_lights_enabled = not self.forward_render_pass.point_lights_enabled
         if glfw.KEY_3 == key_value:
-            self._directional_lights_enabled = not self._directional_lights_enabled
+            self.forward_render_pass.directional_lights_enabled = not self.forward_render_pass.directional_lights_enabled
         if glfw.KEY_4 == key_value:
-            self._gamma_correction_enabled = not self._gamma_correction_enabled
+            self.forward_render_pass.gamma_correction_enabled = not self.forward_render_pass.gamma_correction_enabled
         if glfw.KEY_5 == key_value:
-            self._shadows_enabled = not self._shadows_enabled
+            self.forward_render_pass.shadows_enabled = not self.forward_render_pass.shadows_enabled
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
         # Initialise object on the GPU if they haven't been already
 
         # Render shadow texture (if enabled)
-        #self.render_shadow_mapping_pass(component_pool=self.component_pool)
+        for render_pass in self.render_passes:
+            render_pass.render(
+                scene=self.scene,
+                materials_ubo=self.materials_ubo,
+                point_lights_ubo=self.point_lights_ubo,
+                transforms_ubo=self.transforms_ubo)
 
-        self.render_forward_pass()
         self.render_overlay_3d_pass()
         self.render_overlay_2d_pass()
         self.render_selection_pass(selected_entity_uid=self.selected_entity_id)
 
         # Final pass renders everything to a full screen quad from the offscreen textures
-        self.render_screen_pass()
+        self.render_to_screen()
 
         return True
 
@@ -394,108 +352,9 @@ class RenderSystem(System):
     #                           Render Passes
     # =========================================================================
 
-    def render_forward_pass(self):
 
-        # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
-        self.forward_pass_framebuffer.use()
 
-        camera_entity_uids = self.scene.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
-
-        program = self.shader_program_library[constants.SHADER_PROGRAM_FORWARD_PASS]
-
-        program["ambient_hemisphere_light_enabled"].value = self._ambient_hemisphere_light_enabled
-        program["directional_lights_enabled"].value = self._directional_lights_enabled
-        program["point_lights_enabled"].value = self._point_lights_enabled
-        program["gamma_correction_enabled"].value = self._gamma_correction_enabled
-        program["shadows_enabled"].value = self._shadows_enabled
-
-        camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-        mesh_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-        multi_transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MULTI_TRANSFORM_3D)
-        material_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
-
-        # Every Render pass operates on the OFFSCREEN buffers only
-        for camera_uid in camera_entity_uids:
-
-            camera_component = camera_pool[camera_uid]
-            camera_transform = transform_3d_pool[camera_uid]
-            self.forward_pass_framebuffer.viewport = camera_component.viewport_pixels
-
-            # TODO: FInd out how this viewport affects the location of the rendering. Clearing seems to also set the
-            #       viewport in a weird way...
-            self.forward_pass_framebuffer.clear(
-                color=constants.RENDER_SYSTEM_BACKGROUND_COLOR,
-                alpha=1.0,
-                depth=1.0,
-                viewport=camera_component.viewport_pixels)
-
-            # Prepare context flags for rendering
-            self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND | moderngl.CULL_FACE)  # Removing has no effect? Why?
-            self.ctx.cull_face = "back"
-            self.ctx.blend_func = (
-                moderngl.SRC_ALPHA,
-                moderngl.ONE_MINUS_SRC_ALPHA,
-                moderngl.ONE,
-                moderngl.ONE)
-
-            # Setup camera
-            camera_component.upload_uniforms(program=program)
-            program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
-
-            # Setup lights
-            self.upload_uniforms_point_lights(program=program)
-            self.upload_uniforms_directional_lights(program=program)
-
-            for mesh_entity_uid, mesh_component in mesh_pool.items():
-
-                if not mesh_component.visible or mesh_component.layer == constants.RENDER_SYSTEM_LAYER_OVERLAY:
-                    continue
-
-                # Update Transform UBO
-                transform = transform_3d_pool.get(mesh_entity_uid, None)
-                if transform is not None:
-                    transform.update_ubo(ubo=self.transforms_ubo)
-
-                multi_transform = multi_transform_3d_pool.get(mesh_entity_uid, None)
-                if multi_transform is not None:
-                    multi_transform.update_ubo(ubo=self.transforms_ubo)
-
-                # Update Mesh uniforms
-                program["entity_id"].value = mesh_entity_uid
-
-                material_component = material_pool[mesh_entity_uid]
-                if material_component is not None:
-                    program["material_index"].value = material_component.ubo_index
-                    material_component.update_ubo(ubo=self.materials_ubo)
-
-                mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_FORWARD_PASS)
-
-                # Stage: Draw transparent objects back to front
-
-    def upload_uniforms_point_lights(self, program: moderngl.Program):
-
-        point_light_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
-
-        for index, (mesh_entity_uid, point_light_component) in enumerate(point_light_pool.items()):
-            point_light_component.update_ubo(ubo=self.point_lights_ubo)
-
-    def upload_uniforms_directional_lights(self, program: moderngl.Program):
-
-        directional_light_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT)
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-
-        program["num_directional_lights"].value = len(directional_light_pool)
-        for index, (mesh_entity_uid, dir_light_component) in enumerate(directional_light_pool.items()):
-
-            light_transform = transform_3d_pool[mesh_entity_uid]
-            program[f"directional_lights[{index}].direction"] = tuple(light_transform.world_matrix[:3, 2])
-            program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
-            program[f"directional_lights[{index}].specular"] = dir_light_component.specular
-            program[f"directional_lights[{index}].strength"] = dir_light_component.strength
-            program[f"directional_lights[{index}].shadow_enabled"] = dir_light_component.shadow_enabled
-            program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
 
     def render_overlay_3d_pass(self):
 
@@ -678,7 +537,7 @@ class RenderSystem(System):
 
             mesh_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(mesh_component.render_mode)
 
-    def render_screen_pass(self) -> None:
+    def render_to_screen(self) -> None:
 
         """
         Renders selected offscreen texture to window. By default, it is the color texture, but you can
@@ -689,13 +548,13 @@ class RenderSystem(System):
         self.ctx.screen.use()
         self.ctx.screen.clear()
 
-        self.forward_pass_texture_color.use(location=0)
-        self.forward_pass_texture_normal.use(location=1)
-        self.forward_pass_texture_viewpos.use(location=2)
-        self.forward_pass_texture_entity_info.use(location=3)
+        self.forward_render_pass.forward_pass_texture_color.use(location=0)
+        self.forward_render_pass.forward_pass_texture_normal.use(location=1)
+        self.forward_render_pass.forward_pass_texture_viewpos.use(location=2)
+        self.forward_render_pass.forward_pass_texture_entity_info.use(location=3)
         self.selection_pass_texture_color.use(location=4)
         self.overlay_pass_texture_color.use(location=5)
-        self.forward_pass_texture_depth.use(location=6)
+        self.forward_render_pass.forward_pass_texture_depth.use(location=6)
 
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture

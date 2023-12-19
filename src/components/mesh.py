@@ -99,8 +99,8 @@ class Mesh(Component):
 
         self.initialised = True
 
-    def render(self, shader_pass_name: str):
-        self.vaos[shader_pass_name].render(mode=self.render_mode, instances=1)
+    def render(self, shader_pass_name: str, num_instances=1):
+        self.vaos[shader_pass_name].render(mode=self.render_mode, instances=num_instances)
 
     def release(self):
 

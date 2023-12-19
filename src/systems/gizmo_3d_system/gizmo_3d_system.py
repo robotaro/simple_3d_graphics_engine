@@ -521,7 +521,12 @@ class Gizmo3DSystem(System):
     def set_gizmo_to_selected_entity(self):
 
         transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-        selected_transform_component = transform_3d_pool[self.selected_entity_uid]
+        selected_transform_component = transform_3d_pool.get(self.selected_entity_uid, None)
+
+        # TODO: It will fail when there is a multi_transform instead of transform. Address that!
+        #if selected_transform_component None:
+        #    multi_transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+
 
         camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         for camera_entity_id, camera_component in camera_pool.items():
