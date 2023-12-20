@@ -13,7 +13,6 @@ from src.systems.render_system.render_passes.render_pass_overlay import RenderPa
 from src.systems.render_system.render_passes.render_pass_selection import RenderPassSelection
 from src.core.scene import Scene
 from src.geometry_3d import ready_to_render
-from src.math import mat4
 
 
 class RenderSystem(System):
@@ -51,9 +50,6 @@ class RenderSystem(System):
         "hovering_ui",
         "hovering_gizmo",
         "selected_entity_id",
-        "shadow_map_program",
-        "shadow_map_depth_texture",
-        "shadow_map_framebuffer",
         "_sample_entity_location",
         "event_handlers",
         "debug_points_a",
@@ -110,11 +106,6 @@ class RenderSystem(System):
         self.hovering_gizmo = False
         self.selected_entity_id = -1
 
-        # Shadow Mapping
-        self.shadow_map_program = None
-        self.shadow_map_depth_texture = None
-        self.shadow_map_framebuffer = None
-
         self._sample_entity_location = None
 
         # DEBUG 2D VARIABLES
@@ -151,11 +142,6 @@ class RenderSystem(System):
                                                         data=font.texture_data.astype('f4').tobytes(),
                                                         components=1,
                                                         dtype='f4')
-
-        # Shadow mapping
-        self.shadow_map_program = self.shader_program_library["shadow_mapping"]
-        self.shadow_map_depth_texture = self.ctx.depth_texture(size=self.buffer_size)
-        self.shadow_map_framebuffer = self.ctx.framebuffer(depth_attachment=self.shadow_map_depth_texture)
 
         # Setup fullscreen quad textures
         self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
@@ -228,7 +214,7 @@ class RenderSystem(System):
         mouse_position = (int(event_data[constants.EVENT_INDEX_MOUSE_BUTTON_X]),
                           int(event_data[constants.EVENT_INDEX_MOUSE_BUTTON_Y_OPENGL]))
         self.picker_program['texel_pos'].value = mouse_position  # (x, y)
-        self.forward_render_pass.forward_pass_texture_entity_info.use(location=0)
+        self.forward_render_pass.texture_entity_info.use(location=0)
 
         self.picker_vao.transform(
             self.picker_buffer,
@@ -304,47 +290,6 @@ class RenderSystem(System):
         self.shader_program_library.shutdown()
         self.font_library.shutdown()
 
-    # =========================================================================
-    #                           Render Passes
-    # =========================================================================
-
-    def render_shadow_mapping_pass(self, component_pool: Scene):
-
-        # TODO: This function's code is old and won't probably work!
-
-        self.shadow_map_framebuffer.clear()
-        self.shadow_map_framebuffer.use()
-
-        program = self.shader_program_library[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS]
-
-        # Find which directional light, if any creates shadows
-        directional_light_uid = None
-        for uid, directional_light in component_pool.directional_light_components.items():
-            if directional_light.shadow_enabled:
-                directional_light_uid = uid
-                break
-
-        if directional_light_uid is None:
-            return
-
-        for mesh_entity_uid, mesh_component in component_pool.mesh_components.items():
-
-            material = component_pool.material_components[mesh_entity_uid]
-
-            # TODO: IF you forget to declare the material in the xml, you are fucked. Make sure a default material
-            if not mesh_component.visible and not material.is_transparent():
-                continue
-
-            mesh_transform = component_pool.get_component(entity_uid=mesh_entity_uid,
-                                                          component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-            light_transform = component_pool.get_component(entity_uid=directional_light_uid,
-                                                           component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-
-            program["view_matrix"].write(light_transform.inverse_world_matrix.T.tobytes())
-            program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())
-
-            mesh_component.vaos[constants.SHADER_PROGRAM_SHADOW_MAPPING_PASS].render(mesh_component.render_mode)
-
     def render_to_screen(self) -> None:
 
         """
@@ -356,13 +301,13 @@ class RenderSystem(System):
         self.ctx.screen.use()
         self.ctx.screen.clear()
 
-        self.forward_render_pass.forward_pass_texture_color.use(location=0)
-        self.forward_render_pass.forward_pass_texture_normal.use(location=1)
-        self.forward_render_pass.forward_pass_texture_viewpos.use(location=2)
-        self.forward_render_pass.forward_pass_texture_entity_info.use(location=3)
+        self.forward_render_pass.texture_color.use(location=0)
+        self.forward_render_pass.texture_normal.use(location=1)
+        self.forward_render_pass.texture_viewpos.use(location=2)
+        self.forward_render_pass.texture_entity_info.use(location=3)
         self.selection_render_pass.texture_color.use(location=4)
         self.overlay_render_pass.texture_color.use(location=5)
-        self.forward_render_pass.forward_pass_texture_depth.use(location=6)
+        self.forward_render_pass.texture_depth.use(location=6)
 
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture

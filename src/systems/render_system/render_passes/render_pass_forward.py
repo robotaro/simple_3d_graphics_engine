@@ -10,12 +10,13 @@ class RenderPassForward(RenderPass):
     name = "forward_pass"
 
     __slots__ = [
-        "forward_pass_texture_color",
-        "forward_pass_texture_normal",
-        "forward_pass_texture_viewpos",
-        "forward_pass_texture_entity_info",
-        "forward_pass_texture_depth",
-        "forward_pass_framebuffer",
+        "texture_color",
+        "texture_normal",
+        "texture_viewpos",
+        "texture_entity_info",
+        "texture_depth",
+        "framebuffer",
+        "experiment_framebuffer",
         "ambient_hemisphere_light_enabled",
         "point_lights_enabled",
         "directional_lights_enabled",
@@ -27,12 +28,12 @@ class RenderPassForward(RenderPass):
         super().__init__(**kwargs)
 
         # Forward Pass
-        self.forward_pass_texture_color = None
-        self.forward_pass_texture_normal = None
-        self.forward_pass_texture_viewpos = None
-        self.forward_pass_texture_entity_info = None
-        self.forward_pass_texture_depth = None
-        self.forward_pass_framebuffer = None
+        self.texture_color = None
+        self.texture_normal = None
+        self.texture_viewpos = None
+        self.texture_entity_info = None
+        self.texture_depth = None
+        self.framebuffer = None
 
         # Flags
         self.ambient_hemisphere_light_enabled = True
@@ -47,18 +48,18 @@ class RenderPassForward(RenderPass):
         self.release()
 
         # Before re-creating them
-        self.forward_pass_texture_color = self.ctx.texture(size=window_size, components=4)
-        self.forward_pass_texture_normal = self.ctx.texture(size=window_size, components=4, dtype='f4')
-        self.forward_pass_texture_viewpos = self.ctx.texture(size=window_size, components=4, dtype='f4')
-        self.forward_pass_texture_entity_info = self.ctx.texture(size=window_size, components=4, dtype='f4')
-        self.forward_pass_texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.forward_pass_texture_depth = self.ctx.depth_texture(size=window_size)
-        self.forward_pass_framebuffer = self.ctx.framebuffer(
-            color_attachments=[self.forward_pass_texture_color,
-                               self.forward_pass_texture_normal,
-                               self.forward_pass_texture_viewpos,
-                               self.forward_pass_texture_entity_info],
-            depth_attachment=self.forward_pass_texture_depth)
+        self.texture_color = self.ctx.texture(size=window_size, components=4)
+        self.texture_normal = self.ctx.texture(size=window_size, components=4, dtype='f4')
+        self.texture_viewpos = self.ctx.texture(size=window_size, components=4, dtype='f4')
+        self.texture_entity_info = self.ctx.texture(size=window_size, components=4, dtype='f4')
+        self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.texture_depth = self.ctx.depth_texture(size=window_size)
+        self.framebuffer = self.ctx.framebuffer(
+            color_attachments=[self.texture_color,
+                               self.texture_normal,
+                               self.texture_viewpos,
+                               self.texture_entity_info],
+            depth_attachment=self.texture_depth)
 
     def render(self,
                scene: Scene,
@@ -69,7 +70,7 @@ class RenderPassForward(RenderPass):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
 
-        self.forward_pass_framebuffer.use()
+        self.framebuffer.use()
 
         camera_entity_uids = scene.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
 
@@ -92,11 +93,11 @@ class RenderPassForward(RenderPass):
 
             camera_component = camera_pool[camera_uid]
             camera_transform = transform_3d_pool[camera_uid]
-            self.forward_pass_framebuffer.viewport = camera_component.viewport_pixels
+            self.framebuffer.viewport = camera_component.viewport_pixels
 
             # TODO: FInd out how this viewport affects the location of the rendering. Clearing seems to also set the
             #       viewport in a weird way...
-            self.forward_pass_framebuffer.clear(
+            self.framebuffer.clear(
                 color=constants.RENDER_SYSTEM_BACKGROUND_COLOR,
                 alpha=1.0,
                 depth=1.0,
@@ -175,9 +176,9 @@ class RenderPassForward(RenderPass):
             program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
 
     def release(self):
-        self.safe_release(self.forward_pass_texture_color)
-        self.safe_release(self.forward_pass_texture_normal)
-        self.safe_release(self.forward_pass_texture_viewpos)
-        self.safe_release(self.forward_pass_texture_entity_info)
-        self.safe_release(self.forward_pass_texture_depth)
-        self.safe_release(self.forward_pass_framebuffer)
+        self.safe_release(self.texture_color)
+        self.safe_release(self.texture_normal)
+        self.safe_release(self.texture_viewpos)
+        self.safe_release(self.texture_entity_info)
+        self.safe_release(self.texture_depth)
+        self.safe_release(self.framebuffer)

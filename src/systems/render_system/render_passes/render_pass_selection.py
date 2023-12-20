@@ -8,7 +8,7 @@ from src.systems.render_system.render_pass import RenderPass
 
 class RenderPassSelection(RenderPass):
 
-    name = "forward_pass"
+    name = "selection_pass"
 
     __slots__ = [
         "texture_color",

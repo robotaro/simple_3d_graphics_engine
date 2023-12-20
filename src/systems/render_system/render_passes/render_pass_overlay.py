@@ -8,7 +8,7 @@ from src.systems.render_system.render_pass import RenderPass
 
 class RenderPassOverlay(RenderPass):
 
-    name = "forward_pass"
+    name = "overlay_pass"
 
     __slots__ = [
         "texture_color",
