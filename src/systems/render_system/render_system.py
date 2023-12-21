@@ -275,7 +275,8 @@ class RenderSystem(System):
 
     def shutdown(self):
 
-        self._release_all_framebuffers_and_textures()
+        for render_pass in self.render_passes:
+            render_pass.release()
 
         for quad_name, quad in self.quads.items():
             if quad["vbo_vertices"] is not None:

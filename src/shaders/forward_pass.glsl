@@ -57,11 +57,13 @@ out vec3 v_world_normal;
 out vec3 v_world_position;
 out vec3 v_camera_position;
 out vec3 v_ambient_color;
+flat out int v_instance_id;
 
 void main() {
 
     mat4 model_matrix = ubo_transforms.transforms[gl_InstanceID];
 
+    v_instance_id = gl_InstanceID;
     v_local_position = in_vert;
     v_world_position = (model_matrix * vec4(v_local_position, 1.0)).xyz;
     v_world_normal = mat3(transpose(inverse(model_matrix))) * in_normal;  // TODO: Check if this is correct
@@ -111,6 +113,7 @@ in vec3 v_world_normal;
 in vec3 v_camera_position;
 in vec3 v_world_position;
 in vec3 v_ambient_color;
+flat in int v_instance_id;
 
 layout (std140, binding = 0) uniform MaterialBlock {
     Material material[MAX_MATERIALS];
@@ -216,7 +219,7 @@ void main() {
     out_fragment_color = vec4(color_rgb, 1.0);
     out_fragment_normal = vec4(normal, 1.0);
     out_fragment_world_position = vec4(v_world_position, 1);
-    out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
+    out_fragment_entity_info = vec4(entity_id, v_instance_id, 0, 1);
 }
 
 vec3 calculate_directional_light(DirectionalLight light, Material material, vec3 material_color, vec3 normal, vec3 viewDir)

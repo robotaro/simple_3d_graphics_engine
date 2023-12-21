@@ -94,10 +94,16 @@ void main() {
 
     } else if (selected_texture == 4) {
 
+        // Instance ID
+        uint id = floatBitsToUint(texture(entity_info_texture, uv).g);
+        color_rgb = int_to_color(id);
+
+    } else if (selected_texture == 5) {
+
         // Current Selection
         color_rgb = texture(selection_texture, uv).rgb;
 
-    } else if (selected_texture == 5) {
+    } else if (selected_texture == 6) {
 
         // Depth
         float depth = texture(depth_texture, uv).r;
@@ -107,7 +113,7 @@ void main() {
             depth = linearise_depth_orthographic(depth);
         color_rgb = vec3(depth);
 
-    } else if (selected_texture == 6) {
+    } else if (selected_texture == 7) {
 
         // Overlay
         color_rgb = texture(overlay_texture, uv).rgb;
