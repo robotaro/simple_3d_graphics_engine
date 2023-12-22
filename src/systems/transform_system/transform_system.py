@@ -37,6 +37,7 @@ class TransformSystem(System):
             self.update_tree = False
 
         transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        multi_transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MULTI_TRANSFORM_3D)
 
         # TODO: [OPTIMIZE] Not all world matrices need to be recreated all the time! Take the dirty flags into account!
         for entity_uid in self.entity_uid_update_order:
@@ -59,6 +60,13 @@ class TransformSystem(System):
             transform.world_matrix = parent_transform.world_matrix @ transform.local_matrix
             mat4.even_faster_inverse(in_mat4=transform.world_matrix,
                                      out_mat4=transform.inverse_world_matrix)
+
+            # Multi-transform
+            orange = multi_transform_3d_pool.get(entity_uid)
+            if orange:
+                continue
+
+            multi_transform.world_matrices = np.matmul(transform.world_matrix, multi_transform.world_matrices)
 
         # ================= Process actions =================
 
