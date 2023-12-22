@@ -1,12 +1,12 @@
 import glfw
 import moderngl
 import imgui
-import logging
+import json
 from imgui.integrations.glfw import GlfwRenderer
 
 from src.core import constants
 from src.systems.system import System
-from src.core.component_pool import ComponentPool
+from src.core.scene import Scene
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
 
@@ -19,11 +19,12 @@ class ImguiSystem(System):
         "selected_entity_uid",
         "selected_entity_name",
         "selected_entity_components",
+        "selected_resource_uid",
+        "selected_resource",
         "past_window_hover",
         "_exit_popup_open",
         "system_profiling_event_data",
-        "gizmo_mode"
-    ]
+        "gizmo_mode"]
 
     name = constants.SYSTEM_NAME_IMGUI
 
@@ -35,6 +36,9 @@ class ImguiSystem(System):
         self.selected_entity_uid = -1
         self.selected_entity_name = ""
         self.selected_entity_components = []
+        self.selected_resource_uid = -1
+        self.selected_resource = None
+
         self.past_window_hover = False
 
         # Profiling
@@ -115,10 +119,10 @@ class ImguiSystem(System):
 
     def select_entity(self, entity_uid: int):
         self.selected_entity_uid = entity_uid
-        entity = self.component_pool.entities.get(self.selected_entity_uid, None)
+        entity = self.scene.entities.get(self.selected_entity_uid, None)
         if entity is not None:
             self.selected_entity_name = entity.name
-        self.selected_entity_components = self.component_pool.get_all_components(entity_uid=entity_uid)
+        self.selected_entity_components = self.scene.get_all_components(entity_uid=entity_uid)
 
     def publish_events(self):
         # Enable/Disable mouse buttons to other systems if it is hovering on any Imgui windows
@@ -265,7 +269,7 @@ class ImguiSystem(System):
         imgui.text(f"[ All Scene Entities ]")
         imgui.spacing()
 
-        for entity_uid, entity in self.component_pool.entities.items():
+        for entity_uid, entity in self.scene.entities.items():
 
             # Do not show any entities created and managed by the systems. They are required for them to work.
             if entity.system_owned:
@@ -288,7 +292,7 @@ class ImguiSystem(System):
         if len(self.selected_entity_components) == 0:
             return
 
-        imgui.text(f"[ Selected Entity ] {self.selected_entity_name}")
+        imgui.text(f"[ Selected Entity ] {self.selected_entity_uid} - {self.selected_entity_name}")
         imgui.spacing()
 
         # ======================================================================
@@ -296,40 +300,50 @@ class ImguiSystem(System):
         # ======================================================================
 
         # [ Point Light ]
-        point_light_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
+        point_light_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
         point_light = point_light_pool.get(self.selected_entity_uid, None)
         if point_light and not point_light.system_owned:
-            imgui.text(f"Colors")
-            _, point_light.diffuse = imgui.drag_float3("Diffuse Color",
-                                                       *point_light.diffuse,
-                                                       0.005,
-                                                       0.0,
-                                                       1.0,
-                                                       "%.3f")
-            _, point_light.specular = imgui.drag_float3("Specular Color",
-                                                        *point_light.specular,
-                                                        0.005,
-                                                        0.0,
-                                                        1.0,
-                                                        "%.3f")
-            _, point_light.attenuation_coeffs = imgui.drag_float3("Attenuation Coeffs.",
-                                                                  *point_light.attenuation_coeffs,
-                                                                  0.005,
-                                                                  0.0,
-                                                                  100.0,
-                                                                  "%.3f")
+            imgui.text(f"Point Light")
+
+            position = tuple(point_light.ubo_data["position"].flatten())
+            updated, point_light.ubo_data["position"][:] = imgui.drag_float3("Light Position",
+                                                                             *position,
+                                                                             0.005,
+                                                                             -1000.0,
+                                                                             1000.0,
+                                                                             "%.3f")
+            point_light.dirty |= updated
+
+            diffuse = tuple(point_light.ubo_data["diffuse"].flatten())
+            updated, point_light.ubo_data["diffuse"][:] = imgui.color_edit3("Light Diffuse", *diffuse)
+            point_light.dirty |= updated
+
+            specular = tuple(point_light.ubo_data["specular"].flatten())
+            updated, point_light.ubo_data["specular"][:] = imgui.color_edit3("Light Specular", *specular)
+            point_light.dirty |= updated
+
+            attenuation_coeffs = tuple(point_light.ubo_data["attenuation_coeffs"].flatten())
+            updated, point_light.ubo_data["attenuation_coeffs"][:] = imgui.drag_float3("Attenuation Coeffs.",
+                                                                                       *attenuation_coeffs,
+                                                                                       0.005,
+                                                                                       0.0,
+                                                                                       100.0,
+                                                                                       "%.3f")
+            point_light.dirty |= updated
+
+            #_, camera.is_perspective = imgui.checkbox("Perspective", camera.is_perspective)
 
             imgui.spacing()
 
         # [ Camera ]
-        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         camera = camera_pool.get(self.selected_entity_uid, None)
         if camera and not camera.system_owned:
             imgui.text(f"Camera")
             _, camera.is_perspective = imgui.checkbox("Perspective", camera.is_perspective)
 
         # [ Transform 3D ]
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
         transform = transform_3d_pool.get(self.selected_entity_uid, None)
         if transform and not transform.system_owned:
             imgui.text(f"Transform")
@@ -349,36 +363,83 @@ class ImguiSystem(System):
             imgui.spacing()
 
         # [ Material]
-        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+        material_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
         material = material_pool.get(self.selected_entity_uid, None)
         if material and not material.system_owned:
             imgui.text(f"Material")
-            _, material.diffuse = imgui.color_edit3("Diffuse", *material.diffuse)
-            _, material.diffuse_highlight = imgui.color_edit3("Diffuse Highlight", *material.diffuse_highlight)
-            _, material.specular = imgui.color_edit3("Specular", *material.specular)
-            _, material.shininess_factor = imgui.drag_float("Shininess Factor",
-                                                            material.shininess_factor,
-                                                            0.05,
-                                                            0.0,
-                                                            32.0,
-                                                            "%.3f")
-            _, material.color_source = imgui.slider_int(
+
+            diffuse = tuple(material.ubo_data["diffuse"].flatten())
+            updated, material.ubo_data["diffuse"][:] = imgui.color_edit3("Material Diffuse", *diffuse)
+            material.dirty |= updated
+
+            diffuse_highlight = tuple(material.ubo_data["diffuse_highlight"].flatten())
+            updated, material.ubo_data["diffuse_highlight"][:] = imgui.color_edit3("Diffuse Highlight", *diffuse_highlight)
+            material.dirty |= updated
+
+            specular = tuple(material.ubo_data["specular"].flatten())
+            updated, material.ubo_data["specular"][:] = imgui.color_edit3("Specular", *specular)
+            material.dirty |= updated
+
+            updated, material.ubo_data["shininess_factor"] = imgui.drag_float("Shininess Factor",
+                                                                        material.ubo_data["shininess_factor"],
+                                                                        0.05,
+                                                                        0.0,
+                                                                        32.0,
+                                                                        "%.3f")
+            material.dirty |= updated
+
+            updated, material.ubo_data["color_source"] = imgui.slider_int(
                 "Color Source",
-                material.color_source,
+                material.ubo_data["color_source"],
                 min_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE,
                 max_value=constants.RENDER_MODE_COLOR_SOURCE_UV)
-            _, material.lighting_mode = imgui.slider_int(
+            material.dirty |= updated
+
+            updated, material.ubo_data["lighting_mode"] = imgui.slider_int(
                 "Lighting Mode",
-                material.lighting_mode,
+                material.ubo_data["lighting_mode"],
                 min_value=constants.RENDER_MODE_LIGHTING_SOLID,
                 max_value=constants.RENDER_MODE_LIGHTING_LIT)
+            material.dirty |= updated
 
             imgui.spacing()
 
     def gui_tab_resources(self):
 
-        resource_ids = list(self.resource_manager.resources.keys())
+        resource_ids = list(self.data_manager.data_groups.keys())
         resource_ids.sort()
 
+        flags = imgui.SELECTABLE_ALLOW_ITEM_OVERLAP
+
+        imgui.spacing()
+
         for resource_id in resource_ids:
-            imgui.text(resource_id)
+
+            # Draw the selectable item
+            (opened, selected) = imgui.selectable(resource_id, selected=False, flags=flags)
+
+            if selected:
+                # Here the entity selection is initiated from the GUI, so you publish the respective event now.
+                self.selected_resource_uid = resource_id
+                self.selected_resource = self.data_manager.data_groups[resource_id]
+
+        imgui.spacing()
+        imgui.separator()
+        imgui.spacing()
+
+        if self.selected_resource is None:
+            return
+
+        imgui.text(f"[ Resource ] '{self.selected_resource_uid}'")
+        imgui.spacing()
+
+        for data_blocks_name, data_block in self.selected_resource.data_blocks.items():
+
+            imgui.text(f"DataBlock : '{data_blocks_name}' ")
+            imgui.text(f" - DataShape: {data_block.data.shape}")
+            imgui.text(f" - DataType: {data_block.data.dtype}")
+            imgui.text(f" - Metadata: {json.dumps(data_block.metadata, indent=2)}")
+            imgui.spacing()
+
+
+

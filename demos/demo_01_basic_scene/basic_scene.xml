@@ -1,12 +1,13 @@
 <scene resources="resource_list.yaml">
 
     <entity name="First Camera">
-        <camera viewport_screen_ratio="0 0 0.5 1" perspective="true"/>
+        <camera viewport_screen_ratio="0 0 1 1" perspective="true"/>
         <transform_3d position="-0.5 0.5 5"/>
         <input_control speed="6.0"/>
         <overlay_2d/>
     </entity>
 
+    <!--
     <entity name="Second Camera">
         <camera viewport_screen_ratio="0.5 0 0.5 0.5" perspective="true"/>
         <transform_3d position="-0.5 0.5 10"/>
@@ -20,6 +21,7 @@
         <input_control speed="6.0"/>
         <overlay_2d/>
     </entity>
+    -->
 
     <entity name="Point Light 1">
         <point_light diffuse="1.0 1.0 1.0"/>
@@ -36,30 +38,79 @@
     <entity name="female body">
         <mesh resource_id="female_body/mesh_0"/>
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
-        <transform_3d position="-2 0 0" scale="2" rotation="-90 0 0" degrees="true"/>
+        <transform_3d position="-1 0 0" scale="2" rotation="-90 0 0" degrees="true"/>
     </entity>
 
     <entity name="female body">
         <mesh resource_id="female_body/mesh_1"/>
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
-        <transform_3d position="-2 0 0" scale="2" rotation="-90 0 0" degrees="true"/>
+        <transform_3d position="-1 0 0" scale="2" rotation="-90 0 0" degrees="true"/>
     </entity>
 
     <entity name="female body">
         <mesh resource_id="female_body/mesh_2" />
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
-        <transform_3d position="-2 0 0" scale="2" rotation="-90 0 0" degrees="true"/>
+        <transform_3d position="-1 0 0" scale="2" rotation="-90 0 0" degrees="true"/>
     </entity>
 
-    <entity name="braim_stem">
+    <entity name="star_rail_fu_xuan body">
+        <mesh resource_id="star_rail_fu_xuan/mesh_0"/>
+        <material diffuse="0.0 0.3 0.6" shininess_factor="32.0"/>
+        <transform_3d position="-2 0 0" scale="2" rotation="0 0 0" degrees="true"/>
+    </entity>
+
+    <entity name="star_rail_fu_xuan">
+        <mesh resource_id="star_rail_fu_xuan/mesh_1"/>
+        <material diffuse="0.0 0.3 0.6" shininess_factor="32.0"/>
+        <transform_3d position="-2 0 0" scale="2" rotation="0 0 0" degrees="true"/>
+    </entity>
+
+    <entity name="star_rail_fu_xuan">
+        <mesh resource_id="star_rail_fu_xuan/mesh_2" />
+        <material diffuse="0.0 0.3 0.6" shininess_factor="32.0"/>
+        <transform_3d position="-2 0 0" scale="2" rotation="0 0 0" degrees="true"/>
+    </entity>
+
+    <entity name="star_rail_fu_xuan">
+        <mesh resource_id="star_rail_fu_xuan/mesh_3" />
+        <material diffuse="0.0 0.3 0.6" shininess_factor="32.0"/>
+        <transform_3d position="-2 0 0" scale="2" rotation="0 0 0" degrees="true"/>
+    </entity>
+
+    <entity name="star_rail_fu_xuan">
+        <mesh resource_id="star_rail_fu_xuan/mesh_4" />
+        <material diffuse="0.0 0.3 0.6" shininess_factor="32.0"/>
+        <transform_3d position="-2 0 0" scale="2" rotation="0 0 0" degrees="true"/>
+    </entity>
+
+    <entity name="star_rail_fu_xuan">
+        <mesh resource_id="star_rail_fu_xuan/mesh_5" />
+        <material diffuse="0.0 0.3 0.6" shininess_factor="32.0"/>
+        <transform_3d position="-2 0 0" scale="2" rotation="0 0 0" degrees="true"/>
+    </entity>
+
+    <entity name="star_rail_fu_xuan">
+        <mesh resource_id="star_rail_fu_xuan/mesh_6" />
+        <material diffuse="0.0 0.3 0.6" shininess_factor="32.0"/>
+        <transform_3d position="-2 0 0" scale="2" rotation="0 0 0" degrees="true"/>
+    </entity>
+
+    <entity name="star_rail_fu_xuan">
+        <mesh resource_id="star_rail_fu_xuan/mesh_7" />
+        <material diffuse="0.0 0.3 0.6" shininess_factor="32.0"/>
+        <transform_3d position="-2 0 0" scale="2" rotation="0 0 0" degrees="true"/>
+    </entity>
+
+    <entity name="brain_stem">
         <mesh resource_id="brain_stem/mesh_0" scale="1"/>
         <material diffuse="tab10_blue" shininess_factor="32.0"/>
         <transform_3d position="0 0 0" rotation="-90 0 0" degrees="true"/>
+        <skeleton resource_id="brain_stem/nodes_0"/>
     </entity>
 
     <entity name="dragon">
         <mesh resource_id="dragon/mesh_0" scale="1"/>
-        <material diffuse="blue" shininess_factor="32.0"/>
+        <material diffuse="tab10_green" shininess_factor="32.0"/>
         <transform_3d position="2 0 0" rotation="0 0 0" degrees="true"/>
     </entity>
 
@@ -69,11 +120,12 @@
         <transform_3d position="-3 0 3" degrees="true"/>
     </entity>
 
-    <entity name="Red Sphere">
-        <mesh shape="icosphere" radius="0.5" subdivisions="4"/>
+    <entity name="Gizmo">
+        <mesh resource_id="gizmo/mesh_0"/>
         <collider shape="sphere" radius="0.5"/>
-        <transform_3d position="2 0 2"/>
-        <material diffuse="tab10_red" diffuse_highlight="tab10_orange" shininess_factor="32.0"/>
+        <multi_transform_3d resource_id="brain_stem/nodes_0"/>
+        <transform_3d position="0 0 0" degrees="true"/>
+        <material diffuse="tab10_red" diffuse_highlight="tab10_orange" shininess_factor="32.0" color_source="1"/>
     </entity>
 
     <entity name="Floor">

@@ -12,9 +12,9 @@ from src.math import mat4
 # DEBUG
 
 
-class TransformSystem(System):
+class SkeletonSystem(System):
 
-    name = "transform_system"
+    name = "skeleton_system"
 
     __slots__ = [
         "update_tree",
@@ -24,57 +24,42 @@ class TransformSystem(System):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.entity_uid_update_order = []  # Ordered as a DAG
-        self.update_tree = True
-
     def initialise(self) -> bool:
         return True
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
-        if self.update_tree:
+        """if self.update_tree:
             self.update_transform_tree()
             self.update_tree = False
 
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-        multi_transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MULTI_TRANSFORM_3D)
+        skeleton_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_SKELETON)
+        for entity_uid, skeleton in skeleton_pool.items():
+            pass
+
+        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
         # TODO: [OPTIMIZE] Not all world matrices need to be recreated all the time! Take the dirty flags into account!
         for entity_uid in self.entity_uid_update_order:
 
-            print(entity_uid)
+            entity = self.component_pool.entities[entity_uid]
+            transform = transform_3d_pool[entity_uid]
 
-            entity = self.scene.entities[entity_uid]
-            transform = transform_3d_pool.get(entity_uid, None)
-            if transform is None:
-                continue
+            transform.update()
 
-            local_matrix_updated = transform.update()
-
-            if entity.parent_uid:
-                parent_transform = transform_3d_pool[entity.parent_uid]
-                transform.world_matrix = parent_transform.world_matrix @ transform.local_matrix
-            else:
+            if entity.parent_uid is None:
                 transform.world_matrix = transform.local_matrix
-
-            mat4.even_faster_inverse(in_mat4=transform.world_matrix,
-                                     out_mat4=transform.inverse_world_matrix)
-
-            # Multi-transform update
-            multi_transform = multi_transform_3d_pool.get(entity_uid)
-            if multi_transform is None:
                 continue
 
-            if local_matrix_updated:
-                multi_transform.world_matrices = np.matmul(transform.world_matrix, multi_transform.local_matrices)
-                multi_transform.world_matrices = multi_transform.world_matrices.transpose((0, 2, 1))
-                multi_transform.dirty = True
+            # TODO: Think of a way to minimise necessary updates. Probably do it when we move to DOD
+            parent_transform = transform_3d_pool[entity.parent_uid]
+            transform.world_matrix = parent_transform.world_matrix @ transform.local_matrix
 
         # ================= Process actions =================
 
         self.select_next_action()
         if self.current_action is None:
-            return True
+            return True"""
 
         return True
 

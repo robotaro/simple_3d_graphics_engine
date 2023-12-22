@@ -20,12 +20,15 @@ DEFAULT_EDITOR_PROFILING_UPDATE_PERIOD = 0.5  # Seconds
 DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)  # (1280, 720)
 DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD = 0.5  # in seconds - Windows default is 500ms
 
+MODULE_NAME_DATA_MANAGER = "data_manager"
+
 SYSTEM_NAME_TRANSFORM = "transform_system"
 SYSTEM_NAME_RENDER = "render_system"
 SYSTEM_NAME_IMGUI = "imgui_system"
 SYSTEM_NAME_INPUT_CONTROL = "input_control_system"
 SYSTEM_NAME_GIZMO_3D = "gizmo_3d_system"
 SYSTEM_NAME_IMPORT = "import_system"
+SYSTEM_NAME_SKELETON = "skeleton_system"
 
 AVAILABLE_SYSTEMS = [
     SYSTEM_NAME_TRANSFORM,
@@ -37,10 +40,10 @@ AVAILABLE_SYSTEMS = [
 ]
 
 DEFAULT_SYSTEMS = [
-    SYSTEM_NAME_IMPORT,
     SYSTEM_NAME_INPUT_CONTROL,
     SYSTEM_NAME_GIZMO_3D,
     SYSTEM_NAME_TRANSFORM,  # Must go BEFORE render system to read the transforms before they are shown!
+    SYSTEM_NAME_SKELETON,
     SYSTEM_NAME_RENDER,
     SYSTEM_NAME_IMGUI  # Must come AFTER the render system to add the GUI to the final render
 ]
@@ -168,6 +171,7 @@ EVENT_WINDOW_DROP_FILES = 32          # args: (filepath, ...) <str, ...>
 # =============================================================================
 #                                Actions
 # =============================================================================
+
 ACTION_TRANSFORM_LOOK_AT = 0
 
 # =============================================================================
@@ -209,6 +213,27 @@ VIEWPORT_INDEX_X = 0
 VIEWPORT_INDEX_Y = 1
 VIEWPORT_INDEX_WIDTH = 2
 VIEWPORT_INDEX_HEIGHT = 3
+
+# =============================================================================
+#                                     Scene
+# =============================================================================
+
+# UBO data
+UBO_BINDING_MATERIALS = 0
+UBO_BINDING_POINT_LIGHTS = 1
+UBO_BINDING_DIRECTIONAL_LIGHTS = 2
+UBO_BINDING_TRANSFORMS = 3
+
+SCENE_MAX_NUM_MATERIALS = 32
+SCENE_MAX_NUM_POINT_LIGHTS = 8
+SCENE_MAX_NUM_DIRECTIONAL_LIGHTS = 4
+SCENE_MAX_NUM_TRANSFORMS = 128
+
+SCENE_MATERIAL_STRUCT_SIZE_BYTES = 64
+SCENE_POINT_LIGHT_STRUCT_SIZE_BYTES = 64
+SCENE_POINT_TRANSFORM_SIZE_BYTES = 64
+#SCENE_MATERIAL_DIFFUSE_FIRST_INDEX = 0
+#SCENE_MATERIAL_DIFFUSE_LAST_INDEX = 3
 
 # =============================================================================
 #                                Render System
@@ -331,6 +356,8 @@ COMPONENT_TYPE_COLLIDER = 10
 COMPONENT_TYPE_GIZMO_3D = 11
 COMPONENT_TYPE_ROBOT = 12
 COMPONENT_TYPE_DEBUG_MESH = 13
+COMPONENT_TYPE_SKELETON = 14
+COMPONENT_TYPE_MULTI_TRANSFORM_3D = 15
 
 # Universal arguments for all components
 COMPONENT_ARG_RESOURCE_ID = "resource_id"

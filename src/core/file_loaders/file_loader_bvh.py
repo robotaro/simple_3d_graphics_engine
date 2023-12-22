@@ -2,15 +2,15 @@ import numpy as np
 from src.utilities import utils_bvh_reader
 
 from src.core import constants
-from src.core.resource_loaders.resource import Resource
 from src.core.data_block import DataBlock
-from src.core.resource_loaders.resource_loader import ResourceLoader
+from src.core.data_group import DataGroup
+from src.core.file_loaders.file_loader import FileLoader
 
 
-class ResourceLoaderBVH(ResourceLoader):
+class FileLoaderBVH(FileLoader):
 
-    def __init__(self, all_resources: dict):
-        super().__init__(all_resources=all_resources)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def load(self, resource_uid: str, fpath: str) -> bool:
 
@@ -22,15 +22,15 @@ class ResourceLoaderBVH(ResourceLoader):
 
         # =========================[ Skeleton ]=========================
 
-        skeleton_resource = Resource(resource_type=constants.RESOURCE_TYPE_SKELETON)
+        skeleton_resource = DataGroup(archetype=constants.RESOURCE_TYPE_SKELETON)
 
-        skeleton_resource.data_blocks["parent_index"] = DataBlock(data=skeleton_df["parent"].values,
+        skeleton_resource.data_blocks["parent_index"] = DataBlock(data=skeleton_df["parent"].values.astype(np.int32),
                                                                   metadata={"bone_names": bone_names})
 
         pos_offset = skeleton_df[["position_x", "position_y", "position_z"]].values
         skeleton_resource.data_blocks["position_offset"] = DataBlock(data=pos_offset)
 
-        rot_offset = skeleton_df[["angle_offset_x", "angle_offset_y", "angle_offset_z"]].values
+        rot_offset = skeleton_df[["angle_offset_x", "angle_offset_y", "angle_offset_z"]].values.astype(np.float32)
         skeleton_resource.data_blocks["rotation_offset"] = DataBlock(data=rot_offset)
 
         skeleton_resource.data_blocks["length"] = DataBlock(data=skeleton_df["length"].values)
@@ -41,11 +41,11 @@ class ResourceLoaderBVH(ResourceLoader):
 
         complete_id = f"{resource_uid}/skeleton_0"
 
-        self.all_resources[complete_id] = skeleton_resource
+        self.external_data_groups[complete_id] = skeleton_resource
 
         # =========================[ Animation ]=========================
 
-        animation_resource = Resource(resource_type=constants.RESOURCE_TYPE_ANIMATION_BVH)
+        animation_resource = DataGroup(archetype=constants.RESOURCE_TYPE_ANIMATION_BVH)
 
         num_frames = animation_df.index.size
 
@@ -82,7 +82,5 @@ class ResourceLoaderBVH(ResourceLoader):
         animation_resource.data_blocks["animation_position"] = new_position_datablock
         animation_resource.data_blocks["animation_rotation"] = new_rotation_datablock
 
-        complete_id = f"{resource_uid}/animation_0"
-
-        self.all_resources[complete_id] = animation_resource
+        self.external_data_groups[f"{resource_uid}/animation_0"] = animation_resource
         return True

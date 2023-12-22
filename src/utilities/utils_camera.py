@@ -12,6 +12,7 @@ def set_gizmo_scale(view_matrix: np.ndarray, object_position: np.array) -> float
     scale = np.abs(view_position[2]) * constants.GIZMO_3D_ANGLE_TANGENT_COEFFICIENT
     return scale
 
+
 @njit(cache=True)
 def screen_gl_position_pixels2viewport_position(position_pixels: tuple, viewport_pixels: tuple) -> tuple:
 

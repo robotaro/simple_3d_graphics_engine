@@ -122,7 +122,8 @@ class GLTFReader:
     def __load_gltf(self, fpath) -> None:
 
         # Load Header
-        with open(fpath, "r") as file:
+        with open(fpath, "r", encoding='utf-8') as file:
+            print(fpath, file.encoding)
             self.gltf_header = json.load(file)
 
             # Make sure we only have one scene
@@ -136,7 +137,7 @@ class GLTFReader:
         binary_size = os.path.getsize(bin_fpath)
 
         if target_bin_data_size != binary_size:
-            raise Exception("[ERROR] Binay file size does not match size descriped inside its JSON counter-part")
+            raise Exception("[ERROR] Binary file size does not match size descriped inside its JSON counter-part")
 
         # read and process binary data
         with open(bin_fpath, "rb") as file:

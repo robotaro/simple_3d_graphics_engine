@@ -1,17 +1,16 @@
 import numpy as np
 
 from src.core import constants
-from src.core.resource_loaders.resource import Resource
 from src.core.data_block import DataBlock
-from src.core.resource_loaders.resource_loader import ResourceLoader
-
+from src.core.data_group import DataGroup
+from src.core.file_loaders.file_loader import FileLoader
 from src.utilities import utils_gltf_reader
 
 
-class ResourceLoaderGLTF(ResourceLoader):
+class FileLoaderGLTF(FileLoader):
 
-    def __init__(self, all_resources: dict):
-        super().__init__(all_resources=all_resources)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         self.gltf_reader = None
 
@@ -20,7 +19,7 @@ class ResourceLoaderGLTF(ResourceLoader):
         self.gltf_reader.load(gltf_fpath=fpath)
 
         self.__load_mesh_resources(resource_uid=resource_uid)
-        self.__load_node_resources(resource_uid=resource_uid)
+        self.__load_nodes_resources(resource_uid=resource_uid)
         self.__load_animation_resources(resource_uid=resource_uid)
 
         return True
@@ -28,7 +27,7 @@ class ResourceLoaderGLTF(ResourceLoader):
     def __load_mesh_resources(self, resource_uid: str):
         for mesh_index, mesh in enumerate(self.gltf_reader.get_all_meshes()):
 
-            new_resource = Resource(resource_type=constants.RESOURCE_TYPE_MESH)
+            new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_MESH)
             new_resource.metadata["render_mode"] = mesh["render_mode"]
             mesh_attrs = mesh["attributes"]
 
@@ -47,16 +46,25 @@ class ResourceLoaderGLTF(ResourceLoader):
             if "WEIGHTS_0" in mesh_attrs:
                 new_resource.data_blocks["weights"] = DataBlock(data=mesh_attrs["WEIGHTS_0"])
 
-            self.all_resources[f"{resource_uid}/mesh_{mesh_index}"] = new_resource
+            self.external_data_groups[f"{resource_uid}/mesh_{mesh_index}"] = new_resource
 
-    def __load_node_resources(self, resource_uid: str):
+    def __load_nodes_resources(self, resource_uid: str):
         nodes = self.gltf_reader.get_nodes()
 
         num_nodes = len(nodes)
         max_num_children = max(set(len(node["children_indices"]) for node in nodes))
 
-        new_resource = Resource(resource_type=constants.RESOURCE_TYPE_NODES_GLTF,
-                                metadata={"node_names": nodes})
+        # Get (or generate) node names if necessary
+        node_names = []
+        for node_index, node in enumerate(nodes):
+            gltf_node_name = node.get("name", "")
+            if len(gltf_node_name) > 0:
+                node_names.append(gltf_node_name)
+                continue
+            node_names.append(f"node_{node_index}")
+
+        new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_NODES_GLTF,
+                                 metadata={"node_names": node_names})
 
         new_resource.data_blocks["parent_index"] = DataBlock(
             data=np.empty((num_nodes,), dtype=np.int16))
@@ -96,13 +104,13 @@ class ResourceLoaderGLTF(ResourceLoader):
             new_resource.data_blocks["mesh_index"].data[node_index] = node["mesh_index"]
             new_resource.data_blocks["skin_index"].data[node_index] = node["skin_index"]
 
-        self.all_resources[f"{resource_uid}/nodes_0"] = new_resource
+        self.external_data_groups[f"{resource_uid}/nodes_0"] = new_resource
 
     def __load_animation_resources(self, resource_uid: str):
 
         for animation_index in range(self.gltf_reader.num_animations):
 
-            new_resource = Resource(resource_type=constants.RESOURCE_TYPE_ANIMATION)
+            new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_ANIMATION)
             animation = self.gltf_reader.get_animation(index=animation_index)
 
             # The data from gltf_reader needs to be re-organised in order to keep all animation data
@@ -123,7 +131,7 @@ class ResourceLoaderGLTF(ResourceLoader):
             num_node_tracks = len(unique_node_indices)
             num_timestamps = animation["timestamps"].size
 
-            # Create empty datablocks first
+            # Create empty data blocks first
             new_resource.data_blocks["translation"] = DataBlock(
                 data=np.empty((num_timestamps, num_node_tracks, 3), dtype=np.float32),
                 metadata={"order": ["x", "y", "z"]})
@@ -149,4 +157,4 @@ class ResourceLoaderGLTF(ResourceLoader):
                     new_resource.data_blocks[channel_name].data[:, node_sub_index, :] = reshaped_channel_data
 
             # Finally, add the new animation resource
-            self.all_resources[f"{resource_uid}/animation_{animation_index}"] = new_resource
+            self.external_data_groups[f"{resource_uid}/animation_{animation_index}"] = new_resource

@@ -5,7 +5,7 @@ import numpy as np
 from src.core import constants
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
-from src.core.component_pool import ComponentPool
+from src.core.scene import Scene
 from src.math import ray_intersection, mat4
 from src.utilities import utils_camera
 from src.systems.system import System
@@ -102,34 +102,34 @@ class Gizmo3DSystem(System):
         """
 
         # Stage 1) For every camera, create a gizmo entity and associate their ids
-        pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         for camera_entity_id, camera_component in pool.items():
             if camera_entity_id in self.camera2gizmo_map:
                 continue
 
             # Create new gizmo entity for this camera
-            gizmo_entity_uid = self.component_pool.add_entity(entity_blueprint=GIZMO_3D_RIG_BLUEPRINT,
-                                                              system_owned=True)
+            gizmo_entity_uid = self.scene.add_entity(entity_blueprint=GIZMO_3D_RIG_BLUEPRINT,
+                                                     system_owned=True)
             self.camera2gizmo_map[camera_entity_id] = gizmo_entity_uid
 
             # And make sure only this camera can render it
-            gizmo_meshes = self.component_pool.get_all_sub_entity_components(
+            gizmo_meshes = self.scene.get_all_sub_entity_components(
                 parent_entity_uid=gizmo_entity_uid,
                 component_type=constants.COMPONENT_TYPE_MESH)
             for mesh in gizmo_meshes:
                 mesh.exclusive_to_camera_uid = camera_entity_id
 
         # Stage 2) For every gizmo3D, find out which meshes correspond to their respective axes
-        pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
+        pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
         for gizmo_3d_entity_uid, gizmo_3d_component in pool.items():
 
-            children_uids = self.component_pool.get_children_uids(entity_uid=gizmo_3d_entity_uid)
+            children_uids = self.scene.get_children_uids(entity_uid=gizmo_3d_entity_uid)
 
             for index, axis_name in enumerate(constants.GIZMO_3D_AXES_NAME_ORDER):
 
                 for child_uid in children_uids:
 
-                    entity_name = self.component_pool.get_entity(child_uid).name
+                    entity_name = self.scene.get_entity(child_uid).name
 
                     if entity_name == axis_name:
                         gizmo_3d_component.axes_entities_uids[index] = child_uid
@@ -246,7 +246,7 @@ class Gizmo3DSystem(System):
         if not self.gizmo_selection_enabled:
             return
 
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
         if mouse_press:
             self.gizmo_state = constants.GIZMO_3D_STATE_TRANSLATING_ON_AXIS
@@ -281,7 +281,7 @@ class Gizmo3DSystem(System):
 
         local_point_on_ray_0 = self.get_projected_point_on_axis(ray_origin=ray_origin, ray_direction=ray_direction)
         new_local_position = local_point_on_ray_0 - self.local_axis_offset_point + self.original_active_local_position
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
         selected_transform_component.position = tuple(new_local_position)
@@ -306,26 +306,29 @@ class Gizmo3DSystem(System):
             return True
 
         # Get component pools for easy access
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-        overlay_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        overlay_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
 
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
         selected_world_position = np.ascontiguousarray(selected_transform_component.world_matrix[:3, 3])
 
-        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         for camera_entity_uid, camera_component in camera_pool.items():
 
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_uid]
             gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
             camera_matrix = transform_3d_pool[camera_entity_uid].world_matrix
-            view_matrix = np.empty((4, 4), dtype=np.float32)
+            view_matrix = np.eye(4, dtype=np.float32)
             mat4.even_faster_inverse(in_mat4=camera_matrix, out_mat4=view_matrix)
 
             gizmo_scale = utils_camera.set_gizmo_scale(view_matrix=view_matrix, object_position=selected_world_position)
             viewport_height = camera_component.viewport_pixels[3]
             gizmo_scale *= constants.GIZMO_3D_VIEWPORT_SCALE_COEFFICIENT / viewport_height
             gizmo_transform_component.scale = (gizmo_scale, gizmo_scale, gizmo_scale)
+
+            # TODO: [OPTIMISE] Seting this flag to TRUE every frame, even when nothing changes, wastes CPU time.
+            #       It causes the transform_3d to recalcalculate its matrices at every frame.
             gizmo_transform_component.input_values_updated = True
 
             # Update gizmo's transform parameters for visual feedback
@@ -398,8 +401,8 @@ class Gizmo3DSystem(System):
                                                                                ray_1_direction=ray_direction)
 
         inverse_parent_matrix = np.eye(4, dtype=np.float32)
-        entity = self.component_pool.get_entity(entity_uid=self.selected_entity_uid)
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        entity = self.scene.get_entity(entity_uid=self.selected_entity_uid)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
         if entity.parent_uid is None:
             inverse_parent_matrix = np.eye(4, dtype=np.float32)
@@ -410,7 +413,7 @@ class Gizmo3DSystem(System):
         return mat4.mul_vector3(in_mat4=inverse_parent_matrix, in_vec3=world_point_on_ray_0)
 
     def get_active_camera(self, screen_gl_pixels: tuple) -> tuple:
-        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         active_camera_component = None
         active_camera_uid = None
         for camera_entity_id, camera_component in camera_pool.items():
@@ -435,7 +438,7 @@ class Gizmo3DSystem(System):
         :return: tuple
         """
 
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
 
         gizmo_3d_entity_uid = self.camera2gizmo_map[active_camera_uid]
 
@@ -445,7 +448,6 @@ class Gizmo3DSystem(System):
                           out_vec3_array=self.gizmo_transformed_axes)
 
         camera_matrix = transform_3d_pool[active_camera_uid].world_matrix
-        projection_matrix = active_camera_component.get_projection_matrix()
 
         viewport_position = utils_camera.screen_gl_position_pixels2viewport_position(
             position_pixels=self.mouse_screen_position,
@@ -463,7 +465,7 @@ class Gizmo3DSystem(System):
 
     def mouse_ray_check_axes_collision(self, ray_origin: np.array, ray_direction: np.array) -> int:
 
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
         gizmo_3d_entity_uid = self.camera2gizmo_map[self.focused_camera_uid] # TODO [CLEANUP] All I need is the gizmo transform
         gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
@@ -498,8 +500,8 @@ class Gizmo3DSystem(System):
         gizmo_3d_entity_uid = self.camera2gizmo_map[camera_uid]
 
         # De-highlight all axes
-        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
-        gizmo_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
+        material_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+        gizmo_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
         gizmo_component = gizmo_3d_pool[gizmo_3d_entity_uid]
         for axis_entity_uid in gizmo_component.axes_entities_uids:
             material_pool[axis_entity_uid].state_highlighted = False
@@ -509,8 +511,8 @@ class Gizmo3DSystem(System):
         if self.gizmo_state == constants.GIZMO_3D_STATE_NOT_HOVERING:
             return
 
-        material_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
-        gizmo_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
+        material_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
+        gizmo_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
         gizmo_component = gizmo_3d_pool[self.camera2gizmo_map[camera_uid]]
         axis_entity_uid = gizmo_component.axes_entities_uids[self.focused_gizmo_axis_index]
         axis_material = material_pool[axis_entity_uid]
@@ -518,10 +520,10 @@ class Gizmo3DSystem(System):
 
     def set_gizmo_to_selected_entity(self):
 
-        transform_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-        selected_transform_component = transform_3d_pool[self.selected_entity_uid]
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        selected_transform_component = transform_3d_pool.get(self.selected_entity_uid, None)
 
-        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         for camera_entity_id, camera_component in camera_pool.items():
 
             gizmo_3d_entity_uid = self.camera2gizmo_map[camera_entity_id]
@@ -532,9 +534,9 @@ class Gizmo3DSystem(System):
 
     def set_all_gizmo_3d_visibility(self, visible=True):
 
-        camera_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-        gizmo_3d_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
-        mesh_pool = self.component_pool.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
+        camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
+        gizmo_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_GIZMO_3D)
+        mesh_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
 
         for camera_entity_id, camera_component in camera_pool.items():
 

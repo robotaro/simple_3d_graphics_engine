@@ -202,6 +202,26 @@ def matrix_composition(translation_in, rotation_quat_in, scale_in, matrix_out):
     matrix_out[3, :] = np.array([0, 0, 0, 1], dtype=np.float32)
 
 
+"""@njit((float32[:, :], float32[:, :], float32[:, :], float32[:, :]), cache=True)
+def multi_matrix_composition(translations_in, rotations_quat_in, scales_in, matrices_out):
+
+    
+    This function executes the matrix_composition funciton on arrays of translation, rotation
+    and scale vectors of N elements into a (N, 4, 4)
+    :param translation_in: np.ndarray (N, 3) <float32>
+    :param rotation_quat_in: np.ndarray (N, 4) <float32>
+    :param scale_in: np.ndarray (N, 3) <float32>
+    :param matrix_out: np.ndarray (N, 4, 4) <float32>
+    :return: None
+    
+
+    for index in range(matrices_out.shape[0]):
+        matrix_composition(
+            translations_in[index, :],
+            rotations_quat_in[index, :],
+            scales_in[index, :],
+            matrices_out[index, :])"""
+
 @njit((float32[:, :], float32[:], float32[:], float32[:]), cache=True)
 def matrix_decomposition(matrix_in, translation_out, rotation_quat_out, scale_out) -> None:
     """

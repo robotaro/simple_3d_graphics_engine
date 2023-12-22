@@ -1,7 +1,31 @@
 from numba import njit
 import numpy as np
+from scipy.spatial.transform import Rotation
 
 SLERP_DOT_THRESHOLD = 0.9995
+
+
+def multi_euler_to_quaternion(euler_angles: np.ndarray, rotation_orders: list):
+    """
+    [NOTE] Function originaly written by ChatGPT4 and modified by me
+    Convert Euler angles to quaternions.
+
+    :param euler_angles: (N, 3) array of Euler angles.
+    :param rotation_orders: (N,) array of integers representing rotation orders.
+    :return: (N, 4) array of quaternions.
+    """
+    # Map integer rotation orders to the corresponding string representations
+    order_mapping = {0: 'xyz', 1: 'zyx', 2: 'yxz', 3: 'xzy', 4: 'zxy', 5: 'yzx'}
+    quaternions = np.empty((len(euler_angles), 4), dtype=np.float32)
+
+    # Convert each set of Euler angles to a quaternion
+    for i, (angles, order) in enumerate(zip(euler_angles, rotation_orders)):
+        rotation_order = order_mapping.get(order, 'xyz')  # Default to 'xyz' if not found
+        rotation = Rotation.from_euler(rotation_order, angles, degrees=False)
+        quaternions[i] = rotation.as_quat()
+
+    return quaternions
+
 
 @njit
 def mat3_to_quat(mat3, output_quat):
@@ -40,6 +64,7 @@ def mat3_to_quat(mat3, output_quat):
         output_quat[2] = (mat3[1, 2] + mat3[2, 1]) / S
         output_quat[3] = 0.25 * S
 
+
 @njit
 def quat_to_mat3(quat, output_mat3):
 
@@ -66,6 +91,7 @@ def quat_to_mat3(quat, output_mat3):
     output_mat3[0, 2] = 2 * qx * qz + 2 * qy * qw
     output_mat3[1, 2] = 2 * qy * qz - 2 * qx * qw
     output_mat3[2, 2] = 1 - 2 * qx * qx - 2 * qy * qy
+
 
 @njit
 def slerp_quat(quat_a, quat_b, t_value):

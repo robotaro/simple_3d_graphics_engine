@@ -14,14 +14,15 @@ from src.systems.gizmo_3d_system.gizmo_3d_system import Gizmo3DSystem
 from src.systems.transform_system.transform_system import TransformSystem
 from src.systems.input_control_system.input_control_system import InputControlSystem
 from src.systems.import_system.import_system import ImportSystem
+from src.systems.skeleton_system.skeleton_system import SkeletonSystem
 
 from src.utilities import utils_logging, utils_xml2scene, utils_io
 
 # Core Modules
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
-from src.core.component_pool import ComponentPool
-from src.core.resource_manager import ResourceManager
+from src.core.scene import Scene
+from src.core.data_manager import DataManager
 
 
 # Debug
@@ -48,11 +49,12 @@ class Editor:
                  "buffer_size",
                  "transform_components",
                  "camera_components",
+                 "system_class_map",
                  "systems",
-                 "component_pool",
+                 "scene",
                  "event_publisher",
                  "action_publisher",
-                 "resource_manager",
+                 "data_manager",
                  "close_application",
                  "profiling_update_period",
                  "editor_num_updates",
@@ -65,7 +67,7 @@ class Editor:
     def __init__(self,
                  window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
                  window_title="New Editor",
-                 system_types=constants.DEFAULT_SYSTEMS,
+                 system_names=constants.DEFAULT_SYSTEMS,
                  vertical_sync=True):
 
         self.logger = utils_logging.get_project_logger()
@@ -75,11 +77,10 @@ class Editor:
         self.vertical_sync = vertical_sync
 
         # Core modules - MUST BE CREATED BEFORE ANY SYSTEM!
-        self.component_pool = ComponentPool(logger=self.logger)
+        self.scene = Scene(logger=self.logger)
         self.event_publisher = EventPublisher(logger=self.logger)
         self.action_publisher = ActionPublisher(logger=self.logger)
-        self.resource_manager = ResourceManager(logger=self.logger)
-
+        self.data_manager = DataManager(logger=self.logger)
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -139,9 +140,18 @@ class Editor:
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
 
         # Systems - Need to be created after everything else has been created
+        self.system_class_map = {
+            constants.SYSTEM_NAME_IMPORT: ImportSystem,
+            constants.SYSTEM_NAME_INPUT_CONTROL: InputControlSystem,
+            constants.SYSTEM_NAME_GIZMO_3D: Gizmo3DSystem,
+            constants.SYSTEM_NAME_TRANSFORM: TransformSystem,
+            constants.SYSTEM_NAME_SKELETON: SkeletonSystem,
+            constants.SYSTEM_NAME_RENDER: RenderSystem,
+            constants.SYSTEM_NAME_IMGUI: ImguiSystem
+        }
         self.systems = []
-        for system_type in system_types:
-            self.create_system(system_name=system_type)
+        for system_name in system_names:
+            self.create_system(system_name=system_name)
 
         # Flags
         self.close_application = False
@@ -304,74 +314,29 @@ class Editor:
         :return: bool, TRUE if systems was successfully created
         """
 
-        new_system = None
         if parameters is None:
             parameters = {}
 
-        if system_name == RenderSystem.name:
-            new_system = RenderSystem(
-                logger=self.logger,
-                component_pool=self.component_pool,
-                event_publisher=self.event_publisher,
-                action_publisher=self.action_publisher,
-                resource_manager=self.resource_manager,
-                parameters=parameters,
-                context=self.ctx,
-                buffer_size=self.buffer_size)
+        selected_system_class = self.system_class_map.get(system_name, None)
 
-        if system_name == ImguiSystem.name:
-            new_system = ImguiSystem(
-                logger=self.logger,
-                component_pool=self.component_pool,
-                event_publisher=self.event_publisher,
-                action_publisher=self.action_publisher,
-                resource_manager=self.resource_manager,
-                parameters=parameters,
-                window_glfw=self.window_glfw)
-
-        if system_name == InputControlSystem.name:
-            new_system = InputControlSystem(
-                logger=self.logger,
-                component_pool=self.component_pool,
-                event_publisher=self.event_publisher,
-                action_publisher=self.action_publisher,
-                resource_manager=self.resource_manager,
-                parameters=parameters)
-
-        if system_name == Gizmo3DSystem.name:
-            new_system = Gizmo3DSystem(
-                logger=self.logger,
-                component_pool=self.component_pool,
-                event_publisher=self.event_publisher,
-                action_publisher=self.action_publisher,
-                resource_manager=self.resource_manager,
-                parameters=parameters)
-
-        if system_name == TransformSystem.name:
-            new_system = TransformSystem(
-                logger=self.logger,
-                component_pool=self.component_pool,
-                event_publisher=self.event_publisher,
-                action_publisher=self.action_publisher,
-                resource_manager=self.resource_manager,
-                parameters=parameters)
-
-        if system_name == ImportSystem.name:
-            new_system = ImportSystem(
-                logger=self.logger,
-                component_pool=self.component_pool,
-                event_publisher=self.event_publisher,
-                action_publisher=self.action_publisher,
-                resource_manager=self.resource_manager,
-                parameters=parameters)
-
-        if new_system is None:
+        if selected_system_class is None:
             self.logger.error(f"Failed to create system {system_name}")
             return False
 
+        new_system = selected_system_class(
+            logger=self.logger,
+            window_glfw=self.window_glfw,
+            scene=self.scene,
+            event_publisher=self.event_publisher,
+            action_publisher=self.action_publisher,
+            data_manager=self.data_manager,
+            parameters=parameters,
+            context=self.ctx,
+            buffer_size=self.buffer_size)
+
         # Subscribe system to listen to its pre-determined events
         for event_type in system_subscriptions.SYSTEMS_EVENT_SUBSCRITONS[new_system.name]:
-            self.event_publisher.subscribe( event_type=event_type, listener=new_system)
+            self.event_publisher.subscribe(event_type=event_type, listener=new_system)
 
         # And finally add the new system to the roster
         self.systems.append(new_system)
@@ -393,11 +358,11 @@ class Editor:
         # Load scene resource, if any
         for resource_uid, resource_fpath in scene_resources.items():
             resource_fpath = utils_io.validate_resource_filepath(fpath=resource_fpath)
-            self.resource_manager.load_resource(resource_uid=resource_uid, fpath=resource_fpath)
+            self.data_manager.load_file(data_group_id=resource_uid, fpath=resource_fpath)
 
         # Add entities to current scene
         for entity_blueprint in scene_blueprint["scene"]["entity"]:
-            self.component_pool.add_entity(entity_blueprint=entity_blueprint)
+            self.scene.add_entity(entity_blueprint=entity_blueprint)
 
     def load_scene_from_hdf5(self, scene_h5_fpath: str):
         pass
@@ -407,15 +372,15 @@ class Editor:
         # TODO: This is SORT OF a hack. Please think of a way to make this universal
         render_system = [system for system in self.systems if isinstance(system, RenderSystem)][0]
 
-        for _, pool in self.component_pool.component_master_pool.items():
+        for _, pool in self.scene.component_master_pool.items():
             for entity_uid, component in pool.items():
                 component.initialise(ctx=self.ctx,
                                      shader_library=render_system.shader_program_library,
                                      font_library=render_system.font_library,
-                                     resource_manager=self.resource_manager)
+                                     data_manager=self.data_manager)
 
     def release_components(self):
-        for component_id, components in self.component_pool.component_storage_map.items():
+        for component_id, components in self.scene.component_storage_map.items():
             for entity_uid, component in components.items():
                 component.release()
 

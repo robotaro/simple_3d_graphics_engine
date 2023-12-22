@@ -1,5 +1,5 @@
 from src.core import constants
-from src.components.component import Component
+from src.core.component import Component
 from src.utilities import utils_urdf, utils_mjcf, utils_io
 
 

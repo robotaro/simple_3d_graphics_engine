@@ -1,8 +1,5 @@
-import numpy as np
-
 from src.core import constants
-from src.components.component import Component
-from src.systems.render_system.font_library import FontLibrary
+from src.core.component import Component
 from src.systems.render_system.im_overlay_2d import ImOverlay2D
 
 

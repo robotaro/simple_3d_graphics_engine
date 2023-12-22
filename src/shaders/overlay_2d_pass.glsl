@@ -36,7 +36,7 @@ void main() {
 
 #elif defined GEOMETRY_SHADER
 
-#include overlay_2d_constants.glsl
+#include definition_overlay_2d_constants.glsl
 
 #define CIRCLE_NUM_SIDES 32
 
@@ -219,7 +219,7 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
-#include overlay_2d_constants.glsl
+#include definition_overlay_2d_constants.glsl
 
 uniform sampler2D font_texture;
 
