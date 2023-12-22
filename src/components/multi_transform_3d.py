@@ -12,14 +12,16 @@ class MultiTransform3D(Component):
     _type = "transform"
 
     __slots__ = [
+        "local_matrices",
         "world_matrices",
         "dirty"
     ]
 
     def __init__(self, parameters, system_owned=False):
         super().__init__(parameters=parameters, system_owned=system_owned)
+        self.local_matrices = None
         self.world_matrices = None
-        self.dirty = True
+        self.dirty = False
 
     def initialise(self, **kwargs):
 
@@ -40,6 +42,7 @@ class MultiTransform3D(Component):
         num_bones = nodes_data_group.data_blocks["parent_index"].data.size
         matrix_shape = (num_bones, 4, 4)
         local_matrices = np.empty(matrix_shape, dtype=np.float32)
+        self.local_matrices = np.empty(matrix_shape, dtype=np.float32)
         self.world_matrices = np.empty(matrix_shape, dtype=np.float32)
 
         # Calculate local matrices
@@ -67,16 +70,14 @@ class MultiTransform3D(Component):
             if parent_index == -1:
                 parent_matrix = np.eye(4, dtype=np.float32)
             else:
-                parent_matrix = self.world_matrices[parent_index, :, :]
+                parent_matrix = self.local_matrices[parent_index, :, :]
 
-            self.world_matrices[current_node_index, :, :] = parent_matrix @ local_matrices[current_node_index, :, :]
+            self.local_matrices[current_node_index, :, :] = parent_matrix @ local_matrices[current_node_index, :, :]
             next_node_indices.extend(updated_children_indices)
 
-        # Finally transpose the matrices in the array to align memory with
-        self.world_matrices = self.world_matrices.transpose((0, 2, 1))
         self.dirty = True
 
-    def update_ubo(self, ubo: moderngl.UniformBlock):
+    def upload_world_matrix_to_ubo(self, ubo: moderngl.UniformBlock):
 
         if not self.dirty:
             return

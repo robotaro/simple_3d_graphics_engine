@@ -7,7 +7,7 @@ from src.core.component import Component
 
 class Transform3D(Component):
 
-    _type = "transform"
+    _type = "transform_3d"
 
     __slots__ = [
         "local_matrix",
@@ -55,12 +55,12 @@ class Transform3D(Component):
 
         self.local_matrix = np.eye(4, dtype=np.float32)
         self.world_matrix = np.eye(4, dtype=np.float32)
-        self.inverse_world_matrix = np.eye(4, dtype=np.float32)  # DOesn't get update correctly for some reason
+        self.inverse_world_matrix = np.eye(4, dtype=np.float32)  # Doesn't get update correctly for some reason
         self.input_values_updated = True
         self.local_matrix_updated = False
         self.dirty = True
 
-    def update(self) -> None:
+    def update(self) -> bool:
         """
         This function serverd multiple purposes. If "input_values_updated" is true, it will reconstruct
         the local matrix based on the translation, rotation (including mode) and scale values.
@@ -71,7 +71,7 @@ class Transform3D(Component):
                      are updated before the update function is called (both flags true) the local matrix
                      will remain unchanged and the input values will be updated instead
 
-        :return: None
+        :return: boolean, TRUE if the local matrix has been updated
         """
 
         if self.local_matrix_updated:
@@ -80,7 +80,8 @@ class Transform3D(Component):
             # TODO: Scale is missing!!!
             self.local_matrix_updated = False
             self.input_values_updated = False  # They have now been overwritten, so no updated required.
-            return
+            self.dirty = True
+            return True
 
         if self.input_values_updated:
             self.local_matrix = mat4.create_transform_euler_xyz(
@@ -88,15 +89,13 @@ class Transform3D(Component):
                 np.array(self.rotation, dtype=np.float32),
                 np.array(self.scale, dtype=np.float32),)
             self.input_values_updated = False
+            self.dirty = True
+            return True
 
-    def update_ubo(self, ubo: moderngl.UniformBlock):
+        return False
 
-        #if not self.dirty:
-        #    return
-
-        # Write the data to the UBO
+    def upload_world_matrix_to_ubo(self, ubo: moderngl.UniformBlock):
         ubo.write(self.world_matrix.T.tobytes(), offset=0)
-        #self.dirty = False
 
     def move(self, delta_position: np.array):
         self.position += delta_position

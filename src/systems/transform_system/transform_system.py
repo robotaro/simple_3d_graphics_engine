@@ -42,31 +42,33 @@ class TransformSystem(System):
         # TODO: [OPTIMIZE] Not all world matrices need to be recreated all the time! Take the dirty flags into account!
         for entity_uid in self.entity_uid_update_order:
 
+            print(entity_uid)
+
             entity = self.scene.entities[entity_uid]
             transform = transform_3d_pool.get(entity_uid, None)
             if transform is None:
                 continue
 
-            transform.update()
+            local_matrix_updated = transform.update()
 
-            if entity.parent_uid is None:
+            if entity.parent_uid:
+                parent_transform = transform_3d_pool[entity.parent_uid]
+                transform.world_matrix = parent_transform.world_matrix @ transform.local_matrix
+            else:
                 transform.world_matrix = transform.local_matrix
-                mat4.even_faster_inverse(in_mat4=transform.world_matrix,
-                                         out_mat4=transform.inverse_world_matrix)
-                continue
 
-            # TODO: Think of a way to minimise necessary updates. Probably do it when we move to DOD
-            parent_transform = transform_3d_pool[entity.parent_uid]
-            transform.world_matrix = parent_transform.world_matrix @ transform.local_matrix
             mat4.even_faster_inverse(in_mat4=transform.world_matrix,
                                      out_mat4=transform.inverse_world_matrix)
 
-            # Multi-transform
-            orange = multi_transform_3d_pool.get(entity_uid)
-            if orange:
+            # Multi-transform update
+            multi_transform = multi_transform_3d_pool.get(entity_uid)
+            if multi_transform is None:
                 continue
 
-            multi_transform.world_matrices = np.matmul(transform.world_matrix, multi_transform.world_matrices)
+            if local_matrix_updated:
+                multi_transform.world_matrices = np.matmul(transform.world_matrix, multi_transform.local_matrices)
+                multi_transform.world_matrices = multi_transform.world_matrices.transpose((0, 2, 1))
+                multi_transform.dirty = True
 
         # ================= Process actions =================
 

@@ -130,11 +130,11 @@ class RenderPassForward(RenderPass):
                 num_instances = 1
                 transform = transform_3d_pool.get(mesh_entity_uid, None)
                 if transform is not None:
-                    transform.update_ubo(ubo=transforms_ubo)
+                    transform.upload_world_matrix_to_ubo(ubo=transforms_ubo)
 
                 multi_transform = multi_transform_3d_pool.get(mesh_entity_uid, None)
                 if multi_transform is not None:
-                    multi_transform.update_ubo(ubo=transforms_ubo)
+                    multi_transform.upload_world_matrix_to_ubo(ubo=transforms_ubo)
                     num_instances = multi_transform.world_matrices.shape[0]
 
                 # Update Mesh uniforms
