@@ -1,4 +1,5 @@
 import moderngl
+import numpy as np
 
 from src.core import constants
 from src.core.scene import Scene
@@ -27,7 +28,6 @@ class RenderPassForward(RenderPass):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # Forward Pass
         self.texture_color = None
         self.texture_normal = None
         self.texture_viewpos = None

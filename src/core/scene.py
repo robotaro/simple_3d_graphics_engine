@@ -20,8 +20,6 @@ from src.components.debug_mesh import DebugMesh
 from src.components.skeleton import Skeleton
 from src.components.multi_transform_3d import MultiTransform3D
 
-MAX_POINT_LIGHTS = 8
-
 
 class Scene:
 
@@ -64,6 +62,21 @@ class Scene:
         "logger",
         "entity_uid_counter",
         "entities",
+        "transform_3d",
+        "mesh",
+        "camera",
+        "material",
+        "input_control",
+        "overlay_2d",
+        "directional_light",
+        "spot_light",
+        "point_light",
+        "collider",
+        "gizmo_3d",
+        "robot",
+        "debug_mesh",
+        "skeleton",
+        "multi_transform_3d",
         "component_master_pool",
         "available_point_light_indices",
         "available_directional_light_indices",
@@ -77,7 +90,41 @@ class Scene:
         # TODO: We start from 2 to make it easy to discern the background [0, 1]
         self.entity_uid_counter = constants.COMPONENT_POOL_STARTING_ID_COUNTER
         self.entities = {}
-        self.component_master_pool = {component_type: {} for component_type, _ in Scene.COMPONENT_CLASS_MAP.items()}
+
+        # Components
+        self.transform_3d = {}
+        self.mesh = {}
+        self.camera = {}
+        self.material = {}
+        self.input_control = {}
+        self.overlay_2d = {}
+        self.directional_light = {}
+        self.spot_light = {}
+        self.point_light = {}
+        self.collider = {}
+        self.gizmo_3d = {}
+        self.robot = {}
+        self.debug_mesh = {}
+        self.skeleton = {}
+        self.multi_transform_3d = {}
+
+        self.component_master_pool = {
+            constants.COMPONENT_TYPE_TRANSFORM_3D: self.transform_3d,
+            constants.COMPONENT_TYPE_MESH: self.mesh,
+            constants.COMPONENT_TYPE_CAMERA: self.camera,
+            constants.COMPONENT_TYPE_MATERIAL: self.material,
+            constants.COMPONENT_TYPE_INPUT_CONTROL: self.input_control,
+            constants.COMPONENT_TYPE_OVERLAY_2D: self.overlay_2d,
+            constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT: self.directional_light,
+            constants.COMPONENT_TYPE_SPOT_LIGHT: self.spot_light,
+            constants.COMPONENT_TYPE_POINT_LIGHT: self.point_light,
+            constants.COMPONENT_TYPE_COLLIDER: self.collider,
+            constants.COMPONENT_TYPE_GIZMO_3D: self.gizmo_3d,
+            constants.COMPONENT_TYPE_ROBOT: self.robot,
+            constants.COMPONENT_TYPE_DEBUG_MESH: self.debug_mesh,
+            constants.COMPONENT_TYPE_SKELETON: self.skeleton,
+            constants.COMPONENT_TYPE_MULTI_TRANSFORM_3D: self.multi_transform_3d
+        }
 
         self.available_material_indices = [i for i in reversed(range(constants.SCENE_MAX_NUM_MATERIALS))]
         self.available_point_light_indices = [i for i in reversed(range(constants.SCENE_MAX_NUM_POINT_LIGHTS))]

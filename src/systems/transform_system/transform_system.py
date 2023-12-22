@@ -42,8 +42,6 @@ class TransformSystem(System):
         # TODO: [OPTIMIZE] Not all world matrices need to be recreated all the time! Take the dirty flags into account!
         for entity_uid in self.entity_uid_update_order:
 
-            print(entity_uid)
-
             entity = self.scene.entities[entity_uid]
             transform = transform_3d_pool.get(entity_uid, None)
             if transform is None:

@@ -11,7 +11,7 @@ from src.systems.render_system.font_library import FontLibrary
 from src.systems.render_system.render_passes.render_pass_forward import RenderPassForward
 from src.systems.render_system.render_passes.render_pass_overlay import RenderPassOverlay
 from src.systems.render_system.render_passes.render_pass_selection import RenderPassSelection
-from src.core.scene import Scene
+from src.utilities import utils_render_commands
 from src.geometry_3d import ready_to_render
 
 
@@ -34,6 +34,9 @@ class RenderSystem(System):
         "forward_render_pass",
         "overlay_render_pass",
         "selection_render_pass",
+        "render_commands",
+        "num_render_commands",
+        "current_render_layer",
         "fullscreen_selected_texture",
         "debug_forward_pass_framebuffer",
         "materials_ubo",
@@ -83,6 +86,11 @@ class RenderSystem(System):
             self.forward_render_pass,
             self.overlay_render_pass,
             self.selection_render_pass]
+
+        # Render Command variables
+        self.render_commands = np.ndarray((constants.MAX_RENDER_COMMANDS,), dtype='u8')
+        self.num_render_commands = 0
+        self.current_render_layer = -1
 
         # UBOs
         self.materials_ubo = None
@@ -260,6 +268,7 @@ class RenderSystem(System):
 
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
+        # =======================[ Render Method 1 ] =============================
         for render_pass in self.render_passes:
             render_pass.render(
                 scene=self.scene,
@@ -268,10 +277,28 @@ class RenderSystem(System):
                 transforms_ubo=self.transforms_ubo,
                 selected_entity_uid=self.selected_entity_id)
 
+        # =======================[ Render Method 2 ] =============================
+
+        #self.render_method_2()
+
+
         # Final pass renders everything to a full screen quad from the offscreen textures
         self.render_to_screen()
 
         return True
+
+    def render_method_2(self):
+        for entity_uid, mesh_component in self.scene.mesh.items():
+
+            # TODO: Continue new rendering method WIP
+
+            render_command = utils_render_commands.encode_command(
+                mesh=entity_uid,
+                transform=entity_uid,
+
+            )
+            g = 0
+            pass
 
     def shutdown(self):
 
@@ -313,6 +340,23 @@ class RenderSystem(System):
         quad_vao = self.quads["fullscreen"]['vao']
         quad_vao.program["selected_texture"] = self.fullscreen_selected_texture
         quad_vao.render(moderngl.TRIANGLES)
+
+    def process_render_commands(self):
+
+        # Sort commands in-place
+        np.sort(self.render_commands[:self.num_render_commands], kind="mergesort")
+
+        # Render commands
+        map(self.render, self.render_commands[:self.num_render_commands])
+
+    def render(self, render_command: int):
+
+        (layer, is_transparent, distance,
+         material, mesh, transform, render_mode) = utils_render_commands.decode_command(render_command)
+
+        # More code here
+
+        pass
 
     # =========================================================================
     #                         Other Functions

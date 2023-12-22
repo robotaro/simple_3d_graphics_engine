@@ -120,12 +120,12 @@
         <transform_3d position="-3 0 3" degrees="true"/>
     </entity>
 
-    <entity name="Gizmo">
+    <entity name="Skeleton">
         <mesh resource_id="gizmo/mesh_0"/>
         <collider shape="sphere" radius="0.5"/>
         <multi_transform_3d resource_id="brain_stem/nodes_0"/>
         <transform_3d position="0 0 0" degrees="true"/>
-        <material diffuse="tab10_red" diffuse_highlight="tab10_orange" shininess_factor="32.0" color_source="1"/>
+        <material diffuse="tab10_red" diffuse_highlight="tab10_orange" shininess_factor="32.0" color_source="buffer"/>
     </entity>
 
     <entity name="Floor">
