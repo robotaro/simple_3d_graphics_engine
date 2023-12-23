@@ -48,9 +48,6 @@ class Camera(Component):
         self.inverse_projection_matrix = np.eye(4, dtype=np.float32)
         self.projection_matrix_dirty = True
 
-    def upload_uniforms(self, program: moderngl.Program):
-        program["projection_matrix"].write(self.get_projection_matrix().T.tobytes())
-
     def update_viewport(self, window_size: tuple):
 
         self.viewport_pixels = (int(self.viewport_screen_ratio[0] * window_size[0]),

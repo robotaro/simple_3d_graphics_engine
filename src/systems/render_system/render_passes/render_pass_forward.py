@@ -114,8 +114,9 @@ class RenderPassForward(RenderPass):
                 moderngl.ONE)
 
             # Setup camera
-            camera_component.upload_uniforms(program=program)
+            program["projection_matrix"].write(camera_component.get_projection_matrix().T.tobytes())
             program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
+            program["camera_position"].value = camera_transform.position
 
             # Setup lights
             self.upload_uniforms_point_lights(scene=scene, point_lights_ubo=point_lights_ubo)
@@ -130,7 +131,7 @@ class RenderPassForward(RenderPass):
                 num_instances = 1
                 transform = transform_3d_pool.get(mesh_entity_uid, None)
                 if transform is not None:
-                    transform.upload_world_matrix_to_ubo(ubo=transforms_ubo)
+                    program["model_matrix"].write(transform.world_matrix.T.tobytes())
 
                 multi_transform = multi_transform_3d_pool.get(mesh_entity_uid, None)
                 if multi_transform is not None:
@@ -145,6 +146,7 @@ class RenderPassForward(RenderPass):
                     program["material_index"].value = material_component.ubo_index
                     material_component.update_ubo(ubo=materials_ubo)
 
+                program["instanced"] = num_instances > 1
                 mesh_component.render(shader_pass_name=constants.SHADER_PROGRAM_FORWARD_PASS,
                                       num_instances=num_instances)
 

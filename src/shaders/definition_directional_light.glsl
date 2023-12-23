@@ -10,6 +10,6 @@ struct DirectionalLight {
     bool enabled;
 };
 
-layout (std140, binding = 2) uniform DirectionalLightBlock {
+layout (std140, binding = 3) uniform DirectionalLightBlock {
     DirectionalLight directional_light[4];
 } ubo_directional_lights;

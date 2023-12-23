@@ -94,9 +94,6 @@ class Transform3D(Component):
 
         return False
 
-    def upload_world_matrix_to_ubo(self, ubo: moderngl.UniformBlock):
-        ubo.write(self.world_matrix.T.tobytes(), offset=0)
-
     def move(self, delta_position: np.array):
         self.position += delta_position
         self.input_values_updated = True

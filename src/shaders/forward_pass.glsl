@@ -30,15 +30,17 @@ in vec3 in_color;
 in ivec4 in_joint;
 in vec4 in_weight;
 
-layout (std140, binding = 3) uniform TransformBlock {
+layout (std140, binding = 4) uniform TransformBlock {
     mat4 transforms[MAX_TRANSFORMS];
 }ubo_transforms;
 
+// Camera Settings
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
-uniform mat4 dir_light_view_matrix;
-
+uniform mat4 model_matrix;
 uniform vec3 camera_position;
+
+uniform bool instanced = false;
 uniform int material_index = 0;
 
 uniform GlobalAmbient global = GlobalAmbient(
@@ -61,12 +63,13 @@ flat out int v_instance_id;
 
 void main() {
 
-    mat4 model_matrix = ubo_transforms.transforms[gl_InstanceID];
+    mat4 final_model_matrix = model_matrix;
+    if (instanced) final_model_matrix = ubo_transforms.transforms[gl_InstanceID];
 
     v_instance_id = gl_InstanceID;
     v_local_position = in_vert;
-    v_world_position = (model_matrix * vec4(v_local_position, 1.0)).xyz;
-    v_world_normal = mat3(transpose(inverse(model_matrix))) * in_normal;  // TODO: Check if this is correct
+    v_world_position = (final_model_matrix * vec4(v_local_position, 1.0)).xyz;
+    v_world_normal = mat3(transpose(inverse(final_model_matrix))) * in_normal;  // TODO: Check if this is correct
     v_camera_position = camera_position;
 
     Material material = ubo_materials.material[material_index];
@@ -88,7 +91,7 @@ void main() {
     float alpha = 0.5 + (0.5 * cos_theta);
     v_ambient_color = alpha * global.top * base_color + (1.0 - alpha) * global.bottom * base_color;
 
-    gl_Position = projection_matrix * view_matrix * model_matrix * vec4(v_local_position, 1.0);
+    gl_Position = projection_matrix * view_matrix * final_model_matrix * vec4(v_local_position, 1.0);
 }
 //===============================================[ Fragment Shader ]====================================================
 #elif defined FRAGMENT_SHADER
@@ -125,12 +128,11 @@ uniform bool directional_lights_enabled = true;
 uniform bool gamma_correction_enabled = true;
 uniform bool shadows_enabled = false;
 uniform int  material_index = 0;
-uniform mat4 model_matrix;
-
 uniform float gamma = 2.2;
 
-// MVP matrices
+// Camera Settingss
 uniform mat4 view_matrix;
+uniform mat4 model_matrix;
 
 // Lights
 uniform int num_directional_lights = 0;

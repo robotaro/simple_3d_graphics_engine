@@ -77,7 +77,7 @@ class RenderPassSelection(RenderPass):
 
             # Upload uniforms
             program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
-            camera_component.upload_uniforms(program=program)
+            program["projection_matrix"].write(camera_component.get_projection_matrix().T.tobytes())
             program["view_matrix"].write(transform_3d_pool[camera_uid].inverse_world_matrix.T.tobytes())
             program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
 

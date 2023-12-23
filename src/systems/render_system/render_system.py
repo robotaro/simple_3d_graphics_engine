@@ -39,6 +39,7 @@ class RenderSystem(System):
         "current_render_layer",
         "fullscreen_selected_texture",
         "debug_forward_pass_framebuffer",
+        "camera_settings_ubo",
         "materials_ubo",
         "point_lights_ubo",
         "directional_lights_ubo",
@@ -93,6 +94,7 @@ class RenderSystem(System):
         self.current_render_layer = -1
 
         # UBOs
+        self.camera_settings_ubo = None
         self.materials_ubo = None
         self.point_lights_ubo = None
         self.directional_lights_ubo = None
@@ -156,6 +158,9 @@ class RenderSystem(System):
                                                            program=self.shader_program_library["screen_quad"])
 
         # UBOs
+        self.materials_ubo = self.ctx.buffer(reserve=constants.SCENE_CAMERA_SETTINGS_STRUCT_SIZE_BYTES)
+        self.materials_ubo.bind_to_uniform_block(binding=constants.UBO_BINDING_CAMERA_SETTINGS)
+
         total_bytes = constants.SCENE_MATERIAL_STRUCT_SIZE_BYTES * constants.SCENE_MAX_NUM_MATERIALS
         self.materials_ubo = self.ctx.buffer(reserve=total_bytes)
         self.materials_ubo.bind_to_uniform_block(binding=constants.UBO_BINDING_MATERIALS)

@@ -75,7 +75,7 @@ class RenderPassOverlay(RenderPass):
             program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_3D_PASS]
 
             # Setup camera
-            camera_component.upload_uniforms(program=program)
+            program["projection_matrix"].write(camera_component.get_projection_matrix().T.tobytes())
             program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
 
             # Render meshes
@@ -113,7 +113,7 @@ class RenderPassOverlay(RenderPass):
                 return
 
             # ============== [ DEBUG ] ========================
-            # overlay_2d_component.im_overlay.add_line_segments(self.debug_points_a, self.debug_points_b, self.debug_colors, 2.0)
+            #overlay_2d_component.im_overlay.add_line_segments(self.debug_points_a, self.debug_points_b, self.debug_colors, 2.0)
             # overlay_2d_component.im_overlay.add_aabb_filled(50., 50., 100., 100., (0., 0., 0., 1.0))
             # overlay_2d_component.im_overlay.add_text("this is a test, this is a test, this is a test, this is a test, this is a test, ", 50., 50.)
             # overlay_2d_component.im_overlay.add_circle_edge(100., 100., 25., 4., (1., 0., 1., 1.0))

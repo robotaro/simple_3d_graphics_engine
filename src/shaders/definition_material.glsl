@@ -11,6 +11,6 @@ struct Material {
     float padding_1;
 };
 
-layout (std140, binding = 0) uniform MaterialBlock {
+layout (std140, binding = 1) uniform MaterialBlock {
     Material material[32];
 } ubo_materials;
