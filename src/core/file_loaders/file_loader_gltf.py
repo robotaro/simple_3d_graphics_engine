@@ -40,6 +40,7 @@ class FileLoaderGLTF(FileLoader):
             if "NORMAL" in mesh_attrs:
                 new_resource.data_blocks["normals"] = DataBlock(data=mesh_attrs["NORMAL"])
 
+            # TODO: Check if there are more then on set of joints and weights (JOINTS_1, 2, etc)
             if "JOINTS_0" in mesh_attrs:
                 new_resource.data_blocks["bones"] = DataBlock(data=mesh_attrs["JOINTS_0"])
 

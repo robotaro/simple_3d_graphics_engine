@@ -13,12 +13,16 @@ class Mesh(Component):
         "vertices",
         "normals",
         "colors",
+        "joints",
+        "weights",
         "uvs",
         "indices",
         "vaos",
         "vbo_vertices",
         "vbo_normals",
         "vbo_colors",
+        "vbo_joints",
+        "vbo_weights",
         "vbo_uvs",
         "ibo_indices",
         "render_mode",
@@ -33,6 +37,8 @@ class Mesh(Component):
         self.vertices = None
         self.normals = None
         self.colors = None
+        self.joints = None
+        self.weights = None
         self.uvs = None
         self.indices = None
 
@@ -41,6 +47,8 @@ class Mesh(Component):
         self.vbo_vertices = None
         self.vbo_normals = None
         self.vbo_colors = None
+        self.vbo_joints = None
+        self.vbo_weights = None
         self.vbo_uvs = None
         self.ibo_indices = None
 
@@ -79,6 +87,14 @@ class Mesh(Component):
             self.vbo_colors = ctx.buffer(self.colors.astype("f4").tobytes())
             vbo_declaration_list.append((self.vbo_colors, "3f", constants.SHADER_INPUT_COLOR))
 
+        if self.joints is not None:
+            self.vbo_joints = ctx.buffer(self.joints.astype("i4").tobytes())
+            vbo_declaration_list.append((self.vbo_joints, "4i", constants.SHADER_INPUT_JOINT))
+
+        if self.weights is not None:
+            self.vbo_weights = ctx.buffer(self.weights.astype("f4").tobytes())
+            vbo_declaration_list.append((self.vbo_weights, "4f", constants.SHADER_INPUT_WEIGHT))
+
         if self.uvs is not None:
             self.vbo_uvs = ctx.buffer(self.uvs.astype("f4").tobytes())
             vbo_declaration_list.append((self.vbo_uvs, "2f", constants.SHADER_INPUT_UV))
@@ -116,35 +132,26 @@ class Mesh(Component):
         if self.vbo_colors:
             self.vbo_colors.release()
 
+        if self.vbo_joints:
+            self.vbo_joints.release()
+
+        if self.vbo_weights:
+            self.vbo_weights.release()
+
         if self.vbo_uvs:
             self.vbo_uvs.release()
 
         if self.ibo_indices:
             self.ibo_indices.release()
 
-    """def upload_buffers(self) -> None:
-    
-        # Not being used yet
+    def upload_vertices(self, vertices: np.ndarray):
+        self.vbo_vertices.write(vertices.tobytes())
 
-        if not self.initialised:
-            return
+    def upload_normals(self, normals: np.ndarray):
+        self.vbo_vertices.write(normals.tobytes())
 
-        if self.vbo_vertices is not None:
-            self.vbo_vertices.write(self.vertices.tobytes())
-
-        if self.vbo_normals is not None:
-            self.vbo_normals.write(self.normals.tobytes())
-
-        if self.vbo_colors is not None:
-            self.vbo_colors.write(self.colors.tobytes())
-
-        if self.vbo_uvs is not None:
-            self.vbo_uvs.write(self.normals.tobytes())
-
-        # TODO: Consider the case where the number of vertices changes and so the number of faces"""
-
-    def update_vbo_vertices(self, new_vertices: np.ndarray):
-        pass
+    def upload_colors(self, colors: np.ndarray):
+        self.vbo_vertices.write(colors.tobytes())
 
     def create_mesh(self, data_manager) -> None:
 
@@ -158,9 +165,14 @@ class Mesh(Component):
         if resource_id is not None:
             data_group = data_manager.data_groups[resource_id]
             self.vertices = data_group.data_blocks["vertices"].data
-            self.normals = data_group.data_blocks["normals"].data
+            if "normals" in data_group.data_blocks:
+                self.normals = data_group.data_blocks["normals"].data
             if "colors" in data_group.data_blocks:
                 self.colors = data_group.data_blocks["colors"].data
+            if "joints" in data_group.data_blocks:
+                self.joints = data_group.data_blocks["joints"].data
+            if "weights" in data_group.data_blocks:
+                self.weights = data_group.data_blocks["weights"].data
             if "indices" in data_group.data_blocks:
                 self.indices = data_group.data_blocks["indices"].data
             return

@@ -7,11 +7,13 @@
 #define RENDER_MODE_COLOR_SOURCE_SINGLE 0
 #define RENDER_MODE_COLOR_SOURCE_BUFFER 1
 #define RENDER_MODE_COLOR_SOURCE_UV 2
-
-#define MAX_MATERIALS 32
+#define MAX_DIRECTIONAL_LIGHTS 4
+#define MAX_POINT_LIGHTS 8
 #define MAX_TRANSFORMS 128
 
 #include definition_material.glsl
+#include definition_point_light.glsl
+#include definition_directional_light.glsl
 
 struct GlobalAmbient
 {
@@ -25,10 +27,8 @@ struct GlobalAmbient
 in vec3 in_vert;
 in vec3 in_normal;
 in vec3 in_color;
-
-layout (std140, binding = 0) uniform MaterialBlock {
-    Material material[MAX_MATERIALS];
-} ubo_materials;
+in ivec4 in_joint;
+in vec4 in_weight;
 
 layout (std140, binding = 3) uniform TransformBlock {
     mat4 transforms[MAX_TRANSFORMS];
@@ -93,9 +93,8 @@ void main() {
 //===============================================[ Fragment Shader ]====================================================
 #elif defined FRAGMENT_SHADER
 
-#define MAX_MATERIALS 32
 #define MAX_POINT_LIGHTS 8
-#define MAX_DIRECTIONAL_LIGHTS 4
+#define MAX_DIRECTIONAL_LIGHTS 32
 
 #include definition_material.glsl
 #include definition_point_light.glsl
@@ -114,14 +113,6 @@ in vec3 v_camera_position;
 in vec3 v_world_position;
 in vec3 v_ambient_color;
 flat in int v_instance_id;
-
-layout (std140, binding = 0) uniform MaterialBlock {
-    Material material[MAX_MATERIALS];
-} ubo_materials;
-
-layout (std140, binding = 1) uniform PointLightBlock {
-    PointLight point_light[MAX_POINT_LIGHTS];
-} ubo_point_lights;
 
 // Entity details
 uniform int entity_id;
