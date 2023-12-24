@@ -1,4 +1,5 @@
 import numpy as np
+import glm
 
 from src.core import constants
 from src.core.component import Component
@@ -61,7 +62,7 @@ class Skeleton(Component):
 
     def update_world_matrices(self, external_world_matrix=None):
         """
-        Re-calculates all world matrices based on their hierarchical local matrix allocation
+        Re-calculates all world matrices based on their hierarchy and local matrices
         :param offset_root_matrix: you can offset the entire skeleton
         :return:
         """
@@ -92,37 +93,4 @@ class Skeleton(Component):
 
             self.world_matrices[current_node_index, :, :] = parent_matrix @ self.local_matrices[current_node_index, :, :]
             next_node_indices.extend(children_indices)
-
-        # ========================================================
-        #                   Setters and getters
-        # ========================================================
-
-    def set_rotation(self, bone_index, x=0.0, y=0.0, z=0.0, apply_offsets=True):
-        self.__check_if_ready()
-        order = self.blueprint_df.at[bone_index, PARAMS_ROTATION_ORDER]
-
-        if apply_offsets:
-            x = self.blueprint_df.at[bone_index, PARAMS_ANGLE_OFFSET_X] + x
-            y = self.blueprint_df.at[bone_index, PARAMS_ANGLE_OFFSET_Y] + y
-            z = self.blueprint_df.at[bone_index, PARAMS_ANGLE_OFFSET_Z] + z
-        self.local_matrices[bone_index, :3, :3] = mat3.euler(x_rad=x, y_rad=y, z_rad=z, order=order)
-        self.dirty_flag = True
-
-    def set_position(self, bone_index, x=0.0, y=0.0, z=0.0):
-        self.__check_if_ready()
-        self.local_matrices[bone_index, :3, 3] = [x, y, z]
-        self.dirty_flag = True
-
-    def get_local_matrix(self, bone_index):
-        self.__check_if_ready()
-        return self.local_matrices[bone_index, :, :]
-
-    def get_world_matrix(self, bone_index):
-        self.__check_if_ready()
-        return self.world_matrices[bone_index, :, :]
-
-    def get_parent_index(self, bone_index):
-        self.__check_if_ready()
-        return self.parent_indices[bone_index]
-
 

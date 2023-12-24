@@ -202,25 +202,33 @@ def matrix_composition(translation_in, rotation_quat_in, scale_in, matrix_out):
     matrix_out[3, :] = np.array([0, 0, 0, 1], dtype=np.float32)
 
 
-"""@njit((float32[:, :], float32[:, :], float32[:, :], float32[:, :]), cache=True)
-def multi_matrix_composition(translations_in, rotations_quat_in, scales_in, matrices_out):
+@njit((float32[:], float32[:], float32[:, :]), cache=True)
+def matrix_composition_no_scale(translation_in, rotation_quat_in, matrix_out):
+    """
+    Constructs a 4x4 homogeneous transformation matrix from translation, rotation (quaternion), and scale.
 
-    
-    This function executes the matrix_composition funciton on arrays of translation, rotation
-    and scale vectors of N elements into a (N, 4, 4)
-    :param translation_in: np.ndarray (N, 3) <float32>
-    :param rotation_quat_in: np.ndarray (N, 4) <float32>
-    :param scale_in: np.ndarray (N, 3) <float32>
-    :param matrix_out: np.ndarray (N, 4, 4) <float32>
-    :return: None
-    
+    :param translation_in: Translation vector (3 elements).
+    :param rotation_quat_in: Rotation quaternion (4 elements).
+    :param matrix_out: Output 4x4 matrix.
+    """
 
-    for index in range(matrices_out.shape[0]):
-        matrix_composition(
-            translations_in[index, :],
-            rotations_quat_in[index, :],
-            scales_in[index, :],
-            matrices_out[index, :])"""
+    # Rotation (Quaternion to Matrix)
+    x, y, z, w = rotation_quat_in
+    x2 = x * x
+    y2 = y * y
+    z2 = z * z
+    matrix_out[:3, :3] = np.array([
+        [1 - 2 * y2 - 2 * z2, 2 * x * y - 2 * z * w, 2 * x * z + 2 * y * w],
+        [2 * x * y + 2 * z * w, 1 - 2 * x2 - 2 * z2, 2 * y * z - 2 * x * w],
+        [2 * x * z - 2 * y * w, 2 * y * z + 2 * x * w, 1 - 2 * x2 - 2 * y2]
+    ], dtype=np.float32)
+
+    # Construct 4x4 Matrix
+    matrix_out[:3, 3] = translation_in
+
+    # TODO: Optimise this by assuming the output matrix is already identity
+    matrix_out[3, :] = np.array([0, 0, 0, 1], dtype=np.float32)
+
 
 @njit((float32[:, :], float32[:], float32[:], float32[:]), cache=True)
 def matrix_decomposition(matrix_in, translation_out, rotation_quat_out, scale_out) -> None:

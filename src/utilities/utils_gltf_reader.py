@@ -74,6 +74,8 @@ PRIMITIVE_RENDERING_MODES = {
     6: "triangle_fan"
 }
 
+DEFAULT_RENDER_MODE = 4  # Triangles
+
 
 class GLTFReader:
 
@@ -266,27 +268,21 @@ class GLTFReader:
             return None
 
         animation_header = self.gltf_header["animations"][index]
-        all_input_accessors = []
-        animation = {"translation": [], "rotation": [], "scale": [], "timestamps": None}
+        input_accessors = {}
+        output_accessors = {}
+        animation = {"translation": [], "rotation": [], "scale": []}
 
         # Animation channels
         for channel in animation_header["channels"]:
 
             sampler = animation_header["samplers"][channel["sampler"]]
+            input_accessor = self.gltf_header["accessors"][sampler["input"]]
             output_accessor = self.gltf_header["accessors"][sampler["output"]]
+
             animation[channel["target"]["path"]].append(
                 {"node_index": channel["target"]["node"],
+                 "timestamps": self.get_data(accessor=input_accessor),
                  "data": self.get_data(accessor=output_accessor)})
-
-            all_input_accessors.append(self.gltf_header["accessors"][sampler["input"]])
-
-        # Make sure that all animation channels use the same timeline, and if so, only return one
-        unique_input_buffer_views = set([accessor["bufferView"] for accessor in all_input_accessors])
-        if len(unique_input_buffer_views) != 1:
-            raise Exception(f"All animation channels should be taking their timestamps from the same buffer view, "
-                            f"and there are {len(unique_input_buffer_views)} sources instead.")
-
-        animation["timestamps"] = self.get_data(accessor=all_input_accessors[0])
 
         return animation
 
@@ -298,23 +294,37 @@ class GLTFReader:
         # GPT 4
         nodes = []
         for gltf_node in self.gltf_header["nodes"]:
+
+            # TODO: Matrices and translation/rotation/scale need to be checked beforehand to make sure they
+            #       match
+
             node_data = {
                 'name': gltf_node.get('name', ""),
                 'translation': np.array(gltf_node.get('translation', [0, 0, 0]), dtype=np.float32),
                 'rotation': np.array(gltf_node.get('rotation', [0, 0, 0, 1]), dtype=np.float32),
                 'scale': np.array(gltf_node.get('scale', [1, 1, 1]), dtype=np.float32),
+                'matrix': None,
                 'children_indices': gltf_node.get('children', []),
                 'mesh_index': gltf_node.get('mesh', -1),
                 'skin_index': gltf_node.get('skin', -1)}
 
-            # If "matrix" is defined, update translation, rotation and scale to reflect that
             if "matrix" in gltf_node:
+                # If "matrix" is defined, update translation, rotation and scale to reflect that
                 gltf_matrix = np.reshape(np.array(gltf_node['matrix'], dtype=np.float32), (4, 4)).T
                 mat4.matrix_decomposition(
                     gltf_matrix,
                     node_data["translation"],
                     node_data["rotation"],
                     node_data["scale"])
+                node_data["matrix"] = gltf_matrix
+            else:
+                matrix = np.eye(4, dtype=np.float32)
+                mat4.matrix_composition(
+                    node_data["translation"],
+                    node_data["rotation"],
+                    node_data["scale"],
+                    matrix)
+                node_data["matrix"] = matrix
 
             nodes.append(node_data)
 
@@ -336,14 +346,17 @@ class GLTFReader:
         meshes = []
         for mesh in self.gltf_header["meshes"]:
 
-            unique_primitive_render_modes = set([primitive["mode"] for primitive in mesh["primitives"]])
+            # Resolve render mode (triangles, lines, points, etc...)
+            unique_primitive_render_modes = set([primitive.get("mode", DEFAULT_RENDER_MODE)
+                                                 for primitive in mesh["primitives"]])
             if len(unique_primitive_render_modes) > 1:
                 raise Exception(f"[ERROR] There are a mix of render modes between primitives. "
                                 f"There should be only one: {[PRIMITIVE_RENDERING_MODES[value] for value in unique_primitive_render_modes]}")
+            render_mode = PRIMITIVE_RENDERING_MODES[list(unique_primitive_render_modes)[0]]
 
             new_mesh = {
                 "indices": [],
-                "render_mode": PRIMITIVE_RENDERING_MODES[list(unique_primitive_render_modes)[0]],
+                "render_mode": render_mode,
                 "attributes": {}}
 
             sum_num_vertices = 0
@@ -382,13 +395,14 @@ class GLTFReader:
         return self.gltf_header["materials"]
 
     def get_skins(self):
+
         if self.gltf_header is None:
             return None
 
         skins = []
-        for skin in self.gltf_header["skins"]:
-            joints = skin["joints"]
-            inverse_bind_matrices_accessor = self.gltf_header["accessors"][skin["inverseBindMatrices"]]
+        for skin_header in self.gltf_header.get("skins", []):
+            joints = skin_header["joints"]
+            inverse_bind_matrices_accessor = self.gltf_header["accessors"][skin_header["inverseBindMatrices"]]
             inverse_bind_matrices_data = self.get_data(accessor=inverse_bind_matrices_accessor)
 
             # Convert to a suitable format, e.g., 4x4 matrices
@@ -396,7 +410,8 @@ class GLTFReader:
 
             skin_data = {
                 'joints': joints,
-                'inverseBindMatrices': inverse_bind_matrices
+                'inverse_bind_matrices': inverse_bind_matrices,
+                'skeleton_root_node_index': skin_header.get("skeleton", joints[0])
             }
             skins.append(skin_data)
 

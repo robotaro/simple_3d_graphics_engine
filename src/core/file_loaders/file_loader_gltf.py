@@ -21,6 +21,7 @@ class FileLoaderGLTF(FileLoader):
         self.__load_mesh_resources(resource_uid=resource_uid)
         self.__load_nodes_resources(resource_uid=resource_uid)
         self.__load_animation_resources(resource_uid=resource_uid)
+        self.__load_skinning_resources(resource_uid=resource_uid)
 
         return True
 
@@ -42,7 +43,9 @@ class FileLoaderGLTF(FileLoader):
 
             # TODO: Check if there are more then on set of joints and weights (JOINTS_1, 2, etc)
             if "JOINTS_0" in mesh_attrs:
-                new_resource.data_blocks["bones"] = DataBlock(data=mesh_attrs["JOINTS_0"])
+                new_resource.data_blocks["joints"] = DataBlock(data=mesh_attrs["JOINTS_0"])
+                unique_joints = np.unique(mesh_attrs["JOINTS_0"])
+                g = 0
 
             if "WEIGHTS_0" in mesh_attrs:
                 new_resource.data_blocks["weights"] = DataBlock(data=mesh_attrs["WEIGHTS_0"])
@@ -114,11 +117,25 @@ class FileLoaderGLTF(FileLoader):
             new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_ANIMATION)
             animation = self.gltf_reader.get_animation(index=animation_index)
 
+            # DEBUG
+            channel_stats = {}
+            for channel_name, channel in animation.items():
+
+                timestamp_lengths = set([node["timestamps"].size for node in channel])
+                data_lengths = set([node["data"].shape[0] for node in channel])
+
+                channel_stats[channel_name] = {
+                    "timestamp_lengths": timestamp_lengths,
+                    "data_lengths": data_lengths
+                }
+                print(f"{resource_uid} - {channel_name} : timestamps {timestamp_lengths}, data {data_lengths}")
+
+
             # The data from gltf_reader needs to be re-organised in order to keep all animation data
             # pertaining to a node contiguous
 
             # Find all unique node indices and sort them
-            translation_node_indices = [node_data["node_index"] for node_data in animation["translation"]]
+            """translation_node_indices = [node_data["node_index"] for node_data in animation["translation"]]
             rotation_node_indices = [node_data["node_index"] for node_data in animation["rotation"]]
             scale_node_indices = [node_data["node_index"] for node_data in animation["scale"]]
             unique_node_indices = list(set(translation_node_indices + rotation_node_indices + scale_node_indices))
@@ -158,4 +175,11 @@ class FileLoaderGLTF(FileLoader):
                     new_resource.data_blocks[channel_name].data[:, node_sub_index, :] = reshaped_channel_data
 
             # Finally, add the new animation resource
-            self.external_data_groups[f"{resource_uid}/animation_{animation_index}"] = new_resource
+            self.external_data_groups[f"{resource_uid}/animation_{animation_index}"] = new_resource"""
+
+    def __load_skinning_resources(self, resource_uid: str):
+
+        #for skin_index, skin in enumerate(self.gltf_reader.get_skins()):
+        #    new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_ANIMATION)
+        #    self.external_data_groups[f"{resource_uid}/skin_{skin_index}"] = new_resource
+        g = 0
