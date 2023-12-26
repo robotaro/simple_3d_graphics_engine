@@ -268,8 +268,6 @@ class GLTFReader:
             return None
 
         animation_header = self.gltf_header["animations"][index]
-        input_accessors = {}
-        output_accessors = {}
         animation = {"translation": [], "rotation": [], "scale": []}
 
         # Animation channels
@@ -374,13 +372,13 @@ class GLTFReader:
                     new_mesh["attributes"][attr_key] = new_mesh["attributes"].get(attr_key, [])
 
                 # Append new vertices, normals etc to current list, but indices must be shifted because we'll
-                # concatenating primitives at the end
+                # concatenate primitives at the end
                 new_mesh["indices"].append(primitive_indices + sum_num_vertices)
                 for attr_key, accessor_index in primitive["attributes"].items():
                     data = self.get_data(accessor=self.get_accessor(accessor_index))
                     new_mesh["attributes"][attr_key].append(data)
                     if attr_key == "POSITION":
-                        sum_num_vertices += data.shape[0] # Update the primitive index offset of this attribute is vertices
+                        sum_num_vertices += data.shape[0]  # Update the primitive index offset of this attribute is vertices
 
             # Concatenate all the meshes internal arrays into one per attribute
             new_mesh["indices"] = np.concatenate(new_mesh["indices"])

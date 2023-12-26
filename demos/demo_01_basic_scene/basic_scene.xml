@@ -101,16 +101,30 @@
         <transform_3d position="-2 0 0" scale="2" rotation="0 0 0" degrees="true"/>
     </entity>
 
-    <entity name="brain_stem">
+    <!-- <entity name="brain_stem">
         <mesh resource_id="brain_stem/mesh_0" scale="1"/>
         <material diffuse="tab10_blue" shininess_factor="32.0"/>
         <transform_3d position="0 0 0" rotation="-90 0 0" degrees="true"/>
         <skeleton resource_id="brain_stem/nodes_0"/>
+
+        <entity name="Skeleton">
+        <mesh resource_id="gizmo/mesh_0"/>
+        <collider shape="sphere" radius="0.5"/>
+        <multi_transform_3d resource_id="brain_stem/nodes_0"/>
+        <transform_3d position="0 0 0" degrees="true"/>
+        <material diffuse="tab10_red" diffuse_highlight="tab10_orange" shininess_factor="32.0" color_source="buffer"/>
+    </entity>
+    </entity> -->
+
+    <entity name="sit_up">
+        <mesh resource_id="sit_up/mesh_0" scale="1"/>
+        <material diffuse="maroon" shininess_factor="32.0"/>
+        <transform_3d position="2 0 0" rotation="0 0 0" degrees="true"/>
     </entity>
 
-    <entity name="dragon">
-        <mesh resource_id="dragon/mesh_0" scale="1"/>
-        <material diffuse="tab10_green" shininess_factor="32.0"/>
+    <entity name="sit_up_2">
+        <mesh resource_id="sit_up/mesh_1" scale="1"/>
+        <material diffuse="tab10_red" shininess_factor="32.0"/>
         <transform_3d position="2 0 0" rotation="0 0 0" degrees="true"/>
     </entity>
 
@@ -118,14 +132,6 @@
         <mesh shape="capsule" height="1.5" radius="0.25" count="32 32"/>
         <material diffuse="gray" shininess_factor="32.0"/>
         <transform_3d position="-3 0 3" degrees="true"/>
-    </entity>
-
-    <entity name="Skeleton">
-        <mesh resource_id="gizmo/mesh_0"/>
-        <collider shape="sphere" radius="0.5"/>
-        <multi_transform_3d resource_id="brain_stem/nodes_0"/>
-        <transform_3d position="0 0 0" degrees="true"/>
-        <material diffuse="tab10_red" diffuse_highlight="tab10_orange" shininess_factor="32.0" color_source="buffer"/>
     </entity>
 
     <entity name="Floor">

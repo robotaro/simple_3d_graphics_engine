@@ -431,6 +431,7 @@ class ImguiSystem(System):
             return
 
         imgui.text(f"[ Resource ] '{self.selected_resource_uid}'")
+        imgui.text(f" - Metadata: {json.dumps(self.selected_resource.metadata, indent=2)}")
         imgui.spacing()
 
         for data_blocks_name, data_block in self.selected_resource.data_blocks.items():

@@ -9,6 +9,17 @@ from src.utilities import utils_gltf_reader
 
 class FileLoaderGLTF(FileLoader):
 
+    """
+    The GLTF loader will load the following resources
+    - Nodes (All nodes)
+    - Meshes (Contain skinning info for specific skeletons)
+    - Skeletons
+    - Animations
+    - Materials
+    - Textures
+
+    """
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -18,39 +29,13 @@ class FileLoaderGLTF(FileLoader):
         self.gltf_reader = utils_gltf_reader.GLTFReader()
         self.gltf_reader.load(gltf_fpath=fpath)
 
-        self.__load_mesh_resources(resource_uid=resource_uid)
         self.__load_nodes_resources(resource_uid=resource_uid)
+        self.__load_mesh_resources(resource_uid=resource_uid)
+        self.__load_skeleton_resources(resource_uid=resource_uid)
         self.__load_animation_resources(resource_uid=resource_uid)
         self.__load_skinning_resources(resource_uid=resource_uid)
 
         return True
-
-    def __load_mesh_resources(self, resource_uid: str):
-        for mesh_index, mesh in enumerate(self.gltf_reader.get_all_meshes()):
-
-            new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_MESH)
-            new_resource.metadata["render_mode"] = mesh["render_mode"]
-            mesh_attrs = mesh["attributes"]
-
-            if "indices" in mesh:
-                new_resource.data_blocks["indices"] = DataBlock(data=mesh["indices"])
-
-            if "POSITION" in mesh_attrs:
-                new_resource.data_blocks["vertices"] = DataBlock(data=mesh_attrs["POSITION"])
-
-            if "NORMAL" in mesh_attrs:
-                new_resource.data_blocks["normals"] = DataBlock(data=mesh_attrs["NORMAL"])
-
-            # TODO: Check if there are more then on set of joints and weights (JOINTS_1, 2, etc)
-            if "JOINTS_0" in mesh_attrs:
-                new_resource.data_blocks["joints"] = DataBlock(data=mesh_attrs["JOINTS_0"])
-                unique_joints = np.unique(mesh_attrs["JOINTS_0"])
-                g = 0
-
-            if "WEIGHTS_0" in mesh_attrs:
-                new_resource.data_blocks["weights"] = DataBlock(data=mesh_attrs["WEIGHTS_0"])
-
-            self.external_data_groups[f"{resource_uid}/mesh_{mesh_index}"] = new_resource
 
     def __load_nodes_resources(self, resource_uid: str):
         nodes = self.gltf_reader.get_nodes()
@@ -108,7 +93,57 @@ class FileLoaderGLTF(FileLoader):
             new_resource.data_blocks["mesh_index"].data[node_index] = node["mesh_index"]
             new_resource.data_blocks["skin_index"].data[node_index] = node["skin_index"]
 
-        self.external_data_groups[f"{resource_uid}/nodes_0"] = new_resource
+        self.external_data_groups[f"{resource_uid}/nodes"] = new_resource
+
+    def __load_mesh_resources(self, resource_uid: str):
+        for mesh_index, mesh in enumerate(self.gltf_reader.get_all_meshes()):
+
+            new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_MESH)
+            new_resource.metadata["render_mode"] = mesh["render_mode"]
+            mesh_attrs = mesh["attributes"]
+
+            if "indices" in mesh:
+                new_resource.data_blocks["indices"] = DataBlock(data=mesh["indices"])
+
+            if "POSITION" in mesh_attrs:
+                new_resource.data_blocks["vertices"] = DataBlock(data=mesh_attrs["POSITION"])
+
+            if "NORMAL" in mesh_attrs:
+                new_resource.data_blocks["normals"] = DataBlock(data=mesh_attrs["NORMAL"])
+
+            # TODO: Check if there are more then on set of joints and weights (JOINTS_1, 2, etc)
+            if "JOINTS_0" in mesh_attrs:
+                new_resource.data_blocks["joints"] = DataBlock(data=mesh_attrs["JOINTS_0"])
+                new_resource.metadata["unique_joint_skin_indices"] = np.sort(np.unique(mesh_attrs["JOINTS_0"])).tolist()
+
+            if "WEIGHTS_0" in mesh_attrs:
+                new_resource.data_blocks["weights"] = DataBlock(data=mesh_attrs["WEIGHTS_0"])
+
+            self.external_data_groups[f"{resource_uid}/mesh_{mesh_index}"] = new_resource
+
+    def __load_skeleton_resources(self, resource_uid: str):
+
+        skins = self.gltf_reader.get_skins()
+
+
+
+        """g = 0
+
+        for joint_set in skeleton_joint_sets:
+            skeleton_resource = self.extract_skeleton_from_nodes(joint_indices=list(joint_set),
+                                                                 new_skeleton_uid="orange")
+        g = 0
+
+        animation = self.gltf_reader.get_animation(index=0)
+
+        translation_node_indices = [node_data["node_index"] for node_data in animation["translation"]]
+        rotation_node_indices = [node_data["node_index"] for node_data in animation["rotation"]]
+        scale_node_indices = [node_data["node_index"] for node_data in animation["scale"]]
+        unique_node_indices = list(set(translation_node_indices + rotation_node_indices + scale_node_indices))
+        unique_node_indices.sort()
+
+        g = 0"""
+        pass
 
     def __load_animation_resources(self, resource_uid: str):
 
@@ -128,14 +163,12 @@ class FileLoaderGLTF(FileLoader):
                     "timestamp_lengths": timestamp_lengths,
                     "data_lengths": data_lengths
                 }
-                print(f"{resource_uid} - {channel_name} : timestamps {timestamp_lengths}, data {data_lengths}")
-
 
             # The data from gltf_reader needs to be re-organised in order to keep all animation data
             # pertaining to a node contiguous
 
             # Find all unique node indices and sort them
-            """translation_node_indices = [node_data["node_index"] for node_data in animation["translation"]]
+            translation_node_indices = [node_data["node_index"] for node_data in animation["translation"]]
             rotation_node_indices = [node_data["node_index"] for node_data in animation["rotation"]]
             scale_node_indices = [node_data["node_index"] for node_data in animation["scale"]]
             unique_node_indices = list(set(translation_node_indices + rotation_node_indices + scale_node_indices))
@@ -175,7 +208,7 @@ class FileLoaderGLTF(FileLoader):
                     new_resource.data_blocks[channel_name].data[:, node_sub_index, :] = reshaped_channel_data
 
             # Finally, add the new animation resource
-            self.external_data_groups[f"{resource_uid}/animation_{animation_index}"] = new_resource"""
+            self.external_data_groups[f"{resource_uid}/animation_{animation_index}"] = new_resource
 
     def __load_skinning_resources(self, resource_uid: str):
 

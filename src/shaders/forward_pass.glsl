@@ -32,14 +32,22 @@ in vec4 in_weight;
 
 layout (std140, binding = 4) uniform TransformBlock {
     mat4 transforms[MAX_TRANSFORMS];
-}ubo_transforms;
+} ubo_transforms;
+
+layout (std140, binding = 5) uniform JointsBlock {
+    mat4 joints[MAX_TRANSFORMS];
+} ubo_joints;
+
+layout (std140, binding = 6) uniform InverseBindMatrixBlock {
+    mat4 inverse_bind_matrices[MAX_TRANSFORMS];
+} ubo_inverse_bind_matrices;
 
 // Camera Settings
 uniform mat4 projection_matrix;
 uniform mat4 view_matrix;
 uniform mat4 model_matrix;
 uniform vec3 camera_position;
-
+uniform bool skinned_mesh = true;
 uniform bool instanced = false;
 uniform int material_index = 0;
 
@@ -93,7 +101,9 @@ void main() {
 
     gl_Position = projection_matrix * view_matrix * final_model_matrix * vec4(v_local_position, 1.0);
 }
-//===============================================[ Fragment Shader ]====================================================
+
+//============================================[ Fragment Shader ]=======================================================
+
 #elif defined FRAGMENT_SHADER
 
 #define MAX_POINT_LIGHTS 8
