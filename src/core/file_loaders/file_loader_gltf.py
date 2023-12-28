@@ -96,6 +96,7 @@ class FileLoaderGLTF(FileLoader):
         self.external_data_groups[f"{resource_uid}/nodes"] = new_resource
 
     def __load_mesh_resources(self, resource_uid: str):
+
         for mesh_index, mesh in enumerate(self.gltf_reader.get_all_meshes()):
 
             new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_MESH)
@@ -147,68 +148,33 @@ class FileLoaderGLTF(FileLoader):
 
     def __load_animation_resources(self, resource_uid: str):
 
-        for animation_index in range(self.gltf_reader.num_animations):
+        new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_MESH)
 
-            new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_ANIMATION)
-            animation = self.gltf_reader.get_animation(index=animation_index)
+        animations = self.gltf_reader.get_animations()
+        for animation_index, (channel_name, nodes) in enumerate(animations.items()):
+            for node in nodes:
 
-            # DEBUG
-            channel_stats = {}
-            for channel_name, channel in animation.items():
+                # Combine timestamps with values
+                combined_data = np.hstack((node['timestamps'][:, np.newaxis], node['values']))
 
-                timestamp_lengths = set([node["timestamps"].size for node in channel])
-                data_lengths = set([node["data"].shape[0] for node in channel])
+                # Create a new DataBlock for each channel of each node
+                # Set metadata based on the type of channel
+                if channel_name == "rotation":
+                    metadata = {"order": ["timestamp", "x", "y", "z", "w"], "type": "quaternion"}
+                elif channel_name == "translation":
+                    metadata = {"order": ["timestamp", "x", "y", "z"], "type": "vector3"}
+                elif channel_name == "scale":
+                    metadata = {"order": ["timestamp", "x", "y", "z"], "type": "vector3"}
+                else:
+                    raise ValueError(f"Unknown animation channel type: {channel_name}")
 
-                channel_stats[channel_name] = {
-                    "timestamp_lengths": timestamp_lengths,
-                    "data_lengths": data_lengths
-                }
+                data_block_key = f"node_{node['node_index']}/{channel_name}"
+                new_resource.data_blocks[data_block_key] = DataBlock(data=combined_data, metadata=metadata)
 
-            # The data from gltf_reader needs to be re-organised in order to keep all animation data
-            # pertaining to a node contiguous
+        resource_key = f"{resource_uid}/animation_{animation_index}"
+        self.external_data_groups[resource_key] = new_resource
 
-            # Find all unique node indices and sort them
-            translation_node_indices = [node_data["node_index"] for node_data in animation["translation"]]
-            rotation_node_indices = [node_data["node_index"] for node_data in animation["rotation"]]
-            scale_node_indices = [node_data["node_index"] for node_data in animation["scale"]]
-            unique_node_indices = list(set(translation_node_indices + rotation_node_indices + scale_node_indices))
-            unique_node_indices.sort()
-
-            # Store node indices and timestamps
-            new_resource.data_blocks["node_indices"] = DataBlock(data=np.array(unique_node_indices, dtype=np.int32))
-            new_resource.data_blocks["timestamps"] = DataBlock(data=animation["timestamps"])
-
-            # Store channel data into bit matrix
-            num_node_tracks = len(unique_node_indices)
-            num_timestamps = animation["timestamps"].size
-
-            # Create empty data blocks first
-            new_resource.data_blocks["translation"] = DataBlock(
-                data=np.empty((num_timestamps, num_node_tracks, 3), dtype=np.float32),
-                metadata={"order": ["x", "y", "z"]})
-
-            new_resource.data_blocks["rotation"] = DataBlock(
-                data=np.empty((num_timestamps, num_node_tracks, 4), dtype=np.float32),
-                metadata={"order": ["x", "y", "z", "w"], "type": "quaternion"})
-
-            new_resource.data_blocks["scale"] = DataBlock(
-                data=np.empty((num_timestamps, num_node_tracks, 3), dtype=np.float32),
-                metadata={"order": ["x", "y", "z"]})
-
-            # And populate them with their respective animation data after
-            for node_index in unique_node_indices:
-                for channel_name in constants.RESOURCE_ANIMATION_GLTF_CHANNELS:
-                    node_sub_index = np.where(new_resource.data_blocks["node_indices"].data == node_index)[0]
-
-                    channel_data = [node["data"] for node in animation[channel_name]
-                                    if node["node_index"] == node_index][0]
-
-                    reshaped_channel_data = np.reshape(channel_data, (channel_data.shape[0], 1, channel_data.shape[1]))
-
-                    new_resource.data_blocks[channel_name].data[:, node_sub_index, :] = reshaped_channel_data
-
-            # Finally, add the new animation resource
-            self.external_data_groups[f"{resource_uid}/animation_{animation_index}"] = new_resource
+        g = 0
 
     def __load_skinning_resources(self, resource_uid: str):
 

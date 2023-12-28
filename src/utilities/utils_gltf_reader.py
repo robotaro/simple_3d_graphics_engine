@@ -262,27 +262,27 @@ class GLTFReader:
 
         return self.gltf_header["materials"][index]
 
-    def get_animation(self, index: int) -> dict:
+    def get_animations(self) -> list:
 
-        if self.gltf_header is None:
-            return None
+        # TODO: It should return a list of dictionaries, each with their channels
 
-        animation_header = self.gltf_header["animations"][index]
-        animation = {"translation": [], "rotation": [], "scale": []}
+        animation_channels = {"translation": [], "rotation": [], "scale": []}
 
-        # Animation channels
-        for channel in animation_header["channels"]:
+        if self.gltf_header is None or "animations" not in self.gltf_header:
+            return animation_channels
 
-            sampler = animation_header["samplers"][channel["sampler"]]
-            input_accessor = self.gltf_header["accessors"][sampler["input"]]
-            output_accessor = self.gltf_header["accessors"][sampler["output"]]
+        for animation_header in self.gltf_header["animations"]:
+            for channel in animation_header["channels"]:
+                sampler = animation_header["samplers"][channel["sampler"]]
+                input_accessor = self.gltf_header["accessors"][sampler["input"]]
+                output_accessor = self.gltf_header["accessors"][sampler["output"]]
 
-            animation[channel["target"]["path"]].append(
-                {"node_index": channel["target"]["node"],
-                 "timestamps": self.get_data(accessor=input_accessor),
-                 "data": self.get_data(accessor=output_accessor)})
+                animation_channels[channel["target"]["path"]].append(
+                    {"node_index": channel["target"]["node"],
+                     "timestamps": self.get_data(accessor=input_accessor),
+                     "values": self.get_data(accessor=output_accessor)})
 
-        return animation
+        return animation_channels
 
     def get_nodes(self) -> list:
 
