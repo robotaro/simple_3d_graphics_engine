@@ -53,6 +53,7 @@ DEFAULT_SYSTEMS = [
 # =============================================================================
 
 RESOURCE_TYPE_MESH = "mesh"
+RESOURCE_TYPE_SKELETON_BVH = "skeleton_bvh"
 RESOURCE_TYPE_SKELETON = "skeleton"
 RESOURCE_TYPE_ANIMATION = "animation"
 RESOURCE_TYPE_SKIN = "skin"

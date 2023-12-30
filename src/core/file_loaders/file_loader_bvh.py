@@ -22,7 +22,7 @@ class FileLoaderBVH(FileLoader):
 
         # =========================[ Skeleton ]=========================
 
-        skeleton_resource = DataGroup(archetype=constants.RESOURCE_TYPE_SKELETON)
+        skeleton_resource = DataGroup(archetype=constants.RESOURCE_TYPE_SKELETON_BVH)
 
         skeleton_resource.data_blocks["parent_index"] = DataBlock(data=skeleton_df["parent"].values.astype(np.int32),
                                                                   metadata={"bone_names": bone_names})

@@ -53,6 +53,7 @@
         <transform_3d position="-1 0 0" scale="2" rotation="-90 0 0" degrees="true"/>
     </entity>
 
+    <!--
     <entity name="star_rail_fu_xuan body">
         <mesh resource_id="star_rail_fu_xuan/mesh_0"/>
         <material diffuse="0.0 0.3 0.6" shininess_factor="32.0"/>
@@ -100,6 +101,7 @@
         <material diffuse="0.0 0.3 0.6" shininess_factor="32.0"/>
         <transform_3d position="-2 0 0" scale="2" rotation="0 0 0" degrees="true"/>
     </entity>
+    -->
 
     <!-- <entity name="brain_stem">
         <mesh resource_id="brain_stem/mesh_0" scale="1"/>

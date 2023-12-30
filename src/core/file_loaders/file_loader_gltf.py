@@ -29,15 +29,19 @@ class FileLoaderGLTF(FileLoader):
         self.gltf_reader = utils_gltf_reader.GLTFReader()
         self.gltf_reader.load(gltf_fpath=fpath)
 
-        self.__load_nodes_resources(resource_uid=resource_uid)
+        self.__load_nodes_and_skeleton_resources(resource_uid=resource_uid)
         self.__load_mesh_resources(resource_uid=resource_uid)
-        self.__load_skeleton_resources(resource_uid=resource_uid)
         self.__load_animation_resources(resource_uid=resource_uid)
         self.__load_skinning_resources(resource_uid=resource_uid)
 
         return True
 
-    def __load_nodes_resources(self, resource_uid: str):
+    def __load_nodes_and_skeleton_resources(self, resource_uid: str):
+
+        # ================================================================================
+        #                                   Nodes
+        # ================================================================================
+
         nodes = self.gltf_reader.get_nodes()
 
         num_nodes = len(nodes)
@@ -52,48 +56,96 @@ class FileLoaderGLTF(FileLoader):
                 continue
             node_names.append(f"node_{node_index}")
 
-        new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_NODES_GLTF,
-                                 metadata={"node_names": node_names})
+        nodes_resource = DataGroup(archetype=constants.RESOURCE_TYPE_NODES_GLTF,
+                                   metadata={"node_names": node_names})
 
-        new_resource.data_blocks["parent_index"] = DataBlock(
+        nodes_resource.data_blocks["parent_index"] = DataBlock(
+            data=np.zeros((num_nodes,), dtype=np.int16))
+
+        nodes_resource.data_blocks["num_children"] = DataBlock(
             data=np.empty((num_nodes,), dtype=np.int16))
 
-        new_resource.data_blocks["num_children"] = DataBlock(
-            data=np.empty((num_nodes,), dtype=np.int16))
+        nodes_resource.data_blocks["children_indices"] = DataBlock(
+            data=np.zeros((num_nodes, max_num_children), dtype=np.int16))
 
-        new_resource.data_blocks["children_indices"] = DataBlock(
-            data=np.empty((num_nodes, max_num_children), dtype=np.int16))
-
-        new_resource.data_blocks["translation"] = DataBlock(
+        nodes_resource.data_blocks["translation"] = DataBlock(
             data=np.empty((num_nodes, 3), dtype=np.float32),
             metadata={"order": ["x", "y", "z"]})
 
-        new_resource.data_blocks["rotation"] = DataBlock(
+        nodes_resource.data_blocks["rotation"] = DataBlock(
             data=np.empty((num_nodes, 4), dtype=np.float32),
             metadata={"order": ["x", "y", "z", "w"], "type": "quaternion"})
 
-        new_resource.data_blocks["scale"] = DataBlock(
+        nodes_resource.data_blocks["scale"] = DataBlock(
             data=np.empty((num_nodes, 3), dtype=np.float32),
             metadata={"order": ["x", "y", "z"]})
 
-        new_resource.data_blocks["skin_index"] = DataBlock(
+        nodes_resource.data_blocks["skin_index"] = DataBlock(
             data=np.empty((num_nodes, ), dtype=np.int16))
 
-        new_resource.data_blocks["mesh_index"] = DataBlock(
+        nodes_resource.data_blocks["mesh_index"] = DataBlock(
             data=np.empty((num_nodes,), dtype=np.int16))
 
         for node_index, node in enumerate(nodes):
             num_children = len(node["children_indices"])
-            new_resource.data_blocks["translation"].data[node_index, :] = node["translation"]
-            new_resource.data_blocks["rotation"].data[node_index, :] = node["rotation"]
-            new_resource.data_blocks["scale"].data[node_index, :] = node["scale"]
-            new_resource.data_blocks["num_children"].data[node_index] = num_children
-            new_resource.data_blocks["children_indices"].data[node_index, :num_children] = node["children_indices"]
-            new_resource.data_blocks["parent_index"].data[node_index] = node["parent_index"]
-            new_resource.data_blocks["mesh_index"].data[node_index] = node["mesh_index"]
-            new_resource.data_blocks["skin_index"].data[node_index] = node["skin_index"]
+            nodes_resource.data_blocks["translation"].data[node_index, :] = node["translation"]
+            nodes_resource.data_blocks["rotation"].data[node_index, :] = node["rotation"]
+            nodes_resource.data_blocks["scale"].data[node_index, :] = node["scale"]
+            nodes_resource.data_blocks["num_children"].data[node_index] = num_children
+            nodes_resource.data_blocks["children_indices"].data[node_index, :num_children] = node["children_indices"]
+            nodes_resource.data_blocks["parent_index"].data[node_index] = node["parent_index"]
+            nodes_resource.data_blocks["mesh_index"].data[node_index] = node["mesh_index"]
+            nodes_resource.data_blocks["skin_index"].data[node_index] = node["skin_index"]
 
-        self.external_data_groups[f"{resource_uid}/nodes"] = new_resource
+        self.external_data_groups[f"{resource_uid}/nodes"] = nodes_resource
+
+        # ================================================================================
+        #                           Skeleton (If any)
+        # ================================================================================
+
+        num_nodes = len(nodes)
+        skins = self.gltf_reader.get_skins()
+        for skin_index, skin in enumerate(skins):
+
+            # Build inverse reference maps to convert node indices to skeleton indices
+            selected_node_indices = np.array(skin["joints"])
+            node2skeleton_map = np.zeros((num_nodes,), dtype=np.int32)
+            for skeleton_index, node_index in enumerate(selected_node_indices):
+                node2skeleton_map[node_index] = skeleton_index
+
+            skeleton_resource = DataGroup(archetype=constants.RESOURCE_TYPE_SKELETON,
+                                          metadata={"node_indices": selected_node_indices})
+
+            skeleton_resource.data_blocks["parent_index"] = DataBlock(
+                data=nodes_resource.data_blocks["parent_index"].data[selected_node_indices])
+
+            # Convert parent indices from their original node indices to skeleton indices
+            skeleton_resource.data_blocks["parent_index"].data = node2skeleton_map[skeleton_resource.data_blocks["parent_index"].data]
+
+            skeleton_resource.data_blocks["num_children"] = DataBlock(
+                data=nodes_resource.data_blocks["num_children"].data[selected_node_indices])
+
+            skeleton_resource.data_blocks["children_indices"] = DataBlock(
+                data=nodes_resource.data_blocks["children_indices"].data[selected_node_indices, :])
+
+            # Convert children indices from their original node indices to skeleton indices
+            skeleton_resource.data_blocks["children_indices"].data = node2skeleton_map[skeleton_resource.data_blocks["children_indices"].data]
+
+            skeleton_resource.data_blocks["translation"] = DataBlock(
+                data=nodes_resource.data_blocks["translation"].data[selected_node_indices, :],
+                metadata={"order": ["x", "y", "z"]})
+
+            skeleton_resource.data_blocks["rotation"] = DataBlock(
+                data=nodes_resource.data_blocks["rotation"].data[selected_node_indices, :],
+                metadata={"order": ["x", "y", "z", "w"], "type": "quaternion"})
+
+            skeleton_resource.data_blocks["scale"] = DataBlock(
+                data=nodes_resource.data_blocks["scale"].data[selected_node_indices, :],
+                metadata={"order": ["x", "y", "z"]})
+
+            self.external_data_groups[f"{resource_uid}/skeleton_{skin_index}"] = skeleton_resource
+
+        g = 0
 
     def __load_mesh_resources(self, resource_uid: str):
 
@@ -112,6 +164,9 @@ class FileLoaderGLTF(FileLoader):
             if "NORMAL" in mesh_attrs:
                 new_resource.data_blocks["normals"] = DataBlock(data=mesh_attrs["NORMAL"])
 
+            if "TEXCOORD_0" in mesh_attrs:
+                new_resource.data_blocks["uvs"] = DataBlock(data=mesh_attrs["TEXCOORD_0"])
+
             # TODO: Check if there are more then on set of joints and weights (JOINTS_1, 2, etc)
             if "JOINTS_0" in mesh_attrs:
                 new_resource.data_blocks["joints"] = DataBlock(data=mesh_attrs["JOINTS_0"])
@@ -121,30 +176,6 @@ class FileLoaderGLTF(FileLoader):
                 new_resource.data_blocks["weights"] = DataBlock(data=mesh_attrs["WEIGHTS_0"])
 
             self.external_data_groups[f"{resource_uid}/mesh_{mesh_index}"] = new_resource
-
-    def __load_skeleton_resources(self, resource_uid: str):
-
-        skins = self.gltf_reader.get_skins()
-
-
-
-        """g = 0
-
-        for joint_set in skeleton_joint_sets:
-            skeleton_resource = self.extract_skeleton_from_nodes(joint_indices=list(joint_set),
-                                                                 new_skeleton_uid="orange")
-        g = 0
-
-        animation = self.gltf_reader.get_animation(index=0)
-
-        translation_node_indices = [node_data["node_index"] for node_data in animation["translation"]]
-        rotation_node_indices = [node_data["node_index"] for node_data in animation["rotation"]]
-        scale_node_indices = [node_data["node_index"] for node_data in animation["scale"]]
-        unique_node_indices = list(set(translation_node_indices + rotation_node_indices + scale_node_indices))
-        unique_node_indices.sort()
-
-        g = 0"""
-        pass
 
     def __load_animation_resources(self, resource_uid: str):
 
@@ -173,8 +204,6 @@ class FileLoaderGLTF(FileLoader):
 
         resource_key = f"{resource_uid}/animation_{animation_index}"
         self.external_data_groups[resource_key] = new_resource
-
-        g = 0
 
     def __load_skinning_resources(self, resource_uid: str):
 

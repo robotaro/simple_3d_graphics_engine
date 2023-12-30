@@ -293,8 +293,7 @@ class GLTFReader:
         nodes = []
         for gltf_node in self.gltf_header["nodes"]:
 
-            # TODO: Matrices and translation/rotation/scale need to be checked beforehand to make sure they
-            #       match
+            # TODO: Matrices and translation/rotation/scale need to be checked beforehand to make sure they match
 
             node_data = {
                 'name': gltf_node.get('name', ""),

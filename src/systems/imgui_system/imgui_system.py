@@ -292,7 +292,7 @@ class ImguiSystem(System):
         if len(self.selected_entity_components) == 0:
             return
 
-        imgui.text(f"[ Selected Entity ] {self.selected_entity_uid} - {self.selected_entity_name}")
+        imgui.text(f"[ Selected Entity ] #{self.selected_entity_uid} - {self.selected_entity_name}")
         imgui.spacing()
 
         # ======================================================================
