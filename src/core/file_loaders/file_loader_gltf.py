@@ -109,18 +109,20 @@ class FileLoaderGLTF(FileLoader):
 
             # Build inverse reference maps to convert node indices to skeleton indices
             selected_node_indices = np.array(skin["joints"])
-            node2skeleton_map = np.zeros((num_nodes,), dtype=np.int32)
+            node2skeleton_lookup = np.zeros((num_nodes,), dtype=np.int32)
             for skeleton_index, node_index in enumerate(selected_node_indices):
-                node2skeleton_map[node_index] = skeleton_index
+                node2skeleton_lookup[node_index] = skeleton_index
 
             skeleton_resource = DataGroup(archetype=constants.RESOURCE_TYPE_SKELETON,
                                           metadata={"node_indices": selected_node_indices})
+
+            skeleton_resource.data_blocks["nodes2skeleton_lookup"] = DataBlock(data=node2skeleton_lookup)
 
             skeleton_resource.data_blocks["parent_index"] = DataBlock(
                 data=nodes_resource.data_blocks["parent_index"].data[selected_node_indices])
 
             # Convert parent indices from their original node indices to skeleton indices
-            skeleton_resource.data_blocks["parent_index"].data = node2skeleton_map[skeleton_resource.data_blocks["parent_index"].data]
+            skeleton_resource.data_blocks["parent_index"].data = node2skeleton_lookup[skeleton_resource.data_blocks["parent_index"].data]
 
             skeleton_resource.data_blocks["num_children"] = DataBlock(
                 data=nodes_resource.data_blocks["num_children"].data[selected_node_indices])
@@ -129,7 +131,7 @@ class FileLoaderGLTF(FileLoader):
                 data=nodes_resource.data_blocks["children_indices"].data[selected_node_indices, :])
 
             # Convert children indices from their original node indices to skeleton indices
-            skeleton_resource.data_blocks["children_indices"].data = node2skeleton_map[skeleton_resource.data_blocks["children_indices"].data]
+            skeleton_resource.data_blocks["children_indices"].data = node2skeleton_lookup[skeleton_resource.data_blocks["children_indices"].data]
 
             skeleton_resource.data_blocks["translation"] = DataBlock(
                 data=nodes_resource.data_blocks["translation"].data[selected_node_indices, :],
@@ -144,8 +146,6 @@ class FileLoaderGLTF(FileLoader):
                 metadata={"order": ["x", "y", "z"]})
 
             self.external_data_groups[f"{resource_uid}/skeleton_{skin_index}"] = skeleton_resource
-
-        g = 0
 
     def __load_mesh_resources(self, resource_uid: str):
 
