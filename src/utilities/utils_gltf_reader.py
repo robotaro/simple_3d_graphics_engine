@@ -2,6 +2,7 @@ import os
 import json
 import struct
 import numpy as np
+import copy
 
 # DEBUG
 from src.math import mat4
@@ -289,7 +290,6 @@ class GLTFReader:
         if self.gltf_header is None:
             return None
 
-        # GPT 4
         nodes = []
         for gltf_node in self.gltf_header["nodes"]:
 
@@ -334,9 +334,19 @@ class GLTFReader:
 
             node["parent_index"] = parent_indices[0] if len(parent_indices) == 1 else -1
 
+        # Assign tree_depth for each node
+        for index, node in enumerate(nodes):
+            if node["parent_index"] == -1:  # Root nodes
+                self._assign_tree_depth(nodes, index, 0)
+
         return nodes
 
-    def get_all_meshes(self) -> list:
+    def _assign_tree_depth(self, nodes, node_index, current_depth):
+        nodes[node_index]['tree_depth'] = current_depth
+        for child_index in nodes[node_index]['children_indices']:
+            self._assign_tree_depth(nodes, child_index, current_depth + 1)
+
+    def get_meshes(self) -> list:
         if self.gltf_header is None:
             return None
 
@@ -387,6 +397,38 @@ class GLTFReader:
             meshes.append(new_mesh)
 
         return meshes
+
+    def get_skeletons(self):
+        nodes = self.get_nodes()
+        skins = self.get_skins()
+        skeletons = []
+
+        for skin in skins:
+            joints = skin['joints']
+            skeleton_nodes = {}
+            original_to_skeleton_index = {}
+
+            # Step 1: Copy relevant nodes and create an index mapping
+            for joint in joints:
+                current_node = joint
+                while current_node != -1 and current_node not in skeleton_nodes:
+                    skeleton_node = copy.deepcopy(nodes[current_node])
+                    skeleton_nodes[current_node] = skeleton_node
+                    original_to_skeleton_index[current_node] = len(original_to_skeleton_index)
+                    current_node = nodes[current_node]['parent_index']
+
+            # Step 2: Update parent and child indices in the skeleton nodes
+            for original_index, skeleton_node in skeleton_nodes.items():
+                if skeleton_node['parent_index'] in original_to_skeleton_index:
+                    skeleton_node['parent_index'] = original_to_skeleton_index[skeleton_node['parent_index']]
+                else:
+                    skeleton_node['parent_index'] = -1
+
+                skeleton_node['children_indices'] = [original_to_skeleton_index[child_index] for child_index in skeleton_node['children_indices'] if child_index in original_to_skeleton_index]
+
+            skeletons.append(list(skeleton_nodes.values()))
+
+        return skeletons
 
     def get_all_materials(self):
         return self.gltf_header["materials"]

@@ -44,6 +44,9 @@ class FileLoaderGLTF(FileLoader):
 
         nodes = self.gltf_reader.get_nodes()
 
+        # DEBUG
+        self.print_node_hierarchy(nodes=nodes)
+
         num_nodes = len(nodes)
         max_num_children = max(set(len(node["children_indices"]) for node in nodes))
 
@@ -60,31 +63,32 @@ class FileLoaderGLTF(FileLoader):
                                    metadata={"node_names": node_names})
 
         nodes_resource.data_blocks["parent_index"] = DataBlock(
-            data=np.zeros((num_nodes,), dtype=np.int16))
+            data=np.ones((num_nodes,), dtype=np.int16) * -1)
 
         nodes_resource.data_blocks["num_children"] = DataBlock(
-            data=np.empty((num_nodes,), dtype=np.int16))
+            data=np.zeros((num_nodes,), dtype=np.int16))
 
         nodes_resource.data_blocks["children_indices"] = DataBlock(
-            data=np.zeros((num_nodes, max_num_children), dtype=np.int16))
+            data=np.ones((num_nodes, max_num_children), dtype=np.int16) * -1)
 
         nodes_resource.data_blocks["translation"] = DataBlock(
-            data=np.empty((num_nodes, 3), dtype=np.float32),
+            data=np.zeros((num_nodes, 3), dtype=np.float32),
             metadata={"order": ["x", "y", "z"]})
 
         nodes_resource.data_blocks["rotation"] = DataBlock(
-            data=np.empty((num_nodes, 4), dtype=np.float32),
+            data=np.zeros((num_nodes, 4), dtype=np.float32),
             metadata={"order": ["x", "y", "z", "w"], "type": "quaternion"})
+        nodes_resource.data_blocks["rotation"].data[:, 3] = 1
 
         nodes_resource.data_blocks["scale"] = DataBlock(
-            data=np.empty((num_nodes, 3), dtype=np.float32),
+            data=np.ones((num_nodes, 3), dtype=np.float32),
             metadata={"order": ["x", "y", "z"]})
 
         nodes_resource.data_blocks["skin_index"] = DataBlock(
-            data=np.empty((num_nodes, ), dtype=np.int16))
+            data=np.ones((num_nodes, ), dtype=np.int16) * -1)
 
         nodes_resource.data_blocks["mesh_index"] = DataBlock(
-            data=np.empty((num_nodes,), dtype=np.int16))
+            data=np.ones((num_nodes,), dtype=np.int16) * -1)
 
         for node_index, node in enumerate(nodes):
             num_children = len(node["children_indices"])
@@ -102,6 +106,13 @@ class FileLoaderGLTF(FileLoader):
         # ================================================================================
         #                           Skeleton (If any)
         # ================================================================================
+
+        """
+        parent_index -> node indices
+        
+        """
+
+        skeletons = self.gltf_reader.get_skeletons()
 
         num_nodes = len(nodes)
         skins = self.gltf_reader.get_skins()
@@ -149,7 +160,7 @@ class FileLoaderGLTF(FileLoader):
 
     def __load_mesh_resources(self, resource_uid: str):
 
-        for mesh_index, mesh in enumerate(self.gltf_reader.get_all_meshes()):
+        for mesh_index, mesh in enumerate(self.gltf_reader.get_meshes()):
 
             new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_MESH)
             new_resource.metadata["render_mode"] = mesh["render_mode"]
@@ -211,3 +222,23 @@ class FileLoaderGLTF(FileLoader):
         #    new_resource = DataGroup(archetype=constants.RESOURCE_TYPE_ANIMATION)
         #    self.external_data_groups[f"{resource_uid}/skin_{skin_index}"] = new_resource
         g = 0
+
+    def calculate_node_depths(self, nodes, parent_index=-1, current_depth=0):
+        for node_index, node in enumerate(nodes):
+            if node["parent_index"] == parent_index:
+                node["metadata"] = {"depth": current_depth}
+                self. calculate_node_depths(nodes, parent_index=node_index, current_depth=current_depth + 1)
+
+    def print_node_hierarchy(self, nodes):
+        # Generate node names
+        node_names = [node.get("name", f"node_{i}") for i, node in enumerate(nodes)]
+
+        def _print_hierarchy(current_index, depth):
+            print(" " * depth * 2 + f"[{current_index}] {node_names[current_index]}")  # 4 spaces per depth level
+            for child_index in nodes[current_index]["children_indices"]:
+                _print_hierarchy(child_index, depth + 1)
+
+        # Find root nodes and start the recursion
+        for index, node in enumerate(nodes):
+            if node["parent_index"] == -1:
+                _print_hierarchy(index, 0)
