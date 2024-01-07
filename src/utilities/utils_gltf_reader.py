@@ -267,7 +267,9 @@ class GLTFReader:
 
         # TODO: It should return a list of dictionaries, each with their channels
 
-        animation_channels = {"translation": [], "rotation": [], "scale": []}
+        animation_channels = {"translation": [],
+                              "rotation": [],
+                              "scale": []}
 
         if self.gltf_header is None or "animations" not in self.gltf_header:
             return animation_channels
