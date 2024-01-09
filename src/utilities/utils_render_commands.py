@@ -3,6 +3,8 @@ import numpy as np
 
 from src.core import constants
 
+#
+
 @njit
 def encode_command(layer, is_transparent, distance, material, mesh, transform, render_mode):
     command = (layer << constants.LAYER_SHIFT) | \
