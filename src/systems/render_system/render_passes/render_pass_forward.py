@@ -55,10 +55,11 @@ class RenderPassForward(RenderPass):
         self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
         self.texture_depth = self.ctx.depth_texture(size=window_size)
         self.framebuffer = self.ctx.framebuffer(
-            color_attachments=[self.texture_color,
-                               self.texture_normal,
-                               self.texture_viewpos,
-                               self.texture_entity_info],
+            color_attachments=[
+                self.texture_color,
+                self.texture_normal,
+                self.texture_viewpos,
+                self.texture_entity_info],
             depth_attachment=self.texture_depth)
 
     def render(self,

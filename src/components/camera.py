@@ -105,3 +105,9 @@ class Camera(Component):
             self.update_projection_matrix()
 
         return self.inverse_projection_matrix
+
+    def draw_imgui_properties(self, imgui):
+        imgui.text(f"Camera")
+        _, self.is_perspective = imgui.checkbox("Perspective", self.is_perspective)
+        imgui.spacing()
+

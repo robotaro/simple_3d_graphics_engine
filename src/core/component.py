@@ -23,8 +23,15 @@ class Component:
     def initialise(self, **kwargs):
         pass
 
+    def draw_imgui_properties(self, imgui):
+        pass
+
     def release(self):
         pass
+
+    # ==========================================================================
+    #                               Utilities
+    # ==========================================================================
 
     @staticmethod
     def dict2bool(input_dict: Any, key: Any, default_value: bool) -> bool:
