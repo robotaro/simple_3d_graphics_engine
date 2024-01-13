@@ -1,5 +1,5 @@
 import numpy as np
-import moderngl
+from src.core import constants
 
 from src.math import mat4
 from src.core.component import Component
@@ -109,3 +109,12 @@ class Transform3D(Component):
     def set_rotation(self, position: tuple):
         self.position = position
         self.input_values_updated = True
+
+    def draw_imgui_properties(self, imgui):
+
+        imgui.text(f"Transform")
+        a, self.position = imgui.drag_float3("Position", *self.position, constants.IMGUI_DRAG_FLOAT_PRECISION)
+        b, self.rotation = imgui.drag_float3("Rotation", *self.rotation, constants.IMGUI_DRAG_FLOAT_PRECISION)
+        c, self.scale = imgui.drag_float3("Scale", *self.scale, constants.IMGUI_DRAG_FLOAT_PRECISION)
+        self.input_values_updated |= a | b | c
+        imgui.spacing()

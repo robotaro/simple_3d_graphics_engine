@@ -56,9 +56,6 @@ class RenderSystem(System):
         "selected_entity_id",
         "_sample_entity_location",
         "event_handlers",
-        "debug_points_a",
-        "debug_points_b",
-        "debug_colors"
     ]
 
     def __init__(self, **kwargs):
@@ -117,12 +114,6 @@ class RenderSystem(System):
         self.selected_entity_id = -1
 
         self._sample_entity_location = None
-
-        # DEBUG 2D VARIABLES
-        self.debug_points_a = np.random.rand(30, 2).astype(np.float32) * 300.0
-        self.debug_points_b = np.random.rand(30, 2).astype(np.float32) * 300.0
-        self.debug_colors = np.random.rand(30, 4).astype(np.float32)
-        self.debug_colors[:, 3] = 1.0
 
         self.event_handlers = {
             constants.EVENT_ENTITY_SELECTED: self.handle_event_entity_selected,
@@ -351,17 +342,11 @@ class RenderSystem(System):
         # Sort commands in-place
         np.sort(self.render_commands[:self.num_render_commands], kind="mergesort")
 
-        # Render commands
-        map(self.render, self.render_commands[:self.num_render_commands])
-
-    def render(self, render_command: int):
-
-        (layer, is_transparent, distance,
-         material, mesh, transform, render_mode) = utils_render_commands.decode_command(render_command)
-
-        # More code here
-
-        pass
+        # Render all commands
+        for i in range(self.num_render_commands):
+            render_command = self.render_commands[i]
+            (layer, is_transparent, distance,
+             material, mesh, transform, render_mode) = utils_render_commands.decode_command(render_command)
 
     # =========================================================================
     #                         Other Functions

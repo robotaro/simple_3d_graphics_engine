@@ -300,109 +300,25 @@ class ImguiSystem(System):
         # ======================================================================
 
         # [ Point Light ]
-        point_light_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
-        point_light = point_light_pool.get(self.selected_entity_uid, None)
+        point_light = self.scene.point_light.get(self.selected_entity_uid, None)
         if point_light and not point_light.system_owned:
-            imgui.text(f"Point Light")
-
-            position = tuple(point_light.ubo_data["position"].flatten())
-            updated, point_light.ubo_data["position"][:] = imgui.drag_float3("Light Position",
-                                                                             *position,
-                                                                             0.005,
-                                                                             -1000.0,
-                                                                             1000.0,
-                                                                             "%.3f")
-            point_light.dirty |= updated
-
-            diffuse = tuple(point_light.ubo_data["diffuse"].flatten())
-            updated, point_light.ubo_data["diffuse"][:] = imgui.color_edit3("Light Diffuse", *diffuse)
-            point_light.dirty |= updated
-
-            specular = tuple(point_light.ubo_data["specular"].flatten())
-            updated, point_light.ubo_data["specular"][:] = imgui.color_edit3("Light Specular", *specular)
-            point_light.dirty |= updated
-
-            attenuation_coeffs = tuple(point_light.ubo_data["attenuation_coeffs"].flatten())
-            updated, point_light.ubo_data["attenuation_coeffs"][:] = imgui.drag_float3("Attenuation Coeffs.",
-                                                                                       *attenuation_coeffs,
-                                                                                       0.005,
-                                                                                       0.0,
-                                                                                       100.0,
-                                                                                       "%.3f")
-            point_light.dirty |= updated
-
-            #_, camera.is_perspective = imgui.checkbox("Perspective", camera.is_perspective)
-
-            imgui.spacing()
+            point_light.draw_imgui_properties(imgui=imgui)
 
         # [ Camera ]
-        camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-        camera = camera_pool.get(self.selected_entity_uid, None)
+        camera = self.scene.camera.get(self.selected_entity_uid, None)
         if camera and not camera.system_owned:
-            imgui.text(f"Camera")
-            _, camera.is_perspective = imgui.checkbox("Perspective", camera.is_perspective)
+            camera.draw_imgui_properties(imgui=imgui)
 
         # [ Transform 3D ]
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
-        transform = transform_3d_pool.get(self.selected_entity_uid, None)
+        transform = self.scene.transform_3d.get(self.selected_entity_uid, None)
         if transform and not transform.system_owned:
-            imgui.text(f"Transform")
-            value_updated, transform.position = imgui.drag_float3("Position",
-                                                                  *transform.position,
-                                                                  constants.IMGUI_DRAG_FLOAT_PRECISION)
-            transform.input_values_updated |= value_updated
-            value_updated, transform.rotation = imgui.drag_float3("Rotation",
-                                                                  *transform.rotation,
-                                                                  constants.IMGUI_DRAG_FLOAT_PRECISION)
-            transform.input_values_updated |= value_updated
-            value_updated, transform.scale = imgui.drag_float3("Scale",
-                                                               *transform.scale,
-                                                               constants.IMGUI_DRAG_FLOAT_PRECISION)
-            transform.input_values_updated |= value_updated
-
-            imgui.spacing()
+            transform.draw_imgui_properties(imgui=imgui)
 
         # [ Material]
-        material_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
-        material = material_pool.get(self.selected_entity_uid, None)
+        material = self.scene.material.get(self.selected_entity_uid, None)
         if material and not material.system_owned:
-            imgui.text(f"Material")
+            material.draw_imgui_properties(imgui=imgui)
 
-            diffuse = tuple(material.ubo_data["diffuse"].flatten())
-            updated, material.ubo_data["diffuse"][:] = imgui.color_edit3("Material Diffuse", *diffuse)
-            material.dirty |= updated
-
-            diffuse_highlight = tuple(material.ubo_data["diffuse_highlight"].flatten())
-            updated, material.ubo_data["diffuse_highlight"][:] = imgui.color_edit3("Diffuse Highlight", *diffuse_highlight)
-            material.dirty |= updated
-
-            specular = tuple(material.ubo_data["specular"].flatten())
-            updated, material.ubo_data["specular"][:] = imgui.color_edit3("Specular", *specular)
-            material.dirty |= updated
-
-            updated, material.ubo_data["shininess_factor"] = imgui.drag_float("Shininess Factor",
-                                                                        material.ubo_data["shininess_factor"],
-                                                                        0.05,
-                                                                        0.0,
-                                                                        32.0,
-                                                                        "%.3f")
-            material.dirty |= updated
-
-            updated, material.ubo_data["color_source"] = imgui.slider_int(
-                "Color Source",
-                material.ubo_data["color_source"],
-                min_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE,
-                max_value=constants.RENDER_MODE_COLOR_SOURCE_UV)
-            material.dirty |= updated
-
-            updated, material.ubo_data["lighting_mode"] = imgui.slider_int(
-                "Lighting Mode",
-                material.ubo_data["lighting_mode"],
-                min_value=constants.RENDER_MODE_LIGHTING_SOLID,
-                max_value=constants.RENDER_MODE_LIGHTING_LIT)
-            material.dirty |= updated
-
-            imgui.spacing()
 
     def gui_tab_resources(self):
 

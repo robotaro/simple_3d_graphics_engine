@@ -67,3 +67,31 @@ class PointLight(Component):
         # Write the data to the UBO
         ubo.write(self.ubo_data.tobytes(), offset=self.ubo_index * constants.SCENE_POINT_LIGHT_STRUCT_SIZE_BYTES)
         self.dirty = False
+
+    def draw_imgui_properties(self, imgui):
+        imgui.text(f"Point Light")
+
+        position = tuple(self.ubo_data["position"].flatten())
+        a, self.ubo_data["position"][:] = imgui.drag_float3("Light Position",
+                                                            *position,
+                                                            0.005,
+                                                            -1000.0,
+                                                            1000.0,
+                                                            "%.3f")
+
+        diffuse = tuple(self.ubo_data["diffuse"].flatten())
+        b, self.ubo_data["diffuse"][:] = imgui.color_edit3("Light Diffuse", *diffuse)
+
+        specular = tuple(self.ubo_data["specular"].flatten())
+        c, self.ubo_data["specular"][:] = imgui.color_edit3("Light Specular", *specular)
+
+        attenuation_coeffs = tuple(self.ubo_data["attenuation_coeffs"].flatten())
+        d, self.ubo_data["attenuation_coeffs"][:] = imgui.drag_float3("Attenuation Coeffs.",
+                                                                      *attenuation_coeffs,
+                                                                      0.005,
+                                                                      0.0,
+                                                                      100.0,
+                                                                      "%.3f")
+        self.dirty |= a | b | c | d
+
+        imgui.spacing()

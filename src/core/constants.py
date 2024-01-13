@@ -143,7 +143,7 @@ EVENT_ENTITY_DESELECTED = 22
 EVENT_MULTIPLE_ENTITIES_SELECTED = 23
 EVENT_PROFILING_SYSTEM_PERIODS = 24  # args (("system_a", 0.2), ("system_b" 0.37), ...) <(string, float) ...>
 
-# System inter-communication
+# System intercommunication
 EVENT_GIZMO_3D_SYSTEM_PARAMETER_UPDATED = 100
 EVENT_RENDER_SYSTEM_PARAMETER_UPDATED = 101
 
@@ -265,10 +265,13 @@ SHADER_PASSES_LIST = [
 
 # =============[ Render Commands ]===============
 
+# | layer | transparency | distance | material | mesh |
+#     5           1           16         8        12
+
 MAX_RENDER_COMMANDS = 4096
 
 # Bit allocation
-LAYER_BITS = 8
+LAYER_BITS = 5
 TRANSPARENCY_BITS = 1
 DISTANCE_BITS = 16
 MATERIAL_BITS = 8

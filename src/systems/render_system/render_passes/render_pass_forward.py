@@ -55,10 +55,11 @@ class RenderPassForward(RenderPass):
         self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
         self.texture_depth = self.ctx.depth_texture(size=window_size)
         self.framebuffer = self.ctx.framebuffer(
-            color_attachments=[self.texture_color,
-                               self.texture_normal,
-                               self.texture_viewpos,
-                               self.texture_entity_info],
+            color_attachments=[
+                self.texture_color,
+                self.texture_normal,
+                self.texture_viewpos,
+                self.texture_entity_info],
             depth_attachment=self.texture_depth)
 
     def render(self,
@@ -127,7 +128,6 @@ class RenderPassForward(RenderPass):
                 if not mesh_component.visible or mesh_component.layer == constants.RENDER_SYSTEM_LAYER_OVERLAY:
                     continue
 
-                # Update Transform UBO
                 num_instances = 1
                 transform = transform_3d_pool.get(mesh_entity_uid, None)
                 if transform is not None:

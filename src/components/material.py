@@ -88,3 +88,36 @@ class Material(Component):
 
     def is_transparent(self) -> bool:
         return self.alpha == 1.0
+
+    def draw_imgui_properties(self, imgui):
+        imgui.text(f"Material")
+
+        diffuse = tuple(self.ubo_data["diffuse"].flatten())
+        a, self.ubo_data["diffuse"][:] = imgui.color_edit3("Material Diffuse", *diffuse)
+
+        diffuse_highlight = tuple(self.ubo_data["diffuse_highlight"].flatten())
+        b, self.ubo_data["diffuse_highlight"][:] = imgui.color_edit3("Diffuse Highlight", *diffuse_highlight)
+
+        specular = tuple(self.ubo_data["specular"].flatten())
+        c, self.ubo_data["specular"][:] = imgui.color_edit3("Specular", *specular)
+
+        d, self.ubo_data["shininess_factor"] = imgui.drag_float("Shininess Factor",
+                                                                      self.ubo_data["shininess_factor"],
+                                                                      0.05,
+                                                                      0.0,
+                                                                      32.0,
+                                                                      "%.3f")
+
+        e, self.ubo_data["color_source"] = imgui.slider_int(
+            "Color Source",
+            self.ubo_data["color_source"],
+            min_value=constants.RENDER_MODE_COLOR_SOURCE_SINGLE,
+            max_value=constants.RENDER_MODE_COLOR_SOURCE_UV)
+
+        f, self.ubo_data["lighting_mode"] = imgui.slider_int(
+            "Lighting Mode",
+            self.ubo_data["lighting_mode"],
+            min_value=constants.RENDER_MODE_LIGHTING_SOLID,
+            max_value=constants.RENDER_MODE_LIGHTING_LIT)
+        self.dirty |= a | b | c | d | e | f
+        imgui.spacing()
