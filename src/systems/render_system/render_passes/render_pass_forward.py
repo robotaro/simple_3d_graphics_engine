@@ -128,7 +128,6 @@ class RenderPassForward(RenderPass):
                 if not mesh_component.visible or mesh_component.layer == constants.RENDER_SYSTEM_LAYER_OVERLAY:
                     continue
 
-                # Update Transform UBO
                 num_instances = 1
                 transform = transform_3d_pool.get(mesh_entity_uid, None)
                 if transform is not None:
