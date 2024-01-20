@@ -380,13 +380,20 @@ TRANSFORM_SYSTEM_MAX_NUM_TRANSFORMS = 256
 DEG2RAD = 3.14159265358979 / 180.0
 
 # =============================================================================
+#                             Entities
+# =============================================================================
+ENTITY_TYPE_ENTITY = 0
+ENTITY_TYPE_CAMERA = 1
+ENTITY_TYPE_TRANSFORM_GIZMO = 2
+
+# =============================================================================
 #                              Component Pool
 # =============================================================================
 
 COMPONENT_POOL_STARTING_ID_COUNTER = 2
 
 # Component Types
-COMPONENT_TYPE_TRANSFORM_3D = 0
+COMPONENT_TYPE_TRANSFORM = 0
 COMPONENT_TYPE_TRANSFORM_2D = 1
 COMPONENT_TYPE_MESH = 2
 COMPONENT_TYPE_CAMERA = 3

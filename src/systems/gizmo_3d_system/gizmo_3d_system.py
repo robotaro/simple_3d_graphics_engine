@@ -246,7 +246,7 @@ class Gizmo3DSystem(System):
         if not self.gizmo_selection_enabled:
             return
 
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
 
         if mouse_press:
             self.gizmo_state = constants.GIZMO_3D_STATE_TRANSLATING_ON_AXIS
@@ -281,7 +281,7 @@ class Gizmo3DSystem(System):
 
         local_point_on_ray_0 = self.get_projected_point_on_axis(ray_origin=ray_origin, ray_direction=ray_direction)
         new_local_position = local_point_on_ray_0 - self.local_axis_offset_point + self.original_active_local_position
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
 
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
         selected_transform_component.position = tuple(new_local_position)
@@ -306,7 +306,7 @@ class Gizmo3DSystem(System):
             return True
 
         # Get component pools for easy access
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
         overlay_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_OVERLAY_2D)
 
         selected_transform_component = transform_3d_pool[self.selected_entity_uid]
@@ -402,7 +402,7 @@ class Gizmo3DSystem(System):
 
         inverse_parent_matrix = np.eye(4, dtype=np.float32)
         entity = self.scene.get_entity(entity_uid=self.selected_entity_uid)
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
 
         if entity.parent_uid is None:
             inverse_parent_matrix = np.eye(4, dtype=np.float32)
@@ -438,7 +438,7 @@ class Gizmo3DSystem(System):
         :return: tuple
         """
 
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
 
         gizmo_3d_entity_uid = self.camera2gizmo_map[active_camera_uid]
 
@@ -465,7 +465,7 @@ class Gizmo3DSystem(System):
 
     def mouse_ray_check_axes_collision(self, ray_origin: np.array, ray_direction: np.array) -> int:
 
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
         gizmo_3d_entity_uid = self.camera2gizmo_map[self.focused_camera_uid] # TODO [CLEANUP] All I need is the gizmo transform
         gizmo_transform_component = transform_3d_pool[gizmo_3d_entity_uid]
 
@@ -520,7 +520,7 @@ class Gizmo3DSystem(System):
 
     def set_gizmo_to_selected_entity(self):
 
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
         selected_transform_component = transform_3d_pool.get(self.selected_entity_uid, None)
 
         camera_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)

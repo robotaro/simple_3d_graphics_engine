@@ -36,7 +36,7 @@ class TransformSystem(System):
             self.update_transform_tree()
             self.update_tree = False
 
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
         multi_transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_MULTI_TRANSFORM_3D)
 
         # TODO: [OPTIMIZE] Not all world matrices need to be recreated all the time! Take the dirty flags into account!

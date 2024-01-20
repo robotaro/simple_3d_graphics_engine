@@ -47,11 +47,7 @@ class Editor:
                  "monitor_gltf",
                  "ctx",
                  "buffer_size",
-                 "transform_components",
-                 "camera_components",
-                 "system_class_map",
-                 "systems",
-                 "scene",
+                 "scenes",
                  "event_publisher",
                  "action_publisher",
                  "data_manager",
@@ -77,7 +73,7 @@ class Editor:
         self.vertical_sync = vertical_sync
 
         # Core modules - MUST BE CREATED BEFORE ANY SYSTEM!
-        self.scene = Scene(logger=self.logger)
+        self.scenes = {}
         self.event_publisher = EventPublisher(logger=self.logger)
         self.action_publisher = ActionPublisher(logger=self.logger)
         self.data_manager = DataManager(logger=self.logger)
@@ -138,20 +134,6 @@ class Editor:
 
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
-
-        # Systems - Need to be created after everything else has been created
-        self.system_class_map = {
-            constants.SYSTEM_NAME_IMPORT: ImportSystem,
-            constants.SYSTEM_NAME_INPUT_CONTROL: InputControlSystem,
-            constants.SYSTEM_NAME_GIZMO_3D: Gizmo3DSystem,
-            constants.SYSTEM_NAME_TRANSFORM: TransformSystem,
-            constants.SYSTEM_NAME_SKELETON: SkeletonSystem,
-            constants.SYSTEM_NAME_RENDER: RenderSystem,
-            constants.SYSTEM_NAME_IMGUI: ImguiSystem
-        }
-        self.systems = []
-        for system_name in system_names:
-            self.create_system(system_name=system_name)
 
         # Flags
         self.close_application = False
@@ -303,69 +285,10 @@ class Editor:
         self.mouse_state[constants.MOUSE_SCROLL_POSITION_LAST_FRAME] = self.mouse_state[
             constants.MOUSE_SCROLL_POSITION]
 
-    def create_system(self, system_name: str, parameters=None) -> bool:
+    def load_scene_from_xml(self, name: str, scene_xml_fpath: str):
 
-        """
-        Creates and appends a new system to the editor. Systems are responsible for processing the data stored
-        in the components and the order by which systems are run is the order by which they are created
-
-        :param system_name: str, Type of the system
-        :param subscribed_events: List of events this system will be listening to
-        :return: bool, TRUE if systems was successfully created
-        """
-
-        if parameters is None:
-            parameters = {}
-
-        selected_system_class = self.system_class_map.get(system_name, None)
-
-        if selected_system_class is None:
-            self.logger.error(f"Failed to create system {system_name}")
-            return False
-
-        new_system = selected_system_class(
-            logger=self.logger,
-            window_glfw=self.window_glfw,
-            scene=self.scene,
-            event_publisher=self.event_publisher,
-            action_publisher=self.action_publisher,
-            data_manager=self.data_manager,
-            parameters=parameters,
-            context=self.ctx,
-            buffer_size=self.buffer_size)
-
-        # Subscribe system to listen to its pre-determined events
-        for event_type in system_subscriptions.SYSTEMS_EVENT_SUBSCRITONS[new_system.name]:
-            self.event_publisher.subscribe(event_type=event_type, listener=new_system)
-
-        # And finally add the new system to the roster
-        self.systems.append(new_system)
-
-    def load_scene_from_xml(self, scene_xml_fpath: str):
-
-        # Check if path is absolute
-        fpath = None
-        if os.path.isfile(scene_xml_fpath):
-            fpath = scene_xml_fpath
-
-        if fpath is None:
-            # Assume it is a relative path from the working directory/root directory
-            clean_scene_xml_fpath = scene_xml_fpath.replace("\\", os.sep).replace("/", os.sep)
-            fpath = os.path.join(constants.ROOT_DIR, clean_scene_xml_fpath)
-
-        scene_blueprint, scene_resources = utils_xml2scene.load_scene_from_xml(xml_fpath=fpath)
-
-        # Load scene resource, if any
-        for resource_uid, resource_fpath in scene_resources.items():
-            resource_fpath = utils_io.validate_resource_filepath(fpath=resource_fpath)
-            self.data_manager.load_file(data_group_id=resource_uid, fpath=resource_fpath)
-
-        # Add entities to current scene
-        for entity_blueprint in scene_blueprint["scene"]["entity"]:
-            self.scene.add_entity(entity_blueprint=entity_blueprint)
-
-    def load_scene_from_hdf5(self, scene_h5_fpath: str):
-        pass
+        # TODO: COntinue from here
+        new_scene = Scene()
 
     def initialise_components(self):
 
@@ -389,38 +312,6 @@ class Editor:
                                      event_data=self.buffer_size,
                                      sender=self)
 
-    def internal_profiling_update(self, elapsed_time: float):
-
-        self.editor_sum_update_periods += elapsed_time
-        self.editor_num_updates += 1
-
-        # Check if it is time to update all mean periods. If its time, time to reset everything :)
-        if self.editor_sum_update_periods < self.profiling_update_period:
-            return
-
-        # Update system profiling
-        for system in self.systems:
-            system.average_update_period = system.sum_update_periods / system.num_updates
-            system.sum_update_periods = 0.0
-            system.num_updates = 0
-
-        # Update editor profiling
-        self.average_fps = self.editor_num_updates / self.editor_sum_update_periods
-        self.editor_num_updates = 0
-        self.editor_sum_update_periods = 0.0
-
-        # Update events profiling
-        self.events_average_period = self.events_sum_update_periods / self.events_num_updates
-        self.events_sum_update_periods = 0.0
-        self.events_num_updates = 0
-
-        # Publish updated profiling results
-        data_list = [item for system in self.systems for item in (system.name, system.average_update_period)]
-        event_data = tuple(["events", self.events_average_period] + data_list)
-        self.event_publisher.publish(event_type=constants.EVENT_PROFILING_SYSTEM_PERIODS,
-                                     event_data=event_data,
-                                     sender=self)
-
     def run(self, profiling_enabled=False) -> str:
         """
         Main function to run the application. Currently, holds a few debugging variables but it will
@@ -436,11 +327,6 @@ class Editor:
         if profiling_enabled:
             profiler = cProfile.Profile()
             profiler.enable()
-
-        # Initialise systems
-        for system in self.systems:
-            if not system.initialise():
-                raise Exception(f"[ERROR] System {system.name} failed to initialise")
 
         self.initialise_components()
         self.publish_startup_events()
@@ -462,25 +348,16 @@ class Editor:
             timestamp_past = timestamp
 
             # Update All systems in order
-            for system in self.systems:
-
-                t0_system = time.perf_counter()
-                if not system.update(elapsed_time=elapsed_time, context=self.ctx):
-                    self.close_application = True
-                    break
-                t1_system = time.perf_counter()
-
-                system.sum_update_periods += t1_system - t0_system
-                system.num_updates += 1
+            for _, scene in self.scenes.items():
+                scene.render()
 
             self.internal_profiling_update(elapsed_time=elapsed_time)
 
             # Still swap these even if you have to exit application?
             glfw.swap_buffers(self.window_glfw)
 
-        # Shutdown systems
-        for system in self.systems:
-            system.shutdown()
+        for _, scene in self.scenes.items():
+            scene.destroy()
 
         if profiling_enabled:
             profiler.disable()

@@ -42,7 +42,7 @@ def test_add_and_remove_components():
 
     # Add Components
     new_transform = pool.add_component(entity_uid=entity_uid,
-                                       component_type=constants.COMPONENT_TYPE_TRANSFORM_3D,
+                                       component_type=constants.COMPONENT_TYPE_TRANSFORM,
                                        parameters=parameters)
     new_mesh = pool.add_component(entity_uid=entity_uid,
                                   component_type=constants.COMPONENT_TYPE_MESH,
@@ -61,18 +61,18 @@ def test_add_and_remove_components():
     # TODO: Check types in more detail
 
     # Get Single Component
-    result_component = pool.get_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+    result_component = pool.get_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM)
     target_transform = Transform3D(parameters=parameters)
     np.testing.assert_array_equal(result_component.world_matrix, target_transform.world_matrix)  # Mesh and transforms
     # TODO: Check types in more detail
 
     # Remove Component
-    pool.remove_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+    pool.remove_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM)
     result_components = pool.get_all_components(entity_uid=entity_uid)
     assert len(result_components) == 1  # Mesh and transforms
     # TODO: Check types in more detail
 
     # Try to get removed component
-    result_component = pool.get_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+    result_component = pool.get_component(entity_uid=entity_uid, component_type=constants.COMPONENT_TYPE_TRANSFORM)
     assert result_component is None
 

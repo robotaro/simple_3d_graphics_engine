@@ -134,7 +134,7 @@ class InputControlSystem(System):
     def update(self, elapsed_time: float, context: moderngl.Context) -> bool:
 
         input_control_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_INPUT_CONTROL)
-        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = self.scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
 
         for entity_uid, input_control in input_control_pool.items():
 

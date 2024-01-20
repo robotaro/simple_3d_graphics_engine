@@ -65,9 +65,9 @@ class RenderPassShadow(RenderPass):
                 continue
 
             mesh_transform = scene.get_component(entity_uid=mesh_entity_uid,
-                                                 component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+                                                 component_type=constants.COMPONENT_TYPE_TRANSFORM)
             light_transform = scene.get_component(entity_uid=directional_light_uid,
-                                                  component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+                                                  component_type=constants.COMPONENT_TYPE_TRANSFORM)
 
             program["view_matrix"].write(light_transform.inverse_world_matrix.T.tobytes())
             program["model_matrix"].write(mesh_transform.world_matrix.T.tobytes())

@@ -68,7 +68,7 @@ class RenderPassSelection(RenderPass):
             if mesh_component is None:
                 return
 
-            transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+            transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
 
             # Safety checks before we go any further!
             renderable_transform = transform_3d_pool[selected_entity_uid]

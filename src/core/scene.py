@@ -24,7 +24,7 @@ from src.components.multi_transform_3d import MultiTransform3D
 class Scene:
 
     COMPONENT_CLASS_MAP = {
-        constants.COMPONENT_TYPE_TRANSFORM_3D: Transform3D,
+        constants.COMPONENT_TYPE_TRANSFORM: Transform3D,
         constants.COMPONENT_TYPE_MESH: Mesh,
         constants.COMPONENT_TYPE_CAMERA: Camera,
         constants.COMPONENT_TYPE_MATERIAL: Material,
@@ -41,7 +41,7 @@ class Scene:
     }
 
     COMPONENT_NAME_MAP = {
-        "transform_3d": constants.COMPONENT_TYPE_TRANSFORM_3D,
+        "transform_3d": constants.COMPONENT_TYPE_TRANSFORM,
         "mesh": constants.COMPONENT_TYPE_MESH,
         "camera": constants.COMPONENT_TYPE_CAMERA,
         "material": constants.COMPONENT_TYPE_MATERIAL,
@@ -109,7 +109,7 @@ class Scene:
         self.multi_transform_3d = {}
 
         self.component_master_pool = {
-            constants.COMPONENT_TYPE_TRANSFORM_3D: self.transform_3d,
+            constants.COMPONENT_TYPE_TRANSFORM: self.transform_3d,
             constants.COMPONENT_TYPE_MESH: self.mesh,
             constants.COMPONENT_TYPE_CAMERA: self.camera,
             constants.COMPONENT_TYPE_MATERIAL: self.material,

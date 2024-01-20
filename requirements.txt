@@ -5,6 +5,7 @@ llvmlite==0.41.1  # require by numba
 numba==0.58.1
 PyGLM==2.7.1        # Required for running examplesrendering as well
 warp-lang==0.10.1
+pybullet
 
 # Documentation
 sphinx==7.1.2
