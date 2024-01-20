@@ -8,7 +8,7 @@ def main():
 
     editor = Editor(window_title="Basic Scene Demo", vertical_sync=False)
 
-    editor.load_scene_from_xml(scene_xml_fpath="demos/demo_01_basic_scene/basic_scene.xml")
+    editor.load_from_xml(xml_fpath=r"D:\git_repositories\alexandrepv\simple_3d_graphics_engine\demos\new_format\editor_setup.xml")
 
     editor.run(profiling_enabled=False)
 

@@ -1,0 +1,58 @@
+<editor>
+    <resource id="dragon" fpath="meshes/dragon.obj"/>
+    <resource id="woman_walk_animation" fpath="meshes/dragon.obj"/>
+    <resource id="walk_animation" fpath="bvh/walk.bvh"/>
+    <resource id="female_body" fpath="meshes/dragon.obj"/>
+
+    <scene name="demo_scene" default_scene="true">
+
+        <shared_components>
+            <transform shared_ref="female_transform" position="-1 0 0" scale="2 2 2" rotation="-90 0 0" degrees="true"/>
+        </shared_components>
+
+        <camera name="First Camera" viewport_screen_ratio="0 0 1 1" perspective="true">
+            <transform_3d position="-0.5 0.5 5"/>
+        </camera>
+
+        <point_light name="Point Light 1">
+            <point_light diffuse="1.0 1.0 1.0"/>
+            <transform position="2.0 2.0 2.0"/>
+            <mesh shape="icosphere" radius="0.2" subdivisions="4"/>
+            <material diffuse="1.0 1.0 1.0" shininess_factor="32.0" lighting_mode="solid"/>
+        </point_light>
+
+        <directional_light name="Directional Light 1" diffuse="1.0 1.0 1.0">
+            <transform position="2.0 2.0 2.0" rotation="45 90 0" degrees="true"/>
+        </directional_light>
+
+        <entity name="female body 0">
+            <mesh resource_id="female_body/mesh_0"/>
+            <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
+            <transform shared_ref="female_transform"/>
+        </entity>
+
+        <entity name="female body 1">
+            <mesh resource_id="female_body/mesh_1"/>
+            <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
+            <transform_3d shared_ref="female_transform"/>
+        </entity>
+
+        <entity name="female body 2">
+            <mesh resource_id="female_body/mesh_2" />
+            <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
+            <transform_3d shared_ref="female_transform"/>
+        </entity>
+
+        <entity name="capsule">
+            <mesh shape="capsule" height="1.5" radius="0.25" count="32 32"/>
+            <material diffuse="gray" shininess_factor="32.0"/>
+            <transform_3d position="-3 0 3" degrees="true"/>
+        </entity>
+
+        <entity name="Floor">
+            <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
+            <transform_3d position="0 -0.5 0"/>
+            <material diffuse="0.75 0.75 0.75" shininess_factor="32.0"/>
+        </entity>
+    </scene>
+</editor>

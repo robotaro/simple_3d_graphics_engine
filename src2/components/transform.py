@@ -22,20 +22,12 @@ class Transform(Component):
         "dirty"
     ]
 
-    def __init__(self, parameters, system_owned=False):
-        super().__init__(parameters=parameters, system_owned=system_owned)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
-        self.position = Component.dict2tuple_float(input_dict=self.parameters,
-                                                   key="position",
-                                                   default_value=(0.0, 0.0, 0.0))
-
-        self.rotation = Component.dict2tuple_float(input_dict=self.parameters,
-                                                   key="rotation",
-                                                   default_value=(0.0, 0.0, 0.0))
-
-        self.scale = Component.dict2tuple_float(input_dict=self.parameters,
-                                                key="scale",
-                                                default_value=(1.0, 1.0, 1.0))
+        self.position = tuple(self.params["position"]) if "position" in self.params else (0.0, 0.0, 0.0)
+        self.rotation = tuple(self.params["rotation"]) if "rotation" in self.params else (0.0, 0.0, 0.0)
+        self.scale = tuple(self.params["scale"]) if "scale" in self.params else (1.0, 1.0, 1.0)
 
         if len(self.scale) == 1:
             self.scale = (self.scale[0], self.scale[0], self.scale[0])
@@ -44,9 +36,7 @@ class Transform(Component):
             raise Exception("[ERROR] Input scale from parameters contains 2 values. Please make sure you have"
                             "either 1 or 3")
 
-        self.degrees = Component.dict2bool(input_dict=self.parameters,
-                                           key="degrees",
-                                           default_value=False)
+        self.degrees = self.params["degrees"] if "degrees" in self.params else False
 
         if self.degrees:
             self.rotation = (np.radians(self.rotation[0]),

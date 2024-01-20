@@ -9,6 +9,7 @@ import numpy as np
 from src.core import constants
 from src.core import system_subscriptions
 from src.systems.render_system.render_system import RenderSystem
+from src.utilities import utils_io
 from src.systems.imgui_system.imgui_system import ImguiSystem
 from src.systems.gizmo_3d_system.gizmo_3d_system import Gizmo3DSystem
 from src.systems.transform_system.transform_system import TransformSystem
@@ -16,12 +17,13 @@ from src.systems.input_control_system.input_control_system import InputControlSy
 from src.systems.import_system.import_system import ImportSystem
 from src.systems.skeleton_system.skeleton_system import SkeletonSystem
 
-from src.utilities import utils_logging, utils_xml2scene, utils_io
+from src.utilities import utils_logging
+from src2.utilities import utils_scene_xml2json
 
 # Core Modules
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
-from src.core.scene import Scene
+from src2.core.scene import Scene
 from src.core.data_manager import DataManager
 
 
@@ -285,10 +287,33 @@ class Editor:
         self.mouse_state[constants.MOUSE_SCROLL_POSITION_LAST_FRAME] = self.mouse_state[
             constants.MOUSE_SCROLL_POSITION]
 
-    def load_scene_from_xml(self, name: str, scene_xml_fpath: str):
+    def load_from_xml(self, xml_fpath: str):
 
-        # TODO: COntinue from here
-        new_scene = Scene()
+        editor_setup = utils_scene_xml2json.editor_xml2json(xml_fpath=xml_fpath)
+
+        # Step 1) Load resources
+        for resource_id, resource_fpath in editor_setup[constants.EDITOR_BLUEPRINT_KEY_RESOURCES].items():
+            self.data_manager.load_file(
+                data_group_id=resource_id,
+                fpath=utils_io.validate_resource_filepath(resource_fpath))
+
+        # Step 3) Create scenes
+        for scene_id, scene_dict in editor_setup[constants.EDITOR_BLUEPRINT_KEY_SCENES].items():
+            new_scene = Scene(logger=self.logger)
+
+            # Shared components first
+            for component_type, component_dict in scene_dict[constants.SCENE_BLUEPRINT_KEY_SHARED_COMPONENTS].items():
+                for component_name, component_params in component_dict.items():
+                    new_scene.create_shared_component(
+                        shared_ref=component_name,
+                        component_type=component_type,
+                        params=component_params)
+
+            # Then entities
+
+
+            self.scenes[scene_id] = new_scene
+
 
     def initialise_components(self):
 

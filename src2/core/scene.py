@@ -1,34 +1,41 @@
 import os
-from typing import Tuple, Any
+from typing import Tuple, Dict, Optional
 from src.core import constants
-from src.utilities import utils_io
-import xml.etree.ElementTree as ET
+from logging import Logger
 
+# Entities
 from src2.entities.entity import Entity
 from src2.entities.camera import Camera
+
+# Component
 from src2.components.transform import Transform
 
 
 class Scene:
 
-    def __init__(self, name: str, params: dict):
+    def __init__(self, logger: Logger, name: Optional[str] = None, params: Optional[Dict] = None):
 
         self.name = name
+        self.params = params if params else {}
+        self.logger = logger
+
         self.registered_entity_types = {}
         self.registered_component_types = {}
 
+        self.cameras = {}
+        self.point_lights = {}
+        self.directional_lights = {}
         self.entities = {}
         self.shared_components = {}
 
-        self.entity_id_counter = 0
-        self.component_id_counter = 0
+        self.available_entity_ids = [i for i in reversed(range(2**16))]
 
         # Register entities
-        self.register_entity_type(name=constants.ENTITY_TYPE_ENTITY, entity_class=Entity)
-        self.register_entity_type(name=constants.ENTITY_TYPE_CAMERA, entity_class=Camera)
+        self.register_entity_type(name="entity", entity_class=Entity)
+        self.register_entity_type(name="camera", entity_class=Camera)
 
         # Register components
-        self.register_component_type(name=constants.COMPONENT_TYPE_TRANSFORM, component_clas=Transform)
+        self.register_component_type(name="transform", component_clas=Transform)
 
     def register_entity_type(self, name: str, entity_class):
         if name in self.registered_entity_types:
@@ -41,40 +48,29 @@ class Scene:
         self.registered_component_types[name] = component_clas
 
     def create_entity(self, entity_type: str, name: str, params: str) -> int:
+
+        # Generate new unique id fo r
+        entity_id = self.available_entity_ids.pop()
+
         new_entity = self.registered_entity_types[entity_type](name=name, params=params)
+        if isinstance(new_entity, Camera):
+            self.cameras[entity_id] = new_entity
+        elif isinstance(new_entity, Entity):
+            self.entities[entity_id] = new_entity
+
+        return entity_id
+
+    def destroy_entity(self, entity_id: int):
         pass
 
     def create_shared_component(self, shared_ref: str, component_type: str, params: str) -> int:
-        pass
+        self.shared_components[shared_ref] = self.registered_component_types[component_type](
+            name=shared_ref,
+            params=params
+        )
 
     def render(self):
         pass
 
     def destroy(self):
         pass
-
-    def from_xml(self, xml_fpath: str):
-        tree = ET.parse(xml_fpath)
-        root = tree.getroot()
-
-        if root.tag != 'scene':
-            raise ValueError("Invalid XML format for scene")
-
-        # Parse shared resources
-        for resource in root.findall('resource'):
-            # Handle resource loading here
-
-        # Parse shared components
-        for shared_component in root.findall('shared_components/*'):
-            # Handle shared component creation here
-
-        # Parse entities
-        for entity in root.findall('entity'):
-            entity_name = entity.get('name', 'no_name')
-            entity_type = constants.ENTITY_TYPE_ENTITY  # Assuming a default type, modify as needed
-            # Extract parameters from XML and create entity
-            self.create_entity(entity_type=entity_type,
-                               name=entity_name,
-                               params=params)
-
-        # Handle cameras, lights, etc., similarly
