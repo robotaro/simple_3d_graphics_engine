@@ -299,7 +299,7 @@ class Editor:
 
         # Step 3) Create scenes
         for scene_id, scene_dict in editor_setup[constants.EDITOR_BLUEPRINT_KEY_SCENES].items():
-            new_scene = Scene(logger=self.logger)
+            new_scene = Scene(name=scene_id, logger=self.logger, ctx=self.ctx)
 
             # Shared components first
             for component_type, component_dict in scene_dict[constants.SCENE_BLUEPRINT_KEY_SHARED_COMPONENTS].items():
@@ -314,19 +314,6 @@ class Editor:
 
             self.scenes[scene_id] = new_scene
 
-
-    def initialise_components(self):
-
-        # TODO: This is SORT OF a hack. Please think of a way to make this universal
-        render_system = [system for system in self.systems if isinstance(system, RenderSystem)][0]
-
-        for _, pool in self.scene.component_master_pool.items():
-            for entity_uid, component in pool.items():
-                component.initialise(ctx=self.ctx,
-                                     shader_library=render_system.shader_program_library,
-                                     font_library=render_system.font_library,
-                                     data_manager=self.data_manager)
-
     def release_components(self):
         for component_id, components in self.scene.component_storage_map.items():
             for entity_uid, component in components.items():
@@ -337,7 +324,7 @@ class Editor:
                                      event_data=self.buffer_size,
                                      sender=self)
 
-    def run(self, profiling_enabled=False) -> str:
+    def run(self):
         """
         Main function to run the application. Currently, holds a few debugging variables but it will
         be cleaner in the future.
@@ -347,36 +334,17 @@ class Editor:
         :return:
         """
 
-        profiling_result = ""
-
-        if profiling_enabled:
-            profiler = cProfile.Profile()
-            profiler.enable()
-
-        self.initialise_components()
         self.publish_startup_events()
 
         # Update systems - Main Loop
         self.close_application = False
-        timestamp_past = time.perf_counter()
         while not glfw.window_should_close(self.window_glfw) and not self.close_application:
 
-            t0_events = time.perf_counter()
             glfw.poll_events()
-            t1_events = time.perf_counter()
-            self.events_sum_update_periods += t1_events - t0_events
-            self.events_num_updates += 1
-
-            # Measure time
-            timestamp = time.perf_counter()
-            elapsed_time = timestamp - timestamp_past
-            timestamp_past = timestamp
 
             # Update All systems in order
             for _, scene in self.scenes.items():
                 scene.render()
-
-            self.internal_profiling_update(elapsed_time=elapsed_time)
 
             # Still swap these even if you have to exit application?
             glfw.swap_buffers(self.window_glfw)
@@ -384,12 +352,3 @@ class Editor:
         for _, scene in self.scenes.items():
             scene.destroy()
 
-        if profiling_enabled:
-            profiler.disable()
-            string_stream = io.StringIO()
-            ps = pstats.Stats(profiler, stream=string_stream).sort_stats(SortKey.CUMULATIVE)
-            ps.print_stats()
-            profiling_result = string_stream.getvalue()
-            print(profiling_result)
-
-        return profiling_result

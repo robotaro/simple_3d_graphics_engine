@@ -25,9 +25,9 @@ class Transform(Component):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.position = tuple(self.params["position"]) if "position" in self.params else (0.0, 0.0, 0.0)
-        self.rotation = tuple(self.params["rotation"]) if "rotation" in self.params else (0.0, 0.0, 0.0)
-        self.scale = tuple(self.params["scale"]) if "scale" in self.params else (1.0, 1.0, 1.0)
+        self.position = tuple(self.params.get("position", [0.0, 0.0, 0.0]))
+        self.rotation = tuple(self.params.get("rotation", [0.0, 0.0, 0.0]))
+        self.scale = tuple(self.params.get("scale", [1.0, 1.0, 1.0]))
 
         if len(self.scale) == 1:
             self.scale = (self.scale[0], self.scale[0], self.scale[0])

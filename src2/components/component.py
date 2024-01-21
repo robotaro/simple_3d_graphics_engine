@@ -8,8 +8,7 @@ class Component:
     __slots__ = [
         "name",
         "params",
-        "initialised",
-        "system_owned"
+        "initialised"
     ]
 
     def __init__(self, name: Optional[str] = None, params: Optional[Dict] = None):

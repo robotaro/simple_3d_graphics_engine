@@ -1,5 +1,8 @@
 import os
 from typing import Tuple, Dict, Optional
+
+import moderngl
+
 from src.core import constants
 from logging import Logger
 
@@ -13,10 +16,15 @@ from src2.components.transform import Transform
 
 class Scene:
 
-    def __init__(self, logger: Logger, name: Optional[str] = None, params: Optional[Dict] = None):
+    def __init__(self,
+                 logger: Logger,
+                 ctx: moderngl.Context,
+                 name: Optional[str] = None,
+                 params: Optional[Dict] = None):
 
         self.name = name
         self.params = params if params else {}
+        self.ctx = ctx
         self.logger = logger
 
         self.registered_entity_types = {}
@@ -66,10 +74,11 @@ class Scene:
     def create_shared_component(self, shared_ref: str, component_type: str, params: str) -> int:
         self.shared_components[shared_ref] = self.registered_component_types[component_type](
             name=shared_ref,
-            params=params
-        )
+            params=params)
 
     def render(self):
+
+
         pass
 
     def destroy(self):
