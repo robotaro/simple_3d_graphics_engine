@@ -7,16 +7,7 @@ import numpy as np
 
 # Systems
 from src.core import constants
-from src.core import system_subscriptions
-from src.systems.render_system.render_system import RenderSystem
 from src.utilities import utils_io
-from src.systems.imgui_system.imgui_system import ImguiSystem
-from src.systems.gizmo_3d_system.gizmo_3d_system import Gizmo3DSystem
-from src.systems.transform_system.transform_system import TransformSystem
-from src.systems.input_control_system.input_control_system import InputControlSystem
-from src.systems.import_system.import_system import ImportSystem
-from src.systems.skeleton_system.skeleton_system import SkeletonSystem
-
 from src.utilities import utils_logging
 from src2.utilities import utils_scene_xml2json
 
@@ -25,11 +16,7 @@ from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
 from src2.core.scene import Scene
 from src.core.data_manager import DataManager
-
-
-# Debug
-import cProfile, pstats, io
-from pstats import SortKey
+from src2.core.shader_program_library import ShaderProgramLibrary
 
 
 class Editor:
@@ -53,6 +40,7 @@ class Editor:
                  "event_publisher",
                  "action_publisher",
                  "data_manager",
+                 "shader_library",
                  "close_application",
                  "profiling_update_period",
                  "editor_num_updates",
@@ -79,6 +67,7 @@ class Editor:
         self.event_publisher = EventPublisher(logger=self.logger)
         self.action_publisher = ActionPublisher(logger=self.logger)
         self.data_manager = DataManager(logger=self.logger)
+        self.shader_library = ShaderProgramLibrary(logger=self.logger)
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()

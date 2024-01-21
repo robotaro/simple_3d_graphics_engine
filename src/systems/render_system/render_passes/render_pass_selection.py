@@ -64,7 +64,7 @@ class RenderPassSelection(RenderPass):
             self.framebuffer.clear(depth=1.0, viewport=camera_component.viewport_pixels)
 
             mesh_component = scene.get_component(entity_uid=selected_entity_uid,
-                                                      component_type=constants.COMPONENT_TYPE_MESH)
+                                                 component_type=constants.COMPONENT_TYPE_MESH)
             if mesh_component is None:
                 return
 

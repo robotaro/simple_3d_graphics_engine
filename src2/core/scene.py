@@ -4,6 +4,7 @@ from typing import Tuple, Dict, Optional
 import moderngl
 
 from src.core import constants
+from src2.core.shader_program_library import ShaderProgramLibrary
 from logging import Logger
 
 # Entities
@@ -22,6 +23,7 @@ class Scene:
 
     def __init__(self,
                  logger: Logger,
+                 shader_library: ShaderProgramLibrary,
                  ctx: moderngl.Context,
                  name: Optional[str] = None,
                  params: Optional[Dict] = None):
@@ -29,6 +31,7 @@ class Scene:
         self.name = name
         self.params = params if params else {}
         self.ctx = ctx
+        self.shader_library = shader_library
         self.logger = logger
 
         self.registered_entity_types = {}
@@ -89,7 +92,8 @@ class Scene:
             # Use a pre-existing shared component
             if "shared_ref" in component_params:
                 if "shared_ref" not in self.shared_components:
-                    raise KeyError(f"[ERROR] ")
+                    raise KeyError(f"[ERROR] Shared component {component_params['shared_ref']} referenced in "
+                                   f"entity does not exit ")
                 new_entity.components[component_type] = self.shared_components[component_params["shared_ref"]]
                 continue
 
@@ -109,7 +113,24 @@ class Scene:
 
     def render(self):
 
-        pass
+        # Setup lights
+
+        # Render meshes per camera
+        for _, camera in self.cameras.items():
+            program["projection_matrix"].write(camera_component.get_projection_matrix().T.tobytes())
+            program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
+
+            # Render Opaque Entities
+            transparent_entities = []
+            for _, entity in self.entities.items():
+                entity.render()
+
+            # TODO: Sort transparent entities according to their distance relative to the camera
+
+            # Render Transparent Enties
+            for entity in transparent_entities:
+                entity.render()
+
 
     def destroy(self):
         pass
