@@ -9,9 +9,13 @@ from logging import Logger
 # Entities
 from src2.entities.entity import Entity
 from src2.entities.camera import Camera
+from src2.entities.point_light import PointLight
+from src2.entities.directional_light import DirectionalLight
 
 # Component
 from src2.components.transform import Transform
+from src2.components.material import Material
+from src2.components.mesh import Mesh
 
 
 class Scene:
@@ -41,9 +45,13 @@ class Scene:
         # Register entities
         self.register_entity_type(name="entity", entity_class=Entity)
         self.register_entity_type(name="camera", entity_class=Camera)
+        self.register_entity_type(name="point_light", entity_class=PointLight)
+        self.register_entity_type(name="directional_light", entity_class=DirectionalLight)
 
         # Register components
+        self.register_component_type(name="mesh", component_clas=Mesh)
         self.register_component_type(name="transform", component_clas=Transform)
+        self.register_component_type(name="material", component_clas=Material)
 
     def register_entity_type(self, name: str, entity_class):
         if name in self.registered_entity_types:
@@ -55,7 +63,16 @@ class Scene:
             raise KeyError(f"[ERROR] Component type {name} already registered")
         self.registered_component_types[name] = component_clas
 
-    def create_entity(self, entity_type: str, name: str, params: str) -> int:
+    def create_entity(self, entity_type: str, name: str, params: str, components: dict) -> int:
+
+        """
+
+        :param entity_type:
+        :param name:
+        :param params:
+        :param components: dict, lists of component parameters per type stored in this dictionary
+        :return:
+        """
 
         # Generate new unique id fo r
         entity_id = self.available_entity_ids.pop()
@@ -63,8 +80,13 @@ class Scene:
         new_entity = self.registered_entity_types[entity_type](name=name, params=params)
         if isinstance(new_entity, Camera):
             self.cameras[entity_id] = new_entity
-        elif isinstance(new_entity, Entity):
+        else:
             self.entities[entity_id] = new_entity
+
+        # Add components
+        for component_type, component_params in components.items():
+            new_entity.components[component_type] = self.registered_component_types[component_type](
+                params=component_params)
 
         return entity_id
 
@@ -77,7 +99,6 @@ class Scene:
             params=params)
 
     def render(self):
-
 
         pass
 

@@ -297,7 +297,7 @@ class Editor:
                 data_group_id=resource_id,
                 fpath=utils_io.validate_resource_filepath(resource_fpath))
 
-        # Step 3) Create scenes
+        # Step 2) Create scenes
         for scene_id, scene_dict in editor_setup[constants.EDITOR_BLUEPRINT_KEY_SCENES].items():
             new_scene = Scene(name=scene_id, logger=self.logger, ctx=self.ctx)
 
@@ -310,6 +310,13 @@ class Editor:
                         params=component_params)
 
             # Then entities
+            for entity_type, entity_list in scene_dict[constants.SCENE_BLUEPRINT_KEY_ENTITIES].items():
+                for entity_dict in entity_list:
+                    new_entity = new_scene.create_entity(
+                        entity_type=entity_type,
+                        name=entity_dict.get("name", None),
+                        params=entity_dict["parameters"],
+                        components=entity_dict["components"])
 
 
             self.scenes[scene_id] = new_scene

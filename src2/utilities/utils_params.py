@@ -3,6 +3,13 @@ from src.core import constants
 from src.utilities import utils_string
 
 
+def str2color(color_name: str) -> Any:
+
+    if not isinstance(color_name, str):
+        return color_name
+
+    return constants.MATERIAL_COLORS[color_name]
+
 
 def dict2bool(input_dict: Any, key: Any, default_value: bool) -> bool:
 
@@ -111,3 +118,4 @@ def dict2color(input_dict: Any, key: str, default_value: Union[str, tuple]) -> A
         return constants.MATERIAL_COLORS[input_dict[key]]
 
     return utils_string.string2tuple_float(input_value=input_dict[key], default_value=default_value)
+

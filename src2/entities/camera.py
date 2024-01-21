@@ -27,27 +27,19 @@ class Camera(Entity):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.z_near = utils_params.dict2float(input_dict=self.params,
-                                              key="z_near",
-                                              default_value=constants.CAMERA_Z_NEAR)
-        self.z_far = utils_params.dict2float(input_dict=self.params,
-                                             key="z_far",
-                                             default_value=constants.CAMERA_Z_FAR)
+        self.z_near = self.params.get("z_near", constants.CAMERA_Z_NEAR)
+        self.z_far = self.params.get("z_far", constants.CAMERA_Z_FAR)
 
         # Perspective variables
         self.y_fov_deg = constants.CAMERA_FOV_DEG
 
         # Orthographic variables
         self.orthographic_scale = 1.0
-        self.viewport_screen_ratio = utils_params.dict2tuple_float(input_dict=self.params,
-                                                                   key="viewport_screen_ratio",
-                                                                   default_value=(0.0, 0.0, 1.0, 1.0))
+        self.viewport_screen_ratio = self.params.get("viewport_screen_ratio", (0.0, 0.0, 1.0, 1.0))
         self.viewport_pixels = None
 
         # Flags
-        self.is_perspective = utils_params.dict2bool(input_dict=self.params,
-                                                     key="perspective",
-                                                     default_value=True)
+        self.is_perspective = self.params.get("perspective", True)
 
         # Projection Matrix
         self.projection_matrix = np.eye(4, dtype=np.float32)
