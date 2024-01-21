@@ -85,6 +85,15 @@ class Scene:
 
         # Add components
         for component_type, component_params in components.items():
+
+            # Use a pre-existing shared component
+            if "shared_ref" in component_params:
+                if "shared_ref" not in self.shared_components:
+                    raise KeyError(f"[ERROR] ")
+                new_entity.components[component_type] = self.shared_components[component_params["shared_ref"]]
+                continue
+
+            # Or create a brand new one
             new_entity.components[component_type] = self.registered_component_types[component_type](
                 params=component_params)
 

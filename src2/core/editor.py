@@ -318,13 +318,7 @@ class Editor:
                         params=entity_dict["parameters"],
                         components=entity_dict["components"])
 
-
             self.scenes[scene_id] = new_scene
-
-    def release_components(self):
-        for component_id, components in self.scene.component_storage_map.items():
-            for entity_uid, component in components.items():
-                component.release()
 
     def publish_startup_events(self):
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_SIZE,
@@ -358,4 +352,17 @@ class Editor:
 
         for _, scene in self.scenes.items():
             scene.destroy()
+
+    def shutdown(self):
+
+        for _, scene in self.scenes.items():
+
+            # Release all entities
+            for component_id, component in scene.shared_components.items():
+                component.release()
+
+            # Release all shared components
+            for component_id, component in scene.shared_components.items():
+                component.release()
+
 
