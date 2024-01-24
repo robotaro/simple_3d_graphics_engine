@@ -15,8 +15,6 @@ class Camera(Entity):
         "z_near",
         "z_far",
         "orthographic_scale",
-        "viewport_screen_ratio",
-        "viewport_pixels",
         "is_perspective",
         "projection_matrix",
         "inverse_projection_matrix",

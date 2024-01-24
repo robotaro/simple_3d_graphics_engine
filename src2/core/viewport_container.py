@@ -2,6 +2,10 @@ from src2.core.viewport import Viewport
 
 
 class ViewportContainer:
+    __slots__ = [
+        "rect_pixels",
+        "viewports"
+    ]
 
     def __init__(self, rect_pixels: tuple):
         self.rect_pixels = rect_pixels

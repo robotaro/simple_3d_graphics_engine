@@ -11,6 +11,10 @@ from src.utilities import utils_io
 from src.utilities import utils_logging
 from src2.utilities import utils_scene_xml2json
 
+# Entities
+
+# Components
+
 # Core Modules
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
@@ -37,6 +41,9 @@ class Editor:
                  "ctx",
                  "buffer_size",
                  "scenes",
+                 "entities",
+                 "entity_groups",
+                 "components",
                  "event_publisher",
                  "action_publisher",
                  "data_manager",
@@ -53,7 +60,6 @@ class Editor:
     def __init__(self,
                  window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
                  window_title="New Editor",
-                 system_names=constants.DEFAULT_SYSTEMS,
                  vertical_sync=True):
 
         self.logger = utils_logging.get_project_logger()
@@ -62,8 +68,23 @@ class Editor:
         self.window_title = window_title
         self.vertical_sync = vertical_sync
 
-        # Core modules - MUST BE CREATED BEFORE ANY SYSTEM!
         self.scenes = {}
+        self.entities = {}
+        self.entity_groups = {}
+        self.components = {}
+
+        # Register entities
+        self.register_entity_type(name="entity", entity_class=Entity)
+        self.register_entity_type(name="camera", entity_class=Camera)
+        self.register_entity_type(name="point_light", entity_class=PointLight)
+        self.register_entity_type(name="directional_light", entity_class=DirectionalLight)
+
+        # Register components
+        self.register_component_type(name="mesh", component_clas=Mesh)
+        self.register_component_type(name="transform", component_clas=Transform)
+        self.register_component_type(name="material", component_clas=Material)
+
+        # Core modules
         self.event_publisher = EventPublisher(logger=self.logger)
         self.action_publisher = ActionPublisher(logger=self.logger)
         self.data_manager = DataManager(logger=self.logger)
@@ -131,13 +152,19 @@ class Editor:
 
         signal.signal(signal.SIGINT, self.callback_signal_handler)
 
+    def register_entity_type(self, name: str, entity_class):
+        if name in self.registered_entity_types:
+            raise KeyError(f"[ERROR] Entity type {name} already registered")
+        self.registered_entity_types[name] = entity_class
+
+    def register_component_type(self, name: str, component_clas):
+        if name in self.registered_component_types:
+            raise KeyError(f"[ERROR] Component type {name} already registered")
+        self.registered_component_types[name] = component_clas
+
     def callback_signal_handler(self, signum, frame):
         self.logger.debug("Signal received : Closing editor now")
         self.close_application = True
-
-    # ========================================================================
-    #                           Input State Functions
-    # ========================================================================
 
     @staticmethod
     def initialise_mouse_state() -> dict:
@@ -332,7 +359,6 @@ class Editor:
 
             glfw.poll_events()
 
-            # Update All systems in order
             for _, scene in self.scenes.items():
                 scene.render()
 

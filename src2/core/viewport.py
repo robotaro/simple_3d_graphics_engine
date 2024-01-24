@@ -2,6 +2,12 @@
 
 class Viewport:
 
+    __slots__ = [
+        "viewport_screen_ratio",
+        "viewport_pixels",
+        "camera"
+    ]
+
     def __init__(self, params: dict):
         self.viewport_screen_ratio = params.get("viewport_screen_ratio", (0.0, 0.0, 1.0, 1.0))
         self.viewport_pixels = None

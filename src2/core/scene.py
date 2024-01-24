@@ -45,27 +45,6 @@ class Scene:
 
         self.available_entity_ids = [i for i in reversed(range(2**16))]
 
-        # Register entities
-        self.register_entity_type(name="entity", entity_class=Entity)
-        self.register_entity_type(name="camera", entity_class=Camera)
-        self.register_entity_type(name="point_light", entity_class=PointLight)
-        self.register_entity_type(name="directional_light", entity_class=DirectionalLight)
-
-        # Register components
-        self.register_component_type(name="mesh", component_clas=Mesh)
-        self.register_component_type(name="transform", component_clas=Transform)
-        self.register_component_type(name="material", component_clas=Material)
-
-    def register_entity_type(self, name: str, entity_class):
-        if name in self.registered_entity_types:
-            raise KeyError(f"[ERROR] Entity type {name} already registered")
-        self.registered_entity_types[name] = entity_class
-
-    def register_component_type(self, name: str, component_clas):
-        if name in self.registered_component_types:
-            raise KeyError(f"[ERROR] Component type {name} already registered")
-        self.registered_component_types[name] = component_clas
-
     def create_entity(self, entity_type: str, name: str, params: str, components: dict) -> int:
 
         """

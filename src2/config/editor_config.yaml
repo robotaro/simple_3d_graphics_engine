@@ -1,0 +1,49 @@
+
+forward_pass:
+  vertex_shader: "forward_pass.glsl"
+  fragment_shader: "forward_pass.glsl"
+
+debug_forward_pass:
+  vertex_shader: "debug_forward_pass.glsl"
+  geometry_shader: "debug_forward_pass.glsl"
+  fragment_shader: "debug_forward_pass.glsl"
+
+overlay_3d_pass:
+  vertex_shader: "overlay_3d_pass.glsl"
+  fragment_shader: "overlay_3d_pass.glsl"
+
+overlay_2d_pass:
+  vertex_shader: "overlay_2d_pass.glsl"
+  geometry_shader: "overlay_2d_pass.glsl"
+  fragment_shader: "overlay_2d_pass.glsl"
+  input_texture_locations:
+    font_texture: 0
+
+selected_entity_pass:
+  vertex_shader: "selected_entity.glsl"
+  fragment_shader: "selected_entity.glsl"
+
+fragment_picking:
+  vertex_shader: "fragment_picking.glsl"
+  varyings:
+    - "out_obj_id"
+    - "out_tri_id"
+    - "out_instance_id"
+  input_texture_location:
+    entity_info_texture: 0
+
+screen_quad:
+  vertex_shader: "screen_quad.glsl"
+  fragment_shader: "screen_quad.glsl"
+  input_texture_locations:
+    color_texture: 0
+    normal_texture: 1
+    viewpos_texture: 2
+    entity_info_texture: 3
+    selection_texture: 4
+    overlay_texture: 5
+    depth_texture: 6
+
+shadow_mapping:
+  vertex_shader: "shadow_mapping.glsl"
+  fragment_shader: "shadow_mapping.glsl"
