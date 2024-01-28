@@ -1,4 +1,3 @@
-import os
 import time
 import glfw
 import signal
@@ -12,13 +11,24 @@ from src.utilities import utils_logging
 from src2.utilities import utils_scene_xml2json
 
 # Entities
+from src2.entities.entity import Entity
+from src2.entities.camera import Camera
+from src2.entities.point_light import PointLight
+from src2.entities.directional_light import DirectionalLight
 
 # Components
+from src2.components.transform import Transform
+from src2.components.material import Material
+from src2.components.mesh import Mesh
+
+# Scenes
+from src2.scenes.scene_3d import Scene3D
+from src2.scenes.scene_2d import Scene2D
 
 # Core Modules
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
-from src2.core.scene import Scene
+from src2.scenes.scene import Scene
 from src.core.data_manager import DataManager
 from src2.core.shader_program_library import ShaderProgramLibrary
 
@@ -48,14 +58,10 @@ class Editor:
                  "action_publisher",
                  "data_manager",
                  "shader_library",
-                 "close_application",
-                 "profiling_update_period",
-                 "editor_num_updates",
-                 "editor_sum_update_periods",
-                 "events_average_period",
-                 "events_num_updates",
-                 "events_sum_update_periods",
-                 "average_fps")
+                 "registered_entity_types",
+                 "registered_component_types",
+                 "registered_scene_types",
+                 "close_application")
 
     def __init__(self,
                  window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
@@ -72,6 +78,9 @@ class Editor:
         self.entities = {}
         self.entity_groups = {}
         self.components = {}
+        self.registered_scene_types = {}
+        self.registered_entity_types = {}
+        self.registered_component_types = {}
 
         # Register entities
         self.register_entity_type(name="entity", entity_class=Entity)
@@ -84,25 +93,14 @@ class Editor:
         self.register_component_type(name="transform", component_clas=Transform)
         self.register_component_type(name="material", component_clas=Material)
 
-        # Core modules
-        self.event_publisher = EventPublisher(logger=self.logger)
-        self.action_publisher = ActionPublisher(logger=self.logger)
-        self.data_manager = DataManager(logger=self.logger)
-        self.shader_library = ShaderProgramLibrary(logger=self.logger)
+        # Register scenes
+        self.register_scene_type(name="scene3d", scene_class=Scene3D)
+        self.register_scene_type(name="scene2d", scene_class=Scene2D)
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
         self.keyboard_state = self.initialise_keyboard_state()
         self.mouse_press_last_timestamp = time.perf_counter()
-
-        # Profiling variables
-        self.editor_num_updates = 0
-        self.editor_sum_update_periods = 0.0
-        self.events_average_period = 0.0
-        self.events_num_updates = 0
-        self.events_sum_update_periods = 0.0
-        self.profiling_update_period = constants.DEFAULT_EDITOR_PROFILING_UPDATE_PERIOD
-        self.average_fps = 0.0  # Hz
 
         if not glfw.init():
             raise ValueError("[ERROR] Failed to initialize GLFW")
@@ -132,7 +130,14 @@ class Editor:
         glfw.make_context_current(self.window_glfw)
         glfw.swap_interval(1 if self.vertical_sync else 0)
 
+        # Create main moderngl Context
         self.ctx = moderngl.create_context()
+
+        # Core modules
+        self.event_publisher = EventPublisher(logger=self.logger)
+        self.action_publisher = ActionPublisher(logger=self.logger)
+        self.data_manager = DataManager(logger=self.logger)
+        self.shader_library = ShaderProgramLibrary(logger=self.logger, ctx=self.ctx)
 
         # Assign callback functions
         glfw.set_key_callback(self.window_glfw, self._glfw_callback_keyboard)
@@ -151,6 +156,11 @@ class Editor:
         self.close_application = False
 
         signal.signal(signal.SIGINT, self.callback_signal_handler)
+
+    def register_scene_type(self, name: str, scene_class):
+        if name in self.registered_scene_types:
+            raise KeyError(f"[ERROR] Scene type {name} already registered")
+        self.registered_scene_types[name] = scene_class
 
     def register_entity_type(self, name: str, entity_class):
         if name in self.registered_entity_types:
@@ -315,7 +325,10 @@ class Editor:
 
         # Step 2) Create scenes
         for scene_id, scene_dict in editor_setup[constants.EDITOR_BLUEPRINT_KEY_SCENES].items():
-            new_scene = Scene(name=scene_id, logger=self.logger, ctx=self.ctx)
+            new_scene = Scene(name=scene_id,
+                              logger=self.logger,
+                              ctx=self.ctx,
+                              shader_library=self.shader_library)
 
             # Shared components first
             for component_type, component_dict in scene_dict[constants.SCENE_BLUEPRINT_KEY_SHARED_COMPONENTS].items():

@@ -34,7 +34,7 @@ class DirectionalLight(Entity):
 
     def initialise(self, **kwargs) -> None:
 
-        if self.ready_to_render_flag:
+        if self.ready_to_render:
             return
 
         ctx = kwargs["ctx"]

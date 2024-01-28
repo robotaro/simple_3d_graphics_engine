@@ -42,13 +42,13 @@ class ShaderProgramLibrary:
     """
 
     def __init__(self,
-                 context: moderngl.Context,
+                 ctx: moderngl.Context,
                  shader_directory=constants.SHADERS_DIR,
                  shader_programs_yaml_fpath="",
                  logger: Union[logging.Logger, None]=None):
 
         # Input variables
-        self.context = context
+        self.ctx = ctx
         self.logger = logger if logger is not None else logging.Logger
         self.shader_directory = shader_directory
         self.shader_programs_yaml_fpath = shader_programs_yaml_fpath
@@ -229,7 +229,7 @@ class ShaderProgramLibrary:
 
             try:
                 # Compile the program
-                program = self.context.program(
+                program = self.ctx.program(
                     vertex_shader=vertex_source,
                     geometry_shader=geometry_source,
                     fragment_shader=fragment_source,

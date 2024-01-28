@@ -6,7 +6,7 @@ from src.math import mat4
 from src.systems.render_system.render_pass import RenderPass
 
 
-class RenderPassOverlay(RenderPass):
+class RenderStageOverlay(RenderPass):
 
     name = "overlay_pass"
 

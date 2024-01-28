@@ -16,16 +16,31 @@ def editor_xml2json(xml_fpath: str) -> dict:
 
     editor_data = {
         constants.EDITOR_BLUEPRINT_KEY_RESOURCES: {},
-        constants.EDITOR_BLUEPRINT_KEY_SCENES: {}
+        constants.EDITOR_BLUEPRINT_KEY_ENTITIES: {},
+        constants.EDITOR_BLUEPRINT_KEY_COMPONENTS: {}
     }
+
+    # root tag: "editor"
     for child in root:
-        if child.tag == "scene":
-            scene_name, scene_dict = parse_scene(scene_element=child)
-            if scene_name in editor_data["scenes"]:
-                raise ValueError(f"[ERROR] Scene name '{scene_name}' is duplicated. Scene names must be unique")
-            editor_data[constants.EDITOR_BLUEPRINT_KEY_SCENES][scene_name] = scene_dict
+
+        # Entities
+        if child.tag in constants.EDITOR_BLUEPRINT_ENTITY_LIST_TYPE:
+            entity = parse_entity(entity_element=child)
+            entity_id = child.attrib.get("id", None)
+            if entity_id is None:
+                raise ValueError("[ERROR] Entity defined in XML needs an 'id' field")
+            editor_data[constants.EDITOR_BLUEPRINT_KEY_ENTITIES][entity_id] = entity
             continue
 
+        if child.tag in constants.EDITOR_BLUEPRINT_COMPONENT_LIST_TYPE:
+            component = parse_component(component_element=child)
+            component_id = child.attrib.get("id", None)
+            if component_id is None:
+                raise ValueError("[ERROR] Component defined in XML needs an 'id' field")
+            editor_data[constants.EDITOR_BLUEPRINT_KEY_COMPONENTS][component_id] = component
+            continue
+
+        # Resources
         if child.tag == "resource":
             resource_id = child.attrib.get("id", None)
             if resource_id is None:
@@ -72,7 +87,7 @@ def parse_entity(entity_element) -> dict:
     # Initialize a dictionary for components
     components = {}
 
-    # Iterate over child elements (which are components of the entity)
+    # Process components and check for type duplicates
     for component in entity_element:
         component_type = component.tag
         component_dict = parse_component(component)
@@ -85,12 +100,21 @@ def parse_entity(entity_element) -> dict:
         components.setdefault(component_type, {})
         components[component_type] = component_dict
 
+    # Separate them into shared or unique
+    unique_components = {}
+    shared_components = {}
+    for component_name, component in components.items():
+        if "component_id" in component:
+            shared_components[component_name] = component
+            continue
+        unique_components[component_name] = component
+
     # Return the parsed entity as a dictionary with parameters and components
     return {
-        "name": entity_element.attrib.get("name", ""),
+        "id": entity_element.attrib.get("id", ""),
         "parameters": parameters,
-        "components": components
-    }
+        "unique_components": unique_components,
+        "shared_components": shared_components}
 
 
 def parse_shared_components(shared_comp_element) -> dict:

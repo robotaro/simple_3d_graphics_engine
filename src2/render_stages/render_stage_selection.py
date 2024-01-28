@@ -3,10 +3,10 @@ import moderngl
 from src.core import constants
 from src.core.scene import Scene
 from src.math import mat4
-from src.systems.render_system.render_pass import RenderPass
+from src2.render_stages.render_stage import RenderStage
 
 
-class RenderPassSelection(RenderPass):
+class RenderStageSelection(RenderStage):
 
     name = "selection_pass"
 
@@ -37,18 +37,7 @@ class RenderPassSelection(RenderPass):
             color_attachments=[self.texture_color],
             depth_attachment=self.texture_depth)
 
-    def render(self,
-               scene: Scene,
-               materials_ubo: moderngl.Buffer,
-               point_lights_ubo: moderngl.Buffer,
-               transforms_ubo: moderngl.Buffer,
-               selected_entity_uid: int):
-
-        # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
-
-        # TODO: Numbers between 0 and 1 are background colors, so we assume they are NULL selection
-        if selected_entity_uid is None or selected_entity_uid <= 1:
-            return
+    def render(self):
 
         self.framebuffer.use()
 
@@ -56,7 +45,6 @@ class RenderPassSelection(RenderPass):
 
         for camera_uid in camera_entity_uids:
 
-            # IMPORTANT: It uses the current bound framebuffer!
             camera_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
             camera_component = camera_pool[camera_uid]
 
@@ -76,10 +64,9 @@ class RenderPassSelection(RenderPass):
                 return
 
             # Upload uniforms
-            program = self.shader_program_library[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS]
-            program["projection_matrix"].write(camera_component.get_projection_matrix().T.tobytes())
-            program["view_matrix"].write(transform_3d_pool[camera_uid].inverse_world_matrix.T.tobytes())
-            program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
+            self.program["projection_matrix"].write(camera_component.get_projection_matrix().T.tobytes())
+            self.program["view_matrix"].write(transform_3d_pool[camera_uid].inverse_world_matrix.T.tobytes())
+            self.program["model_matrix"].write(renderable_transform.world_matrix.T.tobytes())
 
             # Render
             mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(mode=mesh_component.render_mode)

@@ -21,9 +21,16 @@ DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)  # (1280, 720)
 DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD = 0.5  # in seconds - Windows default is 500ms
 
 EDITOR_BLUEPRINT_KEY_RESOURCES = "resources"
-EDITOR_BLUEPRINT_KEY_SCENES = "scenes"
-SCENE_BLUEPRINT_KEY_SHARED_COMPONENTS = "shared_components"
-SCENE_BLUEPRINT_KEY_ENTITIES = "entities"
+EDITOR_BLUEPRINT_KEY_ENTITIES = "entities"
+EDITOR_BLUEPRINT_KEY_COMPONENTS = "components"
+EDITOR_BLUEPRINT_ENTITY_LIST_TYPE = ["camera",
+                                     "spot_light",
+                                     "directional_light",
+                                     "entity"]
+EDITOR_BLUEPRINT_COMPONENT_LIST_TYPE = ["transform",
+                                         "mesh",
+                                         "material"]
+
 
 MODULE_NAME_DATA_MANAGER = "data_manager"
 

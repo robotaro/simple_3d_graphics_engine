@@ -3,10 +3,10 @@ import moderngl
 from src.core import constants
 from src.core.scene import Scene
 from src.math import mat4
-from src.systems.render_system.render_pass import RenderPass
+from src2.render_stages.render_stage import RenderStage
 
 
-class RenderPassShadow(RenderPass):
+class RenderStageShadow(RenderStage):
 
     name = "shadow_pass"
 
@@ -32,12 +32,7 @@ class RenderPassShadow(RenderPass):
         self.depth_texture = self.ctx.depth_texture(size=window_size)
         self.framebuffer = self.ctx.framebuffer(depth_attachment=self.depth_texture)
 
-    def render(self,
-               scene: Scene,
-               materials_ubo: moderngl.Buffer,
-               point_lights_ubo: moderngl.Buffer,
-               transforms_ubo: moderngl.Buffer,
-               selected_entity_uid: int):
+    def render(self):
 
         # TODO: This function's code is old and won't probably work!
 
