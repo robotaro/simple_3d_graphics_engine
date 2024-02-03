@@ -34,6 +34,8 @@ class RenderStageForward(RenderStage):
         self.gamma_correction_enabled = True
         self.shadows_enabled = False
 
+        self.update_framebuffer()
+
     def update_framebuffer(self, window_size: tuple):
 
         # Release any existing textures and framebuffers first

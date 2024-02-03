@@ -22,7 +22,7 @@ class RenderStageSelection(RenderStage):
         self.texture_depth = None
         self.framebuffer = None
 
-    def create_framebuffers(self, window_size: tuple):
+    def update_framebuffer(self, window_size: tuple):
 
         # Release any existing textures and framebuffers first
         self.release()
@@ -70,8 +70,3 @@ class RenderStageSelection(RenderStage):
 
             # Render
             mesh_component.vaos[constants.SHADER_PROGRAM_SELECTED_ENTITY_PASS].render(mode=mesh_component.render_mode)
-
-    def release(self):
-        self.safe_release(self.texture_color)
-        self.safe_release(self.texture_depth)
-        self.safe_release(self.framebuffer)

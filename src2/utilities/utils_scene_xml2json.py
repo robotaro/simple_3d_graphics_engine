@@ -6,7 +6,7 @@ SCENE_CONTAINER_NAME_POINT_LIGHTS = "point_lights"
 SCENE_CONTAINER_NAME_DIRECTIONAL_LIGHTS = "directional_lights"
 SCENE_CONTAINER_NAME_ENTITIES = "entities"
 
-COMPONENT_PARAMETER_BLACKLIST = ["name"]
+OPTIONAL_KEY_LIST = ["id", "ref_id"]
 
 
 def editor_xml2json(xml_fpath: str) -> dict:
@@ -14,125 +14,129 @@ def editor_xml2json(xml_fpath: str) -> dict:
     tree = ET.parse(xml_fpath)
     root = tree.getroot()  # root is "editor" element
 
-    editor_data = {
-        constants.EDITOR_BLUEPRINT_KEY_RESOURCES: {},
-        constants.EDITOR_BLUEPRINT_KEY_ENTITIES: {},
-        constants.EDITOR_BLUEPRINT_KEY_COMPONENTS: {}
+    editor_blueprint = {
+        constants.EDITOR_BLUEPRINT_KEY_RESOURCES: [],
+        constants.EDITOR_BLUEPRINT_KEY_ENTITIES: [],
+        constants.EDITOR_BLUEPRINT_KEY_COMPONENTS: [],
+        constants.EDITOR_BLUEPRINT_KEY_SCENES: []
     }
 
-    # root tag: "editor"
+    # Process elements inside root. tag = "editor"
     for child in root:
 
-        # Entities
-        if child.tag in constants.EDITOR_BLUEPRINT_ENTITY_LIST_TYPE:
-            entity = parse_entity(entity_element=child)
-            entity_id = child.attrib.get("id", None)
-            if entity_id is None:
-                raise ValueError("[ERROR] Entity defined in XML needs an 'id' field")
-            editor_data[constants.EDITOR_BLUEPRINT_KEY_ENTITIES][entity_id] = entity
+        # Scenes
+        if child.tag in constants.EDITOR_BLUEPRINT_ENTITY_SCENE_TYPE:
+            scene = parse_scene(scene_element=child)
+            editor_blueprint[constants.EDITOR_BLUEPRINT_KEY_SCENES].append(scene)
             continue
 
+        # Global Entities
+        if child.tag in constants.EDITOR_BLUEPRINT_ENTITY_LIST_TYPE:
+            entity = parse_entity(entity_element=child)
+            editor_blueprint[constants.EDITOR_BLUEPRINT_KEY_ENTITIES].append(entity)
+            continue
+
+        # Global Components
         if child.tag in constants.EDITOR_BLUEPRINT_COMPONENT_LIST_TYPE:
             component = parse_component(component_element=child)
-            component_id = child.attrib.get("id", None)
-            if component_id is None:
-                raise ValueError("[ERROR] Component defined in XML needs an 'id' field")
-            editor_data[constants.EDITOR_BLUEPRINT_KEY_COMPONENTS][component_id] = component
+            editor_blueprint[constants.EDITOR_BLUEPRINT_KEY_COMPONENTS].append(component)
             continue
 
         # Resources
         if child.tag == "resource":
-            resource_id = child.attrib.get("id", None)
+            resource_id = child.attrib.get(constants.BLUEPRINT_KEY_ID, None)
             if resource_id is None:
                 raise ValueError("[ERROR] Resource defined in XML needs an 'id' field")
             resource_fpath = child.attrib.get("fpath", None)
             if resource_fpath is None:
                 raise ValueError(f"[ERROR] Resource '{resource_id}' defined in XML needs an 'fpath' field")
-            editor_data[constants.EDITOR_BLUEPRINT_KEY_RESOURCES][resource_id] = resource_fpath
+            editor_blueprint[constants.EDITOR_BLUEPRINT_KEY_RESOURCES].append({"id": resource_id, "fpath": resource_fpath})
             continue
 
-    return editor_data
+    # Flatten entity structure
+    for entity in editor_blueprint[constants.EDITOR_BLUEPRINT_KEY_ENTITIES]:
 
 
-def parse_scene(scene_element) -> tuple:
-    scene_name = scene_element.attrib.get('name', None)
-    if scene_name is None:
-        raise ValueError("[ERROR] When parsing XML scene, you need to specify a name for the scene")
+        pass
 
-    scene = {
-        "parameters": {},
-        constants.SCENE_BLUEPRINT_KEY_SHARED_COMPONENTS: {},
-        "entities": {}
+    return editor_blueprint
+
+
+def parse_scene(scene_element) -> dict:
+    entities = []
+
+    # Entities in a scene are expected to only use ref_id (for now)
+    for entity in scene_element:
+        entity_dict = parse_component(entity)
+        entities.append(entity_dict)
+
+    entity_dict = {
+        "type": scene_element.tag,
+        "params": {key: convert_value(value) for key, value in scene_element.attrib.items()
+                   if key not in OPTIONAL_KEY_LIST},
+        "entities": entities
     }
 
-    for child_element in scene_element:
+    for key in OPTIONAL_KEY_LIST:
+        if key in scene_element.attrib:
+            entity_dict[key] = scene_element.attrib[key]
 
-        if child_element.tag == constants.SCENE_BLUEPRINT_KEY_SHARED_COMPONENTS:
-            scene[constants.SCENE_BLUEPRINT_KEY_SHARED_COMPONENTS] = parse_shared_components(
-                shared_comp_element=child_element)
-            continue
-
-        entity_type = child_element.tag
-        scene["entities"].setdefault(entity_type, [])
-        scene["entities"][entity_type].append(parse_entity(entity_element=child_element))
-
-    return scene_name, scene
+    # Return the parsed entity as a dictionary with parameters and components
+    return entity_dict
 
 
 def parse_entity(entity_element) -> dict:
-    # Parse the parameters of the entity, excluding those in the blacklist
-    parameters = {key: convert_value(value) for key, value in entity_element.attrib.items()
-                  if key not in COMPONENT_PARAMETER_BLACKLIST}
 
-    # Initialize a dictionary for components
     components = {}
 
     # Process components and check for type duplicates
     for component in entity_element:
-        component_type = component.tag
+
         component_dict = parse_component(component)
 
-        if component_type in components:
-            raise ValueError(f"[ERROR] Component type '{component_type}' is duplicated. "
+        if not "ref_id" in component_dict and not "id" in component_dict:
+            component_dict["id"] = f"{entity_element.attrib['id']}/{component_dict['type']}"
+
+        if component_dict["type"] in components:
+            raise ValueError(f"[ERROR] Component type {component_dict['id']} is duplicated. "
                              f"Entities names must unique components")
 
-        # Append the parsed component to the corresponding list in components dict
-        components.setdefault(component_type, {})
-        components[component_type] = component_dict
+        components[component_dict["type"]] = component_dict
 
-    # Separate them into shared or unique
-    unique_components = {}
-    shared_components = {}
-    for component_name, component in components.items():
-        if "component_id" in component:
-            shared_components[component_name] = component
-            continue
-        unique_components[component_name] = component
+    entity_dict = {
+        "type": entity_element.tag,
+        "params": {key: convert_value(value) for key, value in entity_element.attrib.items()
+                   if key not in OPTIONAL_KEY_LIST},
+        "components": components
+    }
+
+    for key in OPTIONAL_KEY_LIST:
+        if key in entity_element.attrib:
+            entity_dict[key] = entity_element.attrib[key]
 
     # Return the parsed entity as a dictionary with parameters and components
-    return {
-        "id": entity_element.attrib.get("id", ""),
-        "parameters": parameters,
-        "unique_components": unique_components,
-        "shared_components": shared_components}
+    return entity_dict
 
 
-def parse_shared_components(shared_comp_element) -> dict:
-    shared_components = {}
-    for shared_component in shared_comp_element:
-        shared_comp_type = shared_component.tag
-        component_name = shared_component.attrib.get('shared_ref', None)
-        if component_name is None:
-            raise ValueError("[ERROR] When parsing XML scene, shared components nee a 'shared_ref' field")
-        shared_components.setdefault(shared_comp_type, {})
-        shared_components[shared_comp_type][component_name] = parse_component(shared_component, ["shared_ref"])
-    return shared_components
+def parse_component(component_element) -> dict:
+    """
+    Create a dictionary with "id", "type" and "parameters"
+    :param component_element:
+    :param black_listed_keys:
+    :return:
+    """
 
+    component_dict = {
+        "type": component_element.tag,
+        "params": {key: convert_value(value) for key, value in component_element.attrib.items()
+                   if key not in OPTIONAL_KEY_LIST}
+    }
 
-def parse_component(component_element, black_listed_keys=None) -> dict:
-    black_listed_keys = [] if black_listed_keys is None else black_listed_keys
-    return {key: convert_value(value) for key, value in component_element.attrib.items()
-            if key not in black_listed_keys}
+    for key in OPTIONAL_KEY_LIST:
+        if key in component_element.attrib:
+            component_dict[key] = component_element.attrib[key]
+
+    return component_dict
 
 
 def convert_value(value):

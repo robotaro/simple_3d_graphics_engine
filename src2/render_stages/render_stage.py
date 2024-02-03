@@ -55,7 +55,7 @@ class RenderStage(ABC):
 
     def release(self):
         for texture_name, texture in self.textures.items():
-            # Only release textures that where created in this stage
+            # Only release textures that were created in this stage
             if self.texture_is_external[texture_name]:
                 continue
             texture.release()

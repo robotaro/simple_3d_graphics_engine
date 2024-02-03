@@ -76,8 +76,8 @@ class Editor:
 
         self.scenes = {}
         self.entities = {}
-        self.entity_groups = {}
         self.components = {}
+        self.entity_groups = {}
         self.registered_scene_types = {}
         self.registered_entity_types = {}
         self.registered_component_types = {}
@@ -318,36 +318,90 @@ class Editor:
         editor_setup = utils_scene_xml2json.editor_xml2json(xml_fpath=xml_fpath)
 
         # Step 1) Load resources
-        for resource_id, resource_fpath in editor_setup[constants.EDITOR_BLUEPRINT_KEY_RESOURCES].items():
+        for resource in editor_setup[constants.EDITOR_BLUEPRINT_KEY_RESOURCES]:
             self.data_manager.load_file(
-                data_group_id=resource_id,
-                fpath=utils_io.validate_resource_filepath(resource_fpath))
+                data_group_id=resource[constants.BLUEPRINT_KEY_ID],
+                fpath=utils_io.validate_resource_filepath(resource[constants.BLUEPRINT_KEY_FPATH]))
 
-        # Step 2) Create scenes
-        for scene_id, scene_dict in editor_setup[constants.EDITOR_BLUEPRINT_KEY_SCENES].items():
-            new_scene = Scene(name=scene_id,
-                              logger=self.logger,
-                              ctx=self.ctx,
-                              shader_library=self.shader_library)
+        # Step 2) Create and initialise global components
+        for component in editor_setup[constants.EDITOR_BLUEPRINT_KEY_COMPONENTS]:
+            comp_id = component[constants.BLUEPRINT_KEY_ID]
+            comp_type = component[constants.BLUEPRINT_KEY_TYPE]
+            comp_params = component[constants.BLUEPRINT_KEY_PARAMS]
 
-            # Shared components first
-            for component_type, component_dict in scene_dict[constants.SCENE_BLUEPRINT_KEY_SHARED_COMPONENTS].items():
-                for component_name, component_params in component_dict.items():
-                    new_scene.create_shared_component(
-                        shared_ref=component_name,
-                        component_type=component_type,
-                        params=component_params)
+            if comp_id in self.components:
+                raise KeyError(f"[ERROR] Global component ID '{comp_id}' already exists")
 
-            # Then entities
-            for entity_type, entity_list in scene_dict[constants.SCENE_BLUEPRINT_KEY_ENTITIES].items():
-                for entity_dict in entity_list:
-                    new_entity = new_scene.create_entity(
-                        entity_type=entity_type,
-                        name=entity_dict.get("name", None),
-                        params=entity_dict["parameters"],
-                        components=entity_dict["components"])
+            component_class = self.registered_component_types.get(comp_type, None)
+            self.components[comp_id] = component_class(
+                params=comp_params,
+                ctx=self.ctx,
+                data_manager=self.data_manager,
+                shader_library=self.shader_library)
+
+        # Step 2) Load global entities
+        for entity in editor_setup[constants.EDITOR_BLUEPRINT_KEY_ENTITIES]:
+            entity_id = entity[constants.BLUEPRINT_KEY_ID]
+            entity_type = entity[constants.BLUEPRINT_KEY_TYPE]
+            entity_params = entity[constants.BLUEPRINT_KEY_PARAMS]
+
+            if entity_id in self.entities:
+                raise KeyError(f"[ERROR] Global entity ID '{entity_id}' already exists")
+
+            entity_class = self.registered_entity_types.get(entity_type, None)
+            if entity_class is None:
+                raise KeyError(f"[ERROR] Entity type '{entity_type}' is not supported")
+            self.entities[entity_id] = entity_class(params=entity_params)
+
+            # And hand its internal components
+            for comp_type, component in entity[constants.BLUEPRINT_KEY_COMPONENTS].items():
+
+                # If this component points to a global component, then just fetch it
+                ref_id = component.get(constants.BLUEPRINT_KEY_REF_ID, None)
+                if ref_id:
+                    self.entities[entity_id].components[comp_type] = self.components[ref_id]
+                    continue
+
+                comp_params = component[constants.BLUEPRINT_KEY_PARAMS]
+                component_class = self.registered_component_types.get(comp_type, None)
+                self.entities[entity_id].components[comp_type] = component_class(
+                    params=comp_params,
+                    ctx=self.ctx,
+                    data_manager=self.data_manager,
+                    shader_library=self.shader_library)
+
+        # Step 3) Load Scenes
+        for scene in editor_setup[constants.EDITOR_BLUEPRINT_KEY_SCENES]:
+
+            scene_id = scene[constants.BLUEPRINT_KEY_ID]
+            scene_type = scene[constants.BLUEPRINT_KEY_TYPE]
+
+            scene_class = self.registered_scene_types.get(scene_type, None)
+            if scene_class is None:
+                raise KeyError(f"[ERROR] Scene type '{scene_type}' is not registered")
+
+            if scene_id in self.scenes:
+                raise KeyError(f"[ERROR] Scene ID '{scene_id}' already exists")
+
+            new_scene = scene_class(params=scene[constants.BLUEPRINT_KEY_PARAMS],
+                                    logger=self.logger,
+                                    ctx=self.ctx,
+                                    shader_library=self.shader_library)
+
+            for entity in scene[constants.EDITOR_BLUEPRINT_KEY_ENTITIES]:
+
+                # TODO: Only referenced global entities are supported
+                entity_ref_id = entity[constants.BLUEPRINT_KEY_REF_ID]
+
+                if entity_ref_id not in self.entities:
+                    raise KeyError(f"[ERROR] Scene entity ref_id '{entity_ref_id}' not declared in global entities")
+
+                new_scene.attach_entity(entity_id=entity_ref_id,
+                                        entity=self.entities[entity_ref_id])
 
             self.scenes[scene_id] = new_scene
+
+        g = 0
 
     def publish_startup_events(self):
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_SIZE,

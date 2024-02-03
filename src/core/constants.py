@@ -20,16 +20,20 @@ DEFAULT_EDITOR_PROFILING_UPDATE_PERIOD = 0.5  # Seconds
 DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)  # (1280, 720)
 DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD = 0.5  # in seconds - Windows default is 500ms
 
+EDITOR_BLUEPRINT_KEY_SCENES = "scenes"
 EDITOR_BLUEPRINT_KEY_RESOURCES = "resources"
 EDITOR_BLUEPRINT_KEY_ENTITIES = "entities"
 EDITOR_BLUEPRINT_KEY_COMPONENTS = "components"
+EDITOR_BLUEPRINT_ENTITY_SCENE_TYPE = ["scene3d",
+                                      "scene2d"]
 EDITOR_BLUEPRINT_ENTITY_LIST_TYPE = ["camera",
-                                     "spot_light",
+                                     "point_light",
                                      "directional_light",
                                      "entity"]
 EDITOR_BLUEPRINT_COMPONENT_LIST_TYPE = ["transform",
-                                         "mesh",
-                                         "material"]
+                                        "mesh",
+                                        "material"]
+
 
 
 MODULE_NAME_DATA_MANAGER = "data_manager"
@@ -59,6 +63,18 @@ DEFAULT_SYSTEMS = [
     SYSTEM_NAME_RENDER,
     SYSTEM_NAME_IMGUI  # Must come AFTER the render system to add the GUI to the final render
 ]
+
+# =============================================================================
+#                                Editor Blueprint
+# =============================================================================
+
+BLUEPRINT_KEY_ID = "id"
+BLUEPRINT_KEY_REF_ID = "ref_id"
+BLUEPRINT_KEY_PARAMS = "params"
+BLUEPRINT_KEY_ENTITY = "entity"
+BLUEPRINT_KEY_COMPONENTS = "components"
+BLUEPRINT_KEY_FPATH = "fpath"
+BLUEPRINT_KEY_TYPE = "type"
 
 # =============================================================================
 #                                 Resources

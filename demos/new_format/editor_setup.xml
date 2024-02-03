@@ -2,40 +2,48 @@
     <resource id="dragon" fpath="meshes/dragon.obj"/>
     <resource id="woman_walk_animation" fpath="meshes/dragon.obj"/>
     <resource id="walk_animation" fpath="bvh/walk.bvh"/>
-    <resource id="female_body" fpath="meshes/dragon.obj"/>
+    <resource id="female_body" fpath="meshes/female_body_gesture_practice.glb"/>
 
+    <!-- Components -->
     <transform id="female_transform" position="-1 0 0" scale="2 2 2" rotation="-90 0 0" degrees="true"/>
 
-    <camera id="First Camera" viewport_screen_ratio="0 0 1 1" perspective="true">
+    <!-- Entities -->
+    <camera id="first_camera" viewport_screen_ratio="0 0 1 1" perspective="true">
         <transform position="-0.5 0.5 5"/>
     </camera>
 
-    <point_light id="Point Light 1" diffuse="1.0 1.0 1.0">
+    <point_light id="point_light_1" diffuse="1.0 1.0 1.0">
         <transform position="2.0 2.0 2.0"/>
         <mesh shape="icosphere" radius="0.2" subdivisions="4"/>
         <material diffuse="1.0 1.0 1.0" shininess_factor="32.0" lighting_mode="solid"/>
     </point_light>
 
-    <directional_light id="Directional Light 1" diffuse="1.0 1.0 1.0">
+    <directional_light id="dir_light_1" diffuse="1.0 1.0 1.0">
         <transform position="2.0 2.0 2.0" rotation="45 90 0" degrees="true"/>
     </directional_light>
 
-    <entity id="female_body_0">
+    <entity id="floor">
+        <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
+        <transform position="0 -0.5 0"/>
+        <material diffuse="0.75 0.75 0.75" shininess_factor="32.0"/>
+    </entity>
+
+    <entity id="female_1" group="body">
         <mesh resource_id="female_body/mesh_0"/>
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
-        <transform component_id="female_transform"/>
+        <transform ref_id="female_transform"/>
     </entity>
 
-    <entity id="female_body_1">
+    <entity id="female_2" group="body">
         <mesh resource_id="female_body/mesh_1"/>
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
-        <transform shared_ref="female_transform"/>
+        <transform ref_id="female_transform"/>
     </entity>
 
-    <entity id="female_body_2">
+    <entity id="female_3" group="body">
         <mesh resource_id="female_body/mesh_2" />
         <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
-        <transform shared_ref="female_transform"/>
+        <transform ref_id="female_transform"/>
     </entity>
 
     <entity id="capsule">
@@ -44,14 +52,18 @@
         <transform position="-3 0 3" degrees="true"/>
     </entity>
 
-    <entity id="Floor">
-        <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
-        <transform position="0 -0.5 0"/>
-        <material diffuse="0.75 0.75 0.75" shininess_factor="32.0"/>
-    </entity>
-
-    <!-- Entities -->
-    <scene3d name="demo_scene" default_scene="true">
-
+    <!-- Scenes -->
+    <scene3d id="main_scene" default_scene="true">
+        <entity ref_id="first_camera"/>
+        <entity ref_id="point_light_1"/>
+        <entity ref_id="dir_light_1"/>
+        <entity ref_id="floor"/>
+        <entity ref_id="capsule"/>
     </scene3d>
+
+    <scene3d id="second_scene">
+        <entity ref_id="floor"/>
+    </scene3d>
+
+
 </editor>

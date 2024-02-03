@@ -1,20 +1,25 @@
 from typing import Dict, Optional, Any
-from src.core import constants
-from src.utilities import utils_string
+import moderngl
 
 
 class Component:
 
     __slots__ = [
-        "name",
-        "params",
-        "initialised"
+        "ctx",
+        "data_manager",
+        "shader_library",
+        "params"
     ]
 
-    def __init__(self, name: Optional[str] = None, params: Optional[Dict] = None):
-        self.name = name
+    def __init__(self,
+                 ctx:  Optional[moderngl.Context] = None,
+                 data_manager: Optional[Any] = None,
+                 shader_library: Optional[Any] = None,
+                 params: Optional[Dict] = None):
+        self.ctx = ctx
+        self.data_manager = data_manager
+        self.shader_library = shader_library
         self.params = params if params is not None else {}
-        self.initialised = False
 
     def initialise(self, **kwargs):
         pass

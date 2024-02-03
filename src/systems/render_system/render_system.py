@@ -145,7 +145,7 @@ class RenderSystem(System):
                                                         dtype='f4')
 
         # Setup fullscreen quad textures
-        self.quads["fullscreen"] = ready_to_render.quad_2d(context=self.ctx,
+        self.quads["fullscreen"] = ready_to_render.quad_2d(ctx=self.ctx,
                                                            program=self.shader_program_library["screen_quad"])
 
         # UBOs
