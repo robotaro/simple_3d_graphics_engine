@@ -34,7 +34,8 @@ class RenderStageForward(RenderStage):
         self.gamma_correction_enabled = True
         self.shadows_enabled = False
 
-        self.update_framebuffer()
+        # Initialise framebuffers
+        self.update_framebuffer(window_size=kwargs["initial_window_size"])
 
     def update_framebuffer(self, window_size: tuple):
 
@@ -54,13 +55,9 @@ class RenderStageForward(RenderStage):
                 self.textures["normal"],
                 self.textures["viewpos"],
                 self.textures["entity_info"]],
-            depth_attachment=self.texture_depth)
+            depth_attachment=self.textures["depth"])
 
-    def upload_uniforms_point_lights(self, scene: Scene, point_lights_ubo: moderngl.Buffer):
-
-        # TODO: Revise this and only upload what is necessary
-
-        point_light_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_POINT_LIGHT)
+    def upload_uniforms_point_lights(self, point_lights_ubo: moderngl.Buffer):
 
         for index, (mesh_entity_uid, point_light_component) in enumerate(point_light_pool.items()):
             point_light_component.update_ubo(ubo=point_lights_ubo)
@@ -85,17 +82,15 @@ class RenderStageForward(RenderStage):
 
         self.framebuffer.use()
 
-        # TODO: Add check to see if framebuffer has been updated?
-
         for render_layer in self.render_layers:
 
             # Setup viewport
-            self.framebuffer.viewport = render_layer.viewport.viewport_pixels
+            self.framebuffer.viewport = render_layer.viewport.rect_pixels
 
             # Setup camera
             camera = render_layer.viewport.camera
-            camera_transform = camera["transform"]
-            self.program["projection_matrix"].write(camera.get_projection_matrix().T.tobytes())
+            camera_transform = camera.components["transform"]
+            self.program["projection_matrix"].write(camera.projection_matrix.T.tobytes())
             self.program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
             self.program["camera_position"].value = camera_transform.position
 
@@ -103,7 +98,7 @@ class RenderStageForward(RenderStage):
                 color=constants.RENDER_SYSTEM_BACKGROUND_COLOR,
                 alpha=1.0,
                 depth=1.0,
-                viewport=render_layer.viewport.viewport_pixels)
+                viewport=render_layer.viewport.rect_pixels)
 
             # Prepare context flags for rendering
             self.ctx.enable_only(
@@ -133,13 +128,8 @@ class RenderStageForward(RenderStage):
                     self.program["model_matrix"].write(entity["transform"].world_matrix.T.tobytes())
                     self.program["entity_id"].value = entity._id
 
-                    material_component = material_pool[mesh_entity_uid]
-                    if material_component is not None:
-                        self.program["material_index"].value = material_component.ubo_index
-                        material_component.update_ubo(ubo=materials_ubo)
+                    entity.components["material"].update_ubo(ubo=ubos["materials"])
 
                     self.program["instanced"] = entity.num_instances > 1
                     entity.render(vao_name=constants.SHADER_PROGRAM_FORWARD_PASS,
                                   num_instances=entity.num_instances)
-
-                    # TODO: Continue from here

@@ -34,6 +34,10 @@ class RenderStageShadow(RenderStage):
 
     def render(self):
 
+        if not self.ready_to_render:
+            raise Exception(f"[ERROR] You must call update_framebuffer() at least once before trying to render the"
+                            f"this render stage in order to create the framebuffer and its textures.")
+
         # TODO: This function's code is old and won't probably work!
 
         self.framebuffer.clear()

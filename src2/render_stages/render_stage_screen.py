@@ -41,5 +41,5 @@ class RenderStageScreen(RenderStage):
             self.textures[texture_name].use(location=location_index)
 
         quad_vao = self.fullscreen_quad['vao']
-        quad_vao.program["selected_texture"] = self.fullscreen_selected_texture
+        quad_vao.program["selected_texture"] = 0 # self.fullscreen_selected_texture (Value representing selected texture)
         quad_vao.render(moderngl.TRIANGLES)

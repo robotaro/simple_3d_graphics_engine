@@ -3,10 +3,10 @@ import moderngl
 from src.core import constants
 from src.core.scene import Scene
 from src.math import mat4
-from src.systems.render_system.render_pass import RenderPass
+from src2.render_stages.render_stage import RenderStage
 
 
-class RenderStageOverlay(RenderPass):
+class RenderStageOverlay(RenderStage):
 
     name = "overlay_pass"
 
@@ -19,64 +19,55 @@ class RenderStageOverlay(RenderPass):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # Forward Pass
-        self.texture_color = None
-        self.texture_depth = None
-        self.framebuffer = None
+        # Initialise framebuffers
+        self.update_framebuffer(window_size=kwargs["initial_window_size"])
 
-    def create_framebuffers(self, window_size: tuple):
+    def update_framebuffer(self, window_size: tuple):
 
         # Release any existing textures and framebuffers first
         self.release()
 
         # Before re-creating them
-        self.texture_color = self.ctx.texture(size=window_size, components=4, dtype='f4')
-        self.texture_depth = self.ctx.depth_texture(size=window_size)
+        self.textures["color"] = self.ctx.texture(size=window_size, components=4, dtype='f4')
+        self.textures["depth"] = self.ctx.depth_texture(size=window_size)
         self.framebuffer = self.ctx.framebuffer(
-            color_attachments=[self.texture_color],
-            depth_attachment=self.texture_depth)
+            color_attachments=[
+                self.textures["color"]
+            ],
+            depth_attachment=self.textures["depth"])
 
-    def render(self,
-               scene: Scene,
-               materials_ubo: moderngl.Buffer,
-               point_lights_ubo: moderngl.Buffer,
-               transforms_ubo: moderngl.Buffer,
-               selected_entity_uid: int):
+    def render(self):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
+
+        #self.framebuffer.use()
+        #self.render_3d_elements()
+        #self.render_2d_elements()
+        pass
+
+    def render_3d_elements(self):
 
         self.framebuffer.use()
-        self.render_3d_elements(scene=scene)
-        self.render_2d_elements(scene=scene)
-
-    def render_3d_elements(self, scene: Scene):
-
-        # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
-        camera_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-        transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
-        mesh_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
-        material_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
 
         # Every Render pass operates on the OFFSCREEN buffers only
-        camera_entity_uids = scene.get_all_entity_uids(component_type=constants.COMPONENT_TYPE_CAMERA)
-        for camera_uid in camera_entity_uids:
+        for render_layer in self.render_layers:
 
-            camera_component = camera_pool[camera_uid]
-            camera_transform = transform_3d_pool[camera_uid]
-            self.framebuffer.viewport = camera_component.viewport_pixels
+            # Setup viewport
+            self.framebuffer.viewport = render_layer.viewport.viewport_pixels
 
             # Clear context (you need to use the use() first to bind it!)
             self.framebuffer.clear(
-                color=(-1.0, -1.0, -1.0),
+                color=(-1.0, -1.0, -1.0, 1.0),
                 alpha=1.0,
                 depth=1.0,
-                viewport=camera_component.viewport_pixels)
-
-            program = self.shader_program_library[constants.SHADER_PROGRAM_OVERLAY_3D_PASS]
+                viewport=render_layer.viewport.viewport_pixels)
 
             # Setup camera
-            program["projection_matrix"].write(camera_component.get_projection_matrix().T.tobytes())
-            program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
+            camera = render_layer.viewport.camera
+            camera_transform = camera["transform"]
+            self.program["projection_matrix"].write(camera.get_projection_matrix().T.tobytes())
+            self.program["view_matrix"].write(camera_transform.inverse_world_matrix.T.tobytes())
+            self.program["camera_position"].value = camera_transform.position
 
             # Render meshes
             for mesh_entity_uid, mesh_component in mesh_pool.items():
@@ -149,8 +140,3 @@ class RenderStageOverlay(RenderPass):
 
             # And don#t forget to clear the buffer for the next frame of commands
             overlay_2d_component.im_overlay.clear()
-
-    def release(self):
-        self.safe_release(self.texture_color)
-        self.safe_release(self.texture_depth)
-        self.safe_release(self.framebuffer)

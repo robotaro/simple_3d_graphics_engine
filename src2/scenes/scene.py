@@ -12,24 +12,26 @@ from src2.render_stages.render_stage_shadow import RenderStageShadow
 from src2.render_stages.render_stage_screen import RenderStageScreen
 
 
-
 class Scene(ABC):
 
     __slots__ = [
         "params",
         "ctx",
+        "ubos",
         "shader_library",
         "logger",
         "registered_render_stage_types",
         "render_stages",
-        "render_stage_order"
+        "render_stage_order",
+        "initial_window_size"
     ]
 
     def __init__(self,
                  logger: Logger,
                  shader_library: ShaderProgramLibrary,
                  ctx: moderngl.Context,
-                 window_size: tuple,
+                 initial_window_size: tuple,
+                 ubos: dict,
                  params: Optional[Dict] = None):
 
         self.params = params if params else {}
@@ -37,7 +39,9 @@ class Scene(ABC):
         self.shader_library = shader_library
         self.logger = logger
         self.registered_render_stage_types = {}
-        self.render_stages = []
+        self.ubos = ubos
+        self.render_stages = {}
+        self.initial_window_size = initial_window_size
 
         self.register_render_stage_type(name="forward", render_stage_class=RenderStageForward)
         self.register_render_stage_type(name="selection", render_stage_class=RenderStageSelection)
@@ -50,17 +54,18 @@ class Scene(ABC):
             render_stage.render()
 
     def update_window_size(self, window_size: tuple):
-        pass
+        for render_stage in self.render_stages:
+            render_stage.update_framebuffer(window_size=window_size)
 
     def register_render_stage_type(self, name: str, render_stage_class):
         if name in self.registered_render_stage_types:
             raise KeyError(f"[ERROR] RenderStage type {name} already registered")
         self.registered_render_stage_types[name] = render_stage_class
 
-    def attach_entity(self, entity_id: str, entity: Entity):
+    def attach_entity_group(self, entity_id: str, entity: Entity):
         pass
 
-    def detach_entity(self, entity_id: str):
+    def detach_entity_group(self, entity_id: str):
         pass
 
     def validate_render_stages(self) -> bool:

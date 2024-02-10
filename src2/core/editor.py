@@ -53,6 +53,9 @@ class Editor:
                  "scenes",
                  "entities",
                  "entity_groups",
+                 "framebuffers",
+                 "textures",
+                 "ubos",
                  "components",
                  "event_publisher",
                  "action_publisher",
@@ -78,6 +81,8 @@ class Editor:
         self.entities = {}
         self.components = {}
         self.entity_groups = {}
+        self.ubos = {}
+
         self.registered_scene_types = {}
         self.registered_entity_types = {}
         self.registered_component_types = {}
@@ -139,6 +144,9 @@ class Editor:
         self.data_manager = DataManager(logger=self.logger)
         self.shader_library = ShaderProgramLibrary(logger=self.logger, ctx=self.ctx)
 
+        # Initialise common graphics elements
+        self.create_ubos()
+
         # Assign callback functions
         glfw.set_key_callback(self.window_glfw, self._glfw_callback_keyboard)
         glfw.set_char_callback(self.window_glfw, self._glfw_callback_char)
@@ -171,6 +179,21 @@ class Editor:
         if name in self.registered_component_types:
             raise KeyError(f"[ERROR] Component type {name} already registered")
         self.registered_component_types[name] = component_clas
+
+    def create_ubos(self):
+
+        total_bytes = constants.SCENE_MATERIAL_STRUCT_SIZE_BYTES * constants.SCENE_MAX_NUM_MATERIALS
+        self.ubos["materials"] = self.ctx.buffer(reserve=total_bytes)
+        self.ubos["materials"].bind_to_uniform_block(binding=constants.UBO_BINDING_MATERIALS)
+
+        total_bytes = constants.SCENE_POINT_LIGHT_STRUCT_SIZE_BYTES * constants.SCENE_MAX_NUM_POINT_LIGHTS
+        zero_data = np.zeros(total_bytes, dtype='uint8')
+        self.ubos["point_lights"] = self.ctx.buffer(data=zero_data.tobytes())
+        self.ubos["point_lights"].bind_to_uniform_block(binding=constants.UBO_BINDING_POINT_LIGHTS)
+
+        total_bytes = constants.SCENE_POINT_TRANSFORM_SIZE_BYTES * constants.SCENE_MAX_NUM_TRANSFORMS
+        self.ubos["transforms"] = self.ctx.buffer(reserve=total_bytes)
+        self.ubos["transforms"].bind_to_uniform_block(binding=constants.UBO_BINDING_TRANSFORMS)
 
     def callback_signal_handler(self, signum, frame):
         self.logger.debug("Signal received : Closing editor now")
@@ -386,6 +409,8 @@ class Editor:
             new_scene = scene_class(params=scene[constants.BLUEPRINT_KEY_PARAMS],
                                     logger=self.logger,
                                     ctx=self.ctx,
+                                    ubos=self.ubos,
+                                    initial_window_size=self.window_size,
                                     shader_library=self.shader_library)
 
             for entity in scene[constants.EDITOR_BLUEPRINT_KEY_ENTITIES]:
@@ -400,8 +425,6 @@ class Editor:
                                         entity=self.entities[entity_ref_id])
 
             self.scenes[scene_id] = new_scene
-
-        g = 0
 
     def publish_startup_events(self):
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_SIZE,
@@ -447,4 +470,5 @@ class Editor:
             for component_id, component in scene.shared_components.items():
                 component.release()
 
-
+        for _, scene in self.scenes.items():
+            scene.destroy()

@@ -23,7 +23,6 @@ class ViewportContainer:
             self._update_single_viewport(viewport=viewport)
 
     def _update_single_viewport(self, viewport):
-        width_pixels = self.rect_pixels[2] - self.rect_pixels[0]
-        height_pixels = self.rect_pixels[3] - self.rect_pixels[1]
-        viewport.update_size(parent_width_pixels=width_pixels,
-                             parent_height_pixels=height_pixels)
+        container_size_pixels = (self.rect_pixels[2] - self.rect_pixels[0],
+                                 self.rect_pixels[3] - self.rect_pixels[1])
+        viewport.update_size(container_size_pixels=container_size_pixels)
