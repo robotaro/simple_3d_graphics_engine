@@ -57,27 +57,6 @@ class RenderStageForward(RenderStage):
                 self.textures["entity_info"]],
             depth_attachment=self.textures["depth"])
 
-    def upload_uniforms_point_lights(self, point_lights_ubo: moderngl.Buffer):
-
-        for index, (mesh_entity_uid, point_light_component) in enumerate(point_light_pool.items()):
-            point_light_component.update_ubo(ubo=point_lights_ubo)
-
-    def upload_uniforms_directional_lights(self, scene: Scene, program: moderngl.Program):
-
-        directional_light_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT)
-        transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
-
-        program["num_directional_lights"].value = len(directional_light_pool)
-        for index, (mesh_entity_uid, dir_light_component) in enumerate(directional_light_pool.items()):
-
-            light_transform = transform_3d_pool[mesh_entity_uid]
-            program[f"directional_lights[{index}].direction"] = tuple(light_transform.world_matrix[:3, 2])
-            program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
-            program[f"directional_lights[{index}].specular"] = dir_light_component.specular
-            program[f"directional_lights[{index}].strength"] = dir_light_component.strength
-            program[f"directional_lights[{index}].shadow_enabled"] = dir_light_component.shadow_enabled
-            program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled
-
     def render(self):
 
         self.framebuffer.use()
@@ -110,9 +89,7 @@ class RenderStageForward(RenderStage):
                 moderngl.ONE,
                 moderngl.ONE)
 
-            # Set lights (if any)
-            self.upload_uniforms_point_lights(scene=scene, point_lights_ubo=point_lights_ubo)
-            self.upload_uniforms_directional_lights(scene=scene, program=program)
+            # Lights's UBOs were already set outside the loop. Only update the ones that changed
 
             # Render entities
             for entity_group in render_layer.entity_groups:
@@ -133,3 +110,24 @@ class RenderStageForward(RenderStage):
                     self.program["instanced"] = entity.num_instances > 1
                     entity.render(vao_name=constants.SHADER_PROGRAM_FORWARD_PASS,
                                   num_instances=entity.num_instances)
+
+    def upload_uniforms_point_lights(self):
+
+        for index, (mesh_entity_uid, point_light_component) in enumerate(point_light_pool.items()):
+            point_light_component.update_ubo(ubo=point_lights_ubo)
+
+    def upload_uniforms_directional_lights(self):
+
+        directional_light_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT)
+        transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
+
+        program["num_directional_lights"].value = len(directional_light_pool)
+        for index, (mesh_entity_uid, dir_light_component) in enumerate(directional_light_pool.items()):
+
+            light_transform = transform_3d_pool[mesh_entity_uid]
+            program[f"directional_lights[{index}].direction"] = tuple(light_transform.world_matrix[:3, 2])
+            program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
+            program[f"directional_lights[{index}].specular"] = dir_light_component.specular
+            program[f"directional_lights[{index}].strength"] = dir_light_component.strength
+            program[f"directional_lights[{index}].shadow_enabled"] = dir_light_component.shadow_enabled
+            program[f"directional_lights[{index}].enabled"] = dir_light_component.enabled

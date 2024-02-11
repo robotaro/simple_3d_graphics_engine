@@ -2,13 +2,11 @@
 class EntityGroup:
 
     __slots__ = [
-        "name",
         "visible",
         "entities"
     ]
 
-    def __init__(self, name: str):
-        self.name = name
+    def __init__(self):
         self.visible = True
         self.entities = {}
 

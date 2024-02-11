@@ -8,4 +8,4 @@ class RenderLayer:
         self.viewport = viewport
         self.point_lights = {}
         self.directional_lights = {}
-        self.entity_groups = []
+        self.entity_groups = {}

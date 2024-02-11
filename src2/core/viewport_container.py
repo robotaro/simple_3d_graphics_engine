@@ -15,14 +15,14 @@ class ViewportContainer:
         if name in self.viewports:
             raise KeyError(f"[ERROR] Viewport key '{name}' already exists")
         self.viewports[name] = viewport
-        self._update_single_viewport(viewport=viewport)
+        self._update_viewport(viewport=viewport)
 
     def update(self, new_rect_pixels: int):
         self.rect_pixels = new_rect_pixels
         for _, viewport in self.viewports.items():
-            self._update_single_viewport(viewport=viewport)
+            self._update_viewport(viewport=viewport)
 
-    def _update_single_viewport(self, viewport):
+    def _update_viewport(self, viewport):
         container_size_pixels = (self.rect_pixels[2] - self.rect_pixels[0],
                                  self.rect_pixels[3] - self.rect_pixels[1])
         viewport.update_size(container_size_pixels=container_size_pixels)

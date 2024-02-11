@@ -45,7 +45,6 @@ class Material(Component):
 
         self.ubo_index = self.params.get("ubo_index", 0)
         self.ubo_data = np.empty((1,), dtype=Material._material_dtype)
-
         self.ubo_data['diffuse'] = utils_params.str2color(self.params.get("diffuse", (0.85, 0.85, 0.85)))
         self.ubo_data['diffuse_highlight'] = utils_params.str2color(self.params.get("diffuse", (0.95, 0.95, 0.95)))
         self.ubo_data['specular'] = utils_params.str2color(self.params.get("specular", (1.0, 1.0, 1.0)))

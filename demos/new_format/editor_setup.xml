@@ -8,20 +8,6 @@
     <transform id="female_transform" position="-1 0 0" scale="2 2 2" rotation="-90 0 0" degrees="true"/>
 
     <!-- Entities -->
-    <camera id="first_camera" viewport_screen_ratio="0 0 1 1" perspective="true">
-        <transform position="-0.5 0.5 5"/>
-    </camera>
-
-    <point_light id="point_light_1" diffuse="1.0 1.0 1.0">
-        <transform position="2.0 2.0 2.0"/>
-        <mesh shape="icosphere" radius="0.2" subdivisions="4"/>
-        <material diffuse="1.0 1.0 1.0" shininess_factor="32.0" lighting_mode="solid"/>
-    </point_light>
-
-    <directional_light id="dir_light_1" diffuse="1.0 1.0 1.0">
-        <transform position="2.0 2.0 2.0" rotation="45 90 0" degrees="true"/>
-    </directional_light>
-
     <entity id="floor">
         <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
         <transform position="0 -0.5 0"/>
@@ -54,15 +40,14 @@
 
     <!-- Scenes -->
     <scene3d id="main_scene" default_scene="true">
-        <entity ref_id="first_camera"/>
-        <entity ref_id="point_light_1"/>
-        <entity ref_id="dir_light_1"/>
         <entity ref_id="floor"/>
         <entity ref_id="capsule"/>
     </scene3d>
 
     <scene3d id="second_scene">
         <entity ref_id="floor"/>
+        <entity ref_id="female_1"/>
+        <entity ref_id="capsule"/>
     </scene3d>
 
 

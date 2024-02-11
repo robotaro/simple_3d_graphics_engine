@@ -25,7 +25,10 @@ from src2.components.mesh import Mesh
 from src2.scenes.scene_3d import Scene3D
 from src2.scenes.scene_2d import Scene2D
 
-# Core Modules
+# Modules
+from src2.modules.scene_editor import S
+
+# Core components
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
 from src2.scenes.scene import Scene
@@ -33,10 +36,10 @@ from src.core.data_manager import DataManager
 from src2.core.shader_program_library import ShaderProgramLibrary
 
 
-class Editor:
+class App:
 
     """
-    Main Editor class that holds all the logic
+    Main App class that holds all the logic
     """
 
     __slots__ = ("logger",
@@ -101,6 +104,8 @@ class Editor:
         # Register scenes
         self.register_scene_type(name="scene3d", scene_class=Scene3D)
         self.register_scene_type(name="scene2d", scene_class=Scene2D)
+
+        # Register Modules
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()

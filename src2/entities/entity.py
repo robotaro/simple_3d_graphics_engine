@@ -4,7 +4,6 @@ from typing import Dict, Optional
 class Entity:
 
     __slots__ = [
-        "name",
         "params",
         "components",
         "num_instances",
@@ -12,8 +11,7 @@ class Entity:
         "dirty"
     ]
 
-    def __init__(self, name: Optional[str] = None, params: Optional[Dict] = None):
-        self.name = "no_name" if name is None else params
+    def __init__(self, params: Optional[Dict] = None):
         self.params = {} if params is None else params
         self.components = {}
         self.num_instances = 1  # TODO: Declare this value in parameters?

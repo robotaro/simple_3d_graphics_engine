@@ -38,7 +38,6 @@ class PointLight(Entity):
 
         self.ubo_index = self.params.get("ubo_index", 0)
         self.ubo_data = np.empty((1,), dtype=PointLight._material_dtype)
-
         self.ubo_data["position"] = self.params.get("position", (0.0, 0.0, 0.0))
         self.ubo_data["diffuse"] = utils_params.str2color(self.params.get("diffuse", (1.0, 1.0, 1.0)))
         self.ubo_data["specular"] = utils_params.str2color(self.params.get("specular", (1.0, 1.0, 1.0)))

@@ -62,18 +62,11 @@ class Scene(ABC):
             raise KeyError(f"[ERROR] RenderStage type {name} already registered")
         self.registered_render_stage_types[name] = render_stage_class
 
-    def attach_entity_group(self, entity_id: str, entity: Entity):
+    def attach_entity(self, entity_id: str, entity: Entity):
         pass
 
-    def detach_entity_group(self, entity_id: str):
+    def detach_entity(self, entity_id: str):
         pass
-
-    def validate_render_stages(self) -> bool:
-        """
-        Checks if all texture and framebuffer connections between render stages, if any , are valid
-        :return:
-        """
-        return False
 
     def destroy(self):
         pass
