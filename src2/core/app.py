@@ -4,6 +4,10 @@ import signal
 import moderngl
 import numpy as np
 
+# GUI
+import imgui
+from imgui.integrations.glfw import GlfwRenderer
+
 # Systems
 from src.core import constants
 from src.utilities import utils_io
@@ -26,7 +30,7 @@ from src2.scenes.scene_3d import Scene3D
 from src2.scenes.scene_2d import Scene2D
 
 # Modules
-from src2.modules.scene_editor import S
+from src2.modules.scene_editor import SceneEditor
 
 # Core components
 from src.core.event_publisher import EventPublisher
@@ -59,7 +63,9 @@ class App:
                  "framebuffers",
                  "textures",
                  "ubos",
+                 "modules",
                  "components",
+                 "imgui_renderer",
                  "event_publisher",
                  "action_publisher",
                  "data_manager",
@@ -67,7 +73,8 @@ class App:
                  "registered_entity_types",
                  "registered_component_types",
                  "registered_scene_types",
-                 "close_application")
+                 "close_application",
+                 "imgui_exit_popup_open")
 
     def __init__(self,
                  window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
@@ -106,6 +113,7 @@ class App:
         self.register_scene_type(name="scene2d", scene_class=Scene2D)
 
         # Register Modules
+        self.register_scene_type(name="scene_editor", scene_class=SceneEditor)
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -115,9 +123,7 @@ class App:
         if not glfw.init():
             raise ValueError("[ERROR] Failed to initialize GLFW")
 
-        # TODO: Find out about samples hint before creating the window
-        glfw.window_hint(glfw.SAMPLES, 4)
-
+        # Create GLFW window
         self.monitor_gltf = glfw.get_primary_monitor()
         self.window_glfw = glfw.create_window(width=self.window_size[0],
                                               height=self.window_size[1],
@@ -129,28 +135,12 @@ class App:
             raise Exception('[ERROR] Could not create GLFW window.')
 
         # Set window to the center of the main monitor
-        pos = glfw.get_monitor_pos(self.monitor_gltf)
-        size = glfw.get_window_size(self.window_glfw)
-        mode = glfw.get_video_mode(self.monitor_gltf)
-        glfw.set_window_pos(
-            self.window_glfw,
-            int(pos[0] + (mode.size.width - size[0]) / 2),
-            int(pos[1] + (mode.size.height - size[1]) / 2))
+        self.center_window_to_main_monitor()
 
+        # Finish initialising GLFW context
+        glfw.window_hint(glfw.SAMPLES, 4)  # TODO: Find out about samples hint before creating the window
         glfw.make_context_current(self.window_glfw)
         glfw.swap_interval(1 if self.vertical_sync else 0)
-
-        # Create main moderngl Context
-        self.ctx = moderngl.create_context()
-
-        # Core modules
-        self.event_publisher = EventPublisher(logger=self.logger)
-        self.action_publisher = ActionPublisher(logger=self.logger)
-        self.data_manager = DataManager(logger=self.logger)
-        self.shader_library = ShaderProgramLibrary(logger=self.logger, ctx=self.ctx)
-
-        # Initialise common graphics elements
-        self.create_ubos()
 
         # Assign callback functions
         glfw.set_key_callback(self.window_glfw, self._glfw_callback_keyboard)
@@ -162,12 +152,33 @@ class App:
         glfw.set_framebuffer_size_callback(self.window_glfw, self._glfw_callback_framebuffer_size)
         glfw.set_drop_callback(self.window_glfw, self._glfw_callback_drop_files)
 
+        # Create main moderngl Context
+        self.ctx = moderngl.create_context()
+
+        # General Modules
+        self.modules = []
+
+        # Core modules
+        self.event_publisher = EventPublisher(logger=self.logger)
+        self.action_publisher = ActionPublisher(logger=self.logger)
+        self.data_manager = DataManager(logger=self.logger)
+        self.shader_library = ShaderProgramLibrary(logger=self.logger, ctx=self.ctx)
+
+        # ImGUI
+        imgui.create_context()
+        self.imgui_renderer = GlfwRenderer(self.window_glfw, attach_callbacks=False)  # DISABLE attach_callbacks!!!!
+        self.imgui_exit_popup_open = False
+
+        # Initialise common graphics elements
+        self.create_ubos()
+
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
 
         # Flags
         self.close_application = False
 
+        # Assign OS signal handling callback
         signal.signal(signal.SIGINT, self.callback_signal_handler)
 
     def register_scene_type(self, name: str, scene_class):
@@ -184,6 +195,15 @@ class App:
         if name in self.registered_component_types:
             raise KeyError(f"[ERROR] Component type {name} already registered")
         self.registered_component_types[name] = component_clas
+
+    def center_window_to_main_monitor(self):
+        pos = glfw.get_monitor_pos(self.monitor_gltf)
+        size = glfw.get_window_size(self.window_glfw)
+        mode = glfw.get_video_mode(self.monitor_gltf)
+        glfw.set_window_pos(
+            self.window_glfw,
+            int(pos[0] + (mode.size.width - size[0]) / 2),
+            int(pos[1] + (mode.size.height - size[1]) / 2))
 
     def create_ubos(self):
 
@@ -448,22 +468,118 @@ class App:
 
         self.publish_startup_events()
 
-        # Update systems - Main Loop
+        # Main loop
         self.close_application = False
+        previous_time = time.perf_counter()
         while not glfw.window_should_close(self.window_glfw) and not self.close_application:
+
+            # Clear the screen to black
+            self.ctx.clear(0.0, 0.0, 0.0, 1.0)
 
             glfw.poll_events()
 
-            for _, scene in self.scenes.items():
-                scene.render()
+            current_time = time.perf_counter()
+            elapsed_time = current_time - previous_time
+            previous_time = current_time
 
-            # Still swap these even if you have to exit application?
+            self.imgui_start()
+
+            for module in self.modules:
+                module.update(elapsed_time=elapsed_time)
+
+            self.imgui_main_menu_bar()
+            self.imgui_exit_modal()
+            self.imgui_stop()
+
             glfw.swap_buffers(self.window_glfw)
 
         for _, scene in self.scenes.items():
             scene.destroy()
 
+    def imgui_start(self):
+        self.imgui_renderer.process_inputs()
+        imgui.get_io().ini_file_name = ""  # Disables creating an .ini file with the last window details
+        imgui.new_frame()
+
+    def imgui_stop(self):
+        imgui.end_frame()
+        imgui.render()
+        self.imgui_renderer.render(imgui.get_draw_data())
+
+    def imgui_main_menu_bar(self):
+
+        with imgui.begin_main_menu_bar() as main_menu_bar:
+
+            # ========================[ File ]========================
+            if imgui.begin_menu("File", True):
+
+                # File -> Load
+                clicked, selected = imgui.menu_item("Load Scene", None, False, True)
+
+                # File -> Save
+                clicked, selected = imgui.menu_item("Save Scene", None, False, True)
+
+                imgui.separator()
+
+                # File -> Quit
+                clicked, selected = imgui.menu_item("Quit", "Ctrl + Q", False, True)
+                if clicked:
+                    self.imgui_exit_popup_open = True
+
+                imgui.end_menu()
+
+            # ========================[ Edit ]========================
+            if imgui.begin_menu("Edit", True):
+                if imgui.begin_menu("Light modes"):
+                    _, default = imgui.menu_item("Default", None, True)
+
+                    _, diffuse = imgui.menu_item("Diffuse", None, True)
+
+                    imgui.end_menu()
+
+                clicked, selected = imgui.menu_item("Preferences", "Ctrl + Q", False, True)
+
+                imgui.end_menu()
+
+    def imgui_exit_modal(self):
+
+        if not self.imgui_exit_popup_open:
+            return
+
+        imgui.open_popup("Exit##exit-popup")
+
+        if not imgui.begin_popup_modal("Exit##exit-popup", flags=imgui.WINDOW_NO_RESIZE | imgui.WINDOW_NO_MOVE)[0]:
+            return
+
+        imgui.text("Are you sure you want to exit?")
+        imgui.spacing()
+
+        # Draw a cancel and exit button on the same line using the available space
+        button_width = (imgui.get_content_region_available()[0] - imgui.get_style().item_spacing[0]) * 0.5
+
+        # Style the cancel with a grey color
+        imgui.push_style_color(imgui.COLOR_BUTTON, 0.5, 0.5, 0.5, 1.0)
+        imgui.push_style_color(imgui.COLOR_BUTTON_ACTIVE, 0.6, 0.6, 0.6, 1.0)
+        imgui.push_style_color(imgui.COLOR_BUTTON_HOVERED, 0.7, 0.7, 0.7, 1.0)
+
+        if imgui.button("cancel", width=button_width):
+            imgui.close_current_popup()
+            self.imgui_exit_popup_open = False
+
+        imgui.pop_style_color()
+        imgui.pop_style_color()
+        imgui.pop_style_color()
+
+        imgui.same_line()
+        if imgui.button("exit", button_width):
+            self.close_application = True
+
+        imgui.end_popup()
+
     def shutdown(self):
+
+        for module in self.modules:
+            module.shutdown()
 
         for _, scene in self.scenes.items():
 

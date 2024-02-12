@@ -44,9 +44,6 @@ class FileLoaderGLTF(FileLoader):
 
         nodes = self.gltf_reader.get_nodes()
 
-        # DEBUG
-        self.print_node_hierarchy(nodes=nodes)
-
         num_nodes = len(nodes)
         max_num_children = max(set(len(node["children_indices"]) for node in nodes))
 

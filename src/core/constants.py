@@ -151,25 +151,26 @@ GIZMO_3D_VIEWPORT_SCALE_COEFFICIENT = 1000.0
 # =============================================================================
 
 # Basic types
-EVENT_KEYBOARD_PRESS = 1            # args: (key, scancode, mods) <int, int, int>
-EVENT_KEYBOARD_RELEASE = 2          # args: (key, scancode, mods) <int, int, int>
-EVENT_KEYBOARD_REPEAT = 3           # args: (key, scancode, mods) <int, int, int>
-EVENT_MOUSE_ENTER_UI = 10
-EVENT_MOUSE_LEAVE_UI = 11
-EVENT_MOUSE_BUTTON_PRESS = 12        # args: (button, mods, x, y) <int, int, int, int>
-EVENT_MOUSE_BUTTON_RELEASE = 13      # args: (button, mods, x, y) <int, int, int, int>
-EVENT_MOUSE_MOVE = 14                # args: (x, y_gl, y_gui) <float, float>
-EVENT_MOUSE_SCROLL = 15              # args: (offset_x, offset_y) <float, float>
-EVENT_MOUSE_DOUBLE_CLICK = 16
-EVENT_MOUSE_ENTER_GIZMO_3D = 17
-EVENT_MOUSE_LEAVE_GIZMO_3D = 18
-EVENT_MOUSE_GIZMO_3D_ACTIVATED = 19
-EVENT_MOUSE_GIZMO_3D_DEACTIVATED = 20
-EVENT_EXIT_APPLICATION = 20
-EVENT_ENTITY_SELECTED = 21
-EVENT_ENTITY_DESELECTED = 22
-EVENT_MULTIPLE_ENTITIES_SELECTED = 23
-EVENT_PROFILING_SYSTEM_PERIODS = 24  # args (("system_a", 0.2), ("system_b" 0.37), ...) <(string, float) ...>
+EVENT_KEYBOARD_PRESS = "keyboard_press"            # args: (key, scancode, mods) <int, int, int>
+EVENT_KEYBOARD_RELEASE = "keyboard_release"        # args: (key, scancode, mods) <int, int, int>
+EVENT_KEYBOARD_REPEAT = "keyboard_repeat"          # args: (key, scancode, mods) <int, int, int>
+EVENT_MOUSE_ENTER_UI = "mouse_enter_ui"
+EVENT_MOUSE_LEAVE_UI = "mouse_leave_ui"
+EVENT_MOUSE_BUTTON_PRESS = "mouse_button_press"    # args: (button, mods, x, y) <int, int, int, int>
+EVENT_MOUSE_BUTTON_RELEASE = "mouse_button_release" # args: (button, mods, x, y) <int, int, int, int>
+EVENT_MOUSE_MOVE = "mouse_move"                    # args: (x, y_gl, y_gui) <float, float>
+EVENT_MOUSE_SCROLL = "mouse_scroll"                # args: (offset_x, offset_y) <float, float>
+EVENT_MOUSE_DOUBLE_CLICK = "mouse_double_click"
+EVENT_MOUSE_ENTER_GIZMO_3D = "mouse_enter_gizmo_3d"
+EVENT_MOUSE_LEAVE_GIZMO_3D = "mouse_leave_gizmo_3d"
+EVENT_MOUSE_GIZMO_3D_ACTIVATED = "mouse_gizmo_3d_activated"
+EVENT_MOUSE_GIZMO_3D_DEACTIVATED = "mouse_gizmo_3d_deactivated"
+EVENT_EXIT_APPLICATION = "exit_application"
+EVENT_ENTITY_SELECTED = "entity_selected"
+EVENT_ENTITY_DESELECTED = "entity_deselected"
+EVENT_MULTIPLE_ENTITIES_SELECTED = "multiple_entities_selected"
+EVENT_PROFILING_SYSTEM_PERIODS = "profiling_system_periods" # args (("system_a", 0.2), ("system_b" 0.37), ...) <(string, float) ...>
+
 
 # System intercommunication
 EVENT_GIZMO_3D_SYSTEM_PARAMETER_UPDATED = 100

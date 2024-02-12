@@ -1,8 +1,7 @@
 import logging
 import moderngl
-from collections import deque
 
-from src.core.scene import Scene
+from src.core import constants
 from src.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
 from src.core.data_manager import DataManager
@@ -18,68 +17,114 @@ class Module:
         "scene",
         "action_queue",
         "current_action",
-        "parameters",
+        "params",
         "event_handlers",
-        "average_update_period",
-        "sum_update_periods",
-        "num_updates"
+        "active"
     ]
 
-    name = "base_system"
+    module_label = "unlabelled"
 
     def __init__(self,
                  logger: logging.Logger,
-                 scene: Scene,
                  event_publisher: EventPublisher,
                  action_publisher: ActionPublisher,
                  data_manager: DataManager,
-                 parameters: dict,
-                 **kwargs):
+                 params: dict):
 
         self.logger = logger
         self.event_publisher = event_publisher
         self.action_publisher = action_publisher
         self.data_manager = data_manager
-        self.action_queue = deque()
-        self.current_action = None
-        self.scene = scene
-        self.parameters = parameters
+        self.params = params
+        self.active = True
 
-        # Event handling variables
+        # Dynamically build the event_handlers dictionary
         self.event_handlers = {}
-
-        # Profiling variables
-        self.average_update_period = -1.0
-        self.sum_update_periods = 0.0
-        self.num_updates = 0
+        for attr in dir(self):
+            if attr.startswith("handle_event_"):
+                event_name = attr[len("handle_event_"):].upper()
+                event_constant = getattr(constants, f'EVENT_{event_name}', None)
+                if event_constant:
+                    self.event_handlers[event_constant] = getattr(self, attr)
 
     def on_event(self, event_type: int, event_data: tuple):
-        handler = self.event_handlers.get(event_type, None)
-        if handler is None:
-            return
-        handler(event_data=event_data)
-
-    def on_action(self, action_type: int, action_data: tuple, entity_id: int, component_type: int):
-        self.action_queue.appendleft((action_type, action_data, entity_id, component_type))
-
-    def select_next_action(self) -> None:
-        """
-        Whatever part of the algorithm is performing an action, nas to set the self.current_action to None
-        once it is done, so that the "select_next_action" can kick in
-        """
-
-        if self.current_action is None and len(self.action_queue) > 0:
-            self.current_action = self.action_queue.pop()
-
-
+        self.event_handlers[event_type](event_data=event_data)
 
     def initialise(self) -> bool:
         return True
 
-    def update(self,
-               elapsed_time: float,
-               context: moderngl.Context) -> bool:
+    def update(self, elapsed_time: float) -> bool:
         return True
 
     def shutdown(self):
+        pass
+
+    # ========================================================================
+    #                         Event callbacks
+    # ========================================================================
+
+    def handle_event_keyboard_press(self, event_data: tuple):
+        pass
+
+    def handle_event_keyboard_release(self, event_data: tuple):
+        pass
+
+    def handle_event_keyboard_repeat(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_enter_ui(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_leave_ui(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_button_press(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_button_release(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_double_click(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_move(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_scroll(self, event_data: tuple):
+        pass
+
+    def handle_event_window_size(self, event_data: tuple):
+        pass
+
+    def handle_event_window_framebuffer_size(self, event_data: tuple):
+        pass
+
+    def handle_event_window_drop_files(self, event_data: tuple):
+        pass
+
+    def handle_event_entity_selected(self, event_data: tuple):
+        pass
+
+    def handle_event_entity_deselected(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_enter_gizmo_3d(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_leave_gizmo_3d(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_gizmo_3d_activated(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_gizmo_3d_deactivated(self, event_data: tuple):
+        pass
+
+    def handle_event_profiling_system_periods(self, event_data: tuple):
+        pass
+
+    def handle_event_gizmo_3d_system_parameter_updated(self, event_data: tuple):
+        pass
+
+    def handle_event_render_system_parameter_updated(self, event_data: tuple):
         pass
