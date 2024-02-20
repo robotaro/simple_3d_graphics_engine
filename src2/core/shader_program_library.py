@@ -43,15 +43,14 @@ class ShaderProgramLibrary:
 
     def __init__(self,
                  ctx: moderngl.Context,
-                 shader_directory=constants.SHADERS_DIR,
-                 shader_programs_yaml_fpath="",
-                 logger: Union[logging.Logger, None]=None):
+                 shader_program_definitions: dict,
+                 shader_root_directory=constants.SHADERS_DIR,
+                 logger: Union[logging.Logger, None] = None):
 
         # Input variables
         self.ctx = ctx
         self.logger = logger if logger is not None else logging.Logger
-        self.shader_directory = shader_directory
-        self.shader_programs_yaml_fpath = shader_programs_yaml_fpath
+        self.shader_root_directory = shader_root_directory
 
         # Core variables
         self.shader_blueprints = {}
@@ -60,7 +59,7 @@ class ShaderProgramLibrary:
 
         # Initialise in the constructor, for simplicity
         self.load_shaders()
-        self.compile_programs()
+        self.compile_programs(shader_program_definitions=shader_program_definitions)
 
     def __getitem__(self, program_id: str):
         if program_id not in self.programs:
@@ -76,7 +75,7 @@ class ShaderProgramLibrary:
         """
 
         # Step 1) Create shader blueprints from the GLSL files
-        relative_glsl_fpaths = utils_io.list_filepaths(directory=self.shader_directory,
+        relative_glsl_fpaths = utils_io.list_filepaths(directory=self.shader_root_directory,
                                                        extension=constants.SHADER_LIBRARY_FILE_EXTENSION)
         for relative_fpath in relative_glsl_fpaths:
 
@@ -89,25 +88,6 @@ class ShaderProgramLibrary:
         # Step 2) Solve shader dependencies AFTER all shaders have been loaded (who includes who and whatnot)
         for key, shader in self.shader_blueprints.items():
             self._solve_shader_dependencies(shader_key=key)
-
-        # Step 3) Create program blueprints from the YAML files - but in this case, there are many de
-        relative_yaml_fpaths = utils_io.list_filepaths(directory=self.shader_directory,
-                                                       extension=constants.SHADER_LIBRARY_PROGRAM_DEFINITION_EXTENSION)
-        for relative_fpath in relative_yaml_fpaths:
-
-            program_definitions = None
-            fpath = os.path.join(self.shader_directory, relative_fpath)
-            with open(fpath, 'r') as file:
-                program_definitions = yaml.safe_load(file)
-
-            for program_label, program_definition in program_definitions.items():
-                new_program_blueprint = self.create_program_blueprint(
-                    program_definition=program_definition,
-                    label=program_label)
-                if new_program_blueprint is None:
-                    continue
-
-                self.program_blueprints[program_label] = new_program_blueprint
 
     def shutdown(self):
         # After removing the vao release stage from all other parts of the pipeline, add them here
@@ -132,7 +112,7 @@ class ShaderProgramLibrary:
     def create_shader_blueprint(self, relative_glsl_fpath: str) -> ShaderBlueprint:
 
         new_blueprint = None
-        absolute_glsl_fpath = os.path.join(self.shader_directory, relative_glsl_fpath)
+        absolute_glsl_fpath = os.path.join(self.shader_root_directory, relative_glsl_fpath)
         with open(absolute_glsl_fpath, "r") as file:
 
             # All shader keys must be a relative path in Linux format
@@ -183,7 +163,7 @@ class ShaderProgramLibrary:
 
         return new_blueprint
 
-    def compile_programs(self):
+    def compile_programs(self, shader_program_definitions: dict):
         """
         A program is compiled from a program blueprint, stored in the YAML file. The program blueprint requires
         shader blueprints, created from a GLSL file.
@@ -192,9 +172,20 @@ class ShaderProgramLibrary:
         definitions from the YAML file, not purely based on their GLSL code. This gives us the flexibility to
         tailor them to different usages.
 
+        :param shader_program_definitions: dict, a dictionary of dictionary with each nested dicionary representing
+                                    a shader program, with its variables, vertex, fragment and other shaders alike
         :return: list, List of dictionaries containing the shader
                  program that failed and its respective description
         """
+
+        for program_label, program_definition in shader_program_definitions.items():
+            new_program_blueprint = self.create_program_blueprint(
+                program_definition=program_definition,
+                label=program_label)
+            if new_program_blueprint is None:
+                continue
+
+            self.program_blueprints[program_label] = new_program_blueprint
 
         # If no YAML file has been specified, look for one in the shader directory
         if len(self.program_blueprints) == 0:
@@ -274,7 +265,7 @@ class ShaderProgramLibrary:
         all_locations_present = True
         for input_texture in shader_blueprint.input_textures:
             if input_texture not in program_blueprint.input_texture_locations:
-                self.logger.warning(f"[WARNING] Input texture '{input_texture}' from shader "
+                self.logger.warning(f"Input texture '{input_texture}' from shader "
                                     f"'{shader_blueprint.label}' not present in program '{program_blueprint.label}'. "
                                     f"Please make sure to add this definition to the YAML file, under "
                                     f"{constants.SHADER_LIBRARY_YAML_KEY_INPUT_TEXTURE_LOCATIONS} section of the "

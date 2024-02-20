@@ -1,6 +1,6 @@
 import logging
 from typing import Any
-from src.core import constants
+from src2.core import constants
 
 
 class EventPublisher:
@@ -14,6 +14,7 @@ class EventPublisher:
 
         self.logger = logger
 
+        # Do it manually here to avoid having to check at every publish() call
         self.listeners = {
             constants.EVENT_KEYBOARD_PRESS: [],
             constants.EVENT_KEYBOARD_RELEASE: [],
@@ -34,9 +35,7 @@ class EventPublisher:
             constants.EVENT_MOUSE_LEAVE_GIZMO_3D: [],
             constants.EVENT_MOUSE_GIZMO_3D_ACTIVATED: [],
             constants.EVENT_MOUSE_GIZMO_3D_DEACTIVATED: [],
-            constants.EVENT_PROFILING_SYSTEM_PERIODS: [],
-            constants.EVENT_GIZMO_3D_SYSTEM_PARAMETER_UPDATED: [],
-            constants.EVENT_RENDER_SYSTEM_PARAMETER_UPDATED: [],
+            constants.EVENT_PROFILING_SYSTEM_PERIODS: []
         }
 
     def subscribe(self, event_type: int, listener: Any):

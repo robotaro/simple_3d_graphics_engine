@@ -11,6 +11,16 @@ def str2color(color_name: str) -> Any:
     return constants.MATERIAL_COLORS[color_name]
 
 
+def list2tuple(input_list: tuple):
+
+    if isinstance(input_list, list):
+        return tuple(input_list)
+    elif isinstance(input_list, tuple):
+        return input_list
+    else:
+        raise TypeError("Input must be a list or tuple")
+
+
 def dict2bool(input_dict: Any, key: Any, default_value: bool) -> bool:
 
     if not isinstance(input_dict, dict):

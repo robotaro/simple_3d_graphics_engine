@@ -8,89 +8,57 @@ from src2.components.component import Component
 class Mesh(Component):
 
     __slots__ = [
-        "vertices",
-        "normals",
-        "colors",
-        "joints",
-        "weights",
-        "uvs",
-        "indices",
         "vaos",
-        "vbo_vertices",
-        "vbo_normals",
-        "vbo_colors",
-        "vbo_joints",
-        "vbo_weights",
-        "vbo_uvs",
+        "vbos",
         "ibo_indices",
         "render_mode",
+        "resource_id",
         "layer",
-        "visible",
-        "exclusive_to_camera_uid"]
+        "visible"]
+
+    VBO_DECLARATION_MAP = {
+        #           (buffer_data_type, buffer_data_size, shader_variable)
+        "vertices": ("f4", "3f", constants.SHADER_INPUT_VERTEX),
+        "normals": ("f4", "3f", constants.SHADER_INPUT_NORMAL),
+        "colors": ("f4", "3f", constants.SHADER_INPUT_COLOR),
+        "joints": ("i4", "4i", constants.SHADER_INPUT_JOINT),
+        "weights": ("f4", "4f", constants.SHADER_INPUT_WEIGHT),
+        "uvs": ("f4", "2f", constants.SHADER_INPUT_UV),
+        "indices": ("i4", None, constants.SHADER_INPUT_UV),
+    }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # RAM Vertex data
-        self.vertices = None
-        self.normals = None
-        self.colors = None
-        self.joints = None
-        self.weights = None
-        self.uvs = None
-        self.indices = None
-
         # GPU (VRAM) Vertex Data
         self.vaos = {}
-        self.vbo_vertices = None
-        self.vbo_normals = None
-        self.vbo_colors = None
-        self.vbo_joints = None
-        self.vbo_weights = None
-        self.vbo_uvs = None
+        self.vbos = {}
         self.ibo_indices = None
 
+        # Get parameters
+        self.resource_id = self.params.get("resource_id", None)
         self.render_mode = self.params.get("render_mode", constants.MESH_RENDER_MODE_TRIANGLES)
-        self.layer = self.params.get("layer", constants.RENDER_SYSTEM_LAYER_DEFAULT)
-        self.visible = self.params.get("visible", True)
 
-        self.exclusive_to_camera_uid = None
+        #self.create_mesh()
 
-        self.initialise()
 
-    def initialise(self):
+        data_group = self.data_manager.data_groups.get(self.resource_id, None)
+        if data_group is None:
+            return
 
-        self.create_mesh()
-
+        # Generate all VBO declarations for each VAO that will create in the next stage
         vbo_declaration_list = []
+        for data_block_name, data_block in data_group.data_blocks.items():
 
-        # Create VBOs
-        if self.vertices is not None:
-            self.vbo_vertices = self.ctx.buffer(self.vertices.astype("f4").tobytes())
-            vbo_declaration_list.append((self.vbo_vertices, "3f", constants.SHADER_INPUT_VERTEX))
+            data_type = Mesh.VBO_DECLARATION_MAP[data_block_name][0]
+            if data_block_name == "indices":
+                self.ibo_indices = self.ctx.buffer(data_block.data.astype(data_type).tobytes())
+                continue
 
-        if self.normals is not None:
-            self.vbo_normals = self.ctx.buffer(self.normals.astype("f4").tobytes())
-            vbo_declaration_list.append((self.vbo_normals, "3f", constants.SHADER_INPUT_NORMAL))
-
-        if self.colors is not None:
-            self.vbo_colors = self.ctx.buffer(self.colors.astype("f4").tobytes())
-            vbo_declaration_list.append((self.vbo_colors, "3f", constants.SHADER_INPUT_COLOR))
-
-        if self.joints is not None:
-            self.vbo_joints = self.ctx.buffer(self.joints.astype("i4").tobytes())
-            vbo_declaration_list.append((self.vbo_joints, "4i", constants.SHADER_INPUT_JOINT))
-
-        if self.weights is not None:
-            self.vbo_weights = self.ctx.buffer(self.weights.astype("f4").tobytes())
-            vbo_declaration_list.append((self.vbo_weights, "4f", constants.SHADER_INPUT_WEIGHT))
-
-        if self.uvs is not None:
-            self.vbo_uvs = self.ctx.buffer(self.uvs.astype("f4").tobytes())
-            vbo_declaration_list.append((self.vbo_uvs, "2f", constants.SHADER_INPUT_UV))
-
-        if self.indices is not None:
-            self.ibo_indices = self.ctx.buffer(self.indices.astype("i4").tobytes())
+            self.vbos[data_block_name] = self.ctx.buffer(data_block.data.astype(data_type).tobytes())
+            data_size = Mesh.VBO_DECLARATION_MAP[data_block_name][1]
+            shader_variable = Mesh.VBO_DECLARATION_MAP[data_block_name][2]
+            vbo_declaration_list.append((self.vbos[data_block_name], data_size, shader_variable))
 
         # Create VAOs
         for program_name in constants.SHADER_PASSES_LIST:
@@ -111,59 +79,18 @@ class Mesh(Component):
         for _, vao in self.vaos:
             vao.release()
 
-        if self.vbo_vertices:
-            self.vbo_vertices.release()
-
-        if self.vbo_normals:
-            self.vbo_normals.release()
-
-        if self.vbo_colors:
-            self.vbo_colors.release()
-
-        if self.vbo_joints:
-            self.vbo_joints.release()
-
-        if self.vbo_weights:
-            self.vbo_weights.release()
-
-        if self.vbo_uvs:
-            self.vbo_uvs.release()
+        for _, vbo in self.vbos:
+            vbo.release()
 
         if self.ibo_indices:
             self.ibo_indices.release()
 
-    def upload_vertices(self, vertices: np.ndarray):
-        self.vbo_vertices.write(vertices.tobytes())
-
-    def upload_normals(self, normals: np.ndarray):
-        self.vbo_vertices.write(normals.tobytes())
-
-    def upload_colors(self, colors: np.ndarray):
-        self.vbo_vertices.write(colors.tobytes())
+    def upload_buffer_data(self, buffer_name: str, data: np.ndarray):
+        self.vbos[buffer_name].write(data.tobytes())
 
     def create_mesh(self) -> None:
 
         shape = self.params.get(constants.COMPONENT_ARG_MESH_SHAPE, None)
-        resource_id = self.params.get(constants.COMPONENT_ARG_RESOURCE_ID, None)
-
-        if shape is not None and resource_id is not None:
-            raise KeyError("Both shape and resource ID have been specified! You either specify the shape or the mesh.")
-
-        # Load an existing mesh file
-        if resource_id is not None:
-            data_group = self.data_manager.data_groups[resource_id]
-            self.vertices = data_group.data_blocks["vertices"].data
-            if "normals" in data_group.data_blocks:
-                self.normals = data_group.data_blocks["normals"].data
-            if "colors" in data_group.data_blocks:
-                self.colors = data_group.data_blocks["colors"].data
-            if "joints" in data_group.data_blocks:
-                self.joints = data_group.data_blocks["joints"].data
-            if "weights" in data_group.data_blocks:
-                self.weights = data_group.data_blocks["weights"].data
-            if "indices" in data_group.data_blocks:
-                self.indices = data_group.data_blocks["indices"].data
-            return
 
         if shape is None:
             raise Exception("[ERROR] Both resource_id and shape specification are None. Please provide one.")

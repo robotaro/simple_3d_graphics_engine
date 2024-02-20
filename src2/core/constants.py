@@ -1,4 +1,5 @@
 import os
+import logging
 import numpy as np
 
 # =============================================================================
@@ -11,6 +12,21 @@ RESOURCES_DIR = os.path.join(ROOT_DIR, "resources")
 FONTS_DIR = os.path.join(RESOURCES_DIR, "fonts")
 IMAGES_DIR = os.path.join(RESOURCES_DIR, "images")
 SHADERS_DIR = os.path.join(SRC_DIR, "shaders")
+CONFIG_DIR = os.path.join(SRC_DIR, "config")
+
+APP_CONFIG_FPATH = os.path.join(CONFIG_DIR, "app_config.yaml")
+
+# =============================================================================
+#                                Logging
+# =============================================================================
+
+LOGGING_MAP = {
+    "debug": logging.DEBUG,
+    "info": logging.INFO,
+    "warning": logging.WARNING,
+    "error": logging.ERROR,
+    "critical": logging.CRITICAL,
+}
 
 # =============================================================================
 #                                Editor
@@ -156,7 +172,7 @@ EVENT_KEYBOARD_REPEAT = "keyboard_repeat"          # args: (key, scancode, mods)
 EVENT_MOUSE_ENTER_UI = "mouse_enter_ui"
 EVENT_MOUSE_LEAVE_UI = "mouse_leave_ui"
 EVENT_MOUSE_BUTTON_PRESS = "mouse_button_press"    # args: (button, mods, x, y) <int, int, int, int>
-EVENT_MOUSE_BUTTON_RELEASE = "mouse_button_release" # args: (button, mods, x, y) <int, int, int, int>
+EVENT_MOUSE_BUTTON_RELEASE = "mouse_button_release"  # args: (button, mods, x, y) <int, int, int, int>
 EVENT_MOUSE_MOVE = "mouse_move"                    # args: (x, y_gl, y_gui) <float, float>
 EVENT_MOUSE_SCROLL = "mouse_scroll"                # args: (offset_x, offset_y) <float, float>
 EVENT_MOUSE_DOUBLE_CLICK = "mouse_double_click"
@@ -168,12 +184,10 @@ EVENT_EXIT_APPLICATION = "exit_application"
 EVENT_ENTITY_SELECTED = "entity_selected"
 EVENT_ENTITY_DESELECTED = "entity_deselected"
 EVENT_MULTIPLE_ENTITIES_SELECTED = "multiple_entities_selected"
-EVENT_PROFILING_SYSTEM_PERIODS = "profiling_system_periods" # args (("system_a", 0.2), ("system_b" 0.37), ...) <(string, float) ...>
-
-
-# System intercommunication
-EVENT_GIZMO_3D_SYSTEM_PARAMETER_UPDATED = 100
-EVENT_RENDER_SYSTEM_PARAMETER_UPDATED = 101
+EVENT_PROFILING_SYSTEM_PERIODS = "profiling_system_periods"  # args (("system_a", 0.2), ("system_b" 0.37), ...) <(string, float) ...>
+EVENT_WINDOW_SIZE = "window_size"                           # args: (width, height) <int, int>
+EVENT_WINDOW_FRAMEBUFFER_SIZE = "window_framebuffer_size"   # args: (width, height) <int, int>
+EVENT_WINDOW_DROP_FILES = "window_drop_files"               # args: (filepath, ...) <str, ...>
 
 # Indices
 EVENT_INDEX_KEYBOARD_KEY = 0
@@ -190,12 +204,6 @@ EVENT_INDEX_MOUSE_MOVE_Y_OPENGL = 1
 EVENT_INDEX_MOUSE_MOVE_Y_GUI = 2
 EVENT_INDEX_MOUSE_SCROLL_X = 0
 EVENT_INDEX_MOUSE_SCROLL_Y = 1
-
-
-# Window
-EVENT_WINDOW_SIZE = 30                # args: (width, height) <int, int>
-EVENT_WINDOW_FRAMEBUFFER_SIZE = 31    # args: (width, height) <int, int>
-EVENT_WINDOW_DROP_FILES = 32          # args: (filepath, ...) <str, ...>
 
 
 # =============================================================================

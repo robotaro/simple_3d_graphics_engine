@@ -1,17 +1,21 @@
+import copy
 import time
 import glfw
+import yaml
 import signal
 import moderngl
 import numpy as np
+import logging
 
 # GUI
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 
 # Systems
-from src.core import constants
+from src2.core import constants
 from src.utilities import utils_io
 from src.utilities import utils_logging
+from src2.utilities import utils_params
 from src2.utilities import utils_scene_xml2json
 
 # Entities
@@ -33,7 +37,7 @@ from src2.scenes.scene_2d import Scene2D
 from src2.modules.scene_editor import SceneEditor
 
 # Core components
-from src.core.event_publisher import EventPublisher
+from src2.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
 from src2.scenes.scene import Scene
 from src.core.data_manager import DataManager
@@ -46,7 +50,9 @@ class App:
     Main App class that holds all the logic
     """
 
-    __slots__ = ("logger",
+    __slots__ = ("config",
+                 "main_settings",
+                 "logger",
                  "window_size",
                  "window_title",
                  "vertical_sync",
@@ -70,22 +76,28 @@ class App:
                  "action_publisher",
                  "data_manager",
                  "shader_library",
-                 "registered_entity_types",
-                 "registered_component_types",
-                 "registered_scene_types",
+                 "registered_entities",
+                 "registered_components",
+                 "registered_scenes",
+                 "registered_modules",
                  "close_application",
                  "imgui_exit_popup_open")
 
-    def __init__(self,
-                 window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
-                 window_title="New Editor",
-                 vertical_sync=True):
+    def __init__(self, config_fpath=constants.APP_CONFIG_FPATH, log_level="warning"):
 
+        self.config = {}
+        with open(config_fpath, 'r') as file:
+            self.config = yaml.safe_load(file)
+
+        self.main_settings = self.config.get("main_settings", {})
         self.logger = utils_logging.get_project_logger()
-        self.window_size = window_size
-        self.buffer_size = window_size
-        self.window_title = window_title
-        self.vertical_sync = vertical_sync
+        self.logger.setLevel(level=constants.LOGGING_MAP[log_level])
+        self.window_size = utils_params.list2tuple(
+            self.main_settings.get("window_size",
+            constants.DEFAULT_EDITOR_WINDOW_SIZE))
+        self.buffer_size = copy.copy(self.window_size)
+        self.window_title = self.main_settings.get("window_title", "Editor")
+        self.vertical_sync = self.main_settings.get("vertical_sync", False)
 
         self.scenes = {}
         self.entities = {}
@@ -93,27 +105,28 @@ class App:
         self.entity_groups = {}
         self.ubos = {}
 
-        self.registered_scene_types = {}
-        self.registered_entity_types = {}
-        self.registered_component_types = {}
-
-        # Register entities
-        self.register_entity_type(name="entity", entity_class=Entity)
-        self.register_entity_type(name="camera", entity_class=Camera)
-        self.register_entity_type(name="point_light", entity_class=PointLight)
-        self.register_entity_type(name="directional_light", entity_class=DirectionalLight)
+        self.registered_scenes = {}
+        self.registered_entities = {}
+        self.registered_components = {}
+        self.registered_modules = {}
 
         # Register components
-        self.register_component_type(name="mesh", component_clas=Mesh)
-        self.register_component_type(name="transform", component_clas=Transform)
-        self.register_component_type(name="material", component_clas=Material)
+        self.register_component(name="mesh", component_class=Mesh)
+        self.register_component(name="transform", component_class=Transform)
+        self.register_component(name="material", component_class=Material)
+
+        # Register entities
+        self.register_entity(name="entity", entity_class=Entity)
+        self.register_entity(name="camera", entity_class=Camera)
+        self.register_entity(name="point_light", entity_class=PointLight)
+        self.register_entity(name="directional_light", entity_class=DirectionalLight)
 
         # Register scenes
-        self.register_scene_type(name="scene3d", scene_class=Scene3D)
-        self.register_scene_type(name="scene2d", scene_class=Scene2D)
+        self.register_scene(name="scene3d", scene_class=Scene3D)
+        self.register_scene(name="scene2d", scene_class=Scene2D)
 
         # Register Modules
-        self.register_scene_type(name="scene_editor", scene_class=SceneEditor)
+        self.register_module(name="scene_editor", module_class=SceneEditor)
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -127,7 +140,7 @@ class App:
         self.monitor_gltf = glfw.get_primary_monitor()
         self.window_glfw = glfw.create_window(width=self.window_size[0],
                                               height=self.window_size[1],
-                                              title=window_title,
+                                              title=self.window_title,
                                               monitor=None,
                                               share=None)
         if not self.window_glfw:
@@ -155,14 +168,18 @@ class App:
         # Create main moderngl Context
         self.ctx = moderngl.create_context()
 
-        # General Modules
-        self.modules = []
-
         # Core modules
         self.event_publisher = EventPublisher(logger=self.logger)
         self.action_publisher = ActionPublisher(logger=self.logger)
         self.data_manager = DataManager(logger=self.logger)
-        self.shader_library = ShaderProgramLibrary(logger=self.logger, ctx=self.ctx)
+        self.shader_library = ShaderProgramLibrary(
+            logger=self.logger,
+            shader_program_definitions=self.config.get("shader_programs", {}),
+            ctx=self.ctx)
+
+        # General Modules
+        self.modules = []
+        self.create_modules(module_definitions=self.config.get("modules", {}))
 
         # ImGUI
         imgui.create_context()
@@ -181,29 +198,25 @@ class App:
         # Assign OS signal handling callback
         signal.signal(signal.SIGINT, self.callback_signal_handler)
 
-    def register_scene_type(self, name: str, scene_class):
-        if name in self.registered_scene_types:
+    def register_scene(self, name: str, scene_class):
+        if name in self.registered_scenes:
             raise KeyError(f"[ERROR] Scene type {name} already registered")
-        self.registered_scene_types[name] = scene_class
+        self.registered_scenes[name] = scene_class
 
-    def register_entity_type(self, name: str, entity_class):
-        if name in self.registered_entity_types:
+    def register_entity(self, name: str, entity_class):
+        if name in self.registered_entities:
             raise KeyError(f"[ERROR] Entity type {name} already registered")
-        self.registered_entity_types[name] = entity_class
+        self.registered_entities[name] = entity_class
 
-    def register_component_type(self, name: str, component_clas):
-        if name in self.registered_component_types:
+    def register_component(self, name: str, component_class):
+        if name in self.registered_components:
             raise KeyError(f"[ERROR] Component type {name} already registered")
-        self.registered_component_types[name] = component_clas
+        self.registered_components[name] = component_class
 
-    def center_window_to_main_monitor(self):
-        pos = glfw.get_monitor_pos(self.monitor_gltf)
-        size = glfw.get_window_size(self.window_glfw)
-        mode = glfw.get_video_mode(self.monitor_gltf)
-        glfw.set_window_pos(
-            self.window_glfw,
-            int(pos[0] + (mode.size.width - size[0]) / 2),
-            int(pos[1] + (mode.size.height - size[1]) / 2))
+    def register_module(self, name: str, module_class):
+        if name in self.registered_modules:
+            raise KeyError(f"[ERROR] Module type {name} already registered")
+        self.registered_modules[name] = module_class
 
     def create_ubos(self):
 
@@ -219,6 +232,38 @@ class App:
         total_bytes = constants.SCENE_POINT_TRANSFORM_SIZE_BYTES * constants.SCENE_MAX_NUM_TRANSFORMS
         self.ubos["transforms"] = self.ctx.buffer(reserve=total_bytes)
         self.ubos["transforms"].bind_to_uniform_block(binding=constants.UBO_BINDING_TRANSFORMS)
+
+    def create_modules(self, module_definitions: dict):
+
+        for module_name, all_params in module_definitions.items():
+
+            subscribed_events = all_params.get("subscribed_events", {})
+            params = {key: value for key, value in all_params.items() if key != "subscribed_events"}
+
+            # Create new module
+            new_module = self.registered_modules[module_name](
+                logger=self.logger,
+                event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher,
+                data_manager=self.data_manager,
+                params=params)
+            self.logger.debug(f"Module Created: {module_name}")
+
+            # Make it a listener to all events it subscribes to
+            for event_name in subscribed_events:
+                self.event_publisher.subscribe(event_type=event_name, listener=new_module)
+                self.logger.debug(f"Module '{module_name}' subscribed to event: {event_name}")
+
+            self.modules.append(new_module)
+
+    def center_window_to_main_monitor(self):
+        pos = glfw.get_monitor_pos(self.monitor_gltf)
+        size = glfw.get_window_size(self.window_glfw)
+        mode = glfw.get_video_mode(self.monitor_gltf)
+        glfw.set_window_pos(
+            self.window_glfw,
+            int(pos[0] + (mode.size.width - size[0]) / 2),
+            int(pos[1] + (mode.size.height - size[1]) / 2))
 
     def callback_signal_handler(self, signum, frame):
         self.logger.debug("Signal received : Closing editor now")
@@ -380,7 +425,7 @@ class App:
             if comp_id in self.components:
                 raise KeyError(f"[ERROR] Global component ID '{comp_id}' already exists")
 
-            component_class = self.registered_component_types.get(comp_type, None)
+            component_class = self.registered_components.get(comp_type, None)
             self.components[comp_id] = component_class(
                 params=comp_params,
                 ctx=self.ctx,
@@ -396,7 +441,7 @@ class App:
             if entity_id in self.entities:
                 raise KeyError(f"[ERROR] Global entity ID '{entity_id}' already exists")
 
-            entity_class = self.registered_entity_types.get(entity_type, None)
+            entity_class = self.registered_entities.get(entity_type, None)
             if entity_class is None:
                 raise KeyError(f"[ERROR] Entity type '{entity_type}' is not supported")
             self.entities[entity_id] = entity_class(params=entity_params)
@@ -411,7 +456,7 @@ class App:
                     continue
 
                 comp_params = component[constants.BLUEPRINT_KEY_PARAMS]
-                component_class = self.registered_component_types.get(comp_type, None)
+                component_class = self.registered_components.get(comp_type, None)
                 self.entities[entity_id].components[comp_type] = component_class(
                     params=comp_params,
                     ctx=self.ctx,
@@ -424,7 +469,7 @@ class App:
             scene_id = scene[constants.BLUEPRINT_KEY_ID]
             scene_type = scene[constants.BLUEPRINT_KEY_TYPE]
 
-            scene_class = self.registered_scene_types.get(scene_type, None)
+            scene_class = self.registered_scenes.get(scene_type, None)
             if scene_class is None:
                 raise KeyError(f"[ERROR] Scene type '{scene_type}' is not registered")
 
@@ -485,6 +530,8 @@ class App:
             self.imgui_start()
 
             for module in self.modules:
+                if not module.enabled:
+                    continue
                 module.update(elapsed_time=elapsed_time)
 
             self.imgui_main_menu_bar()
@@ -539,6 +586,12 @@ class App:
 
                 clicked, selected = imgui.menu_item("Preferences", "Ctrl + Q", False, True)
 
+                imgui.end_menu()
+
+            # ========================[ Modules ]========================
+            if imgui.begin_menu("Modules", True):
+                for module in self.modules:
+                    _, module.enabled = imgui.menu_item(module.label, None, module.enabled, True)
                 imgui.end_menu()
 
     def imgui_exit_modal(self):

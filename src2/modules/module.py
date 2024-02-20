@@ -1,8 +1,8 @@
 import logging
 import moderngl
 
-from src.core import constants
-from src.core.event_publisher import EventPublisher
+from src2.core import constants
+from src2.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
 from src.core.data_manager import DataManager
 
@@ -19,10 +19,10 @@ class Module:
         "current_action",
         "params",
         "event_handlers",
-        "active"
+        "enabled"
     ]
 
-    module_label = "unlabelled"
+    label = "base_module"
 
     def __init__(self,
                  logger: logging.Logger,
@@ -35,8 +35,8 @@ class Module:
         self.event_publisher = event_publisher
         self.action_publisher = action_publisher
         self.data_manager = data_manager
-        self.params = params
-        self.active = True
+        self.params = params if params is not None else {}
+        self.enabled = True
 
         # Dynamically build the event_handlers dictionary
         self.event_handlers = {}
