@@ -125,6 +125,9 @@ class MeshFactory3D:
 
         return new_data_group
 
+    def from_shape(self, shape: str, params: dict):
+        pass
+
     def create_cylinder(self,
                         point_a: tuple,
                         point_b: tuple,
@@ -150,8 +153,8 @@ class MeshFactory3D:
 
         if self.use_triangle_normals:
             vertices, normals, _ = utils_mesh_3d.convert_faces_to_triangles(vertices=vertices,
-                                                                              uvs=None,
-                                                                              faces=indices)
+                                                                            uvs=None,
+                                                                            faces=indices)
             indices = None
 
         colors = np.tile(np.array(color, dtype=np.float32), (vertices.shape[0], 1))

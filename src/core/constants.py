@@ -6,7 +6,7 @@ import numpy as np
 # =============================================================================
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-SRC_DIR = os.path.join(ROOT_DIR, "src2")
+SRC_DIR = os.path.join(ROOT_DIR, "src")
 RESOURCES_DIR = os.path.join(ROOT_DIR, "resources")
 FONTS_DIR = os.path.join(RESOURCES_DIR, "fonts")
 IMAGES_DIR = os.path.join(RESOURCES_DIR, "images")
@@ -168,7 +168,7 @@ EVENT_EXIT_APPLICATION = "exit_application"
 EVENT_ENTITY_SELECTED = "entity_selected"
 EVENT_ENTITY_DESELECTED = "entity_deselected"
 EVENT_MULTIPLE_ENTITIES_SELECTED = "multiple_entities_selected"
-EVENT_PROFILING_SYSTEM_PERIODS = "profiling_system_periods" # args (("system_a", 0.2), ("system_b" 0.37), ...) <(string, float) ...>
+EVENT_PROFILING_SYSTEM_PERIODS = "profiling_system_periods"  # args (("system_a", 0.2), ("system_b" 0.37), ...) <(string, float) ...>
 
 
 # System intercommunication
@@ -190,7 +190,6 @@ EVENT_INDEX_MOUSE_MOVE_Y_OPENGL = 1
 EVENT_INDEX_MOUSE_MOVE_Y_GUI = 2
 EVENT_INDEX_MOUSE_SCROLL_X = 0
 EVENT_INDEX_MOUSE_SCROLL_Y = 1
-
 
 # Window
 EVENT_WINDOW_SIZE = 30                # args: (width, height) <int, int>

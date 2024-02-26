@@ -1,7 +1,7 @@
 import numpy as np
 from src.core import constants
 
-from src.geometry_3d.mesh_factory_3d import MeshFactory3D
+from src2.core.mesh_factory_3d import MeshFactory3D
 from src2.components.component import Component
 
 
@@ -43,8 +43,7 @@ class Mesh(Component):
         self.render_mode = self.params.get("render_mode", constants.MESH_RENDER_MODE_TRIANGLES)
         self.shape = self.params.get(constants.COMPONENT_ARG_MESH_SHAPE, None)
 
-        self.create_mesh()
-
+        self.create_from_shape(shape=self.shape)
 
         data_group = self.data_manager.data_groups.get(self.resource_id, None)
         if data_group is None:
@@ -92,7 +91,7 @@ class Mesh(Component):
     def upload_buffer_data(self, buffer_name: str, data: np.ndarray):
         self.vbos[buffer_name].write(data.tobytes())
 
-    def create_mesh(self, shape: str) -> None:
+    def create_from_shape(self, shape: str) -> None:
 
         if shape is None:
             raise Exception("[ERROR] Both resource_id and shape specification are None. Please provide one.")
