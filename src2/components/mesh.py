@@ -1,7 +1,8 @@
 import numpy as np
 from src.core import constants
 
-from src2.core.mesh_factory_3d import MeshFactory3D
+from src2.core import meshes_3d
+from src.core.data_group import DataGroup
 from src2.components.component import Component
 
 
@@ -11,11 +12,9 @@ class Mesh(Component):
         "data_blocks",
         "vaos",
         "vbos",
-        "ibo_indices",
         "render_mode",
         "resource_id",
         "shape",
-        "layer",
         "visible"]
 
     VBO_DECLARATION_MAP = {
@@ -26,53 +25,34 @@ class Mesh(Component):
         "joints": ("i4", "4i", constants.SHADER_INPUT_JOINT),
         "weights": ("f4", "4f", constants.SHADER_INPUT_WEIGHT),
         "uvs": ("f4", "2f", constants.SHADER_INPUT_UV),
-        "indices": ("i4", None, constants.SHADER_INPUT_UV),
+        "indices": ("i4", None, None),
     }
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
         # GPU (VRAM) Vertex Data
-        self.data_blocks = {}
         self.vaos = {}
         self.vbos = {}
-        self.ibo_indices = None
 
         # Get parameters
         self.resource_id = self.params.get("resource_id", None)
         self.render_mode = self.params.get("render_mode", constants.MESH_RENDER_MODE_TRIANGLES)
         self.shape = self.params.get(constants.COMPONENT_ARG_MESH_SHAPE, None)
 
-        self.create_from_shape(shape=self.shape)
+        # Create vbos and vaos based on mesh specifications
+        if self.resource_id is not None:
+            data_group = self.data_manager.data_groups.get(self.resource_id, None)
+            mesh_data = self.create_from_datagroup(datagroup=data_group)
 
-        data_group = self.data_manager.data_groups.get(self.resource_id, None)
-        if data_group is None:
-            return
+        elif self.shape is not None:
+            mesh_data = self.create_from_shape(shape=self.shape, params=self.params)
 
-        # Generate all VBO declarations for each VAO that will create in the next stage
-        vbo_declaration_list = []
-        for data_block_name, data_block in data_group.data_blocks.items():
+        else:
+            raise Exception("[ERROR] Neither 'resource_id' or 'shape' specified. You need to specify one.")
 
-            data_type = Mesh.VBO_DECLARATION_MAP[data_block_name][0]
-            if data_block_name == "indices":
-                self.ibo_indices = self.ctx.buffer(data_block.data.astype(data_type).tobytes())
-                continue
-
-            self.vbos[data_block_name] = self.ctx.buffer(data_block.data.astype(data_type).tobytes())
-            data_size = Mesh.VBO_DECLARATION_MAP[data_block_name][1]
-            shader_variable = Mesh.VBO_DECLARATION_MAP[data_block_name][2]
-            vbo_declaration_list.append((self.vbos[data_block_name], data_size, shader_variable))
-
-        # Create VAOs
-        for program_name in constants.SHADER_PASSES_LIST:
-
-            program = self.shader_library[program_name]
-
-            # TODO: I think one version serves both if ibo_faces is None. Default value seems ot be None as well
-            if self.ibo_indices is None:
-                self.vaos[program_name] = self.ctx.vertex_array(program, vbo_declaration_list)
-            else:
-                self.vaos[program_name] = self.ctx.vertex_array(program, vbo_declaration_list, self.ibo_indices)
+        self.create_vbo_and_vaos(mesh_data=mesh_data,
+                                 shader_program_names=constants.SHADER_PASSES_LIST)
 
     def render(self, shader_pass_name: str, num_instances=1):
         self.vaos[shader_pass_name].render(mode=self.render_mode, instances=num_instances)
@@ -85,46 +65,53 @@ class Mesh(Component):
         for _, vbo in self.vbos:
             vbo.release()
 
-        if self.ibo_indices:
-            self.ibo_indices.release()
-
     def upload_buffer_data(self, buffer_name: str, data: np.ndarray):
         self.vbos[buffer_name].write(data.tobytes())
 
-    def create_from_shape(self, shape: str) -> None:
+    def create_from_datagroup(self, datagroup: DataGroup) -> dict:
+
+        mesh_data = {}
+        meta = datagroup.metadata
+        for datablock_name, datablock in datagroup.data_blocks.items():
+
+            data = datablock.data
+            if datablock_name == "indices":
+                if "render_mode" in meta and meta["render_mode"] == "triangles":
+                    data = np.reshape(data, (-1, 3))
+
+            mesh_data[datablock_name] = data
+
+        return mesh_data
+
+    def create_from_shape(self, shape: str, params: dict) -> dict:
 
         if shape is None:
             raise Exception("[ERROR] Both resource_id and shape specification are None. Please provide one.")
 
-        mesh_factory = MeshFactory3D()
+        return meshes_3d.create_mesh(shape=shape, params=params)
 
-        if shape == constants.MESH_SHAPE_BOX:
-            width = self.params.get("width", 1.0)
-            height = self.params.get("height", 1.0)
-            depth = self.params.get("depth", 1.0)
-            mesh = mesh_factory.create_box(width=width, height=height, depth=depth)
+    def create_vbo_and_vaos(self, mesh_data: dict, shader_program_names: list):
 
-        elif shape == constants.MESH_SHAPE_ICOSPHERE:
-            radius = self.params.get("radius", 0.5)
-            subdivisions = self.params.get("subdivisions", 3)
-            mesh = mesh_factory.create_icosphere(radius=radius, subdivisions=subdivisions)
+        vbo_declaration_list = []
+        for vbo_name, vbo_data in mesh_data.items():
 
-        elif shape == constants.MESH_SHAPE_CAPSULE:
-            height = self.params.get("height", 1.0)
-            radius = self.params.get("radius", 0.25)
-            count = self.params.get("count", (16, 16))
-            mesh = mesh_factory.create_capsule(height=height, radius=radius, count=count)
+            data_type = Mesh.VBO_DECLARATION_MAP[vbo_name][0]
+            if vbo_name == "indices":
+                self.vbos[vbo_name] = self.ctx.buffer(vbo_data.astype(data_type).tobytes())
+                continue
 
-        elif shape == constants.MESH_SHAPE_CYLINDER:
-            point_a = self.params.get("point_a", (0.0, 0.0, 0.0))
-            point_b = self.params.get("point_b", (0.0, 1.0, 0.0))
-            radius = self.params.get("radius", 0.5)
-            sections = self.params.get("sections", 32)
-            mesh = mesh_factory.create_cylinder(point_a=point_a, point_b=point_b, sections=sections, radius=radius)
+            self.vbos[vbo_name] = self.ctx.buffer(vbo_data.astype(data_type).tobytes())
+            data_size = Mesh.VBO_DECLARATION_MAP[vbo_name][1]
+            shader_variable = Mesh.VBO_DECLARATION_MAP[vbo_name][2]
+            vbo_declaration_list.append((self.vbos[vbo_name], data_size, shader_variable))
 
-        else:
-            raise Exception(f"[ERROR] Shape '{shape}' is not supported")
+        # Create VAOs
+        for program_name in shader_program_names:
 
-        self.vbos["vertices"] = mesh[0]
-        self.vbos["normals"] = mesh[1]
-        self.vbos["indices"] = mesh[3]
+            program = self.shader_library[program_name]
+
+            # TODO: I think one version serves both if ibo_faces is None. Default value seems ot be None as well
+            if self.vbos["indices"] is None:
+                self.vaos[program_name] = self.ctx.vertex_array(program, vbo_declaration_list)
+            else:
+                self.vaos[program_name] = self.ctx.vertex_array(program, vbo_declaration_list, self.vbos["indices"])

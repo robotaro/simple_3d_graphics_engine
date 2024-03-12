@@ -29,6 +29,13 @@ from src2.components.transform import Transform
 from src2.components.material import Material
 from src2.components.mesh import Mesh
 
+# Render Stages
+from src2.render_stages.render_stage_forward import RenderStageForward
+from src2.render_stages.render_stage_selection import RenderStageSelection
+from src2.render_stages.render_stage_overlay import RenderStageOverlay
+from src2.render_stages.render_stage_shadow import RenderStageShadow
+from src2.render_stages.render_stage_screen import RenderStageScreen
+
 # Scenes
 from src2.scenes.scene_3d import Scene3D
 from src2.scenes.scene_2d import Scene2D
@@ -44,10 +51,10 @@ from src.core.data_manager import DataManager
 from src2.core.shader_program_library import ShaderProgramLibrary
 
 
-class App:
+class Engine:
 
     """
-    Main App class that holds all the logic
+    Main Engine class that holds does all the rendering and a few other tasks regarding window and input management
     """
 
     __slots__ = ("config",
@@ -124,6 +131,13 @@ class App:
         # Register scenes
         self.register_scene(name="scene3d", scene_class=Scene3D)
         self.register_scene(name="scene2d", scene_class=Scene2D)
+
+        # Register Render passes
+        self.register_render_stage(name="forward", render_stage_class=RenderStageForward)
+        self.register_render_stage(name="selection", render_stage_class=RenderStageSelection)
+        self.register_render_stage(name="overlay", render_stage_class=RenderStageOverlay)
+        self.register_render_stage(name="shadow", render_stage_class=RenderStageShadow)
+        self.register_render_stage(name="screen", render_stage_class=RenderStageScreen)
 
         # Register Modules
         self.register_module(name="scene_editor", module_class=SceneEditor)
@@ -212,6 +226,9 @@ class App:
         if name in self.registered_components:
             raise KeyError(f"[ERROR] Component type {name} already registered")
         self.registered_components[name] = component_class
+
+    def register_render_stage(self, name: str, render_stage_class):
+        pass
 
     def register_module(self, name: str, module_class):
         if name in self.registered_modules:
@@ -500,6 +517,9 @@ class App:
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_FRAMEBUFFER_SIZE,
                                      event_data=self.buffer_size,
                                      sender=self)
+
+    def create_scene(self, name: str):
+        pass
 
     def run(self):
         """

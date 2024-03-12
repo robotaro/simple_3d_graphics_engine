@@ -109,7 +109,7 @@ class FileLoaderGLTF(FileLoader):
         
         """
 
-        skeletons = self.gltf_reader.get_skeletons()
+        #skeletons = self.gltf_reader.get_skeletons()
 
         num_nodes = len(nodes)
         skins = self.gltf_reader.get_skins()

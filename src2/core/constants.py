@@ -587,3 +587,40 @@ FONT_LIBRARY_COLUMN_INDEX_HORIZONTAL_ADVANCE = 9
 # =============================================================================
 
 ROTATION_XYZ = 0
+
+# ============================================================
+#                       Meshes
+# ===========================================================
+
+KEY_SHAPE = "shape"
+KEY_COLOR = "color"
+KEY_RADIUS = "radius"
+KEY_LENGTH = "length"
+KEY_HEIGHT = "height"
+KEY_WIDTH = "width"
+KEY_SECTIONS = "sections"
+KEY_SEGMENTS = "segments"
+KEY_SUBDIVISIONS = "subdivisions"
+KEY_DEPTH = "depth"
+KEY_POINT_A = "point_a"
+KEY_POINT_B = "point_b"
+KEY_TRANSFORM = "transform"
+
+KEY_PRIMITIVE_VERTICES = "vertices"
+KEY_PRIMITIVE_NORMALS = "normals"
+KEY_PRIMITIVE_UVS = "uvs"
+KEY_PRIMITIVE_COLORS = "colors"
+KEY_PRIMITIVE_INDICES = "indices"
+
+KEY_SHAPE_CYLINDER = "cylinder"
+KEY_SHAPE_BOX = "box"
+KEY_SHAPE_CONE = "cone"
+KEY_SHAPE_ICOSPHERE = "icosphere"
+KEY_SHAPE_CAPSULE = "capsule"
+
+DEFAULT_RADIUS = 0.5
+DEFAULT_HEIGHT = 1.0
+DEFAULT_COLOR = (1.0, 1.0, 1.0)
+DEFAULT_CYLINDER_SECTIONS = 16  # Pie wedges
+DEFAULT_CYLINDER_SEGMENTS = 1
+DEFAULT_SUBDIVISIONS = 2

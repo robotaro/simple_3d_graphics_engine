@@ -38,16 +38,9 @@ class Scene(ABC):
         self.ctx = ctx
         self.shader_library = shader_library
         self.logger = logger
-        self.registered_render_stage_types = {}
         self.ubos = ubos
-        self.render_stages = {}
+        self.render_stages = []
         self.initial_window_size = initial_window_size
-
-        self.register_render_stage_type(name="forward", render_stage_class=RenderStageForward)
-        self.register_render_stage_type(name="selection", render_stage_class=RenderStageSelection)
-        self.register_render_stage_type(name="overlay", render_stage_class=RenderStageOverlay)
-        self.register_render_stage_type(name="shadow", render_stage_class=RenderStageShadow)
-        self.register_render_stage_type(name="screen", render_stage_class=RenderStageScreen)
 
     def render(self):
         for render_stage in self.render_stages:

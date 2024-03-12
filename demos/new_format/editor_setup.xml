@@ -32,8 +32,8 @@
         <transform ref_id="female_transform"/>
     </entity>
 
-    <entity id="capsule">
-        <mesh shape="capsule" height="1.5" radius="0.25" count="32 32"/>
+    <entity id="cylinder">
+        <mesh shape="cylinder" point_a="0 0 0" point_b="0 1.5 0" radius="0.25"/>
         <material diffuse="gray" shininess_factor="32.0"/>
         <transform position="-3 0 3" degrees="true"/>
     </entity>

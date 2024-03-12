@@ -1,11 +1,7 @@
 from src2.scenes.scene import Scene
 
 from src2.entities.entity import Entity
-from src2.render_stages.render_stage_forward import RenderStageForward
-from src2.render_stages.render_stage_selection import RenderStageSelection
-from src2.render_stages.render_stage_overlay import RenderStageOverlay
-from src2.render_stages.render_stage_shadow import RenderStageShadow
-from src2.render_stages.render_stage_screen import RenderStageScreen
+
 
 from src2.core.render_layer import RenderLayer
 from src2.core.viewport_container import ViewportContainer
