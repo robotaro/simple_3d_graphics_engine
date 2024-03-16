@@ -43,6 +43,10 @@ from src2.scenes.scene_2d import Scene2D
 # Modules
 from src2.modules.scene_editor import SceneEditor
 
+# Systems
+from src2.systems import system_blueprints
+from src2.systems.system import System  # DEBUG
+
 # Core components
 from src2.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
@@ -70,6 +74,7 @@ class Engine:
                  "monitor_gltf",
                  "ctx",
                  "buffer_size",
+                 "systems",
                  "scenes",
                  "entities",
                  "entity_groups",
@@ -87,6 +92,7 @@ class Engine:
                  "registered_components",
                  "registered_scenes",
                  "registered_modules",
+                 "registered_systems",
                  "close_application",
                  "imgui_exit_popup_open")
 
@@ -116,6 +122,7 @@ class Engine:
         self.registered_entities = {}
         self.registered_components = {}
         self.registered_modules = {}
+        self.registered_systems = {}
 
         # Register components
         self.register_component(name="mesh", component_class=Mesh)
@@ -140,7 +147,10 @@ class Engine:
         self.register_render_stage(name="screen", render_stage_class=RenderStageScreen)
 
         # Register Modules
-        self.register_module(name="scene_editor", module_class=SceneEditor)
+        #self.register_module(name="scene_editor", module_class=SceneEditor)
+
+        # Register Systems
+        self.register_system(name="base_system", system_class=System)
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -193,7 +203,11 @@ class Engine:
 
         # General Modules
         self.modules = []
-        self.create_modules(module_definitions=self.config.get("modules", {}))
+        #self.create_modules(module_definitions=self.config.get("modules", {}))
+
+        # Systems
+        self.systems = {}
+        self.create_systems()
 
         # ImGUI
         imgui.create_context()
@@ -235,6 +249,11 @@ class Engine:
             raise KeyError(f"[ERROR] Module type {name} already registered")
         self.registered_modules[name] = module_class
 
+    def register_system(self, name: str, system_class):
+        if name in self.registered_systems:
+            raise KeyError(f"[ERROR] System type {name} already registered")
+        self.registered_systems[name] = system_class
+
     def create_ubos(self):
 
         total_bytes = constants.SCENE_MATERIAL_STRUCT_SIZE_BYTES * constants.SCENE_MAX_NUM_MATERIALS
@@ -272,6 +291,26 @@ class Engine:
                 self.logger.debug(f"Module '{module_name}' subscribed to event: {event_name}")
 
             self.modules.append(new_module)
+
+    def create_systems(self):
+        for name, blueprint in system_blueprints.SYSTEM_BLUEPRINTS.items():
+
+            subscribed_events = blueprint.get("subscribed_events", {})
+            params = blueprint.get("params", {})
+
+            # Create new module
+            new_system = self.registered_systems[name](
+                logger=self.logger,
+                event_publisher=self.event_publisher,
+                action_publisher=self.action_publisher,
+                data_manager=self.data_manager,
+                params=params)
+            self.logger.debug(f"System Created: {name}")
+
+            # Make it a listener to all events it subscribes to
+            for event_name in subscribed_events:
+                self.event_publisher.subscribe(event_type=event_name, listener=new_system)
+                self.logger.debug(f"System '{name}' subscribed to event: {event_name}")
 
     def center_window_to_main_monitor(self):
         pos = glfw.get_monitor_pos(self.monitor_gltf)
@@ -311,8 +350,10 @@ class Engine:
     def _glfw_callback_keyboard(self, glfw_window, key, scancode, action, mods):
         if action == glfw.PRESS:
             self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_PRESS,
-                                         event_data=(key, scancode, mods),
-                                         sender=self)
+                                         sender=self,
+                                         key=key,
+                                         scancode=scancode,
+                                         mods=mods)
             self.keyboard_state[key] = constants.KEY_STATE_DOWN
 
         if action == glfw.RELEASE:
@@ -518,8 +559,21 @@ class Engine:
                                      event_data=self.buffer_size,
                                      sender=self)
 
-    def create_scene(self, name: str):
+    def create_scene(self, name: str) -> Scene:
         pass
+
+    def create_entity(self, entity_type: str, params: dict, component_blueprints: dict) -> Entity:
+
+        new_entity = self.registered_entities[entity_type](params=params)
+        for component_type, component_params in component_blueprints.items():
+            new_entity.components[component_type] = self.registered_components[component_type](
+                ctx=self.ctx,
+                data_manater=self.data_manager,
+                shader_library=self.shader_library,
+                params=component_params
+            )
+
+        return new_entity
 
     def run(self):
         """

@@ -48,7 +48,7 @@ class EventPublisher:
         if listener in self.listeners[event_type]:
             self.listeners[event_type].remove(listener)
 
-    def publish(self, event_type: int, event_data: tuple, sender) -> None:
+    def publish(self, event_type: int, sender, **kwargs) -> None:
         """
         Publishes an event to all the listeners. Make sure to specify a sender if a subsystem is sending it
         to avoid it accidentally receiving its own message and creating a infinite loop.
@@ -65,4 +65,4 @@ class EventPublisher:
             if sender == listener:
                 continue
 
-            listener.on_event(event_type=event_type, event_data=event_data)
+            listener.on_event(event_type=event_type, **kwargs)

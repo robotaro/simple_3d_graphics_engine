@@ -75,7 +75,3 @@ shader_programs:
   shadow_mapping:
     vertex_shader: "shadow_mapping.glsl"
     fragment_shader: "shadow_mapping.glsl"
-
-  cube_simple:
-    vertex_shader: "cube_simple.glsl"
-    fragment_shader: "cube_simple.glsl"
