@@ -54,7 +54,6 @@ class EventPublisher:
         to avoid it accidentally receiving its own message and creating a infinite loop.
 
         :param event_type: int, event ID defined in constants.py
-        :param event_data: tuple, variable type of data inside, but no tuples inside this tuple!
         :param sender: sender needs to sent its own reference to avoid unwanted loops event loops
         :return: None
         """

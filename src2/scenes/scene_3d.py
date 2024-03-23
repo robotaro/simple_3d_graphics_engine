@@ -1,4 +1,4 @@
-from src2.scenes.scene import Scene
+from src2.core.scene import Scene
 
 from src2.entities.entity import Entity
 

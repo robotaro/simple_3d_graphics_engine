@@ -1,4 +1,5 @@
 import logging
+from typing import Dict, Optional
 import moderngl
 
 from src2.core import constants
@@ -14,8 +15,6 @@ class System:
         "event_publisher",
         "action_publisher",
         "data_manager",
-        "scene",
-        "action_queue",
         "current_action",
         "params",
         "event_handlers",
@@ -27,13 +26,11 @@ class System:
     def __init__(self,
                  logger: logging.Logger,
                  event_publisher: EventPublisher,
-                 action_publisher: ActionPublisher,
                  data_manager: DataManager,
-                 params: dict):
+                 params: Optional[Dict] = None):
 
         self.logger = logger
         self.event_publisher = event_publisher
-        self.action_publisher = action_publisher
         self.data_manager = data_manager
         self.params = params if params is not None else {}
         self.enabled = True
@@ -47,8 +44,15 @@ class System:
                 if event_constant:
                     self.event_handlers[event_constant] = getattr(self, attr)
 
+        # Subscribe to events
+        for event_type in self.get_subscribed_events():
+            self.event_publisher.subscribe(event_type=event_type, listener=self)
+
     def on_event(self, event_type: int, **kwargs):
         self.event_handlers[event_type](**kwargs)
+
+    def get_subscribed_events(self):
+        return []
 
     # ========================================================================
     #                         Event callbacks
@@ -57,7 +61,7 @@ class System:
     def handle_event_keyboard_press(self, key, scancode, mods):
         pass
 
-    def handle_event_keyboard_release(self, event_data: tuple):
+    def handle_event_keyboard_release(self, key, scancode, mods):
         pass
 
     def handle_event_keyboard_repeat(self, event_data: tuple):

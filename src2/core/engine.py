@@ -5,18 +5,15 @@ import yaml
 import signal
 import moderngl
 import numpy as np
-import logging
 
 # GUI
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 
-# Systems
+# Utilities
 from src2.core import constants
-from src.utilities import utils_io
-from src.utilities import utils_logging
-from src2.utilities import utils_params
-from src2.utilities import utils_scene_xml2json
+from src.utilities import utils_io, utils_logging
+from src2.utilities import utils_params, utils_scene_xml2json
 
 # Entities
 from src2.entities.entity import Entity
@@ -36,21 +33,16 @@ from src2.render_stages.render_stage_overlay import RenderStageOverlay
 from src2.render_stages.render_stage_shadow import RenderStageShadow
 from src2.render_stages.render_stage_screen import RenderStageScreen
 
-# Scenes
-from src2.scenes.scene_3d import Scene3D
-from src2.scenes.scene_2d import Scene2D
-
-# Modules
-from src2.modules.scene_editor import SceneEditor
+# Editors
+from src2.editors.video_annotator import VideoAnnotator
 
 # Systems
-from src2.systems import system_blueprints
-from src2.systems.system import System  # DEBUG
+from src2.systems.transform_gizmo_system import SystemTransformGizmo
 
-# Core components
+# Core
 from src2.core.event_publisher import EventPublisher
 from src.core.action_publisher import ActionPublisher
-from src2.scenes.scene import Scene
+from src2.core.scene import Scene
 from src.core.data_manager import DataManager
 from src2.core.shader_program_library import ShaderProgramLibrary
 
@@ -81,7 +73,7 @@ class Engine:
                  "framebuffers",
                  "textures",
                  "ubos",
-                 "modules",
+                 "editors",
                  "components",
                  "imgui_renderer",
                  "event_publisher",
@@ -91,7 +83,7 @@ class Engine:
                  "registered_entities",
                  "registered_components",
                  "registered_scenes",
-                 "registered_modules",
+                 "registered_editors",
                  "registered_systems",
                  "close_application",
                  "imgui_exit_popup_open")
@@ -121,7 +113,7 @@ class Engine:
         self.registered_scenes = {}
         self.registered_entities = {}
         self.registered_components = {}
-        self.registered_modules = {}
+        self.registered_editors = {}
         self.registered_systems = {}
 
         # Register components
@@ -135,22 +127,14 @@ class Engine:
         self.register_entity(name="point_light", entity_class=PointLight)
         self.register_entity(name="directional_light", entity_class=DirectionalLight)
 
-        # Register scenes
-        self.register_scene(name="scene3d", scene_class=Scene3D)
-        self.register_scene(name="scene2d", scene_class=Scene2D)
-
         # Register Render passes
-        self.register_render_stage(name="forward", render_stage_class=RenderStageForward)
-        self.register_render_stage(name="selection", render_stage_class=RenderStageSelection)
-        self.register_render_stage(name="overlay", render_stage_class=RenderStageOverlay)
-        self.register_render_stage(name="shadow", render_stage_class=RenderStageShadow)
-        self.register_render_stage(name="screen", render_stage_class=RenderStageScreen)
+        #self.register_render_pass(name="forward", render_stage_class=RenderStageForward)
 
-        # Register Modules
-        #self.register_module(name="scene_editor", module_class=SceneEditor)
+        # Register Editors
+        self.register_editor(name="video_annotator", editor_class=VideoAnnotator)
 
         # Register Systems
-        self.register_system(name="base_system", system_class=System)
+        self.register_system(name="transform_gizmo", system_class=SystemTransformGizmo)
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -201,13 +185,8 @@ class Engine:
             shader_program_definitions=self.config.get("shader_programs", {}),
             ctx=self.ctx)
 
-        # General Modules
-        self.modules = []
-        #self.create_modules(module_definitions=self.config.get("modules", {}))
-
-        # Systems
-        self.systems = {}
-        self.create_systems()
+        self.editors = self.create_editors()
+        self.systems = self.create_systems()
 
         # ImGUI
         imgui.create_context()
@@ -244,17 +223,19 @@ class Engine:
     def register_render_stage(self, name: str, render_stage_class):
         pass
 
-    def register_module(self, name: str, module_class):
-        if name in self.registered_modules:
-            raise KeyError(f"[ERROR] Module type {name} already registered")
-        self.registered_modules[name] = module_class
+    def register_editor(self, name: str, editor_class):
+        if name in self.registered_editors:
+            raise KeyError(f"[ERROR] Editor type {name} already registered")
+        self.registered_editors[name] = editor_class
 
     def register_system(self, name: str, system_class):
         if name in self.registered_systems:
             raise KeyError(f"[ERROR] System type {name} already registered")
         self.registered_systems[name] = system_class
 
-    def create_ubos(self):
+    def create_ubos(self) -> dict:
+
+        ubos = {}
 
         total_bytes = constants.SCENE_MATERIAL_STRUCT_SIZE_BYTES * constants.SCENE_MAX_NUM_MATERIALS
         self.ubos["materials"] = self.ctx.buffer(reserve=total_bytes)
@@ -269,48 +250,43 @@ class Engine:
         self.ubos["transforms"] = self.ctx.buffer(reserve=total_bytes)
         self.ubos["transforms"].bind_to_uniform_block(binding=constants.UBO_BINDING_TRANSFORMS)
 
-    def create_modules(self, module_definitions: dict):
+        return ubos
 
-        for module_name, all_params in module_definitions.items():
+    def create_editors(self) -> dict:
 
-            subscribed_events = all_params.get("subscribed_events", {})
-            params = {key: value for key, value in all_params.items() if key != "subscribed_events"}
+        editors = {}
+        for name, blueprint in self.config.get("editors", {}).items():
 
-            # Create new module
-            new_module = self.registered_modules[module_name](
+            if name not in self.registered_editors:
+                raise Exception(f"[ERROR] Editor '{name}' not registered")
+
+            editors[name] = self.registered_editors[name](
+                logger=self.logger,
+                ctx=self.ctx,
+                event_publisher=self.event_publisher,
+                data_manager=self.data_manager,
+                shader_library=self.shader_library,
+                params=blueprint.get("params", {}))
+            self.logger.debug(f"Editor Created: {name}")
+
+        return editors
+
+    def create_systems(self) -> dict:
+
+        systems = {}
+        for name, blueprint in self.config.get("systems", {}).items():
+
+            if name not in self.registered_systems:
+                raise Exception(f"[ERROR] System '{name}' not registered")
+
+            systems[name] = self.registered_systems[name](
                 logger=self.logger,
                 event_publisher=self.event_publisher,
-                action_publisher=self.action_publisher,
                 data_manager=self.data_manager,
-                params=params)
-            self.logger.debug(f"Module Created: {module_name}")
-
-            # Make it a listener to all events it subscribes to
-            for event_name in subscribed_events:
-                self.event_publisher.subscribe(event_type=event_name, listener=new_module)
-                self.logger.debug(f"Module '{module_name}' subscribed to event: {event_name}")
-
-            self.modules.append(new_module)
-
-    def create_systems(self):
-        for name, blueprint in system_blueprints.SYSTEM_BLUEPRINTS.items():
-
-            subscribed_events = blueprint.get("subscribed_events", {})
-            params = blueprint.get("params", {})
-
-            # Create new module
-            new_system = self.registered_systems[name](
-                logger=self.logger,
-                event_publisher=self.event_publisher,
-                action_publisher=self.action_publisher,
-                data_manager=self.data_manager,
-                params=params)
+                params=blueprint.get("params", {}))
             self.logger.debug(f"System Created: {name}")
 
-            # Make it a listener to all events it subscribes to
-            for event_name in subscribed_events:
-                self.event_publisher.subscribe(event_type=event_name, listener=new_system)
-                self.logger.debug(f"System '{name}' subscribed to event: {event_name}")
+        return systems
 
     def center_window_to_main_monitor(self):
         pos = glfw.get_monitor_pos(self.monitor_gltf)
@@ -322,7 +298,7 @@ class Engine:
             int(pos[1] + (mode.size.height - size[1]) / 2))
 
     def callback_signal_handler(self, signum, frame):
-        self.logger.debug("Signal received : Closing editor now")
+        self.logger.debug("Signal received : Closing engine now")
         self.close_application = True
 
     @staticmethod
@@ -603,14 +579,14 @@ class Engine:
 
             self.imgui_start()
 
-            for module in self.modules:
-                if not module.enabled:
+            for _, editor in self.editors.items():
+                if not editor.active:
                     continue
-                module.update(elapsed_time=elapsed_time)
+                editor.update(elapsed_time=elapsed_time)
 
             self.imgui_main_menu_bar()
             self.imgui_exit_modal()
-            self.imgui_stop()
+            self.imgui_stop_and_render()
 
             glfw.swap_buffers(self.window_glfw)
 
@@ -622,9 +598,14 @@ class Engine:
         imgui.get_io().ini_file_name = ""  # Disables creating an .ini file with the last window details
         imgui.new_frame()
 
-    def imgui_stop(self):
+    def imgui_stop_and_render(self):
+
         imgui.end_frame()
-        imgui.render()
+        imgui.render()  # Doesn't really render, only sorts and organises the vertex data
+
+        # Render all gui to screen
+        self.ctx.screen.use()
+        self.ctx.screen.clear()
         self.imgui_renderer.render(imgui.get_draw_data())
 
     def imgui_main_menu_bar(self):
@@ -649,23 +630,10 @@ class Engine:
 
                 imgui.end_menu()
 
-            # ========================[ Edit ]========================
-            if imgui.begin_menu("Edit", True):
-                if imgui.begin_menu("Light modes"):
-                    _, default = imgui.menu_item("Default", None, True)
-
-                    _, diffuse = imgui.menu_item("Diffuse", None, True)
-
-                    imgui.end_menu()
-
-                clicked, selected = imgui.menu_item("Preferences", "Ctrl + Q", False, True)
-
-                imgui.end_menu()
-
-            # ========================[ Modules ]========================
-            if imgui.begin_menu("Modules", True):
-                for module in self.modules:
-                    _, module.enabled = imgui.menu_item(module.label, None, module.enabled, True)
+            # ========================[ Editors ]========================
+            if imgui.begin_menu("Editors", True):
+                for name, editor in self.editors.items():
+                    _, editor.active = imgui.menu_item(editor.label, None, editor.active, True)
                 imgui.end_menu()
 
     def imgui_exit_modal(self):
@@ -705,8 +673,8 @@ class Engine:
 
     def shutdown(self):
 
-        for module in self.modules:
-            module.shutdown()
+        for editors in self.editors:
+            editors.shutdown()
 
         for _, scene in self.scenes.items():
 

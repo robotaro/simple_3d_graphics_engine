@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import yaml
 import moderngl
 
-from src.core import constants
+from src2.core import constants
 from src.utilities import utils_io
 
 
@@ -126,7 +126,7 @@ class ShaderProgramLibrary:
                                             if line.strip().startswith(constants.SHADER_LIBRARY_DIRECTIVE_VERSION)]
 
             recovered_versions = set([int(line[1].replace("#version", "").strip())
-                                  for line in line_number_and_version_list])
+                                 for line in line_number_and_version_list])
             version = min(recovered_versions) if len(recovered_versions) > 0 else 0
 
             # Remove the line with the "#version"
@@ -212,6 +212,10 @@ class ShaderProgramLibrary:
                 program_blueprint=program_blueprint,
                 shader_blueprint=fragment_blueprint,
                 shader_type=constants.SHADER_TYPE_FRAGMENT)
+
+            if vertex_blueprint is None and fragment_blueprint is None:
+                raise Exception(f"[ERROR] Both vertex and fragment shaders for program '{program_label}' are None. "
+                                f"Check if source files exist and their filenames are correct")
 
             # TODO: Think of a more reliable way to ensure all textures are used
             self.check_if_all_shader_texture_locations_are_used(

@@ -3,40 +3,42 @@ import moderngl
 
 from src2.core import constants
 from src2.core.event_publisher import EventPublisher
-from src.core.action_publisher import ActionPublisher
+from src2.core.shader_program_library import ShaderProgramLibrary
 from src.core.data_manager import DataManager
 
 
-class Module:
+class Editor:
 
     __slots__ = [
         "logger",
+        "ctx",
+        "params",
         "event_publisher",
-        "action_publisher",
         "data_manager",
         "scene",
-        "action_queue",
+        "shader_library",
         "current_action",
-        "params",
         "event_handlers",
-        "enabled"
+        "active"
     ]
 
     label = "base_module"
 
     def __init__(self,
                  logger: logging.Logger,
+                 ctx: moderngl.Context,
                  event_publisher: EventPublisher,
-                 action_publisher: ActionPublisher,
                  data_manager: DataManager,
+                 shader_library: ShaderProgramLibrary,
                  params: dict):
 
         self.logger = logger
+        self.ctx = ctx
         self.event_publisher = event_publisher
-        self.action_publisher = action_publisher
         self.data_manager = data_manager
+        self.shader_library = shader_library
         self.params = params if params is not None else {}
-        self.enabled = True
+        self.active = True
 
         # Dynamically build the event_handlers dictionary
         self.event_handlers = {}
@@ -50,8 +52,11 @@ class Module:
     def on_event(self, event_type: int, event_data: tuple):
         self.event_handlers[event_type](event_data=event_data)
 
-    def initialise(self) -> bool:
-        return True
+    def on_imgui_top_menu(self):
+        pass
+
+    def on_imgui_window(self):
+        pass
 
     def update(self, elapsed_time: float) -> bool:
         return True
@@ -63,10 +68,10 @@ class Module:
     #                         Event callbacks
     # ========================================================================
 
-    def handle_event_keyboard_press(self, event_data: tuple):
+    def handle_event_keyboard_press(self, key, scancode, mods):
         pass
 
-    def handle_event_keyboard_release(self, event_data: tuple):
+    def handle_event_keyboard_release(self, key, scancode, mods):
         pass
 
     def handle_event_keyboard_repeat(self, event_data: tuple):
