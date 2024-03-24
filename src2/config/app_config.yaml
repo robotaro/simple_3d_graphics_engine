@@ -29,6 +29,10 @@ editors:
 # =============================================================================
 shader_programs:
 
+  texture:
+    vertex_shader: "texture.glsl"
+    fragment_shader: "texture.glsl"
+
   forward:
     vertex_shader: "forward.glsl"
     fragment_shader: "forward.glsl"
