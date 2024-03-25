@@ -49,8 +49,8 @@ class Editor:
                 if event_constant:
                     self.event_handlers[event_constant] = getattr(self, attr)
 
-    def on_event(self, event_type: int, event_data: tuple):
-        self.event_handlers[event_type](event_data=event_data)
+    def on_event(self, event_type: int, **kwargs):
+        self.event_handlers[event_type](**kwargs)
 
     def on_imgui_top_menu(self):
         pass

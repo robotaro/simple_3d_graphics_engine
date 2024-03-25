@@ -1,3 +1,4 @@
+import glfw
 import numpy as np
 import moderngl
 import imgui
@@ -6,7 +7,7 @@ import imageio
 import cv2
 import matplotlib.pyplot as plt
 
-
+from src2.core import constants
 from src2.editors.editor import Editor
 
 
@@ -16,13 +17,17 @@ class VideoAnnotator(Editor):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        # Video player variables
         self.video_file = "F:\stuff\hentai\[SakuraCircle] Boku wa Chiisana Succubus no Shimobe - 01 (DVD 720x480 h264 AAC) [6F07860A].mkv"
         self.reader = imageio.get_reader(self.video_file, 'ffmpeg')
         self.meta_data = self.reader.get_meta_data()
         self.duration = int(self.meta_data['duration'])
         self.fps = self.meta_data['fps']
-        self.total_num_frames = int(self.fps * self.duration)
+        self.current_timestamp = 0.0
         self.current_frame_index = 0
+        self.frame_period = 1.0 / self.fps
+        self.total_num_frames = int(self.fps * self.duration)
+        self.video_playing = False
         self.frame_size = self.meta_data["size"]
 
         self.program = self.shader_library.programs["texture"]
@@ -32,15 +37,20 @@ class VideoAnnotator(Editor):
         self.texture.write(data=random_data.tobytes())
         self.texture.use(location=0)
 
+        self.initial_window_size = (self.texture.size[0] + 50, self.texture.size[1] + 100)
+
         self.fbo = self.ctx.framebuffer(
             color_attachments=self.ctx.texture(self.frame_size, 3),
             depth_attachment=self.ctx.depth_texture(self.frame_size),
         )
 
-        self.update_texture()
+        # Subscribe to events
+        self.event_publisher.subscribe(event_type=constants.EVENT_KEYBOARD_PRESS, listener=self)
 
-    def update_texture(self, ) -> None:
-        frame_data = self.reader.get_data(self.current_frame_index)
+        self.update_texture(frame_index=0)
+
+    def update_texture(self, frame_index: int) -> None:
+        frame_data = self.reader.get_data(frame_index)
         self.texture.write(data=frame_data.tobytes())
 
     def update(self, elapsed_time: float) -> bool:
@@ -48,6 +58,13 @@ class VideoAnnotator(Editor):
         self.fbo.use()
         self.fbo.clear(color=(0.5, 0.5, 0.5, 1.0))
         self.ctx.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
+
+        if self.video_playing:
+            self.current_timestamp += elapsed_time
+            self.current_frame_index = int(self.current_timestamp * self.fps)
+            if self.current_frame_index >= self.total_num_frames:
+                self.current_frame_index = 0
+            self.update_texture(frame_index=self.current_frame_index)
 
         self.texture.use(location=0)
         self.fullscreen_quad_vao.render()
@@ -89,7 +106,9 @@ class VideoAnnotator(Editor):
     def render_ui(self):
         """Render the UI"""
         imgui.begin("Video Frame", True)
-        imgui.set_window_size(*self.texture.size)
+        imgui.set_window_size(*self.initial_window_size)
+
+        imgui.image(self.fbo.color_attachments[0].glo, *self.fbo.size)
 
         slider_activated, self.current_frame_index = imgui.slider_int(
             "Frame",
@@ -98,8 +117,23 @@ class VideoAnnotator(Editor):
             self.total_num_frames - 1)
 
         if slider_activated:
-            self.update_texture()
+            self.current_timestamp = self.current_frame_index / self.fps
+            self.update_texture(frame_index=self.current_frame_index)
 
         # Render the full-screen quad
-        imgui.image(self.fbo.color_attachments[0].glo, *self.fbo.size)
+
         imgui.end()
+
+    def handle_event_keyboard_press(self, key, scancode, mods):
+
+        if key == glfw.KEY_SPACE:
+            self.video_playing ^= True
+            self.logger.debug(f"Playing video: {self.video_playing}")
+
+        if key == glfw.KEY_RIGHT:
+            self.current_frame_index += 1
+            self.current_timestamp = self.current_frame_index / self.fps
+
+        if key == glfw.KEY_LEFT:
+            self.current_frame_index -= 1
+            self.current_timestamp = self.current_frame_index / self.fps
