@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from src2.core import constants
 from src2.editors.editor import Editor
 
+from src2.editors.video_annotator.ui_timeline_editor import UITimelineEditor
+
 
 class VideoAnnotator(Editor):
     label = "Video Annotator"
@@ -43,6 +45,9 @@ class VideoAnnotator(Editor):
             color_attachments=self.ctx.texture(self.frame_size, 3),
             depth_attachment=self.ctx.depth_texture(self.frame_size),
         )
+
+        # Main UI components
+        self.ui_timeline_editor = UITimelineEditor()
 
         # Subscribe to events
         self.event_publisher.subscribe(event_type=constants.EVENT_KEYBOARD_PRESS, listener=self)
@@ -119,6 +124,8 @@ class VideoAnnotator(Editor):
         if slider_activated:
             self.current_timestamp = self.current_frame_index / self.fps
             self.update_texture(frame_index=self.current_frame_index)
+
+        self.ui_timeline_editor.render()
 
         # Render the full-screen quad
 

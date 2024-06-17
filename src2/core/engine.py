@@ -27,14 +27,9 @@ from src2.components.material import Material
 from src2.components.mesh import Mesh
 
 # Render Stages
-from src2.render_stages.render_stage_forward import RenderStageForward
-from src2.render_stages.render_stage_selection import RenderStageSelection
-from src2.render_stages.render_stage_overlay import RenderStageOverlay
-from src2.render_stages.render_stage_shadow import RenderStageShadow
-from src2.render_stages.render_stage_screen import RenderStageScreen
 
 # Editors
-from src2.editors.video_annotator import VideoAnnotator
+from src2.editors.video_annotator.video_annotator import VideoAnnotator
 
 # Systems
 from src2.systems.transform_gizmo_system import SystemTransformGizmo
