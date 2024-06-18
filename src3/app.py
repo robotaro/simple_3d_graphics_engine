@@ -7,6 +7,8 @@ from src.utilities import utils_logging
 
 # Temporary
 from src3.editors.editor_3d_viewer import Editor3DViewer
+from src3.editors.video_annotator import VideoAnnotator
+from src3.editors.cube_demo import CubeDemo
 
 
 class App(WindowGLFW):
@@ -30,6 +32,22 @@ class App(WindowGLFW):
             shader_loader=self.shader_loader,
             params={}
             )
+        )
+
+        self.editors.append(VideoAnnotator(
+            ctx=self.ctx,
+            logger=self.logger,
+            event_publisher=self.event_publisher,
+            shader_loader=self.shader_loader,
+            params={})
+        )
+
+        self.editors.append(CubeDemo(
+            ctx=self.ctx,
+            logger=self.logger,
+            event_publisher=self.event_publisher,
+            shader_loader=self.shader_loader,
+            params={})
         )
 
         # Subscribe all editors to all events

@@ -1,10 +1,9 @@
 import logging
 import moderngl
 
-from src2.core import constants
-from src2.core.event_publisher import EventPublisher
-from src2.core.shader_program_library import ShaderProgramLibrary
-from src.core.data_manager import DataManager
+from src3 import constants
+from src3.event_publisher import EventPublisher
+from src3.shader_loader import ShaderLoader
 
 
 class Editor:
@@ -28,7 +27,7 @@ class Editor:
                  logger: logging.Logger,
                  ctx: moderngl.Context,
                  event_publisher: EventPublisher,
-                 shader_loader: ShaderProgramLibrary,
+                 shader_loader: ShaderLoader,
                  params: dict):
 
         self.logger = logger
@@ -37,10 +36,7 @@ class Editor:
         self.shader_library = shader_loader
         self.params = params if params is not None else {}
         self.active = True
-
-        # Dynamically build the event_handlers dictionary
         self.event_handlers = self.generate_event_handlers()
-        g = 9
 
     def generate_event_handlers(self) -> dict:
         event_handlers = {}

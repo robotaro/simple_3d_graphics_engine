@@ -10,7 +10,5 @@ class Editor3DViewer(Editor):
     def update(self, elapsed_time: float):
         pass
 
-    def handle_event_keyboard_press(self, event_data: tuple):
-        print(event_data)
 
     
