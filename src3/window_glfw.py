@@ -5,8 +5,11 @@ import moderngl
 import numpy as np
 from abc import ABC, abstractmethod
 
+# GUI
+import imgui
+from imgui.integrations.glfw import GlfwRenderer
 
-from src.core import constants
+from src3 import constants
 from src.utilities import utils_logging
 from src3.event_publisher import EventPublisher
 
@@ -34,7 +37,6 @@ class WindowGLFW(ABC):
     def __init__(self,
                  window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
                  window_title="New Editor",
-                 system_names=constants.DEFAULT_SYSTEMS,
                  vertical_sync=True):
 
         self.logger = utils_logging.get_project_logger()
@@ -78,6 +80,11 @@ class WindowGLFW(ABC):
         glfw.swap_interval(1 if self.vertical_sync else 0)
 
         self.ctx = moderngl.create_context()
+
+        # ImGUI
+        imgui.create_context()
+        self.imgui_renderer = GlfwRenderer(self.window_glfw, attach_callbacks=False)  # DISABLE attach_callbacks!!!!
+        self.imgui_exit_popup_open = False
 
         # Assign callback functions
         glfw.set_key_callback(self.window_glfw, self._glfw_callback_keyboard)
@@ -240,19 +247,34 @@ class WindowGLFW(ABC):
         self.mouse_state[constants.MOUSE_SCROLL_POSITION_LAST_FRAME] = self.mouse_state[
             constants.MOUSE_SCROLL_POSITION]
 
-    @abstractmethod
-    def initialise(self):
-        pass
+    def imgui_start(self):
+        self.imgui_renderer.process_inputs()
+        imgui.get_io().ini_file_name = ""  # Disables creating an .ini file with the last window details
+        imgui.new_frame()
+
+    def imgui_stop_and_render(self):
+
+        imgui.end_frame()
+        imgui.render()  # Doesn't really render, only sorts and organises the vertex data
+
+        # Render all gui to screen
+        self.ctx.screen.use()
+        self.ctx.screen.clear()
+        self.imgui_renderer.render(imgui.get_draw_data())
 
     @abstractmethod
-    def update(self):
+    def initialise(self):
+        self.logger.info("WindowGLFW initialised")
+
+    @abstractmethod
+    def update(self, elapsed_time: float):
         pass
 
     @abstractmethod
     def shutdown(self):
-        pass
+        self.logger.info("WindowGLFW shutdown")
 
-    def run(self, profiling_enabled=False):
+    def run(self):
         """
         Main function to run the application. Currently, holds a few debugging variables but it will
         be cleaner in the future.
@@ -264,14 +286,25 @@ class WindowGLFW(ABC):
 
         self.initialise()
 
-        # Update systems - Main Loop
+        # Prepare to enter main loop
         self.close_application = False
+        timestamp_past = time.perf_counter()
+
+        # Main loop
         while not glfw.window_should_close(self.window_glfw) and not self.close_application:
+
+            # Update elapsed time
+            timestamp = time.perf_counter()
+            elapsed_time = timestamp - timestamp_past
+            timestamp_past = timestamp
 
             # Process all OS events
             glfw.poll_events()
 
-            self.update()
+            # Render and Update goes here
+            self.imgui_start()
+            self.update(elapsed_time=elapsed_time)
+            self.imgui_stop_and_render()
 
             # Still swap these even if you have to exit application?
             glfw.swap_buffers(self.window_glfw)

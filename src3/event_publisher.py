@@ -1,7 +1,5 @@
 import logging
 from typing import Any
-from src2.core import constants
-
 
 class EventPublisher:
 
@@ -11,42 +9,14 @@ class EventPublisher:
     ]
 
     def __init__(self, logger: logging.Logger):
-
         self.logger = logger
+        self.listeners = []
 
-        # Do it manually here to avoid having to check at every publish() call
-        self.listeners = {
-            constants.EVENT_KEYBOARD_PRESS: [],
-            constants.EVENT_KEYBOARD_RELEASE: [],
-            constants.EVENT_KEYBOARD_REPEAT: [],
-            constants.EVENT_MOUSE_ENTER_UI: [],
-            constants.EVENT_MOUSE_LEAVE_UI: [],
-            constants.EVENT_MOUSE_BUTTON_PRESS: [],
-            constants.EVENT_MOUSE_BUTTON_RELEASE: [],
-            constants.EVENT_MOUSE_DOUBLE_CLICK: [],
-            constants.EVENT_MOUSE_MOVE: [],
-            constants.EVENT_MOUSE_SCROLL: [],
-            constants.EVENT_WINDOW_SIZE: [],
-            constants.EVENT_WINDOW_FRAMEBUFFER_SIZE: [],
-            constants.EVENT_WINDOW_DROP_FILES: [],
-            constants.EVENT_ENTITY_SELECTED: [],
-            constants.EVENT_ENTITY_DESELECTED: [],
-            constants.EVENT_MOUSE_ENTER_GIZMO_3D: [],
-            constants.EVENT_MOUSE_LEAVE_GIZMO_3D: [],
-            constants.EVENT_MOUSE_GIZMO_3D_ACTIVATED: [],
-            constants.EVENT_MOUSE_GIZMO_3D_DEACTIVATED: [],
-            constants.EVENT_PROFILING_SYSTEM_PERIODS: []
-        }
+    def subscribe(self, listener: Any):
+        self.listeners.append(listener)
 
-    def subscribe(self, event_type: int, listener: Any):
-        if event_type not in self.listeners:
-            raise KeyError(f"[ERROR] Failed to subscribe to event. Event '{event_type}' "
-                           f"does not exist. Please check spelling.")
-        self.listeners[event_type].append(listener)
-
-    def unsubscribe(self, event_type, listener):
-        if listener in self.listeners[event_type]:
-            self.listeners[event_type].remove(listener)
+    def unsubscribe(self, listener):
+        self.listeners.remove(listener)
 
     def publish(self, event_type: int, sender, **kwargs) -> None:
         """
@@ -58,7 +28,11 @@ class EventPublisher:
         :return: None
         """
 
-        for listener in self.listeners[event_type]:
+        # DEBUG
+        if event_type == 31:
+            g = 0
+
+        for listener in self.listeners:
 
             # Prevent a sender to publishing to itself and creating a potential infinite loop
             if sender == listener:
