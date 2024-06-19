@@ -28,10 +28,6 @@ class EventPublisher:
         :return: None
         """
 
-        # DEBUG
-        if event_type == 31:
-            g = 0
-
         for listener in self.listeners:
 
             # Prevent a sender to publishing to itself and creating a potential infinite loop

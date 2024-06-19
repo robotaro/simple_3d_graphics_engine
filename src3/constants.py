@@ -70,3 +70,25 @@ EVENT_PROFILING_SYSTEM_PERIODS = "profiling_system_periods"  # args (("system_a"
 EVENT_WINDOW_SIZE = "window_size"                           # args: (width, height) <int, int>
 EVENT_WINDOW_FRAMEBUFFER_SIZE = "window_framebuffer_size"   # args: (width, height) <int, int>
 EVENT_WINDOW_DROP_FILES = "window_drop_files"               # args: (filepath, ...) <str, ...>
+
+# =============================================================================
+#                             ModernGL Variables
+# =============================================================================
+
+# Input buffer names
+SHADER_INPUT_VERTEX = "in_vert"
+SHADER_INPUT_NORMAL = "in_normal"
+SHADER_INPUT_COLOR = "in_color"
+SHADER_INPUT_JOINT = "in_joint"
+SHADER_INPUT_WEIGHT = "in_weight"
+SHADER_INPUT_UV = "in_uv"
+
+# Meshes
+MESH_RENDER_MODE_POINTS = 0x0000     # Value from ModernGL -> also matches OpenGL
+MESH_RENDER_MODE_LINES = 0x0001      # Value from ModernGL -> also matches OpenGL
+MESH_RENDER_MODE_TRIANGLES = 0x0004  # Value from ModernGL -> also matches OpenGL
+MESH_RENDER_MODES = {
+    "points": MESH_RENDER_MODE_POINTS,
+    "lines": MESH_RENDER_MODE_LINES,
+    "triangles": MESH_RENDER_MODE_TRIANGLES
+}

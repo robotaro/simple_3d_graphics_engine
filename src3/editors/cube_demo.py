@@ -8,6 +8,11 @@ from pyrr import Matrix44, Vector3
 from src3.editors.editor import Editor
 
 
+"""
+Written by ChatGPT4o and fixed by yours truly. Bloody transformer forgot to initialise the framebuffer!
+"""
+
+
 class CubeDemo(Editor):
     label = "Cube Demo"
 

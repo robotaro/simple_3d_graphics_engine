@@ -83,7 +83,7 @@ class WindowGLFW(ABC):
 
         # ImGUI
         imgui.create_context()
-        self.imgui_renderer = GlfwRenderer(self.window_glfw, attach_callbacks=False)  # DISABLE attach_callbacks!!!!
+        self.imgui_renderer = GlfwRenderer(self.window_glfw)  # DISABLE attach_callbacks!!!!
         self.imgui_exit_popup_open = False
 
         # Assign callback functions
@@ -200,6 +200,10 @@ class WindowGLFW(ABC):
                                      event_data=(x_offset, y_offset),
                                      sender=self)
         self.mouse_state[constants.MOUSE_SCROLL_POSITION] += y_offset
+
+        # Since we overrode the glfw callbacks that imgui set, we need to provide the updates ourselves
+        imgui.get_io().mouse_wheel_horizontal = x_offset
+        imgui.get_io().mouse_wheel = y_offset
 
     def _glfw_callback_window_resize(self, glfw_window, width, height):
         self.event_publisher.publish(event_type=constants.EVENT_WINDOW_SIZE,
