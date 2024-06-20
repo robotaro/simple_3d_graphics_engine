@@ -18,7 +18,7 @@ class CubeDemo(Editor):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.program = self.shader_library.shaders["cube_simple.glsl"].program
+        self.program = self.shader_loader.shaders["cube_simple.glsl"].program
         self.cube_vao = self.create_cube_vao()
         self.model_matrix = Matrix44.identity()
         self.camera_matrix = Matrix44.look_at(
@@ -86,7 +86,7 @@ class CubeDemo(Editor):
         )
         return vao
 
-    def update(self, elapsed_time: float):
+    def update(self, time: float, elapsed_time: float):
         self.fbo.use()
         self.ctx.clear(0.2, 0.3, 0.3)
         self.ctx.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)

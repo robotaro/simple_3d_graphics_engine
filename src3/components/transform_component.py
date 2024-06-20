@@ -5,7 +5,7 @@ from src.math import mat4
 from src2.components.component import Component
 
 
-class Transform(Component):
+class TransformComponent:
 
     _type = "transform_3d"
 
@@ -16,18 +16,17 @@ class Transform(Component):
         "position",
         "rotation",
         "scale",
-        "degrees",
+        "use_degrees",
         "input_values_updated",
         "local_matrix_updated",
         "dirty"
     ]
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, position: tuple, rotation: tuple, scale: tuple, use_degrees=False):
 
-        self.position = tuple(self.params.get("position", [0.0, 0.0, 0.0]))
-        self.rotation = tuple(self.params.get("rotation", [0.0, 0.0, 0.0]))
-        self.scale = tuple(self.params.get("scale", [1.0, 1.0, 1.0]))
+        self.position = position
+        self.rotation = rotation
+        self.scale = scale
 
         if len(self.scale) == 1:
             self.scale = (self.scale[0], self.scale[0], self.scale[0])
@@ -36,9 +35,9 @@ class Transform(Component):
             raise Exception("[ERROR] Input scale from parameters contains 2 values. Please make sure you have"
                             "either 1 or 3")
 
-        self.degrees = self.params["degrees"] if "degrees" in self.params else False
+        self.use_degrees = use_degrees
 
-        if self.degrees:
+        if self.use_degrees:
             self.rotation = (np.radians(self.rotation[0]),
                              np.radians(self.rotation[1]),
                              np.radians(self.rotation[2]))

@@ -577,7 +577,7 @@ class Engine:
             for _, editor in self.editors.items():
                 if not editor.active:
                     continue
-                editor.update(elapsed_time=elapsed_time)
+                editor.update(float, elapsed_time=elapsed_time)
 
             self.imgui_main_menu_bar()
             self.imgui_exit_modal()

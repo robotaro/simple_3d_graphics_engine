@@ -15,7 +15,7 @@ class Editor:
         "event_publisher",
         "data_manager",
         "scene",
-        "shader_library",
+        "shader_loader",
         "current_action",
         "event_handlers",
         "active"
@@ -33,7 +33,7 @@ class Editor:
         self.logger = logger
         self.ctx = ctx
         self.event_publisher = event_publisher
-        self.shader_library = shader_loader
+        self.shader_loader = shader_loader
         self.params = params if params is not None else {}
         self.active = True
         self.event_handlers = self.generate_event_handlers()
@@ -53,10 +53,10 @@ class Editor:
     def on_event(self, event_type: int, **kwargs):
         self.event_handlers[event_type](**kwargs)
 
-    def initialise(self) -> bool:
+    def setup(self) -> bool:
         return True
 
-    def update(self, elapsed_time: float):
+    def update(self, time: float, elapsed_time: float):
         pass
 
     def shutdown(self):

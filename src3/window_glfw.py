@@ -271,7 +271,7 @@ class WindowGLFW(ABC):
         self.logger.info("WindowGLFW initialised")
 
     @abstractmethod
-    def update(self, elapsed_time: float):
+    def update(self, time: float, elapsed_time: float):
         pass
 
     @abstractmethod
@@ -307,7 +307,7 @@ class WindowGLFW(ABC):
 
             # Render and Update goes here
             self.imgui_start()
-            self.update(elapsed_time=elapsed_time)
+            self.update(time=timestamp, elapsed_time=elapsed_time)
             self.imgui_stop_and_render()
 
             # Still swap these even if you have to exit application?

@@ -465,7 +465,7 @@ class Editor:
             for system in self.systems:
 
                 t0_system = time.perf_counter()
-                if not system.update(elapsed_time=elapsed_time, context=self.ctx):
+                if not system.update(float, elapsed_time=elapsed_time):
                     self.close_application = True
                     break
                 t1_system = time.perf_counter()

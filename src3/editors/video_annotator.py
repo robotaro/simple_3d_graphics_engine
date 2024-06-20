@@ -30,7 +30,7 @@ class VideoAnnotator(Editor):
         self.video_playing = False
         self.frame_size = self.meta_data["size"]
 
-        self.program = self.shader_library.shaders["texture.glsl"].program
+        self.program = self.shader_loader.shaders["texture.glsl"].program
         self.fullscreen_quad_vao = self.create_full_screen_quad_vao()
         self.texture = self.ctx.texture(self.frame_size, 3)  # Adjust the size as needed
         random_data = np.random.randint(0, 255, (*self.frame_size, 3)).astype('u1')  # Generate random RGBA data
@@ -50,7 +50,7 @@ class VideoAnnotator(Editor):
         frame_data = self.reader.get_data(frame_index)
         self.texture.write(data=frame_data.tobytes())
 
-    def update(self, elapsed_time: float):
+    def update(self, time: float, elapsed_time: float):
 
         self.fbo.use()
         self.fbo.clear(color=(0.5, 0.5, 0.5, 1.0))

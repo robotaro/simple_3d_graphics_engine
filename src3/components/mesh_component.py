@@ -7,7 +7,7 @@ from src.core.data_group import DataGroup
 
 VBO_DECLARATION_MAP = {
     # key       (buffer_data_type, buffer_data_size, shader_variable)
-    "vertices": ("f4", "3f", constants.SHADER_INPUT_VERTEX),
+    "vertices": ("f4", "3f", constants.SHADER_INPUT_POSITION),
     "normals": ("f4", "3f", constants.SHADER_INPUT_NORMAL),
     "colors": ("f4", "3f", constants.SHADER_INPUT_COLOR),
     "joints": ("i4", "4i", constants.SHADER_INPUT_JOINT),
@@ -77,6 +77,11 @@ class MeshComponent:
         # Each vbo has its own configuration, so a list must be made for all before you create each VAO
         vbo_declaration_list = []
         for vbo_name, vbo_object in self.vbos.items():
+            if vbo_name == "indices":
+                continue
+            if vbo_object is None:
+                continue
+
             data_size = VBO_DECLARATION_MAP[vbo_name][1]
             shader_variable = VBO_DECLARATION_MAP[vbo_name][2]
             vbo_declaration_list.append((vbo_object, data_size, shader_variable))

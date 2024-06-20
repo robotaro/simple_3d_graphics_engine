@@ -2,11 +2,10 @@ import numpy as np
 import moderngl
 
 from src.core import constants
-from src2.components.component import Component
 from src2.utilities import utils_params
 
 
-class Material(Component):
+class MaterialComponent:
 
     _type = constants.COMPONENT_TYPE_MESH  # TODO: I think I don't need to set the type as I can use the class itself
 

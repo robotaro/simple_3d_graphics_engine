@@ -76,7 +76,7 @@ EVENT_WINDOW_DROP_FILES = "window_drop_files"               # args: (filepath, .
 # =============================================================================
 
 # Input buffer names
-SHADER_INPUT_VERTEX = "in_vert"
+SHADER_INPUT_POSITION = "in_position"
 SHADER_INPUT_NORMAL = "in_normal"
 SHADER_INPUT_COLOR = "in_color"
 SHADER_INPUT_JOINT = "in_joint"

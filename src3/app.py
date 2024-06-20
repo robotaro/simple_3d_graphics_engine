@@ -9,6 +9,7 @@ from src.utilities import utils_logging
 from src3.editors.editor_3d_viewer import Editor3DViewer
 from src3.editors.video_annotator import VideoAnnotator
 from src3.editors.cube_demo import CubeDemo
+from src3.editors.gltf_demo import GLTFDemo
 
 
 class App(WindowGLFW):
@@ -24,41 +25,32 @@ class App(WindowGLFW):
     def initialise(self):
         self.shader_loader.load_shaders(directory=constants.SHADERS_DIR)
 
-        # Create editors (temporary!)
-        self.editors.append(Editor3DViewer(
-            ctx=self.ctx,
-            logger=self.logger,
-            event_publisher=self.event_publisher,
-            shader_loader=self.shader_loader,
-            params={}
+        editor_classes = [
+            VideoAnnotator,
+            GLTFDemo
+        ]
+
+        for editor_class in editor_classes:
+            self.editors.append(editor_class(
+                ctx=self.ctx,
+                logger=self.logger,
+                event_publisher=self.event_publisher,
+                shader_loader=self.shader_loader,
+                params={}
+                )
             )
-        )
-
-        self.editors.append(VideoAnnotator(
-            ctx=self.ctx,
-            logger=self.logger,
-            event_publisher=self.event_publisher,
-            shader_loader=self.shader_loader,
-            params={})
-        )
-
-        self.editors.append(CubeDemo(
-            ctx=self.ctx,
-            logger=self.logger,
-            event_publisher=self.event_publisher,
-            shader_loader=self.shader_loader,
-            params={})
-        )
 
         # Subscribe all editors to all events
         for editor in self.editors:
-            editor.initialise()
+            editor.setup()
             self.event_publisher.subscribe(listener=editor)
 
-    def update(self, elapsed_time: float):
+        # initialise all Editors
+
+    def update(self, time: float, elapsed_time: float):
 
         for editor in self.editors:
-            editor.update(elapsed_time=elapsed_time)
+            editor.update(time, elapsed_time=elapsed_time)
 
         # DEBUG
         imgui.show_test_window()
