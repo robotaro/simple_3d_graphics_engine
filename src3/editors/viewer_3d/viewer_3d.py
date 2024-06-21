@@ -1,9 +1,11 @@
 import imgui
 import os
 import numpy as np
+import moderngl
 import glm
 from glm import mat4, vec3
 
+from src.geometry_3d.mesh_factory_3d import MeshFactory3D
 from src3 import constants
 from src3.io.gltf_reader import GLTFReader
 from src3.editors.editor import Editor
@@ -29,7 +31,7 @@ class Viewer3D(Editor):
         # Camera variables - temporary
         aspect_ratio = self.fbo_size[0] / self.fbo_size[1]
         self.projection_matrix = glm.perspective(glm.radians(45.0), aspect_ratio, 0.1, 100.0)
-        self.view_matrix = glm.inverse(glm.translate(glm.mat4(1.0), glm.vec3(2.0, 0.0, 10.0)))
+        self.view_matrix = glm.inverse(glm.translate(glm.mat4(1.0), glm.vec3(0.0, 1.0, 5.0)))
 
         self.entities = {}
 
@@ -38,10 +40,48 @@ class Viewer3D(Editor):
 
     def setup(self) -> bool:
 
-        # Generate components
+        self.entities[1] = self.create_axis_entity()
+
+        #gltf_fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "situp_to_iddle.gltf")
+        #self.entities[2] = self.load_gltf_entity(fpath=gltf_fpath)
+
+        return True
+
+    def create_axis_entity(self):
+        mesh_factory = MeshFactory3D()
+        radius = 0.1
+        shape_list = [
+            {"name": "cylinder",
+             "point_a": (0.0, 0.0, 0.0),
+             "point_b": (1.0, 0.0, 0.0),
+             "radius": radius,
+             "color": (1.0, 0.3, 0.3)},
+            {"name": "cylinder",
+             "point_a": (0.0, 0.0, 0.0),
+             "point_b": (0.0, 1.0, 0.0),
+             "radius": radius,
+             "color": (0.3, 1.0, 0.3)},
+            {"name": "cylinder",
+             "point_a": (0.0, 0.0, 0.0),
+             "point_b": (0.0, 0.0, 1.0),
+             "radius": radius,
+             "color": (0.3, 0.3, 1.0)}
+        ]
+        mesh_data = mesh_factory.generate_mesh(shape_list=shape_list)
+
+        mesh_component = self.component_factory.create_mesh(
+            vertices=mesh_data["vertices"],
+            normals=mesh_data["normals"],
+            colors=mesh_data["colors"]
+        )
+        transform_component = self.component_factory.create_transform()
+
+        # Create entity
+        return self.entity_factory.create_renderable(component_list=[mesh_component, transform_component])
+
+    def load_gltf_entity(self, fpath: str):
         reader = GLTFReader()
-        gltf_fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "situp_to_iddle.gltf")
-        reader.load(gltf_fpath=gltf_fpath)
+        reader.load(gltf_fpath=fpath)
         meshes = reader.get_meshes()
 
         mesh_component = self.component_factory.create_mesh(
@@ -51,10 +91,7 @@ class Viewer3D(Editor):
         transform_component = self.component_factory.create_transform()
 
         # Create entity
-        self.entities[1] = self.entity_factory.create_renderable(
-            component_list=[mesh_component, transform_component])
-
-        return True
+        return self.entity_factory.create_renderable(component_list=[mesh_component, transform_component])
 
     def update(self, time: float, elapsed_time: float):
         self.render_scene()
@@ -80,6 +117,7 @@ class Viewer3D(Editor):
         self.program['camPos'].value = (0.0, 0.0, 3.0)
 
         self.fbo.use()
+        self.ctx.enable(moderngl.DEPTH_TEST)
         self.fbo.clear()
 
         # Render renderable entities
@@ -105,7 +143,10 @@ class Viewer3D(Editor):
 
         # Right Column - 3D Scene
         with imgui.begin_group():
-            imgui.image(self.fbo.color_attachments[0].glo, *self.fbo.size)
+            texture_id = self.fbo.color_attachments[0].glo
+
+            # NOTE: I'm using the uv0 and uv1 arguments to FLIP the image back vertically, as it is flipped by default
+            imgui.image(texture_id, *self.fbo.size, uv0=(0, 1), uv1=(1, 0))
 
         imgui.end()
 

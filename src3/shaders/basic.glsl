@@ -4,6 +4,7 @@
 
 layout (location = 0) in vec3 in_position;
 layout (location = 1) in vec3 in_normal;
+layout (location = 2) in vec3 in_color;
 
 out vec3 normal;
 out vec3 color;
@@ -18,7 +19,7 @@ uniform mat4 m_view_light;
 void main() {
     fragPos = vec3(m_model * vec4(in_position, 1.0));
     normal = mat3(transpose(inverse(m_model))) * normalize(in_normal);
-    color = vec3(1.0, 0.5, 0.0);
+    color = in_color;
     gl_Position = m_proj * m_view * m_model * vec4(in_position, 1.0);
 }
 

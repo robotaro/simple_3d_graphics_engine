@@ -42,14 +42,14 @@ class MeshComponent:
             "normals": self.create_vbo(vbo_name="normals", vbo_data=normals),
             "colors": self.create_vbo(vbo_name="colors", vbo_data=colors),
         }
-        self.ibo = self.ctx.buffer(indices.astype("i4").tobytes())if indices is not None else None
+        self.ibo = self.ctx.buffer(indices.astype("i4").tobytes()) if indices is not None else None
         self.vaos = {}
         self.render_mode = render_mode
 
     def render(self, shader_program_name: str, num_instances=1):
         vao = self.vaos.get(shader_program_name, None)
         if vao is None:
-            raise Exception(f"[ERROR] You are trying to render a mesh component with a VAO that does not exists: {program_shader_name}")
+            raise Exception(f"[ERROR] You are trying to render a mesh component with a VAO that does not exists: {shader_program_name}")
 
         vao.render(mode=self.render_mode, instances=num_instances)
 
@@ -81,12 +81,7 @@ class MeshComponent:
             shader_variable = VBO_DECLARATION_MAP[vbo_name][2]
             vbo_declaration_list.append((vbo_object, data_size, shader_variable))
 
-        # Create VAOs - one per shader program
-        # TODO: I think one version serves both if ibo_faces is None. Default value seems ot be None as well
-        #if self.ibo is None:
         self.vaos[shader_program_name] = self.ctx.vertex_array(shader_program, vbo_declaration_list, self.ibo)
-        #else:
-        #    self.vaos[shader_program_name] = self.ctx.vertex_array(shader_program, vbo_declaration_list, self.vbos["indices"])
 
     def release(self):
 
