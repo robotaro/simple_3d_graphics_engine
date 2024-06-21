@@ -99,7 +99,7 @@ class TransformComponent:
         self.position = position
         self.input_values_updated = True
 
-    def draw_imgui_properties(self, imgui):
+    def render_ui(self, imgui):
 
         imgui.text(f"Transform")
         a, self.position = imgui.drag_float3("Position", *self.position, constants.IMGUI_DRAG_FLOAT_PRECISION)

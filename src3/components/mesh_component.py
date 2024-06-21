@@ -41,20 +41,19 @@ class MeshComponent:
             "vertices": self.create_vbo(vbo_name="vertices", vbo_data=vertices),
             "normals": self.create_vbo(vbo_name="normals", vbo_data=normals),
             "colors": self.create_vbo(vbo_name="colors", vbo_data=colors),
-            "indices": self.create_vbo(vbo_name="indices", vbo_data=indices)
         }
-        self.ibo = 0
+        self.ibo = self.ctx.buffer(indices.astype("i4").tobytes())if indices is not None else None
         self.vaos = {}
         self.render_mode = render_mode
 
-    def render(self, program_name: str, num_instances=1):
-        vao = self.vaos.get(program_name, None)
+    def render(self, shader_program_name: str, num_instances=1):
+        vao = self.vaos.get(shader_program_name, None)
         if vao is None:
-            raise Exception(f"[ERROR] You are trying to render a mesh component with a VAO that does not exists: {program_name}")
+            raise Exception(f"[ERROR] You are trying to render a mesh component with a VAO that does not exists: {program_shader_name}")
 
         vao.render(mode=self.render_mode, instances=num_instances)
 
-    def upload_vbo_data(self, vbo_name: str, data: np.ndarray):
+    def update_vbo_data(self, vbo_name: str, data: np.ndarray):
         """
         You can use this up dynamically update the data in the GPU
         :param vbo_name: str, any of the buffers, like vertices, colors, etc
@@ -67,11 +66,7 @@ class MeshComponent:
 
         if vbo_data is None:
             return None
-
         data_type = VBO_DECLARATION_MAP[vbo_name][0]
-        if vbo_name == "indices":
-            return self.ctx.buffer(vbo_data.astype(data_type).tobytes())
-
         return self.ctx.buffer(vbo_data.astype(data_type).tobytes())
 
     def create_vao(self, shader_program_name: str, shader_program: moderngl.Program):
@@ -79,8 +74,6 @@ class MeshComponent:
         # Each vbo has its own configuration, so a list must be made for all before you create each VAO
         vbo_declaration_list = []
         for vbo_name, vbo_object in self.vbos.items():
-            if vbo_name == "indices":
-                continue
             if vbo_object is None:
                 continue
 
@@ -90,10 +83,10 @@ class MeshComponent:
 
         # Create VAOs - one per shader program
         # TODO: I think one version serves both if ibo_faces is None. Default value seems ot be None as well
-        if self.vbos.get("indices", None) is None:
-            self.vaos[shader_program_name] = self.ctx.vertex_array(shader_program, vbo_declaration_list)
-        else:
-            self.vaos[shader_program_name] = self.ctx.vertex_array(shader_program, vbo_declaration_list, self.vbos["indices"])
+        #if self.ibo is None:
+        self.vaos[shader_program_name] = self.ctx.vertex_array(shader_program, vbo_declaration_list, self.ibo)
+        #else:
+        #    self.vaos[shader_program_name] = self.ctx.vertex_array(shader_program, vbo_declaration_list, self.vbos["indices"])
 
     def release(self):
 

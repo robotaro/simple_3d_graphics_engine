@@ -1,6 +1,7 @@
 import moderngl
 
 from src3.entities.entity import Entity
+from src3.entities.renderable_entity import RenderableEntity
 
 
 class EntityFactory:

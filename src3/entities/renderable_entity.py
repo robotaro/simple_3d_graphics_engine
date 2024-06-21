@@ -11,4 +11,4 @@ class RenderableEntity(Entity):
         # Set model transform
 
         # Render VAO
-        self.co
+        pass
