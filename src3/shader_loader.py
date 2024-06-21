@@ -14,6 +14,7 @@ class Shader:
 
 
 class ShaderLoader:
+
     def __init__(self, ctx: moderngl.Context, logger: logging.Logger = None):
         self.ctx = ctx
         self.logger = logger if logger is not None else logging.getLogger(__name__)
@@ -26,21 +27,18 @@ class ShaderLoader:
 
         # Load all shaders
         glsl_filenames = [filename for filename in os.listdir(directory) if filename.endswith('.glsl')]
+        self.logger.info(f"Found {len(glsl_filenames)} shaders")
+
         for filename in glsl_filenames:
-
             shader_fpath = os.path.join(directory, filename)
-
             with open(shader_fpath, 'r') as file:
                 raw_source_code = file.read()
                 self.shaders[filename] = self.create_shader(raw_source_code=raw_source_code)
-                self.logger.info(f"Shader found: {filename}")
 
         # Compile all shaders
         for name, shader in self.shaders.items():
-            self.logger.info(f"Compiling shader: {name}")
             self.compile_program(shader=shader)
-            g = 0
-
+            self.logger.info(f"Shader compiled: {name}")
 
     def create_shader(self, raw_source_code) -> Shader:
         """
@@ -73,42 +71,33 @@ class ShaderLoader:
             if parts[0] == "uniform" and parts[1] == "sampler2d":
                 input_textures.append(parts[2].strip(";"))
 
-
         return Shader(
             source_code_lines=code_lines,
             input_textures=input_textures,
             version=version,
             program=None)
 
-    def compile_program(self, shader: Shader) -> None:
+    def compile_program(self, shader: Shader):
         """
         Compile shaders into a program.
         """
 
+        shader_names_in_order = ["vertex", "geometry", "fragment"]
+        shader_sources = []
+
         try:
-            vertex_source = self.generate_shader_source_code(
-                code_lines=shader.source_code_lines,
-                version=shader.version,
-                shader_type="vertex"
-            )
-            geometry_source = self.generate_shader_source_code(
-                code_lines=shader.source_code_lines,
-                version=shader.version,
-                shader_type="geometry"
-            )
-            fragment_source = self.generate_shader_source_code(
-                code_lines=shader.source_code_lines,
-                version=shader.version,
-                shader_type="fragment"
-            )
+            for name in shader_names_in_order:
+                shader_sources.append(
+                    self.generate_shader_source_code(
+                        code_lines=shader.source_code_lines,
+                        version=shader.version,
+                        shader_type=name))
 
             shader.program = self.ctx.program(
-                vertex_shader=vertex_source,
-                geometry_shader=geometry_source,
-                fragment_shader=fragment_source
-            )
+                vertex_shader=shader_sources[0],
+                geometry_shader=shader_sources[1],
+                fragment_shader=shader_sources[2])
 
-            self.logger.info("Program compiled successfully")
         except Exception as error:
             self.logger.error(f"Failed to compile program: {error}")
 
@@ -139,16 +128,3 @@ class ShaderLoader:
         Retrieve the compiled program by label.
         """
         return self.shaders[shader_filename].program
-
-
-# Example usage
-if __name__ == '__main__':
-    import moderngl
-    ctx = moderngl.create_standalone_context()
-
-    shader_loader = ShaderLoader(ctx)
-    shader_loader.load_shaders(r"D:\git_repositories\alexandrepv\simple_3d_graphics_engine\src3\shaders")
-
-    # Retrieve a compiled shader
-    vertex_shader = shader_loader.get_shader('vertex_shader.glsl')
-    fragment_shader = shader_loader.get_shader('fragment_shader.glsl')

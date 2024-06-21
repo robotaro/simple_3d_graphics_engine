@@ -1,24 +1,21 @@
 import logging
 import moderngl
+from abc import ABC, abstractmethod
 
 from src3 import constants
 from src3.event_publisher import EventPublisher
 from src3.shader_loader import ShaderLoader
 
 
-class Editor:
+class Editor(ABC):
 
     __slots__ = [
         "logger",
         "ctx",
         "params",
         "event_publisher",
-        "data_manager",
-        "scene",
         "shader_loader",
-        "current_action",
-        "event_handlers",
-        "active"
+        "event_handlers"
     ]
 
     label = "editor_base"
@@ -35,10 +32,9 @@ class Editor:
         self.event_publisher = event_publisher
         self.shader_loader = shader_loader
         self.params = params if params is not None else {}
-        self.active = True
-        self.event_handlers = self.generate_event_handlers()
+        self.event_handlers = self._assign_event_handlers()
 
-    def generate_event_handlers(self) -> dict:
+    def _assign_event_handlers(self) -> dict:
         event_handlers = {}
         for attr in dir(self):
             if not attr.startswith("handle_event_"):
@@ -53,17 +49,20 @@ class Editor:
     def on_event(self, event_type: int, **kwargs):
         self.event_handlers[event_type](**kwargs)
 
+    @abstractmethod
     def setup(self) -> bool:
         return True
 
+    @abstractmethod
     def update(self, time: float, elapsed_time: float):
         pass
 
+    @abstractmethod
     def shutdown(self):
         pass
 
     # ========================================================================
-    #                         Event callbacks
+    #                           Event Handlers
     # ========================================================================
 
     def handle_event_keyboard_press(self, event_data: tuple):

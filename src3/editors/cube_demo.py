@@ -86,9 +86,12 @@ class CubeDemo(Editor):
         )
         return vao
 
+    def setup(self) -> bool:
+        return True
+
     def update(self, time: float, elapsed_time: float):
         self.fbo.use()
-        self.ctx.clear(0.2, 0.3, 0.3)
+        self.fbo.clear(0.2, 0.3, 0.3)
         self.ctx.enable(moderngl.DEPTH_TEST | moderngl.CULL_FACE)
 
         self.program['m_model'].write(self.model_matrix.astype('f4').tobytes())
@@ -100,6 +103,9 @@ class CubeDemo(Editor):
 
         # Render the UI on top of the 3D scene
         self.render_ui()
+
+    def shutdown(self):
+        pass
 
     def render_ui(self):
         """Render the UI"""

@@ -18,8 +18,8 @@ Written by ChatGPT4o and fixed by yours truly. Bloody transformer forgot to init
 """
 
 
-class GLTFDemo(Editor):
-    label = "GLTF Demo"
+class GLTFLoadDemo(Editor):
+    label = "GLTF Load Demo"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -33,7 +33,7 @@ class GLTFDemo(Editor):
 
         self.model_matrix = Matrix44.identity()
         self.camera_matrix = Matrix44.look_at(
-            eye=Vector3([-100.0, -100.0, 6.0]),
+            eye=Vector3([100.0, 100.0, 100.0]),
             target=Vector3([0.0, 0.0, 0.0]),
             up=Vector3([0.0, 0.0, 1.0])
         )
@@ -48,11 +48,11 @@ class GLTFDemo(Editor):
 
         reader = GLTFReader()
 
-        gltf_fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "BrainStem.gltf")
+        gltf_fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "Duckpaa6lgsfsngq0i1w.glb")
         reader.load(gltf_fpath=gltf_fpath)
         meshes = reader.get_meshes()
 
-        vertices = np.concatenate([meshes[-1]["attributes"]["POSITION"],
+        vertices = np.concatenate([meshes[-1]["attributes"]["POSITION"] * 0.01,
                                    meshes[-1]["attributes"]["NORMAL"]], axis=1)
         indices = meshes[-1]["indices"].astype(np.uint32)
 
@@ -67,10 +67,13 @@ class GLTFDemo(Editor):
         )
         return vao
 
+    def setup(self) -> bool:
+        return True
+
     def update(self, time: float, elapsed_time: float):
 
         angle = time
-        self.fbo.clear(1.0, 1.0, 1.0)
+        self.fbo.clear(0.0, 0.0, 0.0)
         self.ctx.enable(moderngl.DEPTH_TEST)  # This is the global state! It will be applied to any operations after this, including the framebuffer!
         self.fbo.use()
 
@@ -89,9 +92,13 @@ class GLTFDemo(Editor):
         # Render the UI on top of the 3D scene
         self.render_ui()
 
+    def shutdown(self):
+        self.vao.release()
+        self.logger.info("GLTF Demo shutdown complete")
+
     def render_ui(self):
         """Render the UI"""
-        imgui.begin(GLTFDemo.label, True)
+        imgui.begin(GLTFLoadDemo.label, True)
         imgui.set_window_size(*self.framebuffer_size)
 
         imgui.image(self.fbo.color_attachments[0].glo, *self.fbo.size)
@@ -112,6 +119,3 @@ class GLTFDemo(Editor):
         elif key == glfw.KEY_RIGHT:
             self.model_matrix *= Matrix44.from_translation([0.1, 0.0, 0.0])
 
-    def shutdown(self):
-        self.vao.release()
-        self.logger.info("GLTF Demo shutdown complete")

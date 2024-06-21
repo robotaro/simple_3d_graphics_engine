@@ -1,12 +1,12 @@
 import sys
 import os
 
-
 path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.append(path)
 
 from src3.io.gltf_reader import GLTFReader
 from src3.app import App
+
 
 def load_gltf():
 
@@ -20,8 +20,6 @@ def load_gltf():
     nodes = reader.get_nodes()
     animations = reader.get_animations()
     skeletons = reader.get_skeletons()
-
-    g = 0
 
 
 def main():

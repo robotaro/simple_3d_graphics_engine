@@ -50,6 +50,9 @@ class VideoAnnotator(Editor):
         frame_data = self.reader.get_data(frame_index)
         self.texture.write(data=frame_data.tobytes())
 
+    def setup(self) -> bool:
+        return True
+
     def update(self, time: float, elapsed_time: float):
 
         self.fbo.use()
@@ -68,6 +71,9 @@ class VideoAnnotator(Editor):
 
         # Render UI to screen
         self.render_ui()
+
+    def shutdown(self):
+        pass
 
     def create_full_screen_quad_vao(self, size=(2.0, 2.0), position=(-1.0, -1.0)) -> moderngl.VertexArray:
             width, height = size

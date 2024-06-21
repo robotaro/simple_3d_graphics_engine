@@ -23,6 +23,7 @@ class MeshComponent:
         "ctx",
         "vaos",
         "vbos",
+        "ibo",
         "render_mode",
         "visible"
     ]
@@ -42,6 +43,7 @@ class MeshComponent:
             "colors": self.create_vbo(vbo_name="colors", vbo_data=colors),
             "indices": self.create_vbo(vbo_name="indices", vbo_data=indices)
         }
+        self.ibo = 0
         self.vaos = {}
         self.render_mode = render_mode
 

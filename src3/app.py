@@ -6,10 +6,10 @@ from src3.window_glfw import WindowGLFW
 from src.utilities import utils_logging
 
 # Temporary
-from src3.editors.editor_3d_viewer import Editor3DViewer
+from src3.editors.viewer_3d.viewer_3d import Viewer3D
 from src3.editors.video_annotator import VideoAnnotator
 from src3.editors.cube_demo import CubeDemo
-from src3.editors.gltf_demo import GLTFDemo
+from src3.editors.gltf_load_demo import GLTFLoadDemo
 
 
 class App(WindowGLFW):
@@ -27,7 +27,9 @@ class App(WindowGLFW):
 
         editor_classes = [
             VideoAnnotator,
-            GLTFDemo
+            CubeDemo,
+            GLTFLoadDemo,
+            Viewer3D
         ]
 
         for editor_class in editor_classes:
@@ -40,12 +42,10 @@ class App(WindowGLFW):
                 )
             )
 
-        # Subscribe all editors to all events
+        # Initialise all editors and Subscribe them to all events
         for editor in self.editors:
             editor.setup()
             self.event_publisher.subscribe(listener=editor)
-
-        # initialise all Editors
 
     def update(self, time: float, elapsed_time: float):
 
