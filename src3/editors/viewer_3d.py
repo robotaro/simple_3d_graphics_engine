@@ -6,7 +6,6 @@ import glm
 import copy
 from glm import vec3
 
-from src3.io.gltf_reader import GLTFReader
 from src3.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
@@ -72,25 +71,7 @@ class Viewer3D(Editor):
     def setup(self) -> bool:
 
         self.entities[1] = self.entity_factory.create_renderable_3d_axis(axis_radius=0.05)
-
-        #gltf_fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "situp_to_iddle.gltf")
-        #self.entities[2] = self.load_gltf_entity(fpath=gltf_fpath)
-
         return True
-
-    def load_gltf_entity(self, fpath: str):
-        reader = GLTFReader()
-        reader.load(gltf_fpath=fpath)
-        meshes = reader.get_meshes()
-
-        mesh_component = self.component_factory.create_mesh(
-            vertices=meshes[-1]["attributes"]["POSITION"],
-            normals=meshes[-1]["attributes"]["NORMAL"],
-            indices=meshes[-1]["indices"].astype(np.uint32))
-        transform_component = self.component_factory.create_transform()
-
-        # Create entity
-        return self.entity_factory.create_renderable(component_list=[mesh_component, transform_component])
 
     def update(self, time: float, elapsed_time: float):
         self.process_input(elapsed_time)
