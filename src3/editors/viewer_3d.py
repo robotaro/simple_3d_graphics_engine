@@ -233,7 +233,8 @@ class Viewer3D(Editor):
             self.last_mouse_x, self.last_mouse_y = x, y
 
         if button == imgui.MOUSE_BUTTON_LEFT:
-            entity_id = self.get_entity_id(mouse_x=self.image_mouse_x, mouse_y=self.image_mouse_y)
+            entity_id = self.get_entity_id(mouse_x=self.image_mouse_x,
+                                           mouse_y=self.fbo_size[1] - self.image_mouse_y)
             print(self.image_mouse_x, self.image_mouse_y, entity_id)
 
     def handle_event_mouse_button_release(self, event_data: tuple):
