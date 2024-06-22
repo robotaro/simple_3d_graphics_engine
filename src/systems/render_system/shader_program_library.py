@@ -44,14 +44,12 @@ class ShaderProgramLibrary:
     def __init__(self,
                  context: moderngl.Context,
                  shader_directory=constants.SHADERS_DIR,
-                 shader_programs_yaml_fpath="",
                  logger: Union[logging.Logger, None]=None):
 
         # Input variables
         self.context = context
         self.logger = logger if logger is not None else logging.Logger
         self.shader_directory = shader_directory
-        self.shader_programs_yaml_fpath = shader_programs_yaml_fpath
 
         # Core variables
         self.shader_blueprints = {}

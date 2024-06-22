@@ -20,6 +20,21 @@ DEFAULT_EDITOR_PROFILING_UPDATE_PERIOD = 0.5  # Seconds
 DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)  # (1280, 720)
 DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD = 0.5  # in seconds - Windows default is 500ms
 
+EDITOR_BLUEPRINT_KEY_SCENES = "scenes"
+EDITOR_BLUEPRINT_KEY_RESOURCES = "resources"
+EDITOR_BLUEPRINT_KEY_ENTITIES = "entities"
+EDITOR_BLUEPRINT_KEY_COMPONENTS = "components"
+EDITOR_BLUEPRINT_ENTITY_SCENE_TYPE = ["scene3d",
+                                      "scene2d"]
+EDITOR_BLUEPRINT_ENTITY_LIST_TYPE = ["camera",
+                                     "point_light",
+                                     "directional_light",
+                                     "entity"]
+EDITOR_BLUEPRINT_COMPONENT_LIST_TYPE = ["transform",
+                                        "mesh",
+                                        "material"]
+
+
 MODULE_NAME_DATA_MANAGER = "data_manager"
 
 SYSTEM_NAME_TRANSFORM = "transform_system"
@@ -47,6 +62,18 @@ DEFAULT_SYSTEMS = [
     SYSTEM_NAME_RENDER,
     SYSTEM_NAME_IMGUI  # Must come AFTER the render system to add the GUI to the final render
 ]
+
+# =============================================================================
+#                                Editor Blueprint
+# =============================================================================
+
+BLUEPRINT_KEY_ID = "id"
+BLUEPRINT_KEY_REF_ID = "ref_id"
+BLUEPRINT_KEY_PARAMS = "params"
+BLUEPRINT_KEY_ENTITY = "entity"
+BLUEPRINT_KEY_COMPONENTS = "components"
+BLUEPRINT_KEY_FPATH = "fpath"
+BLUEPRINT_KEY_TYPE = "type"
 
 # =============================================================================
 #                                 Resources
@@ -123,25 +150,26 @@ GIZMO_3D_VIEWPORT_SCALE_COEFFICIENT = 1000.0
 # =============================================================================
 
 # Basic types
-EVENT_KEYBOARD_PRESS = 1            # args: (key, scancode, mods) <int, int, int>
-EVENT_KEYBOARD_RELEASE = 2          # args: (key, scancode, mods) <int, int, int>
-EVENT_KEYBOARD_REPEAT = 3           # args: (key, scancode, mods) <int, int, int>
-EVENT_MOUSE_ENTER_UI = 10
-EVENT_MOUSE_LEAVE_UI = 11
-EVENT_MOUSE_BUTTON_PRESS = 12        # args: (button, mods, x, y) <int, int, int, int>
-EVENT_MOUSE_BUTTON_RELEASE = 13      # args: (button, mods, x, y) <int, int, int, int>
-EVENT_MOUSE_MOVE = 14                # args: (x, y_gl, y_gui) <float, float>
-EVENT_MOUSE_SCROLL = 15              # args: (offset_x, offset_y) <float, float>
-EVENT_MOUSE_DOUBLE_CLICK = 16
-EVENT_MOUSE_ENTER_GIZMO_3D = 17
-EVENT_MOUSE_LEAVE_GIZMO_3D = 18
-EVENT_MOUSE_GIZMO_3D_ACTIVATED = 19
-EVENT_MOUSE_GIZMO_3D_DEACTIVATED = 20
-EVENT_EXIT_APPLICATION = 20
-EVENT_ENTITY_SELECTED = 21
-EVENT_ENTITY_DESELECTED = 22
-EVENT_MULTIPLE_ENTITIES_SELECTED = 23
-EVENT_PROFILING_SYSTEM_PERIODS = 24  # args (("system_a", 0.2), ("system_b" 0.37), ...) <(string, float) ...>
+EVENT_KEYBOARD_PRESS = "keyboard_press"            # args: (key, scancode, mods) <int, int, int>
+EVENT_KEYBOARD_RELEASE = "keyboard_release"        # args: (key, scancode, mods) <int, int, int>
+EVENT_KEYBOARD_REPEAT = "keyboard_repeat"          # args: (key, scancode, mods) <int, int, int>
+EVENT_MOUSE_ENTER_UI = "mouse_enter_ui"
+EVENT_MOUSE_LEAVE_UI = "mouse_leave_ui"
+EVENT_MOUSE_BUTTON_PRESS = "mouse_button_press"    # args: (button, mods, x, y) <int, int, int, int>
+EVENT_MOUSE_BUTTON_RELEASE = "mouse_button_release" # args: (button, mods, x, y) <int, int, int, int>
+EVENT_MOUSE_MOVE = "mouse_move"                    # args: (x, y_gl, y_gui) <float, float>
+EVENT_MOUSE_SCROLL = "mouse_scroll"                # args: (offset_x, offset_y) <float, float>
+EVENT_MOUSE_DOUBLE_CLICK = "mouse_double_click"
+EVENT_MOUSE_ENTER_GIZMO_3D = "mouse_enter_gizmo_3d"
+EVENT_MOUSE_LEAVE_GIZMO_3D = "mouse_leave_gizmo_3d"
+EVENT_MOUSE_GIZMO_3D_ACTIVATED = "mouse_gizmo_3d_activated"
+EVENT_MOUSE_GIZMO_3D_DEACTIVATED = "mouse_gizmo_3d_deactivated"
+EVENT_EXIT_APPLICATION = "exit_application"
+EVENT_ENTITY_SELECTED = "entity_selected"
+EVENT_ENTITY_DESELECTED = "entity_deselected"
+EVENT_MULTIPLE_ENTITIES_SELECTED = "multiple_entities_selected"
+EVENT_PROFILING_SYSTEM_PERIODS = "profiling_system_periods"  # args (("system_a", 0.2), ("system_b" 0.37), ...) <(string, float) ...>
+
 
 # System intercommunication
 EVENT_GIZMO_3D_SYSTEM_PARAMETER_UPDATED = 100
@@ -162,7 +190,6 @@ EVENT_INDEX_MOUSE_MOVE_Y_OPENGL = 1
 EVENT_INDEX_MOUSE_MOVE_Y_GUI = 2
 EVENT_INDEX_MOUSE_SCROLL_X = 0
 EVENT_INDEX_MOUSE_SCROLL_Y = 1
-
 
 # Window
 EVENT_WINDOW_SIZE = 30                # args: (width, height) <int, int>
@@ -380,13 +407,20 @@ TRANSFORM_SYSTEM_MAX_NUM_TRANSFORMS = 256
 DEG2RAD = 3.14159265358979 / 180.0
 
 # =============================================================================
+#                             Entities
+# =============================================================================
+ENTITY_TYPE_ENTITY = 0
+ENTITY_TYPE_CAMERA = 1
+ENTITY_TYPE_TRANSFORM_GIZMO = 2
+
+# =============================================================================
 #                              Component Pool
 # =============================================================================
 
 COMPONENT_POOL_STARTING_ID_COUNTER = 2
 
 # Component Types
-COMPONENT_TYPE_TRANSFORM_3D = 0
+COMPONENT_TYPE_TRANSFORM = 0
 COMPONENT_TYPE_TRANSFORM_2D = 1
 COMPONENT_TYPE_MESH = 2
 COMPONENT_TYPE_CAMERA = 3

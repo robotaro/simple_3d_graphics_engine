@@ -138,6 +138,10 @@ def mul_vectors3(in_mat4: np.ndarray, in_vec3_array: np.ndarray, out_vec3_array:
         #                            in_mat4[j, 2] * in_vec3_array[i, 2] +
         #                            in_mat4[j, 3])
 
+@njit(cache=True)
+def mul_vectors3_rotation_only(in_mat4: np.ndarray, in_vec3_array: np.ndarray, out_vec3_array: np.ndarray):
+    for i in range(in_vec3_array.shape[0]):
+        out_vec3_array[i, :] = np.dot(in_mat4[:3, :3], in_vec3_array[i, :])
 
 @njit(cache=True)
 def fast_inverse(in_mat4: np.ndarray, out_mat4: np.ndarray):

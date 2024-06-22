@@ -1,0 +1,54 @@
+<editor>
+    <resource id="dragon" fpath="meshes/dragon.obj"/>
+    <resource id="woman_walk_animation" fpath="meshes/dragon.obj"/>
+    <resource id="walk_animation" fpath="bvh/walk.bvh"/>
+    <resource id="female_body" fpath="meshes/female_body_gesture_practice.glb"/>
+
+    <!-- Components -->
+    <transform id="female_transform" position="-1 0 0" scale="2 2 2" rotation="-90 0 0" degrees="true"/>
+
+    <!-- Entities -->
+    <entity id="floor">
+        <mesh shape="box" width="10.0" height="0.1" depth="10.0" />
+        <transform position="0 -0.5 0"/>
+        <material diffuse="0.75 0.75 0.75" shininess_factor="32.0"/>
+    </entity>
+
+    <entity id="female_1" group="body">
+        <mesh resource_id="female_body/mesh_0"/>
+        <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
+        <transform ref_id="female_transform"/>
+    </entity>
+
+    <entity id="female_2" group="body">
+        <mesh resource_id="female_body/mesh_1"/>
+        <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
+        <transform ref_id="female_transform"/>
+    </entity>
+
+    <entity id="female_3" group="body">
+        <mesh resource_id="female_body/mesh_2" />
+        <material diffuse="0.0 0.41 0.2" shininess_factor="32.0"/>
+        <transform ref_id="female_transform"/>
+    </entity>
+
+    <entity id="cylinder">
+        <mesh shape="cylinder" point_a="0 0 0" point_b="0 1.5 0" radius="0.25"/>
+        <material diffuse="gray" shininess_factor="32.0"/>
+        <transform position="-3 0 3" degrees="true"/>
+    </entity>
+
+    <!-- Scenes -->
+    <scene3d id="main_scene" default_scene="true">
+        <entity ref_id="floor"/>
+        <entity ref_id="capsule"/>
+    </scene3d>
+
+    <scene3d id="second_scene">
+        <entity ref_id="floor"/>
+        <entity ref_id="female_1"/>
+        <entity ref_id="capsule"/>
+    </scene3d>
+
+
+</editor>

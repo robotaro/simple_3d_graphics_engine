@@ -1,0 +1,42 @@
+# =============================================================================
+#                                 Main Settings
+# =============================================================================
+
+main_settings:
+  window_size: [1600, 900]
+  window_title: "Main application"
+  vertical_sync: true
+
+
+# =============================================================================
+#                                 Systems
+# =============================================================================
+systems:
+  transform_gizmo:
+    params:
+
+
+# =============================================================================
+#                                Editors
+# =============================================================================
+editors:
+  video_annotator:
+    params:
+
+
+# =============================================================================
+#                             Shader Programs
+# =============================================================================
+shader_programs:
+
+  texture:
+    vertex_shader: "texture.glsl"
+    fragment_shader: "texture.glsl"
+
+  forward:
+    vertex_shader: "forward.glsl"
+    fragment_shader: "forward.glsl"
+
+  cube_simple:
+    vertex_shader: "cube_simple.glsl"
+    fragment_shader: "cube_simple.glsl"

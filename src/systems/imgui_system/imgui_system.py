@@ -319,7 +319,6 @@ class ImguiSystem(System):
         if material and not material.system_owned:
             material.draw_imgui_properties(imgui=imgui)
 
-
     def gui_tab_resources(self):
 
         resource_ids = list(self.data_manager.data_groups.keys())

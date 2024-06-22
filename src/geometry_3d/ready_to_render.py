@@ -9,7 +9,7 @@ make sure to set the right GLSL variable names
 """
 
 
-def quad_2d(context: moderngl.Context,
+def quad_2d(ctx: moderngl.Context,
             program: moderngl.Program,
             size=(2.0, 2.0),
             position=(-1.0, -1.0)) -> dict:
@@ -36,13 +36,13 @@ def quad_2d(context: moderngl.Context,
     ], dtype=np.float32)
 
     # Create VBOs
-    vbo_vertices = context.buffer(vertices.astype("f4").tobytes())
-    vbo_uvs = context.buffer(uvs.astype("f4").tobytes())
+    vbo_vertices = ctx.buffer(vertices.astype("f4").tobytes())
+    vbo_uvs = ctx.buffer(uvs.astype("f4").tobytes())
 
     return {
         "vbo_vertices": vbo_vertices,
         "vbo_uvs": vbo_uvs,
-        "vao": context.vertex_array(
+        "vao": ctx.vertex_array(
                 program,
                 [
                     (vbo_vertices, '3f', constants.SHADER_INPUT_VERTEX),

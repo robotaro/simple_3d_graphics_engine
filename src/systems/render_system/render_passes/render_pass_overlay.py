@@ -53,7 +53,7 @@ class RenderPassOverlay(RenderPass):
 
         # IMPORTANT: You MUST have called scene.make_renderable once before getting here!
         camera_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
-        transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
         mesh_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
         material_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
 

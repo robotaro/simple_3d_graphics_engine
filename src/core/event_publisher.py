@@ -1,5 +1,5 @@
 import logging
-
+from typing import Any
 from src.core import constants
 
 
@@ -14,7 +14,6 @@ class EventPublisher:
 
         self.logger = logger
 
-        # Do it manually here to avoid having to check at every publish() call
         self.listeners = {
             constants.EVENT_KEYBOARD_PRESS: [],
             constants.EVENT_KEYBOARD_RELEASE: [],
@@ -40,7 +39,10 @@ class EventPublisher:
             constants.EVENT_RENDER_SYSTEM_PARAMETER_UPDATED: [],
         }
 
-    def subscribe(self, event_type: int, listener):
+    def subscribe(self, event_type: int, listener: Any):
+        if event_type not in self.listeners:
+            raise KeyError(f"[ERROR] Failed to subscribe to event. Event '{event_type}' "
+                           f"does not exist. Please check spelling.")
         self.listeners[event_type].append(listener)
 
     def unsubscribe(self, event_type, listener):

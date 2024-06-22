@@ -40,6 +40,7 @@ https://projects.blender.org/blender/blender/issues/54661
 - https://github.com/3b1b/manim
 - https://github.com/eliemichel/Python3dViewer
 - https://github.com/ubuntunux/PyEngine3D
+- https://strattonbrazil.blogspot.com/2011/09/single-pass-wireframe-rendering_10.html
 
 # Camera math and depth conversion
 https://stackoverflow.com/questions/7777913/how-to-render-depth-linearly-in-modern-opengl-with-gl-fragcoord-z-in-fragment-sh
@@ -114,4 +115,37 @@ sudo apt install mesa-utils
 And reboot again
 ```commandline
 sudo reboot
+```
+
+```mermaid
+---
+title: Animal example
+---
+classDiagram
+    note "From Duck till Zebra"
+    Animal <|-- Duck
+    note for Duck "can fly\ncan swim\ncan dive\ncan help in debugging"
+    Animal <|-- Fish
+    Animal <|-- Zebra
+
+    Scene : render()
+
+    Entity : +int age
+    Animal : +String gender
+    Animal: +render()
+    Animal: +mate()
+
+    class Duck{
+        +String beakColor
+        +swim()
+        +quack()
+    }
+    class Fish{
+        -int sizeInFeet
+        -canEat()
+    }
+    class Zebra{
+        +bool is_wild
+        +run()
+    }
 ```

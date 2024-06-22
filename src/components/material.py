@@ -102,11 +102,11 @@ class Material(Component):
         c, self.ubo_data["specular"][:] = imgui.color_edit3("Specular", *specular)
 
         d, self.ubo_data["shininess_factor"] = imgui.drag_float("Shininess Factor",
-                                                                      self.ubo_data["shininess_factor"],
-                                                                      0.05,
-                                                                      0.0,
-                                                                      32.0,
-                                                                      "%.3f")
+                                                                self.ubo_data["shininess_factor"],
+                                                                0.05,
+                                                                0.0,
+                                                                32.0,
+                                                                "%.3f")
 
         e, self.ubo_data["color_source"] = imgui.slider_int(
             "Color Source",

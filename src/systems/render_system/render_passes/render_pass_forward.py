@@ -85,7 +85,7 @@ class RenderPassForward(RenderPass):
 
         camera_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_CAMERA)
         mesh_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_MESH)
-        transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
         multi_transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_MULTI_TRANSFORM_3D)
         material_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_MATERIAL)
 
@@ -164,13 +164,13 @@ class RenderPassForward(RenderPass):
     def upload_uniforms_directional_lights(self, scene: Scene, program: moderngl.Program):
 
         directional_light_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_DIRECTIONAL_LIGHT)
-        transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM_3D)
+        transform_3d_pool = scene.get_pool(component_type=constants.COMPONENT_TYPE_TRANSFORM)
 
         program["num_directional_lights"].value = len(directional_light_pool)
         for index, (mesh_entity_uid, dir_light_component) in enumerate(directional_light_pool.items()):
 
             light_transform = transform_3d_pool[mesh_entity_uid]
-            program[f"directional_lights[{index}].direction"] = tuple(light_transform.world_matrix[:3, 2])
+            program[f"directional_lights[{index}].direction"] = tuple (light_transform.world_matrix[:3, 2])
             program[f"directional_lights[{index}].diffuse"] = dir_light_component.diffuse
             program[f"directional_lights[{index}].specular"] = dir_light_component.specular
             program[f"directional_lights[{index}].strength"] = dir_light_component.strength

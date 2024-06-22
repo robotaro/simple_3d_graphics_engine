@@ -5,6 +5,7 @@ llvmlite==0.41.1  # require by numba
 numba==0.58.1
 PyGLM==2.7.1        # Required for running examplesrendering as well
 warp-lang==0.10.1
+pybullet
 
 # Documentation
 sphinx==7.1.2
@@ -26,11 +27,13 @@ PyYAML==6.0  # Consider this over omegaconf==2.3.0?
 pywavefront==1.3.3  # OBJ only
 #pygltflib==1.15.3   # GLTF and GLB
 
-# Image loading
+# Image loading and processing
 Pillow==10.0.0
+opencv-python==4.9.0.80
 
 # Video Loading
 av==10.0.0
+imageio-ffmpeg
 
 # Font rendering
 freetype-py==2.3.0
