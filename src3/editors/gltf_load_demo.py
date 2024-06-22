@@ -101,7 +101,7 @@ class GLTFLoadDemo(Editor):
         imgui.begin(GLTFLoadDemo.label, True)
         imgui.set_window_size(*self.framebuffer_size)
 
-        imgui.image(self.fbo.color_attachments[0].glo, *self.fbo.size)
+        imgui.image(self.fbo.color_attachments[0].glo, *self.fbo.size, uv0=(0, 1), uv1=(1, 0))
 
         imgui.text("Use arrow keys to move the cube")
 

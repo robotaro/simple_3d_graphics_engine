@@ -26,8 +26,6 @@ class App(WindowGLFW):
         self.shader_loader.load_shaders(directory=constants.SHADERS_DIR)
 
         editor_classes = [
-            VideoAnnotator,
-            CubeDemo,
             GLTFLoadDemo,
             Viewer3D
         ]

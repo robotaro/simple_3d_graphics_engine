@@ -3,6 +3,7 @@ import numpy as np
 from pyrr import Matrix44
 from moderngl_window import WindowConfig, run_window_config
 
+
 class InfiniteGrid(WindowConfig):
     gl_version = (3, 3)
     title = "Infinite Grid"

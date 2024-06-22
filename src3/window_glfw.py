@@ -31,6 +31,7 @@ class WindowGLFW(ABC):
                  "monitor_gltf",
                  "ctx",
                  "buffer_size",
+                 "cursor_hidden",
                  "event_publisher",
                  "close_application")
 
@@ -45,6 +46,7 @@ class WindowGLFW(ABC):
         self.window_title = window_title
         self.vertical_sync = vertical_sync
         self.event_publisher = EventPublisher(logger=self.logger)
+        self.cursor_hidden = False
 
         # Input variables
         self.mouse_state = self.initialise_mouse_state()
@@ -83,7 +85,7 @@ class WindowGLFW(ABC):
 
         # ImGUI
         imgui.create_context()
-        self.imgui_renderer = GlfwRenderer(self.window_glfw)  # DISABLE attach_callbacks!!!!
+        self.imgui_renderer = GlfwRenderer(self.window_glfw, attach_callbacks=False)  # DISABLE attach_callbacks!!!!
         self.imgui_exit_popup_open = False
 
         # Assign callback functions
@@ -137,6 +139,8 @@ class WindowGLFW(ABC):
         pass
 
     def _glfw_callback_keyboard(self, glfw_window, key, scancode, action, mods):
+
+        # TODO: Evaluate if I still need to do this now that I'm processing IMGUI's ones as well
         if action == glfw.PRESS:
             self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_PRESS,
                                          event_data=(key, scancode, mods),
@@ -148,6 +152,33 @@ class WindowGLFW(ABC):
                                          event_data=(key, scancode, mods),
                                          sender=self)
             self.keyboard_state[key] = constants.KEY_STATE_UP
+
+        io = imgui.get_io()
+
+        if action == glfw.PRESS:
+            io.keys_down[key] = True
+        elif action == glfw.RELEASE:
+            io.keys_down[key] = False
+
+        io.key_ctrl = (
+                io.keys_down[glfw.KEY_LEFT_CONTROL] or
+                io.keys_down[glfw.KEY_RIGHT_CONTROL]
+        )
+
+        io.key_alt = (
+                io.keys_down[glfw.KEY_LEFT_ALT] or
+                io.keys_down[glfw.KEY_RIGHT_ALT]
+        )
+
+        io.key_shift = (
+                io.keys_down[glfw.KEY_LEFT_SHIFT] or
+                io.keys_down[glfw.KEY_RIGHT_SHIFT]
+        )
+
+        io.key_super = (
+                io.keys_down[glfw.KEY_LEFT_SUPER] or
+                io.keys_down[glfw.KEY_RIGHT_SUPER]
+        )
 
     def _glfw_callback_mouse_button(self, glfw_window, button, action, mods):
 
@@ -176,14 +207,23 @@ class WindowGLFW(ABC):
                 # Three consecutive clicks may trigger two double clicks, so we reset the timestamp after a double click
                 self.mouse_press_last_timestamp = 0
 
+            if button == glfw.MOUSE_BUTTON_RIGHT:
+                self.cursor_position_before_hide = glfw.get_cursor_pos(self.window_glfw)
+                glfw.set_input_mode(self.window_glfw, glfw.CURSOR, glfw.CURSOR_DISABLED)
+                self.cursor_hidden = True
+
         if action == glfw.RELEASE:
             self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_RELEASE,
                                          event_data=(button, mods, *mouse_position),
                                          sender=self)
             self.mouse_state[button] = constants.BUTTON_RELEASED
 
-    def _glfw_callback_mouse_move(self, glfw_window, x, y):
+            if button == glfw.MOUSE_BUTTON_RIGHT and self.cursor_hidden:
+                glfw.set_cursor_pos(self.window_glfw, *self.cursor_position_before_hide)
+                glfw.set_input_mode(self.window_glfw, glfw.CURSOR, glfw.CURSOR_NORMAL)
+                self.cursor_hidden = False
 
+    def _glfw_callback_mouse_move(self, glfw_window, x, y):
         # We send both coordinate systems to help things out!
         y_gl = self.window_size[1] - y
         y_gui = y
@@ -193,7 +233,13 @@ class WindowGLFW(ABC):
                                      event_data=both_coordinates,
                                      sender=self)
 
-        self.mouse_state[constants.MOUSE_POSITION] = both_coordinates
+        # Only update mouse state and ImGui if cursor is not hidden
+        if not self.cursor_hidden:
+            self.mouse_state[constants.MOUSE_POSITION] = both_coordinates
+
+            # Update ImGui's mouse position
+            io = imgui.get_io()
+            io.mouse_pos = x, y
 
     def _glfw_callback_mouse_scroll(self, glfw_window, x_offset, y_offset):
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_SCROLL,

@@ -21,7 +21,7 @@ class Viewer3D(Editor):
         self.fbo_size = (640, 480)
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
-        self.entity_factory = EntityFactory(ctx=self.ctx)
+        self.entity_factory = EntityFactory(ctx=self.ctx, shader_loader=self.shader_loader)
 
         self.fbo = self.ctx.framebuffer(
             color_attachments=self.ctx.texture(self.fbo_size, 3),
@@ -33,6 +33,19 @@ class Viewer3D(Editor):
         self.projection_matrix = glm.perspective(glm.radians(45.0), aspect_ratio, 0.1, 100.0)
         self.view_matrix = glm.inverse(glm.translate(glm.mat4(1.0), glm.vec3(0.0, 1.0, 5.0)))
 
+        self.camera_position = glm.vec3(0.0, 1.0, 5.0)
+        self.camera_front = glm.vec3(0.0, 0.0, -1.0)
+        self.camera_up = glm.vec3(0.0, 1.0, 0.0)
+        self.camera_speed = 2.5
+        self.mouse_sensitivity = 0.1
+        self.yaw = -90.0
+        self.pitch = 0.0
+
+        self.right_mouse_button_down = False
+        self.last_mouse_x = 0.0
+        self.last_mouse_y = 0.0
+        self.first_mouse = True
+
         self.entities = {}
 
         # System-only entities
@@ -40,44 +53,12 @@ class Viewer3D(Editor):
 
     def setup(self) -> bool:
 
-        self.entities[1] = self.create_axis_entity()
+        self.entities[1] = self.entity_factory.create_renderable_3d_axis(axis_radius=0.05)
 
         #gltf_fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "situp_to_iddle.gltf")
         #self.entities[2] = self.load_gltf_entity(fpath=gltf_fpath)
 
         return True
-
-    def create_axis_entity(self):
-        mesh_factory = MeshFactory3D()
-        radius = 0.1
-        shape_list = [
-            {"name": "cylinder",
-             "point_a": (0.0, 0.0, 0.0),
-             "point_b": (1.0, 0.0, 0.0),
-             "radius": radius,
-             "color": (1.0, 0.3, 0.3)},
-            {"name": "cylinder",
-             "point_a": (0.0, 0.0, 0.0),
-             "point_b": (0.0, 1.0, 0.0),
-             "radius": radius,
-             "color": (0.3, 1.0, 0.3)},
-            {"name": "cylinder",
-             "point_a": (0.0, 0.0, 0.0),
-             "point_b": (0.0, 0.0, 1.0),
-             "radius": radius,
-             "color": (0.3, 0.3, 1.0)}
-        ]
-        mesh_data = mesh_factory.generate_mesh(shape_list=shape_list)
-
-        mesh_component = self.component_factory.create_mesh(
-            vertices=mesh_data["vertices"],
-            normals=mesh_data["normals"],
-            colors=mesh_data["colors"]
-        )
-        transform_component = self.component_factory.create_transform()
-
-        # Create entity
-        return self.entity_factory.create_renderable(component_list=[mesh_component, transform_component])
 
     def load_gltf_entity(self, fpath: str):
         reader = GLTFReader()
@@ -94,6 +75,7 @@ class Viewer3D(Editor):
         return self.entity_factory.create_renderable(component_list=[mesh_component, transform_component])
 
     def update(self, time: float, elapsed_time: float):
+        self.process_input(elapsed_time)
         self.render_scene()
         self.render_ui()
 
@@ -150,4 +132,76 @@ class Viewer3D(Editor):
 
         imgui.end()
 
-    
+    def process_input(self, elapsed_time):
+        io = imgui.get_io()
+
+        if self.right_mouse_button_down:
+            # Mouse movement
+            mouse_x, mouse_y = io.mouse_pos
+
+            if self.first_mouse:
+                self.last_mouse_x, self.last_mouse_y = mouse_x, mouse_y
+                self.first_mouse = False
+
+            x_offset = (mouse_x - self.last_mouse_x) * self.mouse_sensitivity
+            y_offset = (self.last_mouse_y - mouse_y) * self.mouse_sensitivity
+            self.last_mouse_x, self.last_mouse_y = mouse_x, mouse_y
+
+            self.yaw += x_offset
+            self.pitch += y_offset
+
+            self.pitch = max(-89.0, min(89.0, self.pitch))
+
+            front = glm.vec3()
+            front.x = np.cos(glm.radians(self.yaw)) * np.cos(glm.radians(self.pitch))
+            front.y = np.sin(glm.radians(self.pitch))
+            front.z = np.sin(glm.radians(self.yaw)) * np.cos(glm.radians(self.pitch))
+            self.camera_front = glm.normalize(front)
+
+            # Keyboard movement
+            if io.keys_down[ord('W')]:
+                self.camera_position += self.camera_speed * elapsed_time * self.camera_front
+            if io.keys_down[ord('S')]:
+                self.camera_position -= self.camera_speed * elapsed_time * self.camera_front
+            if io.keys_down[ord('A')]:
+                self.camera_position -= glm.normalize(
+                    glm.cross(self.camera_front, self.camera_up)) * self.camera_speed * elapsed_time
+            if io.keys_down[ord('D')]:
+                self.camera_position += glm.normalize(
+                    glm.cross(self.camera_front, self.camera_up)) * self.camera_speed * elapsed_time
+
+            self.view_matrix = glm.lookAt(self.camera_position, self.camera_position + self.camera_front,
+                                          self.camera_up)
+
+    def handle_event_mouse_button_press(self, event_data: tuple):
+        button, _, x, _, y = event_data
+        if button == imgui.MOUSE_BUTTON_RIGHT:
+            self.right_mouse_button_down = True
+            self.first_mouse = True
+            self.last_mouse_x, self.last_mouse_y = x, y
+
+    def handle_event_mouse_button_release(self, event_data: tuple):
+        button, _, x, _, y = event_data
+        if button == imgui.MOUSE_BUTTON_RIGHT:
+            self.right_mouse_button_down = False
+            self.first_mouse = True
+
+    def handle_event_mouse_move(self, event_data: tuple):
+        x, _, y = event_data
+        if self.right_mouse_button_down:
+            x_offset = (x - self.last_mouse_x) * self.mouse_sensitivity
+            y_offset = (self.last_mouse_y - y) * self.mouse_sensitivity
+            self.last_mouse_x, self.last_mouse_y = x, y
+
+            self.yaw += x_offset
+            self.pitch += y_offset
+
+            self.pitch = max(-89.0, min(89.0, self.pitch))
+
+            front = glm.vec3()
+            front.x = np.cos(glm.radians(self.yaw)) * np.cos(glm.radians(self.pitch))
+            front.y = np.sin(glm.radians(self.pitch))
+            front.z = np.sin(glm.radians(self.yaw)) * np.cos(glm.radians(self.pitch))
+            self.camera_front = glm.normalize(front)
+            self.view_matrix = glm.lookAt(self.camera_position, self.camera_position + self.camera_front,
+                                          self.camera_up)

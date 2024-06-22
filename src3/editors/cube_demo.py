@@ -112,7 +112,7 @@ class CubeDemo(Editor):
         imgui.begin("Cube Demo", True)
         imgui.set_window_size(*self.initial_window_size)
 
-        imgui.image(self.fbo.color_attachments[0].glo, *self.fbo.size)
+        imgui.image(self.fbo.color_attachments[0].glo, *self.fbo.size, uv0=(0, 1), uv1=(1, 0))
 
         imgui.text("Use arrow keys to move the cube")
 
