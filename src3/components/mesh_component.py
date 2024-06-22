@@ -85,8 +85,8 @@ class MeshComponent:
 
     def release(self):
 
-        for _, vao in self.vaos:
+        for _, vao in self.vaos.items():
             vao.release()
 
-        for _, vbo in self.vbos:
+        for _, vbo in self.vbos.items():
             vbo.release()
