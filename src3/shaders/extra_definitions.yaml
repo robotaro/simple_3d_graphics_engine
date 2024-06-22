@@ -1,1 +1,6 @@
 
+fragment_picking.glsl:
+  varyings:
+    - "out_obj_id"
+    - "out_tri_id"
+    - "out_instance_id"

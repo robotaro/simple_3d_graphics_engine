@@ -1,12 +1,10 @@
 import imgui
-import os
 import numpy as np
 import moderngl
+import struct
 import glm
 from glm import mat4, vec3
 
-from src.geometry_3d.mesh_factory_3d import MeshFactory3D
-from src3 import constants
 from src3.io.gltf_reader import GLTFReader
 from src3.editors.editor import Editor
 from src3.components.component_factory import ComponentFactory
@@ -16,17 +14,34 @@ from src3.entities.entity_factory import EntityFactory
 class Viewer3D(Editor):
 
     def __init__(self, **kwargs):
+
         super().__init__(**kwargs)
+
         self.window_size = (900, 600)
         self.fbo_size = (640, 480)
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
+
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
         self.entity_factory = EntityFactory(ctx=self.ctx, shader_loader=self.shader_loader)
 
+        # Fragment picking
+        self.picker_program = self.shader_loader.get_program("fragment_picking.glsl")
+        self.picker_buffer = self.ctx.buffer(reserve=3 * 4)  # 3 ints
+        self.picker_vao = self.ctx.vertex_array(self.picker_program, [])
+        self.picker_output = None
+        self.image_mouse_x = 0
+        self.image_mouse_y = 0
+        self.texture_entity_info = self.ctx.texture(size=self.fbo_size, components=4, dtype='f4')
+        self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+
         self.fbo = self.ctx.framebuffer(
-            color_attachments=self.ctx.texture(self.fbo_size, 3),
+            color_attachments=[
+                self.ctx.texture(self.fbo_size, 3),  # Main RGB color output that will be rendered to screen
+                self.texture_entity_info
+            ],
             depth_attachment=self.ctx.depth_texture(self.fbo_size),
         )
+
 
         # Camera variables - temporary
         aspect_ratio = self.fbo_size[0] / self.fbo_size[1]
@@ -104,10 +119,10 @@ class Viewer3D(Editor):
 
         # Render renderable entities
         for entity_id, entity in self.entities.items():
+            self.program["entity_id"].value = entity_id
             entity.comp_mesh.render(shader_program_name="basic.glsl")
 
     def render_ui(self):
-
         imgui.begin("Viewer 3D", True)
         imgui.set_window_size(self.window_size[0], self.window_size[1])
 
@@ -127,8 +142,25 @@ class Viewer3D(Editor):
         with imgui.begin_group():
             texture_id = self.fbo.color_attachments[0].glo
 
+            # Get the position where the image will be drawn
+            image_pos = imgui.get_cursor_screen_pos()
+
             # NOTE: I'm using the uv0 and uv1 arguments to FLIP the image back vertically, as it is flipped by default
             imgui.image(texture_id, *self.fbo.size, uv0=(0, 1), uv1=(1, 0))
+
+            # Check if the mouse is over the image and print the position
+            if imgui.is_item_hovered():
+                mouse_x, mouse_y = imgui.get_mouse_pos()
+
+                # Calculate the mouse position relative to the image
+                self.image_mouse_x = mouse_x - image_pos[0]
+                self.image_mouse_y = mouse_y - image_pos[1]
+
+                # TODO: Window rays will be cast from here
+                #if 0 <= self.image_mouse_x <= self.fbo_size[0] and 0 <= self.image_mouse_y <= self.fbo_size[1]:
+                #
+                #   print(f"Mouse position over image: ({image_mouse_x}, {image_mouse_y})")
+                #   pass
 
         imgui.end()
 
@@ -163,6 +195,10 @@ class Viewer3D(Editor):
                 self.camera_position += self.camera_speed * elapsed_time * self.camera_front
             if io.keys_down[ord('S')]:
                 self.camera_position -= self.camera_speed * elapsed_time * self.camera_front
+            if io.keys_down[ord('E')]:
+                self.camera_position += self.camera_speed * elapsed_time * vec3(0, 1, 0)
+            if io.keys_down[ord('Q')]:
+                self.camera_position -= self.camera_speed * elapsed_time * vec3(0, 1, 0)
             if io.keys_down[ord('A')]:
                 self.camera_position -= glm.normalize(
                     glm.cross(self.camera_front, self.camera_up)) * self.camera_speed * elapsed_time
@@ -173,12 +209,32 @@ class Viewer3D(Editor):
             self.view_matrix = glm.lookAt(self.camera_position, self.camera_position + self.camera_front,
                                           self.camera_up)
 
+    def get_entity_id(self, mouse_x, mouse_y) -> int:
+
+        # The mouse positions are on the framebuffer being rendered, not the screen coordinates
+        self.picker_program['texel_pos'].value = (int(mouse_x), int(mouse_y))  # (x, y)
+        self.texture_entity_info.use(location=0)
+
+        self.picker_vao.transform(
+            self.picker_buffer,
+            mode=moderngl.POINTS,
+            vertices=1,
+            first=0,
+            instances=1)
+
+        entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
+        return entity_id
+
     def handle_event_mouse_button_press(self, event_data: tuple):
         button, _, x, _, y = event_data
         if button == imgui.MOUSE_BUTTON_RIGHT:
             self.right_mouse_button_down = True
             self.first_mouse = True
             self.last_mouse_x, self.last_mouse_y = x, y
+
+        if button == imgui.MOUSE_BUTTON_LEFT:
+            entity_id = self.get_entity_id(mouse_x=self.image_mouse_x, mouse_y=self.image_mouse_y)
+            print(self.image_mouse_x, self.image_mouse_y, entity_id)
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         button, _, x, _, y = event_data

@@ -6,9 +6,7 @@ from src3.window_glfw import WindowGLFW
 from src.utilities import utils_logging
 
 # Temporary
-from src3.editors.viewer_3d.viewer_3d import Viewer3D
-from src3.editors.video_annotator import VideoAnnotator
-from src3.editors.cube_demo import CubeDemo
+from src3.editors.viewer_3d import Viewer3D
 from src3.editors.gltf_load_demo import GLTFLoadDemo
 
 
@@ -51,7 +49,7 @@ class App(WindowGLFW):
             editor.update(time, elapsed_time=elapsed_time)
 
         # DEBUG
-        imgui.show_test_window()
+        #imgui.show_test_window()
 
     def shutdown(self):
         for editor in self.editors:

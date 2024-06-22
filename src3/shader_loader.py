@@ -1,6 +1,7 @@
 import os
 import logging
 import moderngl
+import yaml
 
 from src.core import constants
 from dataclasses import dataclass
@@ -10,6 +11,7 @@ class Shader:
     source_code_lines: list
     input_textures: list
     version: int
+    varyings: list
     program: moderngl.Program
 
 
@@ -29,18 +31,37 @@ class ShaderLoader:
         glsl_filenames = [filename for filename in os.listdir(directory) if filename.endswith('.glsl')]
         self.logger.info(f"Found {len(glsl_filenames)} shaders")
 
+        # Load all extra definitions
+        yaml_filenames = [filename for filename in os.listdir(directory) if filename.endswith('.yaml')]
+        self.logger.info(f"Found {len(yaml_filenames)} yaml definition files")
+
+        all_shader_extra_definitions = {}
+        for filename in yaml_filenames:
+            extra_definitions_fpath = os.path.join(directory, filename)
+            with open(extra_definitions_fpath, 'r') as file:
+                extra_definitions = yaml.safe_load(file)
+                for shader_name, shader_definitions in extra_definitions.items():
+                    if shader_name in all_shader_extra_definitions:
+                        raise Exception(f"[ERROR] Shader definition for '{shader_name}' is repeated across "
+                                        f"multiple YAML files.")
+                    all_shader_extra_definitions[shader_name] = shader_definitions
+
+        # The filename here marches the shader_name from all_shader_extra_definitions
         for filename in glsl_filenames:
             shader_fpath = os.path.join(directory, filename)
             with open(shader_fpath, 'r') as file:
                 raw_source_code = file.read()
-                self.shaders[filename] = self.create_shader(raw_source_code=raw_source_code)
+                self.shaders[filename] = self.create_shader(
+                    raw_source_code=raw_source_code,
+                    extra_definitions=all_shader_extra_definitions.get(filename, {}))
 
         # Compile all shaders
         for name, shader in self.shaders.items():
-            self.compile_program(shader=shader)
+            if not self.compile_program(shader=shader):
+                raise Exception(f"[ERROR] Failed to compile shader {name}. Check error description above")
             self.logger.info(f"Shader compiled: {name}")
 
-    def create_shader(self, raw_source_code) -> Shader:
+    def create_shader(self, raw_source_code: str, extra_definitions: dict) -> Shader:
         """
 
         :param raw_source_code: str, all data from the text file as-is
@@ -75,9 +96,10 @@ class ShaderLoader:
             source_code_lines=code_lines,
             input_textures=input_textures,
             version=version,
+            varyings=extra_definitions.get("varyings", []),
             program=None)
 
-    def compile_program(self, shader: Shader):
+    def compile_program(self, shader: Shader) -> bool:
         """
         Compile shaders into a program.
         """
@@ -96,10 +118,13 @@ class ShaderLoader:
             shader.program = self.ctx.program(
                 vertex_shader=shader_sources[0],
                 geometry_shader=shader_sources[1],
-                fragment_shader=shader_sources[2])
+                fragment_shader=shader_sources[2],
+                varyings=shader.varyings)
 
         except Exception as error:
             self.logger.error(f"Failed to compile program: {error}")
+            return False
+        return True
 
     def generate_shader_source_code(self,
                                     code_lines: list,

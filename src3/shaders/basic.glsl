@@ -16,6 +16,7 @@ uniform mat4 m_model;
 
 uniform mat4 m_view_light;
 
+
 void main() {
     fragPos = vec3(m_model * vec4(in_position, 1.0));
     normal = mat3(transpose(inverse(m_model))) * normalize(in_normal);
@@ -25,7 +26,8 @@ void main() {
 
 #elif defined FRAGMENT_SHADER
 
-layout (location = 0) out vec4 fragColor;
+layout (location = 0) out vec4 out_fragColor;
+layout (location = 1) out vec4 out_fragment_entity_info;
 
 in vec3 normal;
 in vec3 color;
@@ -38,6 +40,7 @@ struct Light {
     vec3 Is;
 };
 
+uniform int entity_id;  // You write to this uniform the ID of the entity being rendered
 uniform Light light;
 uniform vec3 camPos;
 
@@ -69,7 +72,10 @@ void main() {
     final_color = getLight(final_color);
 
     final_color = pow(final_color, 1 / vec3(gamma));
-    fragColor = vec4(final_color, 1.0);
+
+    // Write to output textures
+    out_fragColor = vec4(final_color, 1.0);
+    out_fragment_entity_info = vec4(entity_id, 0, 0, 1);
 }
 
 #endif
