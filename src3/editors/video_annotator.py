@@ -2,13 +2,9 @@ import glfw
 import numpy as np
 import moderngl
 import imgui
-from collections import deque
 import imageio
-import cv2
-import matplotlib.pyplot as plt
 
-from src3 import constants
-from src3.editors.editor import Editor
+from src3.editor import Editor
 
 
 class VideoAnnotator(Editor):

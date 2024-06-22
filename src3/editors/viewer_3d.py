@@ -3,10 +3,11 @@ import numpy as np
 import moderngl
 import struct
 import glm
-from glm import mat4, vec3
+import copy
+from glm import vec3
 
 from src3.io.gltf_reader import GLTFReader
-from src3.editors.editor import Editor
+from src3.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
 
@@ -31,8 +32,10 @@ class Viewer3D(Editor):
         self.picker_output = None
         self.image_mouse_x = 0
         self.image_mouse_y = 0
+        self.image_mouse_y_opengl = copy.copy(self.fbo_size[1])
         self.texture_entity_info = self.ctx.texture(size=self.fbo_size, components=4, dtype='f4')
         self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.selected_entity_id = -1
 
         self.fbo = self.ctx.framebuffer(
             color_attachments=[
@@ -155,6 +158,7 @@ class Viewer3D(Editor):
                 # Calculate the mouse position relative to the image
                 self.image_mouse_x = mouse_x - image_pos[0]
                 self.image_mouse_y = mouse_y - image_pos[1]
+                self.image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y
 
                 # TODO: Window rays will be cast from here
                 #if 0 <= self.image_mouse_x <= self.fbo_size[0] and 0 <= self.image_mouse_y <= self.fbo_size[1]:
@@ -190,23 +194,24 @@ class Viewer3D(Editor):
             front.z = np.sin(glm.radians(self.yaw)) * np.cos(glm.radians(self.pitch))
             self.camera_front = glm.normalize(front)
 
+            factor = self.camera_speed * elapsed_time
+
             # Keyboard movement
             if io.keys_down[ord('W')]:
-                self.camera_position += self.camera_speed * elapsed_time * self.camera_front
+                self.camera_position += factor * self.camera_front
             if io.keys_down[ord('S')]:
-                self.camera_position -= self.camera_speed * elapsed_time * self.camera_front
+                self.camera_position -= factor * self.camera_front
             if io.keys_down[ord('E')]:
-                self.camera_position += self.camera_speed * elapsed_time * vec3(0, 1, 0)
+                self.camera_position += factor * vec3(0, 1, 0)
             if io.keys_down[ord('Q')]:
-                self.camera_position -= self.camera_speed * elapsed_time * vec3(0, 1, 0)
+                self.camera_position -= factor * vec3(0, 1, 0)
             if io.keys_down[ord('A')]:
-                self.camera_position -= glm.normalize(
-                    glm.cross(self.camera_front, self.camera_up)) * self.camera_speed * elapsed_time
+                self.camera_position -= glm.normalize(glm.cross(self.camera_front, self.camera_up)) * factor
             if io.keys_down[ord('D')]:
-                self.camera_position += glm.normalize(
-                    glm.cross(self.camera_front, self.camera_up)) * self.camera_speed * elapsed_time
+                self.camera_position += glm.normalize(glm.cross(self.camera_front, self.camera_up)) * factor
 
-            self.view_matrix = glm.lookAt(self.camera_position, self.camera_position + self.camera_front,
+            self.view_matrix = glm.lookAt(self.camera_position,
+                                          self.camera_position + self.camera_front,
                                           self.camera_up)
 
     def get_entity_id(self, mouse_x, mouse_y) -> int:
@@ -234,8 +239,9 @@ class Viewer3D(Editor):
 
         if button == imgui.MOUSE_BUTTON_LEFT:
             entity_id = self.get_entity_id(mouse_x=self.image_mouse_x,
-                                           mouse_y=self.fbo_size[1] - self.image_mouse_y)
-            print(self.image_mouse_x, self.image_mouse_y, entity_id)
+                                           mouse_y=self.image_mouse_y_opengl)
+            self.selected_entity_id = -1 if entity_id < 0 else entity_id
+            print(self.selected_entity_id)
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         button, _, x, _, y = event_data
