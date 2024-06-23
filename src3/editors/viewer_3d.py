@@ -45,6 +45,8 @@ class Viewer3D(Editor):
             depth_attachment=self.ctx.depth_texture(self.fbo_size),
         )
 
+        self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
+
         self.gizmo_3d = Gizmo3D(ctx=self.ctx, shader_loader=self.shader_loader, output_fbo=self.fbo)
 
         # Camera variables - temporary

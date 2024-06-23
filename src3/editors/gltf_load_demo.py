@@ -96,6 +96,7 @@ class GLTFLoadDemo(Editor):
 
     def render_ui(self):
         """Render the UI"""
+        imgui.new_frame()
         imgui.begin(GLTFLoadDemo.label, True)
         imgui.set_window_size(*self.framebuffer_size)
 
