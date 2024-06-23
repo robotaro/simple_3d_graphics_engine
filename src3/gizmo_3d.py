@@ -53,7 +53,6 @@ class Gizmo3D:
         pass
 
     def render(self, view_matrix: glm.mat4, projection_matrix: glm.mat4, entity_transform: glm.mat4):
-
         # Bind the helper framebuffer to clear the depth buffer
         self.helper_fbo.use()
         self.helper_fbo.clear(depth=True)
@@ -61,8 +60,19 @@ class Gizmo3D:
         # Bind the output framebuffer to render the gizmo
         self.output_fbo.use()
 
-        # Combine the projection, view, and entity transformation matrices
-        transform_matrix = projection_matrix * view_matrix * entity_transform
+        # Calculate the camera position from the view matrix
+        camera_position = glm.inverse(view_matrix) * glm.vec4(0.0, 0.0, 0.0, 1.0)
+        camera_position = glm.vec3(camera_position)  # Convert to vec3
+
+        # Determine the scale factor to keep the gizmo a constant size on the screen
+        # This assumes the gizmo is located at the origin
+        gizmo_position = glm.vec3(entity_transform[3])
+        distance = glm.length(camera_position - gizmo_position)
+        scale_factor = distance * 0.1  # Adjust 0.1 to change the size of the gizmo on screen
+
+        # Apply the scale factor to the entity transform
+        scale_matrix = glm.scale(glm.mat4(1.0), glm.vec3(scale_factor))
+        transform_matrix = projection_matrix * view_matrix * entity_transform * scale_matrix
 
         # Pass the transform matrix to the shader
         self.program['uViewProjMatrix'].write(transform_matrix.to_bytes())

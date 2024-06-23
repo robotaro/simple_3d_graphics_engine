@@ -14,7 +14,7 @@ out VertexData {
 } vData;
 
 void main() {
-    vData.m_color = aColor.abgr; // swizzle to correct endianness
+    vData.m_color = aColor;  // Directly pass the color without swizzling
     vData.m_color.a *= smoothstep(0.0, 1.0, aPositionSize.w / 2.0);
     vData.m_size = max(aPositionSize.w, 2.0);
     gl_Position = uViewProjMatrix * vec4(aPositionSize.xyz, 1.0);
