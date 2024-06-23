@@ -9,6 +9,7 @@ from glm import vec3
 from src3.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
+from src3.gizmo_3d import Gizmo3D
 
 
 class Viewer3D(Editor):
@@ -23,6 +24,8 @@ class Viewer3D(Editor):
 
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
         self.entity_factory = EntityFactory(ctx=self.ctx, shader_loader=self.shader_loader)
+
+
 
         # Fragment picking
         self.picker_program = self.shader_loader.get_program("fragment_picking.glsl")
@@ -44,6 +47,7 @@ class Viewer3D(Editor):
             depth_attachment=self.ctx.depth_texture(self.fbo_size),
         )
 
+        self.gizmo_3d = Gizmo3D(ctx=self.ctx, shader_loader=self.shader_loader, output_fbo=self.fbo)
 
         # Camera variables - temporary
         aspect_ratio = self.fbo_size[0] / self.fbo_size[1]
@@ -76,6 +80,7 @@ class Viewer3D(Editor):
     def update(self, time: float, elapsed_time: float):
         self.process_input(elapsed_time)
         self.render_scene()
+        self.render_gizmo()
         self.render_ui()
 
     def shutdown(self):
@@ -87,7 +92,6 @@ class Viewer3D(Editor):
         # Setup mvp cameras
         self.program["m_proj"].write(self.projection_matrix)
         self.program['m_view'].write(self.view_matrix)
-        self.program['m_model'].write(glm.mat4(1.0))
 
         # Setup lights
         self.program["light.position"].value = (10.0, 10.0, -10.0)
@@ -104,7 +108,17 @@ class Viewer3D(Editor):
         # Render renderable entities
         for entity_id, entity in self.entities.items():
             self.program["entity_id"].value = entity_id
-            entity.comp_mesh.render(shader_program_name="basic.glsl")
+            self.program['m_model'].write(entity.component_transform.world_matrix)
+            entity.component_mesh.render(shader_program_name="basic.glsl")
+
+    def render_gizmo(self):
+
+        if self.selected_entity_id < 1:
+            return
+
+        self.gizmo_3d.render(
+            view_matrix=self.view_matrix,
+            entity_transform=self.entities[self.selected_entity_id].component_transform.world_matrix)
 
     def render_ui(self):
         imgui.begin("Viewer 3D", True)
@@ -191,6 +205,8 @@ class Viewer3D(Editor):
             if io.keys_down[ord('D')]:
                 self.camera_position += glm.normalize(glm.cross(self.camera_front, self.camera_up)) * factor
 
+            # The view matrix is the inverse of the camera's global transform. The glm lookAtl already
+            # returns this inverse :)
             self.view_matrix = glm.lookAt(self.camera_position,
                                           self.camera_position + self.camera_front,
                                           self.camera_up)
@@ -222,6 +238,8 @@ class Viewer3D(Editor):
             entity_id = self.get_entity_id(mouse_x=self.image_mouse_x,
                                            mouse_y=self.image_mouse_y_opengl)
             self.selected_entity_id = -1 if entity_id < 0 else entity_id
+
+            # DEBUG
             print(self.selected_entity_id)
 
     def handle_event_mouse_button_release(self, event_data: tuple):
