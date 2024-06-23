@@ -132,6 +132,12 @@ class AppMglWnd(mglw.WindowConfig):
             # so we reset the timestamp after a double click
             self.mouse_press_last_timestamp = 0
 
+        # Hide mouse cursor
+        # TODO: Check this on how to handle disabled mouse:
+        #       https://stackoverflow.com/questions/78013746/lock-mouse-inside-window-using-pythons-moderngl-window
+        if button == constants.MOUSE_RIGHT:  # Assuming 2 is the right mouse button
+            self.wnd.cursor = False
+
     def mouse_release_event(self, x: int, y: int, button: int):
 
         y_gl = self.window_size[1] - y
@@ -141,6 +147,12 @@ class AppMglWnd(mglw.WindowConfig):
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_RELEASE,
                                      event_data=(button, x, y_gl, y_gui),
                                      sender=self)
+
+        # Show mouse cursor
+        # TODO: Check this on how to handle disabled mouse:
+        #       https://stackoverflow.com/questions/78013746/lock-mouse-inside-window-using-pythons-moderngl-window
+        if button == constants.MOUSE_RIGHT:  # Assuming 2 is the right mouse button
+            self.wnd.cursor = True
 
     def key_event(self, key, action, modifiers):
         print(key, action, modifiers)
