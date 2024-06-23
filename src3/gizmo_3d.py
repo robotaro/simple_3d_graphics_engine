@@ -52,7 +52,7 @@ class Gizmo3D:
     def update_input(self, mouse_x: float, mouse_y: float):
         pass
 
-    def render(self, view_matrix: glm.mat4, entity_transform: glm.mat4):
+    def render(self, view_matrix: glm.mat4, projection_matrix: glm.mat4, entity_transform: glm.mat4):
 
         # Bind the helper framebuffer to clear the depth buffer
         self.helper_fbo.use()
@@ -61,14 +61,15 @@ class Gizmo3D:
         # Bind the output framebuffer to render the gizmo
         self.output_fbo.use()
 
-        # Combine the view matrix and entity transformation matrix
-        transform_matrix = view_matrix * entity_transform
+        # Combine the projection, view, and entity transformation matrices
+        transform_matrix = projection_matrix * view_matrix * entity_transform
 
         # Pass the transform matrix to the shader
         self.program['uViewProjMatrix'].write(transform_matrix.to_bytes())
 
         # Pass the viewport size to the geometry shader
-        self.program['uViewport'].value = (800, 600)
+        viewport_size = (self.output_fbo.viewport[2], self.output_fbo.viewport[3])
+        self.program['uViewport'].value = viewport_size
 
         # Set the line width
         self.ctx.line_width = 3.0

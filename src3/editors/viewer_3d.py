@@ -25,8 +25,6 @@ class Viewer3D(Editor):
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
         self.entity_factory = EntityFactory(ctx=self.ctx, shader_loader=self.shader_loader)
 
-
-
         # Fragment picking
         self.picker_program = self.shader_loader.get_program("fragment_picking.glsl")
         self.picker_buffer = self.ctx.buffer(reserve=3 * 4)  # 3 ints
@@ -118,6 +116,7 @@ class Viewer3D(Editor):
 
         self.gizmo_3d.render(
             view_matrix=self.view_matrix,
+            projection_matrix=self.projection_matrix,
             entity_transform=self.entities[self.selected_entity_id].component_transform.world_matrix)
 
     def render_ui(self):
