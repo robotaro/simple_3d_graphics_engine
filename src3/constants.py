@@ -21,9 +21,9 @@ DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD = 0.5  # in seconds - Windows default
 #                                INPUT
 # =============================================================================
 
-MOUSE_LEFT = 0
-MOUSE_RIGHT = 1
-MOUSE_MIDDLE = 2
+MOUSE_LEFT = 1
+MOUSE_RIGHT = 2
+MOUSE_MIDDLE = 3
 MOUSE_BUTTONS = (MOUSE_LEFT, MOUSE_RIGHT, MOUSE_MIDDLE)
 MOUSE_POSITION = 'position'
 MOUSE_POSITION_LAST_FRAME = 'position_last_frame'

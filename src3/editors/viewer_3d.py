@@ -6,6 +6,7 @@ import glm
 import copy
 from glm import vec3
 
+from src3 import constants
 from src3.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
@@ -66,6 +67,13 @@ class Viewer3D(Editor):
         self.last_mouse_x = 0.0
         self.last_mouse_y = 0.0
         self.first_mouse = True
+
+        self.key_down_forward = False
+        self.key_down_back = False
+        self.key_down_left = False
+        self.key_down_right = False
+        self.key_down_up = False
+        self.key_down_down = False
 
         self.entities = {}
 
@@ -193,17 +201,17 @@ class Viewer3D(Editor):
             factor = self.camera_speed * elapsed_time
 
             # Keyboard movement
-            if io.keys_down[ord('W')]:
+            if self.key_down_forward:
                 self.camera_position += factor * self.camera_front
-            if io.keys_down[ord('S')]:
+            if self.key_down_back:
                 self.camera_position -= factor * self.camera_front
-            if io.keys_down[ord('E')]:
+            if self.key_down_up:
                 self.camera_position += factor * vec3(0, 1, 0)
-            if io.keys_down[ord('Q')]:
+            if self.key_down_down:
                 self.camera_position -= factor * vec3(0, 1, 0)
-            if io.keys_down[ord('A')]:
+            if self.key_down_left:
                 self.camera_position -= glm.normalize(glm.cross(self.camera_front, self.camera_up)) * factor
-            if io.keys_down[ord('D')]:
+            if self.key_down_right:
                 self.camera_position += glm.normalize(glm.cross(self.camera_front, self.camera_up)) * factor
 
             # The view matrix is the inverse of the camera's global transform. The glm lookAtl already
@@ -229,13 +237,14 @@ class Viewer3D(Editor):
         return entity_id
 
     def handle_event_mouse_button_press(self, event_data: tuple):
-        button, _, x, _, y = event_data
-        if button == imgui.MOUSE_BUTTON_RIGHT:
+        button, x, y_gl, y_gui = event_data
+
+        if button == constants.MOUSE_RIGHT:
             self.right_mouse_button_down = True
             self.first_mouse = True
-            self.last_mouse_x, self.last_mouse_y = x, y
+            self.last_mouse_x, self.last_mouse_y = x, y_gui
 
-        if button == imgui.MOUSE_BUTTON_LEFT:
+        if button == constants.MOUSE_LEFT:
             entity_id = self.get_entity_id(mouse_x=self.image_mouse_x,
                                            mouse_y=self.image_mouse_y_opengl)
             self.selected_entity_id = -1 if entity_id < 0 else entity_id
@@ -244,17 +253,51 @@ class Viewer3D(Editor):
             print(self.selected_entity_id)
 
     def handle_event_mouse_button_release(self, event_data: tuple):
-        button, _, x, _, y = event_data
-        if button == imgui.MOUSE_BUTTON_RIGHT:
+        button, x, y_gl, y_gui = event_data
+        if button == constants.MOUSE_RIGHT:
             self.right_mouse_button_down = False
             self.first_mouse = True
 
+    def handle_event_keyboard_press(self, event_data: tuple):
+        key, modifiers = event_data
+
+        # TODO: refactor this with a map
+        if key == ord('W') or key == ord('w'):
+            self.key_down_forward = True
+        if key == ord('S') or key == ord('s'):
+            self.key_down_back = True
+        if key == ord('A') or key == ord('a'):
+            self.key_down_left = True
+        if key == ord('D') or key == ord('d'):
+            self.key_down_right = True
+        if key == ord('E') or key == ord('e'):
+            self.key_down_up = True
+        if key == ord('Q') or key == ord('q'):
+            self.key_down_down = True
+
+    def handle_event_keyboard_release(self, event_data: tuple):
+        key, modifiers = event_data
+
+        # TODO: refactor this with a map
+        if key == ord('W') or key == ord('w'):
+            self.key_down_forward = False
+        if key == ord('S') or key == ord('s'):
+            self.key_down_back = False
+        if key == ord('A') or key == ord('a'):
+            self.key_down_left = False
+        if key == ord('D') or key == ord('d'):
+            self.key_down_right = False
+        if key == ord('E') or key == ord('e'):
+            self.key_down_up = False
+        if key == ord('Q') or key == ord('q'):
+            self.key_down_down = False
+
     def handle_event_mouse_move(self, event_data: tuple):
-        x, _, y = event_data
-        if self.right_mouse_button_down:
+        x, y_gl, y_gui = event_data
+        """if self.right_mouse_button_down:
             x_offset = (x - self.last_mouse_x) * self.mouse_sensitivity
-            y_offset = (self.last_mouse_y - y) * self.mouse_sensitivity
-            self.last_mouse_x, self.last_mouse_y = x, y
+            y_offset = (self.last_mouse_y - y_gui) * self.mouse_sensitivity
+            self.last_mouse_x, self.last_mouse_y = x, y_gui
 
             self.yaw += x_offset
             self.pitch += y_offset
@@ -267,4 +310,4 @@ class Viewer3D(Editor):
             front.z = np.sin(glm.radians(self.yaw)) * np.cos(glm.radians(self.pitch))
             self.camera_front = glm.normalize(front)
             self.view_matrix = glm.lookAt(self.camera_position, self.camera_position + self.camera_front,
-                                          self.camera_up)
+                                          self.camera_up)"""

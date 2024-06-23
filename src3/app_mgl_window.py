@@ -1,6 +1,6 @@
 from typing import List
 import imgui
-
+import time
 import moderngl_window as mglw
 from moderngl_window import geometry
 from moderngl_window.integrations.imgui import ModernglWindowRenderer
@@ -29,6 +29,10 @@ class AppMglWnd(mglw.WindowConfig):
         self.shader_loader = ShaderLoader(logger=self.logger, ctx=self.ctx)
         self.event_publisher = EventPublisher(logger=self.logger)
 
+        # Input variables
+        self.mouse_press_last_timestamp = time.perf_counter()
+
+        # ImGUI variables
         imgui.create_context()
         self.imgui_renderer = ModernglWindowRenderer(self.wnd)
 
@@ -64,13 +68,12 @@ class AppMglWnd(mglw.WindowConfig):
             editor.update(time, elapsed_time=frametime)
 
         # DEBUG
-
         imgui.show_test_window()
 
         # Render UI to screen
         self.wnd.use()
 
-        #imgui.end_frame()
+        #imgui.end_frame()  # WHen to use this?
         imgui.render()
         self.imgui_renderer.render(imgui.get_draw_data())
 
@@ -83,13 +86,21 @@ class AppMglWnd(mglw.WindowConfig):
         self.imgui_renderer.resize(width, height)
 
     def files_dropped_event(self, x: int, y: int, paths: List[str]):
-        pass
+        self.logger.debug(f"Files dropped: {paths}")
 
     def key_event(self, key, action, modifiers):
         self.imgui_renderer.key_event(key, action, modifiers)
 
     def mouse_position_event(self, x, y, dx, dy):
         self.imgui_renderer.mouse_position_event(x, y, dx, dy)
+
+        y_gl = self.window_size[1] - y
+        y_gui = y
+        both_coordinates = (x, y_gl, y_gui)
+
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_MOVE,
+                                     event_data=both_coordinates,
+                                     sender=self)
 
     def mouse_drag_event(self, x, y, dx, dy):
         self.imgui_renderer.mouse_drag_event(x, y, dx, dy)
@@ -98,10 +109,52 @@ class AppMglWnd(mglw.WindowConfig):
         self.imgui_renderer.mouse_scroll_event(x_offset, y_offset)
 
     def mouse_press_event(self, x, y, button):
+
+        y_gl = self.window_size[1] - y
+        y_gui = y
+
         self.imgui_renderer.mouse_press_event(x, y, button)
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_PRESS,
+                                     event_data=(button, x, y_gl, y_gui),
+                                     sender=self)
+
+        # Double click detection
+        mouse_press_timestamp = time.perf_counter()
+        time_between_clicks = mouse_press_timestamp - self.mouse_press_last_timestamp
+        self.mouse_press_last_timestamp = mouse_press_timestamp
+
+        if time_between_clicks < constants.DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD:
+            self.event_publisher.publish(event_type=constants.EVENT_MOUSE_DOUBLE_CLICK,
+                                         event_data=(button, x, y),
+                                         sender=self)
+
+            # Three consecutive clicks may trigger two double clicks,
+            # so we reset the timestamp after a double click
+            self.mouse_press_last_timestamp = 0
 
     def mouse_release_event(self, x: int, y: int, button: int):
+
+        y_gl = self.window_size[1] - y
+        y_gui = y
+
         self.imgui_renderer.mouse_release_event(x, y, button)
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_RELEASE,
+                                     event_data=(button, x, y_gl, y_gui),
+                                     sender=self)
+
+    def key_event(self, key, action, modifiers):
+        print(key, action, modifiers)
+        if action == "ACTION_PRESS":
+            self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_PRESS,
+                                         event_data=(key, modifiers),
+                                         sender=self)
+            return
+
+        if action == "ACTION_RELEASE":
+            self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_RELEASE,
+                                         event_data=(key, modifiers),
+                                         sender=self)
+            return
 
     def unicode_char_entered(self, char):
         self.imgui_renderer.unicode_char_entered(char)
