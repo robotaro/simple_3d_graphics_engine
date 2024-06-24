@@ -49,13 +49,9 @@ class Viewer3DMSAA(Editor):
             depth_attachment=self.msaa_depth_renderbuffer,
         )
 
-        # Create resolve framebuffer
+        # Create normal framebuffer
         self.resolve_color_texture = self.ctx.texture(self.fbo_size, 3)
         self.resolve_entity_info_texture = self.ctx.texture(self.fbo_size, components=4, dtype='f4')
-        self.resolve_fbo = self.ctx.framebuffer(
-            color_attachments=[self.resolve_color_texture, self.resolve_entity_info_texture]
-        )
-
         self.fbo = self.ctx.framebuffer(
             color_attachments=[
                 self.resolve_color_texture,  # Main RGB color output that will be rendered to screen
