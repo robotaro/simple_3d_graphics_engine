@@ -4,13 +4,13 @@ import numpy as np
 
 class Camera:
 
-    def __init__(self, fbo_size, camera_speed=2.5, mouse_sensitivity=0.1):
+    def __init__(self, fbo_size: tuple, position: glm.vec3, camera_speed=2.5, mouse_sensitivity=0.1):
         self.fbo_size = fbo_size
         aspect_ratio = fbo_size[0] / fbo_size[1]
         self.projection_matrix = glm.perspective(glm.radians(45.0), aspect_ratio, 0.1, 100.0)
-        self.view_matrix = glm.inverse(glm.translate(glm.mat4(1.0), glm.vec3(0.0, 1.0, 5.0)))
+        self.view_matrix = glm.inverse(glm.translate(glm.mat4(1.0), position))
 
-        self.position = glm.vec3(0.0, 1.0, 5.0)
+        self.position = position
         self.front = glm.vec3(0.0, 0.0, -1.0)
         self.up = glm.vec3(0.0, 1.0, 0.0)
         self.speed = camera_speed
@@ -85,5 +85,24 @@ class Camera:
         if key in self.key_map:
             self.key_states[self.key_map[key]] = False
 
-    def toggle_right_mouse_button(self, state):
-        self.right_mouse_button_down = state
+    def get_camera_matrix(self) -> glm.mat4:
+        return glm.inverse(self.view_matrix)
+
+    def screen_to_world(self, mouse_x, mouse_y):
+        """
+        Converts screen coordinates to a 3D ray in world space.
+        """
+        ndc_x = (2.0 * mouse_x) / self.fbo_size[0] - 1.0
+        ndc_y = 1.0 - (2.0 * mouse_y) / self.fbo_size[1]
+        ndc_z = 1.0
+
+        ray_ndc = glm.vec3(ndc_x, ndc_y, ndc_z)
+        ray_clip = glm.vec4(ray_ndc, 1.0)
+
+        ray_eye = glm.inverse(self.projection_matrix) * ray_clip
+        ray_eye = glm.vec4(ray_eye.x, ray_eye.y, -1.0, 0.0)
+
+        ray_direction = glm.vec3(glm.inverse(self.view_matrix) * ray_eye)
+        ray_direction = glm.normalize(ray_direction)
+
+        return self.position, ray_direction

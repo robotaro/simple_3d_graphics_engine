@@ -10,6 +10,7 @@ from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
 from src3.gizmo_3d import Gizmo3D
 from src3.camera_3d import Camera  # Import the Camera class
+from src3 import math_3d
 
 
 class Viewer3D(Editor):
@@ -21,7 +22,7 @@ class Viewer3D(Editor):
         self.window_size = (900, 600)
         self.fbo_size = (640, 480)
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
-        self.camera = Camera(fbo_size=self.fbo_size)
+        self.camera = Camera(fbo_size=self.fbo_size, position=vec3(0, 1, 5))
 
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
         self.entity_factory = EntityFactory(ctx=self.ctx, shader_loader=self.shader_loader)
@@ -139,13 +140,19 @@ class Viewer3D(Editor):
                 # Calculate the mouse position relative to the image
                 self.image_mouse_x = mouse_x - image_pos[0]
                 self.image_mouse_y = mouse_y - image_pos[1]
-                self.image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y
 
-                # TODO: Window rays will be cast from here
-                #if 0 <= self.image_mouse_x <= self.fbo_size[0] and 0 <= self.image_mouse_y <= self.fbo_size[1]:
-                #
-                #   print(f"Mouse position over image: ({image_mouse_x}, {image_mouse_y})")
-                #   pass
+                # Generate a 3D ray from the camera position
+                ray_origin, ray_direction = self.camera.screen_to_world(self.image_mouse_x, self.image_mouse_y)
+
+                collision = math_3d.intersects_ray_sphere_boolean(
+                    ray_origin=ray_origin,
+                    ray_direction=ray_direction,
+                    sphere_origin=vec3(0, 0, 0),
+                    sphere_radius=1.0)
+
+                # DEBUG
+                #print(f"Ray Origin: {ray_origin}, Ray Direction: {ray_direction}")
+                print(f"Collision: {collision}")
 
         imgui.end()
 
