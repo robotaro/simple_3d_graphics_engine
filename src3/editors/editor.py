@@ -92,6 +92,9 @@ class Editor(ABC):
     def handle_event_mouse_double_click(self, event_data: tuple):
         pass
 
+    def handle_event_mouse_drag(self, event_data: tuple):
+        pass
+
     def handle_event_mouse_move(self, event_data: tuple):
         pass
 

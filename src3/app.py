@@ -33,6 +33,7 @@ class App(WindowGLFW):
                 logger=self.logger,
                 event_publisher=self.event_publisher,
                 shader_loader=self.shader_loader,
+                imgui_renderer=None,
                 params={}
                 )
             )

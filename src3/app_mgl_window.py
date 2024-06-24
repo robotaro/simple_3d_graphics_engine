@@ -21,6 +21,7 @@ class AppMglWnd(mglw.WindowConfig):
     gl_version = (3, 3)
     title = "App"
     aspect_ratio = None
+    window_size = (1600, 900)
 
     def __init__(self, **kwargs):
 
@@ -31,6 +32,8 @@ class AppMglWnd(mglw.WindowConfig):
 
         # Input variables
         self.mouse_press_last_timestamp = time.perf_counter()
+        self.right_mouse_button_down = False  # Track right mouse button state
+        self.last_mouse_pos_opengl = (0, 0)  # Store last mouse position for resetting cursor
 
         # ImGUI variables
         imgui.create_context()
@@ -73,7 +76,7 @@ class AppMglWnd(mglw.WindowConfig):
         # Render UI to screen
         self.wnd.use()
 
-        #imgui.end_frame()  # WHen to use this?
+        #imgui.end_frame()  # When to use this?
         imgui.render()
         self.imgui_renderer.render(imgui.get_draw_data())
 
@@ -91,31 +94,32 @@ class AppMglWnd(mglw.WindowConfig):
     def key_event(self, key, action, modifiers):
         self.imgui_renderer.key_event(key, action, modifiers)
 
-    def mouse_position_event(self, x, y, dx, dy):
-        self.imgui_renderer.mouse_position_event(x, y, dx, dy)
+    def mouse_drag_event(self, x, y, dx, dy):
+        if not self.right_mouse_button_down:
+            self.imgui_renderer.mouse_drag_event(x, y, dx, dy)
 
-        y_gl = self.window_size[1] - y
-        y_gui = y
-        both_coordinates = (x, y_gl, y_gui)
-
-        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_MOVE,
-                                     event_data=both_coordinates,
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_DRAG,
+                                     event_data=(x, y, dx, dy),
                                      sender=self)
 
-    def mouse_drag_event(self, x, y, dx, dy):
-        self.imgui_renderer.mouse_drag_event(x, y, dx, dy)
+        # Use dx and dy for camera rotation if right mouse button is down
+        if self.right_mouse_button_down:
+            self.handle_camera_rotation(dx, dy)
+
+    def mouse_position_event(self, x, y, dx, dy):
+        self.imgui_renderer.mouse_position_event(x, y, dx, dy)
+        self.event_publisher.publish(event_type=constants.EVENT_MOUSE_MOVE,
+                                     event_data=(x, y, dx, dy),
+                                     sender=self)
 
     def mouse_scroll_event(self, x_offset, y_offset):
         self.imgui_renderer.mouse_scroll_event(x_offset, y_offset)
 
     def mouse_press_event(self, x, y, button):
 
-        y_gl = self.window_size[1] - y
-        y_gui = y
-
         self.imgui_renderer.mouse_press_event(x, y, button)
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_PRESS,
-                                     event_data=(button, x, y_gl, y_gui),
+                                     event_data=(button, x, y),
                                      sender=self)
 
         # Double click detection
@@ -132,30 +136,34 @@ class AppMglWnd(mglw.WindowConfig):
             # so we reset the timestamp after a double click
             self.mouse_press_last_timestamp = 0
 
-        # Hide mouse cursor
-        # TODO: Check this on how to handle disabled mouse:
-        #       https://stackoverflow.com/questions/78013746/lock-mouse-inside-window-using-pythons-moderngl-window
-        if button == constants.MOUSE_RIGHT:  # Assuming 2 is the right mouse button
+        # Hide mouse cursor and track right mouse button state
+        if button == constants.MOUSE_RIGHT:
+            self.right_mouse_button_down = True
+            self.last_mouse_pos_opengl = (x, self.window_size[1] - y)
             self.wnd.cursor = False
 
     def mouse_release_event(self, x: int, y: int, button: int):
 
-        y_gl = self.window_size[1] - y
-        y_gui = y
-
         self.imgui_renderer.mouse_release_event(x, y, button)
         self.event_publisher.publish(event_type=constants.EVENT_MOUSE_BUTTON_RELEASE,
-                                     event_data=(button, x, y_gl, y_gui),
+                                     event_data=(button, x, y),
                                      sender=self)
 
-        # Show mouse cursor
-        # TODO: Check this on how to handle disabled mouse:
-        #       https://stackoverflow.com/questions/78013746/lock-mouse-inside-window-using-pythons-moderngl-window
-        if button == constants.MOUSE_RIGHT:  # Assuming 2 is the right mouse button
+        # Show mouse cursor and reset right mouse button state
+        if button == constants.MOUSE_RIGHT:
+            self.right_mouse_button_down = False
+            self.wnd._window.set_mouse_position(*self.last_mouse_pos_opengl)
             self.wnd.cursor = True
 
+    def handle_camera_rotation(self, dx, dy):
+        # Implement your camera rotation logic here using dx and dy
+        # Example:
+        # self.camera.yaw += dx * self.camera.sensitivity
+        # self.camera.pitch += dy * self.camera.sensitivity
+        # Ensure pitch is within bounds
+        pass
+
     def key_event(self, key, action, modifiers):
-        print(key, action, modifiers)
         if action == "ACTION_PRESS":
             self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_PRESS,
                                          event_data=(key, modifiers),
