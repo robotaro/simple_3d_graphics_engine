@@ -13,6 +13,7 @@ from src3.event_publisher import EventPublisher
 
 # Temporary
 from src3.editors.viewer_3d import Viewer3D
+from src3.editors.viewer_3d_msaa import Viewer3DMSAA
 from src3.editors.gltf_load_demo import GLTFLoadDemo
 
 
@@ -45,7 +46,8 @@ class App(mglw.WindowConfig):
         self.shader_loader.load_shaders(directory=constants.SHADERS_DIR)
 
         editor_classes = [
-            Viewer3D
+            Viewer3D,
+            Viewer3DMSAA
         ]
 
         for editor_class in editor_classes:
