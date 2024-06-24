@@ -1,7 +1,9 @@
 import glm
 import numpy as np
 
+
 class Camera:
+
     def __init__(self, fbo_size, camera_speed=2.5, mouse_sensitivity=0.1):
         self.fbo_size = fbo_size
         aspect_ratio = fbo_size[0] / fbo_size[1]
@@ -17,16 +19,30 @@ class Camera:
         self.pitch = 0.0
 
         self.right_mouse_button_down = False
-        self.last_mouse_x = 0.0
-        self.last_mouse_y = 0.0
-        self.first_mouse = True
 
-        self.key_down_forward = False
-        self.key_down_back = False
-        self.key_down_left = False
-        self.key_down_right = False
-        self.key_down_up = False
-        self.key_down_down = False
+        self.key_map = {
+            ord('W'): 'key_down_forward',
+            ord('w'): 'key_down_forward',
+            ord('S'): 'key_down_back',
+            ord('s'): 'key_down_back',
+            ord('A'): 'key_down_left',
+            ord('a'): 'key_down_left',
+            ord('D'): 'key_down_right',
+            ord('d'): 'key_down_right',
+            ord('E'): 'key_down_up',
+            ord('e'): 'key_down_up',
+            ord('Q'): 'key_down_down',
+            ord('q'): 'key_down_down'
+        }
+
+        self.key_states = {
+            'key_down_forward': False,
+            'key_down_back': False,
+            'key_down_left': False,
+            'key_down_right': False,
+            'key_down_up': False,
+            'key_down_down': False
+        }
 
     def process_mouse_movement(self, dx, dy):
         x_offset = dx * self.sensitivity
@@ -46,45 +62,28 @@ class Camera:
     def process_keyboard(self, elapsed_time):
         factor = self.speed * elapsed_time
 
-        if self.key_down_forward:
+        if self.key_states['key_down_forward']:
             self.position += factor * self.front
-        if self.key_down_back:
+        if self.key_states['key_down_back']:
             self.position -= factor * self.front
-        if self.key_down_up:
+        if self.key_states['key_down_up']:
             self.position += factor * glm.vec3(0, 1, 0)
-        if self.key_down_down:
+        if self.key_states['key_down_down']:
             self.position -= factor * glm.vec3(0, 1, 0)
-        if self.key_down_left:
+        if self.key_states['key_down_left']:
             self.position -= glm.normalize(glm.cross(self.front, self.up)) * factor
-        if self.key_down_right:
+        if self.key_states['key_down_right']:
             self.position += glm.normalize(glm.cross(self.front, self.up)) * factor
 
         self.view_matrix = glm.lookAt(self.position, self.position + self.front, self.up)
 
     def handle_key_press(self, key):
-        if key == ord('W') or key == ord('w'):
-            self.key_down_forward = True
-        if key == ord('S') or key == ord('s'):
-            self.key_down_back = True
-        if key == ord('A') or key == ord('a'):
-            self.key_down_left = True
-        if key == ord('D') or key == ord('d'):
-            self.key_down_right = True
-        if key == ord('E') or key == ord('e'):
-            self.key_down_up = True
-        if key == ord('Q') or key == ord('q'):
-            self.key_down_down = True
+        if key in self.key_map:
+            self.key_states[self.key_map[key]] = True
 
     def handle_key_release(self, key):
-        if key == ord('W') or key == ord('w'):
-            self.key_down_forward = False
-        if key == ord('S') or key == ord('s'):
-            self.key_down_back = False
-        if key == ord('A') or key == ord('a'):
-            self.key_down_left = False
-        if key == ord('D') or key == ord('d'):
-            self.key_down_right = False
-        if key == ord('E') or key == ord('e'):
-            self.key_down_up = False
-        if key == ord('Q') or key == ord('q'):
-            self.key_down_down = False
+        if key in self.key_map:
+            self.key_states[self.key_map[key]] = False
+
+    def toggle_right_mouse_button(self, state):
+        self.right_mouse_button_down = state
