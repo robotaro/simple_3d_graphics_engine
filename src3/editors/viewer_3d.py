@@ -152,7 +152,7 @@ class Viewer3D(Editor):
 
                 # DEBUG
                 #print(f"Ray Origin: {ray_origin}, Ray Direction: {ray_direction}")
-                print(f"Collision: {collision}")
+                #print(f"Collision: {collision}")
 
         imgui.end()
 
@@ -185,8 +185,10 @@ class Viewer3D(Editor):
             self.camera.right_mouse_button_down = True
 
         if button == constants.MOUSE_LEFT:
+            # The framebuffer image is flipped on the y-axis, so we flip the coordinates as well
+            image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y
             entity_id = self.get_entity_id(mouse_x=self.image_mouse_x,
-                                           mouse_y=self.image_mouse_y_opengl)
+                                           mouse_y=image_mouse_y_opengl)
             self.selected_entity_id = -1 if entity_id < 0 else entity_id
 
     def handle_event_mouse_button_release(self, event_data: tuple):
