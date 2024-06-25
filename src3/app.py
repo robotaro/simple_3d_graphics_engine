@@ -89,6 +89,7 @@ class App(mglw.WindowConfig):
 
     def resize(self, width: int, height: int):
         self.imgui_renderer.resize(width, height)
+        self.window_size = (width, height)
 
     def files_dropped_event(self, x: int, y: int, paths: List[str]):
         self.logger.debug(f"Files dropped: {paths}")
