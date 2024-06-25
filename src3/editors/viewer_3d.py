@@ -103,7 +103,8 @@ class Viewer3D(Editor):
         self.gizmo_3d.render(
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
-            entity_transform=self.entities[self.selected_entity_id].component_transform.world_matrix)
+            entity_matrix=self.entities[self.selected_entity_id].component_transform.world_matrix,
+            )
 
     def render_ui(self):
         imgui.begin("Viewer 3D", True)

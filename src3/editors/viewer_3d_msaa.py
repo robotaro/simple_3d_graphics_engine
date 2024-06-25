@@ -21,11 +21,17 @@ class Viewer3DMSAA(Editor):
 
         self.window_size = (900, 600)
         self.fbo_size = (640, 480)
+        self.fbo_image_position = (0, 0)  # Indicates where on the moderngl-window the scene was rendered
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
-        self.camera = Camera(fbo_size=self.fbo_size, position=vec3(0, 1, 5))
 
+        # Factories
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
         self.entity_factory = EntityFactory(ctx=self.ctx, shader_loader=self.shader_loader)
+
+        # Camera variables
+        self.camera = Camera(fbo_size=self.fbo_size, position=vec3(0, 1, 5))
+        self.camera_ray_origin = None
+        self.camera_ray_direction = None
 
         # Fragment picking
         self.picker_program = self.shader_loader.get_program("fragment_picking.glsl")
@@ -62,7 +68,10 @@ class Viewer3DMSAA(Editor):
 
         self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
 
-        self.gizmo_3d = Gizmo3D(ctx=self.ctx, shader_loader=self.shader_loader, output_fbo=self.fbo)
+        self.gizmo_3d = Gizmo3D(ctx=self.ctx,
+                                shader_loader=self.shader_loader,
+                                output_fbo=self.fbo,
+                                gizmo_size_on_screen=0.25)
 
         self.entities = {}
 
@@ -120,7 +129,9 @@ class Viewer3DMSAA(Editor):
         self.gizmo_3d.render(
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
-            entity_transform=self.entities[self.selected_entity_id].component_transform.world_matrix)
+            entity_matrix=self.entities[self.selected_entity_id].component_transform.world_matrix,
+            ray_origin=self.camera_ray_origin,
+            ray_direction=self.camera_ray_direction)
 
     def render_ui(self):
         imgui.begin("Viewer 3D MSAA", True)
@@ -145,27 +156,28 @@ class Viewer3DMSAA(Editor):
             texture_id = self.fbo.color_attachments[0].glo
 
             # Get the position where the image will be drawn
-            image_pos = imgui.get_cursor_screen_pos()
+            self.fbo_image_position = imgui.get_cursor_screen_pos()
 
             # NOTE: I'm using the uv0 and uv1 arguments to FLIP the image back vertically, as it is flipped by default
             imgui.image(texture_id, *self.fbo.size, uv0=(0, 1), uv1=(1, 0))
 
-            # Check if the mouse is over the image and print the position
+            # Check if the mouse is over the image representing the rendered scene
             if imgui.is_item_hovered():
                 mouse_x, mouse_y = imgui.get_mouse_pos()
 
                 # Calculate the mouse position relative to the image
-                self.image_mouse_x = mouse_x - image_pos[0]
-                self.image_mouse_y = mouse_y - image_pos[1]
+                self.image_mouse_x = mouse_x - self.fbo_image_position[0]
+                self.image_mouse_y = mouse_y - self.fbo_image_position[1]
 
                 # Generate a 3D ray from the camera position
-                ray_origin, ray_direction = self.camera.screen_to_world(self.image_mouse_x, self.image_mouse_y)
+                self.camera_ray_origin, self.camera_ray_direction = self.camera.screen_to_world(
+                    self.image_mouse_x, self.image_mouse_y)
 
-                collision = math_3d.intersects_ray_sphere_boolean(
+                """collision = math_3d.intersects_ray_sphere_boolean(
                     ray_origin=ray_origin,
                     ray_direction=ray_direction,
                     sphere_origin=vec3(0, 0, 0),
-                    sphere_radius=1.0)
+                    sphere_radius=1.0)"""
 
                 # DEBUG
                 #print(f"Ray Origin: {ray_origin}, Ray Direction: {ray_direction}")
@@ -174,7 +186,6 @@ class Viewer3DMSAA(Editor):
         imgui.end()
 
     def process_input(self, elapsed_time):
-        io = imgui.get_io()
 
         if self.camera.right_mouse_button_down:
             self.camera.process_keyboard(elapsed_time)
@@ -226,8 +237,10 @@ class Viewer3DMSAA(Editor):
 
     def handle_event_mouse_move(self, event_data: tuple):
         x, y, dx, dy = event_data
+        self.gizmo_3d.handle_event_mouse_move(event_data=event_data)
 
     def handle_event_mouse_drag(self, event_data: tuple):
         x, y, dx, dy = event_data
         if self.camera.right_mouse_button_down:
             self.camera.process_mouse_movement(dx=dx, dy=dy)
+        self.gizmo_3d.handle_event_mouse_move(event_data=event_data)

@@ -46,7 +46,6 @@ class App(mglw.WindowConfig):
         self.shader_loader.load_shaders(directory=constants.SHADERS_DIR)
 
         editor_classes = [
-            Viewer3D,
             Viewer3DMSAA
         ]
 
