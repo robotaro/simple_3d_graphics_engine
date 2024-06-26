@@ -42,14 +42,14 @@ class Viewer3DMSAA(Editor):
         self.image_mouse_x = 0
         self.image_mouse_y = 0
         self.image_mouse_y_opengl = copy.copy(self.fbo_size[1])
-        self.texture_entity_info = self.ctx.texture(size=self.fbo_size, components=4, dtype='f4')
+        self.texture_entity_info = self.ctx.texture(size=self.fbo_size, components=3, dtype='f4')
         self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
         self.selected_entity_id = -1
 
         # Create MSAA framebuffer
         self.msaa_samples = 4
-        self.msaa_color_renderbuffer = self.ctx.renderbuffer(self.fbo_size, components=4, samples=self.msaa_samples)
-        self.msaa_entity_info_renderbuffer = self.ctx.renderbuffer(self.fbo_size, components=4, samples=self.msaa_samples)
+        self.msaa_color_renderbuffer = self.ctx.renderbuffer(self.fbo_size, components=3, samples=self.msaa_samples)
+        self.msaa_entity_info_renderbuffer = self.ctx.renderbuffer(self.fbo_size, components=3, samples=self.msaa_samples, dtype='f4')
         self.msaa_depth_renderbuffer = self.ctx.depth_renderbuffer(self.fbo_size, samples=self.msaa_samples)
         self.msaa_fbo = self.ctx.framebuffer(
             color_attachments=[self.msaa_color_renderbuffer, self.msaa_entity_info_renderbuffer],
@@ -129,6 +129,8 @@ class Viewer3DMSAA(Editor):
         self.ctx.copy_framebuffer(self.fbo, self.msaa_fbo)
 
     def render_gizmo(self):
+
+        return
 
         if self.selected_entity_id < 1:
             return
