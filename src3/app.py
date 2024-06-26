@@ -47,6 +47,7 @@ class App(mglw.WindowConfig):
 
         editor_classes = [
             Viewer3DMSAA
+            #Viewer3D
         ]
 
         for editor_class in editor_classes:

@@ -23,6 +23,7 @@ class Viewer3DMSAA(Editor):
         self.fbo_size = (640, 480)
         self.fbo_image_position = (0, 0)  # Indicates where on the moderngl-window the scene was rendered
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
+        self.entities = {}
 
         # Factories
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
@@ -47,7 +48,7 @@ class Viewer3DMSAA(Editor):
 
         # Create MSAA framebuffer
         self.msaa_samples = 4
-        self.msaa_color_renderbuffer = self.ctx.renderbuffer(self.fbo_size, components=3, samples=self.msaa_samples)
+        self.msaa_color_renderbuffer = self.ctx.renderbuffer(self.fbo_size, components=4, samples=self.msaa_samples)
         self.msaa_entity_info_renderbuffer = self.ctx.renderbuffer(self.fbo_size, components=4, samples=self.msaa_samples)
         self.msaa_depth_renderbuffer = self.ctx.depth_renderbuffer(self.fbo_size, samples=self.msaa_samples)
         self.msaa_fbo = self.ctx.framebuffer(
@@ -55,9 +56,9 @@ class Viewer3DMSAA(Editor):
             depth_attachment=self.msaa_depth_renderbuffer,
         )
 
-        # Create normal framebuffer
+        # Create final framebuffer
         self.resolve_color_texture = self.ctx.texture(self.fbo_size, 3)
-        self.resolve_entity_info_texture = self.ctx.texture(self.fbo_size, components=4, dtype='f4')
+        self.resolve_entity_info_texture = self.ctx.texture(self.fbo_size, components=3, dtype='f4')
         self.fbo = self.ctx.framebuffer(
             color_attachments=[
                 self.resolve_color_texture,  # Main RGB color output that will be rendered to screen
@@ -73,14 +74,18 @@ class Viewer3DMSAA(Editor):
                                 output_fbo=self.fbo,
                                 gizmo_size_on_screen=0.25)
 
-        self.entities = {}
+        # Debug variables
+        self.debug_show_hash_colors = False
 
         # System-only entities
         self.renderable_entity_grid = None
 
     def setup(self) -> bool:
 
-        self.entities[1] = self.entity_factory.create_renderable_3d_axis(axis_radius=0.05)
+        # 3D axis
+        self.entities[5] = self.entity_factory.create_renderable_3d_axis(axis_radius=0.05)
+        self.entities[20] = self.entity_factory.create_sphere(radius=0.2)
+        self.entities[30] = self.entity_factory.create_grid_xz(num_cells=10, cell_size=1.0)
         return True
 
     def update(self, time: float, elapsed_time: float):
@@ -118,6 +123,8 @@ class Viewer3DMSAA(Editor):
             self.program['m_model'].write(entity.component_transform.world_matrix)
             entity.component_mesh.render(shader_program_name="basic.glsl")
 
+        # Update sphere's position
+
     def resolve_msaa(self):
         self.ctx.copy_framebuffer(self.fbo, self.msaa_fbo)
 
@@ -148,6 +155,11 @@ class Viewer3DMSAA(Editor):
             imgui.pop_style_var(1)
 
             imgui.text(f"Selected entity: {self.selected_entity_id}")
+
+            activated, self.debug_show_hash_colors = imgui.checkbox("Show entity ID colors",
+                                                                    self.debug_show_hash_colors)
+            if activated:
+                self.program["hash_color"] = self.debug_show_hash_colors
 
         imgui.same_line(spacing=20)
 
@@ -204,6 +216,7 @@ class Viewer3DMSAA(Editor):
             instances=1)
 
         entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
+        # NOTE: Entity ID is being shown on the gui alreadyd
         return entity_id
 
     def handle_event_mouse_button_press(self, event_data: tuple):

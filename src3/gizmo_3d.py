@@ -3,6 +3,8 @@ import glm
 import numpy as np
 import constants
 from glm import vec3
+
+from src3 import math_3d
 from src3.shader_loader import ShaderLoader
 
 GIZMO_MODE_TRANSLATION = "translation"
@@ -107,6 +109,14 @@ class Gizmo3D:
         # Apply the scale factor to the entity transform
         scale_matrix = glm.scale(glm.mat4(1.0), glm.vec3(scale_factor))
         transform_matrix = projection_matrix * view_matrix * entity_matrix * scale_matrix
+
+        #distances = []
+        #for i in range(3):
+        #    distances.append(math_3d.distance2_ray_segment(ray_origin=ray_origin,
+        #                                                   ray_direction=ray_direction,
+        #                                                   p0=vec3(0, 0, 0),
+        #                                                   p1=vec3(scale_matrix[i])))
+        #print(f"Distances {distances}")
 
         # Pass the transform matrix to the shader
         self.program['uViewProjMatrix'].write(transform_matrix.to_bytes())

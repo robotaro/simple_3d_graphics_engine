@@ -58,7 +58,7 @@ class Viewer3D(Editor):
 
     def setup(self) -> bool:
 
-        self.entities[1] = self.entity_factory.create_renderable_3d_axis(axis_radius=0.05)
+        self.entities[23] = self.entity_factory.create_renderable_3d_axis(axis_radius=0.05)
         return True
 
     def update(self, time: float, elapsed_time: float):
@@ -104,7 +104,8 @@ class Viewer3D(Editor):
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
             entity_matrix=self.entities[self.selected_entity_id].component_transform.world_matrix,
-            )
+            ray_origin=vec3(0, 0, 0),
+            ray_direction=vec3(1, 0, 0))
 
     def render_ui(self):
         imgui.begin("Viewer 3D", True)
@@ -145,7 +146,7 @@ class Viewer3D(Editor):
                 # Generate a 3D ray from the camera position
                 ray_origin, ray_direction = self.camera.screen_to_world(self.image_mouse_x, self.image_mouse_y)
 
-                collision = math_3d.intersects_ray_sphere_boolean(
+                collision = math_3d.intersect_ray_sphere_boolean(
                     ray_origin=ray_origin,
                     ray_direction=ray_direction,
                     sphere_origin=vec3(0, 0, 0),

@@ -63,7 +63,8 @@ class MeshFactory3D:
                 raise ValueError(f"[ERROR] Shape does not have a '{KEY_NAME}' field")
 
             transform_list = shape.get(KEY_TRANSFORM, [])
-            transform = np.eye(4, dtype=np.float32) if len(transform_list) == 0 else np.reshape(np.array(transform_list, dtype=np.float32), (4, 4))
+            transform = np.eye(4, dtype=np.float32) if len(transform_list) == 0 else (
+                np.reshape(np.array(transform_list, dtype=np.float32), (4, 4)))
 
             if shape_name == KEY_SHAPE_CYLINDER:
                 vertices, normals, colors, indices = self.create_cylinder(
@@ -250,5 +251,48 @@ class MeshFactory3D:
 
         return vertices, normals, colors, indices
 
-    def __get_cylinder(self, parameters: dict):
-        pass
+    def create_grid_xz(self, num_cells: int, cell_size: float):
+        half_size = num_cells * cell_size
+
+        vertices = []
+        colors = []
+
+        gray_color = (0.3, 0.3, 0.3)
+        red_color = (1.0, 0.3, 0.3)
+        blue_color = (0.3, 0.3, 1.0)
+
+        # Lines parallel to X axis
+        for i in range(2 * num_cells + 1):
+            z = -half_size + i * cell_size
+            if z == 0:
+                # X axis
+                vertices.extend([[half_size, 0, z], [-half_size, 0, z]])
+                colors.extend([red_color, red_color])
+            else:
+                vertices.extend([[half_size, 0, z], [-half_size, 0, z]])
+                colors.extend([gray_color, gray_color])
+
+        # Lines parallel to Z axis
+        for i in range(2 * num_cells + 1):
+            x = -half_size + i * cell_size
+            if x == 0:
+                # Z axis
+                vertices.extend([[x, 0, half_size], [x, 0, -half_size]])
+                colors.extend([blue_color, blue_color])
+            else:
+                vertices.extend([[x, 0, half_size], [x, 0, -half_size]])
+                colors.extend([gray_color, gray_color])
+
+        vertices = np.array(vertices, dtype=np.float32).reshape(-1, 3)
+        colors = np.array(colors, dtype=np.float32).reshape(-1, 3)
+
+        # Create a mesh with lines
+        line_indices = np.arange(len(vertices), dtype=np.int32).reshape(-1, 2)
+        mesh_data = {
+            KEY_PRIMITIVE_VERTICES: vertices,
+            KEY_PRIMITIVE_NORMALS: None,
+            KEY_PRIMITIVE_COLORS: colors,
+            KEY_PRIMITIVE_INDICES: line_indices
+        }
+
+        return mesh_data

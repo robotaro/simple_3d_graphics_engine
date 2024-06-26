@@ -22,10 +22,10 @@ def intersect_ray_plane(ray_origin: vec3, ray_direction: vec3, plane_normal: vec
     return True, t
 
 
-def intersects_ray_sphere_boolean(ray_origin: vec3,
-                                  ray_direction: vec3,
-                                  sphere_origin: vec3,
-                                  sphere_radius: float) -> bool:
+def intersect_ray_sphere_boolean(ray_origin: vec3,
+                                 ray_direction: vec3,
+                                 sphere_origin: vec3,
+                                 sphere_radius: float) -> bool:
     p = sphere_origin - ray_origin
     p2 = length2(p)
     q = dot(p, ray_direction)
@@ -63,8 +63,8 @@ def nearest_point_on_segment(ray_origin: vec3, ray_direction: vec3, segment_star
     return nearest_point, t
 
 
-def distance2_ray_segment(ray_origin: vec3, ray_direction: vec3, segment_start: vec3, segment_end: vec3) -> float:
-    nearest_point, t = nearest_point_on_segment(ray_origin, ray_direction, segment_start, segment_end)
+def distance2_ray_segment(ray_origin: vec3, ray_direction: vec3, p0: vec3, p1: vec3) -> float:
+    nearest_point, t = nearest_point_on_segment(ray_origin, ray_direction, p0, p1)
     tr = dot(nearest_point - ray_origin, ray_direction) / dot(ray_direction, ray_direction)
     p = ray_origin + ray_direction * tr
     return length2(p - nearest_point)
