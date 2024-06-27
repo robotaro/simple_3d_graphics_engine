@@ -3,6 +3,7 @@ import moderngl
 import struct
 import copy
 from glm import vec3
+import numpy as np
 
 from src3 import constants
 from src3.editors.editor import Editor
@@ -31,8 +32,8 @@ class Viewer3DMSAA(Editor):
 
         # Camera variables
         self.camera = Camera(fbo_size=self.fbo_size, position=vec3(0, 1, 5))
-        self.camera_ray_origin = None
-        self.camera_ray_direction = None
+        self.camera_ray_origin = vec3(1E9, 1E9, 1E9)
+        self.camera_ray_direction = vec3(0, 1, 0)
 
         # Fragment picking
         self.picker_program = self.shader_loader.get_program("fragment_picking.glsl")
@@ -76,23 +77,40 @@ class Viewer3DMSAA(Editor):
 
         # Debug variables
         self.debug_show_hash_colors = False
+        self.debug_collision_detected = False
+        self.debug_point_on_segment = vec3(0, 0, 0)
+        self.debug_shortest_distance2 = 0.0
 
         # System-only entities
         self.renderable_entity_grid = None
 
     def setup(self) -> bool:
 
-        # 3D axis
-        self.entities[5] = self.entity_factory.create_renderable_3d_axis(axis_radius=0.05)
-        self.entities[20] = self.entity_factory.create_sphere(radius=0.2)
-        self.entities[30] = self.entity_factory.create_grid_xz(num_cells=10, cell_size=1.0)
+        self.entities[10] = self.entity_factory.create_renderable_3d_axis(
+            axis_radius=0.05)
+
+        self.entities[20] = self.entity_factory.create_sphere(
+            radius=0.2,
+            position=vec3(1, 1, 1),
+            color=(1.0, 0.5, 0.0))
+
+        self.entities[21] = self.entity_factory.create_sphere(
+            radius=0.2,
+            position=vec3(-3, 0.5, -2),
+            color=(1.0, 0.5, 0.0))
+
+        self.entities[30] = self.entity_factory.create_grid_xz(
+            num_cells=10,
+            cell_size=1.0)
+
         return True
 
     def update(self, time: float, elapsed_time: float):
         self.camera.process_keyboard(elapsed_time)
         self.render_scene()
         self.resolve_msaa()
-        self.render_gizmo()
+        #self.render_gizmo()
+        self.process_collisions()
         self.render_ui()
 
     def shutdown(self):
@@ -123,14 +141,7 @@ class Viewer3DMSAA(Editor):
             self.program['m_model'].write(entity.component_transform.world_matrix)
             entity.component_mesh.render(shader_program_name="basic.glsl")
 
-        # Update sphere's position
-
-    def resolve_msaa(self):
-        self.ctx.copy_framebuffer(self.fbo, self.msaa_fbo)
-
     def render_gizmo(self):
-
-        return
 
         if self.selected_entity_id < 1:
             return
@@ -160,8 +171,23 @@ class Viewer3DMSAA(Editor):
 
             activated, self.debug_show_hash_colors = imgui.checkbox("Show entity ID colors",
                                                                     self.debug_show_hash_colors)
+
+            imgui.text("Ray Origin")
+            imgui.text(str(self.camera_ray_origin))
+            imgui.text("Ray Direction")
+            imgui.text(str(self.camera_ray_direction))
+            imgui.text("Point On segment")
+            imgui.text(str(self.debug_point_on_segment))
+            imgui.text("Euclidian shortest distance")
+            imgui.text(str(np.sqrt(self.debug_shortest_distance2)))
+
             if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors
+
+            if self.debug_collision_detected:
+                imgui.text("Collision Detected!")
+            else:
+                imgui.text("No collision")
 
         imgui.same_line(spacing=20)
 
@@ -187,6 +213,7 @@ class Viewer3DMSAA(Editor):
                 self.camera_ray_origin, self.camera_ray_direction = self.camera.screen_to_world(
                     self.image_mouse_x, self.image_mouse_y)
 
+
                 """collision = math_3d.intersects_ray_sphere_boolean(
                     ray_origin=ray_origin,
                     ray_direction=ray_direction,
@@ -198,6 +225,66 @@ class Viewer3DMSAA(Editor):
                 #print(f"Collision: {collision}")
 
         imgui.end()
+
+    def process_collisions(self) -> vec3:
+
+        """
+        self.entities[20] = self.entity_factory.create_sphere(
+            radius=0.2,
+            position=vec3(1, 1, 1),
+            color=(1.0, 0.5, 0.0))
+
+        self.entities[21] = self.entity_factory.create_sphere(
+            radius=0.2,
+            position=vec3(-3, 0.5, -2),
+            color=(1.0, 0.5, 0.0))
+        :return:
+        """
+
+        c = math_3d.intersect_ray_capsule_boolean(
+            ray_origin=self.camera_ray_origin,
+            ray_direction=self.camera_ray_direction,
+            radius=0.05,
+            p0=vec3(0.0, 0.0, 0.0),
+            p1=vec3(1.0, 0.0, 0.0)
+        )
+
+        self.debug_point_on_segment, _ = math_3d.nearest_point_on_segment(
+            ray_origin=self.camera_ray_origin,
+            ray_direction=self.camera_ray_direction,
+            p0=vec3(0.0, 0.0, 0.0),
+            p1=vec3(1.0, 0.0, 0.0)
+        )
+
+        self.debug_shortest_distance2 = math_3d.distance2_ray_segment(
+            ray_origin=self.camera_ray_origin,
+            ray_direction=self.camera_ray_direction,
+            p0=vec3(0.0, 0.0, 0.0),
+            p1=vec3(1.0, 0.0, 0.0)
+        )
+
+        a, _, _ = math_3d.intersect_ray_sphere(
+            ray_origin=self.camera_ray_origin,
+            ray_direction=self.camera_ray_direction,
+            sphere_radius=0.2,
+            sphere_origin=vec3(1.0, 1.0, 1.0))
+
+        b, _, _ = math_3d.intersect_ray_sphere(
+            ray_origin=self.camera_ray_origin,
+            ray_direction=self.camera_ray_direction,
+            sphere_radius=0.2,
+            sphere_origin=vec3(-3, 0.5, -2))
+
+        self.debug_collision_detected = a or b or c
+
+
+        #num_vertices = self.entities[20].mesh_component.num_vertices
+
+        # Sphere
+        return vec3(0, 0, 0)
+
+    def resolve_msaa(self):
+        self.ctx.copy_framebuffer(self.fbo, self.msaa_fbo)
 
     def process_input(self, elapsed_time):
 
@@ -218,7 +305,7 @@ class Viewer3DMSAA(Editor):
             instances=1)
 
         entity_id, instance_id, _ = struct.unpack("3i", self.picker_buffer.read())
-        # NOTE: Entity ID is being shown on the gui alreadyd
+        # NOTE: Entity ID is being shown on the gui already
         return entity_id
 
     def handle_event_mouse_button_press(self, event_data: tuple):

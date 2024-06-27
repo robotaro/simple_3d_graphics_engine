@@ -19,7 +19,7 @@ from src3.editors.gltf_load_demo import GLTFLoadDemo
 
 class App(mglw.WindowConfig):
 
-    gl_version = (3, 3)
+    gl_version = (4, 3)
     title = "App"
     aspect_ratio = None
     window_size = (1600, 900)

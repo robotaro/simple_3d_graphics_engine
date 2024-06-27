@@ -1,4 +1,4 @@
-from glm import vec3, mat4, dot, length2, sqrt
+from glm import vec3, mat4, dot, length2, sqrt, epsilon
 
 
 def intersect_ray_plane_boolean(ray_origin: vec3, ray_direction: vec3, plane_normal: vec3, plane_offset: float) -> bool:
@@ -54,18 +54,59 @@ def intersect_ray_sphere(ray_origin: vec3, ray_direction: vec3, sphere_origin: v
     return True, t0_, t1_
 
 
-def nearest_point_on_segment(ray_origin: vec3, ray_direction: vec3, segment_start: vec3, segment_end: vec3) -> tuple:
-    seg_dir = segment_end - segment_start
-    seg_length2 = length2(seg_dir)
-    t = dot((ray_origin - segment_start), seg_dir) / seg_length2
-    t = max(0, min(1, t))
-    nearest_point = segment_start + t * seg_dir
-    return nearest_point, t
+def nearest_point_on_segment(ray_origin: vec3, ray_direction: vec3, p0: vec3, p1: vec3) -> tuple:
+
+    """
+    The variable tr represents the parameter value along the ray direction that gives
+    the nearest point on the ray to the closest point on the segment
+    """
+
+    ldir = p1 - p0
+    p = p0 - ray_origin
+    q = length2(ldir)
+    r = dot(ldir, ray_direction)
+    s = dot(ldir, p)
+    t = dot(ray_direction, p)
+
+    denom = q - r * r
+    if denom < epsilon():
+        sd = td = 1.0
+        sn = 0.0
+        tn = t
+    else:
+        sd = td = denom
+        sn = r * t - s
+        tn = q * t - r * s
+        if sn < 0.0:
+            sn = 0.0
+            tn = t
+            td = 1.0
+        elif sn > sd:
+            sn = sd
+            tn = t + r
+            td = 1.0
+
+    if tn < 0.0:
+        tr = 0.0
+        if r >= 0.0:
+            ts = 0.0
+        elif s <= q:
+            ts = 1.0
+        else:
+            ts = -s / q
+    else:
+        tr = tn / td
+        ts = sn / sd
+
+    nearest_point = p0 + ldir * ts
+    return nearest_point, tr
 
 
 def distance2_ray_segment(ray_origin: vec3, ray_direction: vec3, p0: vec3, p1: vec3) -> float:
-    nearest_point, t = nearest_point_on_segment(ray_origin, ray_direction, p0, p1)
-    tr = dot(nearest_point - ray_origin, ray_direction) / dot(ray_direction, ray_direction)
+    """
+    Returns squared shortest perpendicular distance between segment and ray
+    """
+    nearest_point, tr = nearest_point_on_segment(ray_origin, ray_direction, p0, p1)
     p = ray_origin + ray_direction * tr
     return length2(p - nearest_point)
 
@@ -82,14 +123,3 @@ def intersect_ray_capsule(ray_origin: vec3, ray_direction: vec3, p0: vec3, p1: v
         return True, t0_, t1_
     else:
         return False, None, None
-
-
-def nearest_segment_segment(segment_a_p0: vec3, segment_a_p1: vec3, segment_b_p0: vec3, segment_b_p1: vec3) -> tuple:
-    # The tuple returned should contain two floats, representing the point interpolated between
-    # p0 and p1 for each segment.
-    pass
-
-def nearest_ray_segment(ray_origin: vec3, ray_direction: vec3, segment_b_p0: vec3, segment_b_p1: vec3) -> tuple:
-    # The tuple returned should contain two floats, representing the point interpolated between
-    # p0 and p1 for each segment.
-    pass

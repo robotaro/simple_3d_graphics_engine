@@ -46,12 +46,13 @@ class EntityFactory:
         mesh_component = self.component_factory.create_mesh(
             vertices=mesh_data["vertices"],
             normals=mesh_data["normals"],
-            colors=mesh_data["colors"]
-        )
+            colors=mesh_data["colors"])
+
         transform_component = self.component_factory.create_transform()
+
         return Entity(archetype="renderable", component_list=[mesh_component, transform_component])
 
-    def create_sphere(self, radius: float, subdivisions=3):
+    def create_sphere(self, radius: float, position: vec3, color: tuple, subdivisions=3):
         mesh_factory = MeshFactory3D()
         shape_list = [
             {"name": "icosphere",
@@ -64,9 +65,10 @@ class EntityFactory:
         mesh_component = self.component_factory.create_mesh(
             vertices=mesh_data["vertices"],
             normals=mesh_data["normals"],
-            colors=mesh_data["colors"]
-        )
-        transform_component = self.component_factory.create_transform()
+            colors=mesh_data["colors"])
+
+        transform_component = self.component_factory.create_transform(position=position)
+
         return Entity(archetype="renderable", component_list=[mesh_component, transform_component])
 
     def create_grid_xz(self, num_cells: int, cell_size: float):
@@ -77,7 +79,7 @@ class EntityFactory:
             vertices=mesh_data["vertices"],
             normals=mesh_data["normals"],
             colors=mesh_data["colors"],
-            render_mode=constants.MESH_RENDER_MODE_LINES
-        )
+            render_mode=constants.MESH_RENDER_MODE_LINES)
+
         transform_component = self.component_factory.create_transform()
         return Entity(archetype="renderable", component_list=[mesh_component, transform_component])
