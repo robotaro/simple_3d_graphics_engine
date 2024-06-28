@@ -9,7 +9,7 @@ from src3.editors.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
 from src3.gizmo_3d import Gizmo3D
-from src3.camera_3d import Camera  # Import the Camera class
+from src3.camera_3d import Camera3D  # Import the Camera class
 from src3 import math_3d
 
 
@@ -22,7 +22,7 @@ class Viewer3D(Editor):
         self.window_size = (900, 600)
         self.fbo_size = (640, 480)
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
-        self.camera = Camera(fbo_size=self.fbo_size, position=vec3(0, 1, 5))
+        self.camera = Camera3D(fbo_size=self.fbo_size, position=vec3(0, 1, 5))
 
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
         self.entity_factory = EntityFactory(ctx=self.ctx, shader_loader=self.shader_loader)

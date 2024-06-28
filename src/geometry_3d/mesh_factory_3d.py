@@ -251,13 +251,12 @@ class MeshFactory3D:
 
         return vertices, normals, colors, indices
 
-    def create_grid_xz(self, num_cells: int, cell_size: float):
+    def create_grid_xz(self, num_cells: int, cell_size: float, grid_color=(0.3, 0.3, 0.3)):
         half_size = num_cells * cell_size
 
         vertices = []
         colors = []
 
-        gray_color = (0.3, 0.3, 0.3)
         red_color = (1.0, 0.3, 0.3)
         blue_color = (0.3, 0.3, 1.0)
 
@@ -270,7 +269,7 @@ class MeshFactory3D:
                 colors.extend([red_color, red_color])
             else:
                 vertices.extend([[half_size, 0, z], [-half_size, 0, z]])
-                colors.extend([gray_color, gray_color])
+                colors.extend([grid_color, grid_color])
 
         # Lines parallel to Z axis
         for i in range(2 * num_cells + 1):
@@ -281,7 +280,7 @@ class MeshFactory3D:
                 colors.extend([blue_color, blue_color])
             else:
                 vertices.extend([[x, 0, half_size], [x, 0, -half_size]])
-                colors.extend([gray_color, gray_color])
+                colors.extend([grid_color, grid_color])
 
         vertices = np.array(vertices, dtype=np.float32).reshape(-1, 3)
         colors = np.array(colors, dtype=np.float32).reshape(-1, 3)

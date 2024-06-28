@@ -71,9 +71,12 @@ class EntityFactory:
 
         return Entity(archetype="renderable", component_list=[mesh_component, transform_component])
 
-    def create_grid_xz(self, num_cells: int, cell_size: float):
+    def create_grid_xz(self, num_cells: int, cell_size: float, grid_color=(0.3, 0.3, 0.3)):
         mesh_factory = MeshFactory3D()
-        mesh_data = mesh_factory.create_grid_xz(num_cells, cell_size)
+        mesh_data = mesh_factory.create_grid_xz(
+            num_cells=num_cells,
+            cell_size=cell_size,
+            grid_color=grid_color)
 
         mesh_component = self.component_factory.create_mesh(
             vertices=mesh_data["vertices"],

@@ -10,7 +10,7 @@ from src3.editors.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
 from src3.gizmo_3d import Gizmo3D
-from src3.camera_3d import Camera  # Import the Camera class
+from src3.camera_3d import Camera3D  # Import the Camera class
 from src3 import math_3d
 
 
@@ -20,7 +20,7 @@ class Viewer3DMSAA(Editor):
 
         super().__init__(**kwargs)
 
-        self.window_size = (900, 600)
+        self.window_size = (1100, 600)
         self.fbo_size = (640, 480)
         self.fbo_image_position = (0, 0)  # Indicates where on the moderngl-window the scene was rendered
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
@@ -31,7 +31,7 @@ class Viewer3DMSAA(Editor):
         self.entity_factory = EntityFactory(ctx=self.ctx, shader_loader=self.shader_loader)
 
         # Camera variables
-        self.camera = Camera(fbo_size=self.fbo_size, position=vec3(0, 1, 5))
+        self.camera = Camera3D(fbo_size=self.fbo_size, position=vec3(0, 1, 5))
         self.camera_ray_origin = vec3(1E9, 1E9, 1E9)
         self.camera_ray_direction = vec3(0, 1, 0)
 
@@ -68,12 +68,12 @@ class Viewer3DMSAA(Editor):
             depth_attachment=self.ctx.depth_texture(self.fbo_size),
         )
 
-        self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
-
         self.gizmo_3d = Gizmo3D(ctx=self.ctx,
                                 shader_loader=self.shader_loader,
                                 output_fbo=self.fbo,
                                 gizmo_size_on_screen=0.25)
+
+        self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
 
         # Debug variables
         self.debug_show_hash_colors = False
@@ -101,15 +101,19 @@ class Viewer3DMSAA(Editor):
 
         self.entities[30] = self.entity_factory.create_grid_xz(
             num_cells=10,
-            cell_size=1.0)
+            cell_size=1.0,
+            grid_color=(0.5, 0.5, 0.5)
+        )
 
         return True
 
     def update(self, time: float, elapsed_time: float):
-        self.camera.process_keyboard(elapsed_time)
+
+        if self.camera.right_mouse_button_down:
+            self.camera.process_keyboard(elapsed_time)
+
         self.render_scene()
-        self.resolve_msaa()
-        #self.render_gizmo()
+        self.render_gizmo()
         self.process_collisions()
         self.render_ui()
 
@@ -141,12 +145,15 @@ class Viewer3DMSAA(Editor):
             self.program['m_model'].write(entity.component_transform.world_matrix)
             entity.component_mesh.render(shader_program_name="basic.glsl")
 
+        # Resolve MSAA
+        self.ctx.copy_framebuffer(self.fbo, self.msaa_fbo)
+
     def render_gizmo(self):
 
-        if self.selected_entity_id < 1:
+        if self.selected_entity_id not in self.entities:
             return
 
-        self.gizmo_3d.render(
+        self.gizmo_3d.update_and_render(
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
             entity_matrix=self.entities[self.selected_entity_id].component_transform.world_matrix,
@@ -154,7 +161,9 @@ class Viewer3DMSAA(Editor):
             ray_direction=self.camera_ray_direction)
 
     def render_ui(self):
-        imgui.begin("Viewer 3D MSAA", True)
+
+        window_flags = imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_COLLAPSE
+        imgui.begin("Viewer 3D MSAA", True, window_flags)
         imgui.set_window_size(self.window_size[0], self.window_size[1])
 
         # Left Column - Menus
@@ -172,14 +181,28 @@ class Viewer3DMSAA(Editor):
             activated, self.debug_show_hash_colors = imgui.checkbox("Show entity ID colors",
                                                                     self.debug_show_hash_colors)
 
+            # DEBUG
             imgui.text("Ray Origin")
             imgui.text(str(self.camera_ray_origin))
+            imgui.spacing()
             imgui.text("Ray Direction")
             imgui.text(str(self.camera_ray_direction))
+            imgui.spacing()
             imgui.text("Point On segment")
             imgui.text(str(self.debug_point_on_segment))
+            imgui.spacing()
             imgui.text("Euclidian shortest distance")
             imgui.text(str(np.sqrt(self.debug_shortest_distance2)))
+            imgui.spacing()
+            imgui.spacing()
+            imgui.text("Gizmo euclidian shortest distance")
+            for dist2 in self.gizmo_3d.axes_dist2:
+                imgui.text(str(np.sqrt(dist2)))
+            imgui.spacing()
+            imgui.spacing()
+            imgui.text(self.gizmo_3d.mode)
+            imgui.text(str(self.gizmo_3d.active_axis))
+
 
             if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors
@@ -213,16 +236,6 @@ class Viewer3DMSAA(Editor):
                 self.camera_ray_origin, self.camera_ray_direction = self.camera.screen_to_world(
                     self.image_mouse_x, self.image_mouse_y)
 
-
-                """collision = math_3d.intersects_ray_sphere_boolean(
-                    ray_origin=ray_origin,
-                    ray_direction=ray_direction,
-                    sphere_origin=vec3(0, 0, 0),
-                    sphere_radius=1.0)"""
-
-                # DEBUG
-                #print(f"Ray Origin: {ray_origin}, Ray Direction: {ray_direction}")
-                #print(f"Collision: {collision}")
 
         imgui.end()
 
@@ -259,7 +272,7 @@ class Viewer3DMSAA(Editor):
         self.debug_shortest_distance2 = math_3d.distance2_ray_segment(
             ray_origin=self.camera_ray_origin,
             ray_direction=self.camera_ray_direction,
-            p0=vec3(0.0, 0.0, 0.0),
+            p0=vec3(1.0, 1.0, 1.0),
             p1=vec3(1.0, 0.0, 0.0)
         )
 
@@ -277,21 +290,14 @@ class Viewer3DMSAA(Editor):
 
         self.debug_collision_detected = a or b or c
 
-
         #num_vertices = self.entities[20].mesh_component.num_vertices
 
         # Sphere
         return vec3(0, 0, 0)
 
-    def resolve_msaa(self):
-        self.ctx.copy_framebuffer(self.fbo, self.msaa_fbo)
+    def read_entity_id(self, mouse_x, mouse_y) -> int:
 
-    def process_input(self, elapsed_time):
-
-        if self.camera.right_mouse_button_down:
-            self.camera.process_keyboard(elapsed_time)
-
-    def get_entity_id(self, mouse_x, mouse_y) -> int:
+        # Only read an entity ID if
 
         # The mouse positions are on the framebuffer being rendered, not the screen coordinates
         self.picker_program['texel_pos'].value = (int(mouse_x), int(mouse_y))  # (x, y)
@@ -317,9 +323,10 @@ class Viewer3DMSAA(Editor):
         if button == constants.MOUSE_LEFT:
             # The framebuffer image is flipped on the y-axis, so we flip the coordinates as well
             image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y
-            entity_id = self.get_entity_id(mouse_x=self.image_mouse_x,
-                                           mouse_y=image_mouse_y_opengl)
-            self.selected_entity_id = -1 if entity_id < 0 else entity_id
+            entity_id = self.read_entity_id(mouse_x=self.image_mouse_x,
+                                            mouse_y=image_mouse_y_opengl)
+
+            self.selected_entity_id = -1 if entity_id < 1 else entity_id
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         button, x, y = event_data
@@ -328,10 +335,17 @@ class Viewer3DMSAA(Editor):
 
     def handle_event_keyboard_press(self, event_data: tuple):
         key, modifiers = event_data
-        self.camera.handle_key_press(key)
+
+        self.camera.handle_key_press(key=key, modifiers=modifiers)
 
     def handle_event_keyboard_release(self, event_data: tuple):
         key, modifiers = event_data
+
+        # DEBUG
+        if key == ord("h"):
+            self.debug_show_hash_colors = not self.debug_show_hash_colors
+            self.program["hash_color"] = self.debug_show_hash_colors
+
         self.camera.handle_key_release(key)
 
     def handle_event_mouse_double_click(self, event_data: tuple):

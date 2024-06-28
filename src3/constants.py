@@ -39,9 +39,9 @@ BUTTON_UP = 3
 KEYBOARD_SIZE = 512
 KEY_STATE_DOWN = 0
 KEY_STATE_UP = 1
-KEY_LEFT_CTRL = 29
-KEY_LEFT_SHIFT = 42
-KEY_LEFT_ALT = 56
+KEY_LEFT_CTRL = 65507
+KEY_LEFT_SHIFT = 65505
+KEY_LEFT_ALT = 65513
 
 # =============================================================================
 #                                Events

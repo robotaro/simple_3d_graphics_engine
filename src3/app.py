@@ -16,6 +16,11 @@ from src3.editors.viewer_3d import Viewer3D
 from src3.editors.viewer_3d_msaa import Viewer3DMSAA
 from src3.editors.gltf_load_demo import GLTFLoadDemo
 
+EDITOR_CLASSES = [
+    Viewer3DMSAA
+    #Viewer3D
+]
+
 
 class App(mglw.WindowConfig):
 
@@ -45,12 +50,7 @@ class App(mglw.WindowConfig):
 
         self.shader_loader.load_shaders(directory=constants.SHADERS_DIR)
 
-        editor_classes = [
-            Viewer3DMSAA
-            #Viewer3D
-        ]
-
-        for editor_class in editor_classes:
+        for editor_class in EDITOR_CLASSES:
             self.editors.append(editor_class(
                 ctx=self.ctx,
                 logger=self.logger,

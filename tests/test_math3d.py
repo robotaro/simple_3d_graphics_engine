@@ -86,3 +86,69 @@ def test_capsule_negative_collisions():
             p1=vec3(1.0, 0.0, 0.0))
 
     assert not collision
+
+
+def test_nearest_point_on_segment():
+
+    # Test 1
+    ray_origin = vec3(1.0, 1.0, 1.0)
+    ray_direction = vec3(1.0, 0.0, 0.0)
+
+    p0 = vec3(2.0, 0.5, 0)
+    p1 = vec3(2.0, 0.5, 2.0)
+
+    nearest_point, tr = math_3d.nearest_point_on_segment(
+        ray_origin=ray_origin,
+        ray_direction=ray_direction,
+        p0=p0,
+        p1=p1)
+
+    g = 0
+
+
+def test_distance2_ray_segment():
+
+    # Test 1
+    ray_origin = vec3(1.0, 1.0, 1.0)
+    ray_direction = vec3(1.0, 0.0, 0.0)
+
+    p0 = vec3(2.0, 0.5, 0)
+    p1 = vec3(2.0, 0.5, 2.0)
+
+    dist2 = math_3d.distance2_ray_segment(
+        ray_origin=ray_origin,
+        ray_direction=ray_direction,
+        p0=p0,
+        p1=p1)
+
+    assert dist2 == 0.5 ** 2
+
+    # Test 2
+    ray_origin = vec3(1.0, 1.0, 1.0)
+    ray_direction = vec3(1.0, 0.0, 0.0)
+
+    p0 = vec3(2.0, 1.0, 0)
+    p1 = vec3(2.0, 1.0, 2.0)
+
+    dist2 = math_3d.distance2_ray_segment(
+        ray_origin=ray_origin,
+        ray_direction=ray_direction,
+        p0=p0,
+        p1=p1)
+
+    assert dist2 == 0
+
+    # Test 3
+    ray_origin = vec3(1.0, 1.0, 1.0)
+    ray_direction = vec3(0.0, 1.0, 0.0)
+
+    p0 = vec3(2.0, 1.0, 0)
+    p1 = vec3(2.0, 1.0, 2.0)
+
+    dist2 = math_3d.distance2_ray_segment(
+        ray_origin=ray_origin,
+        ray_direction=ray_direction,
+        p0=p0,
+        p1=p1)
+
+    assert dist2 == 1.0

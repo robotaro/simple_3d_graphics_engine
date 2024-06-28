@@ -1,8 +1,13 @@
 import glm
 import numpy as np
 
+from src3 import constants
 
-class Camera:
+CAMERA_SPEED_NORMAL = 2.5
+CAMERA_SPEED_FAST = 5.0
+
+
+class Camera3D:
 
     def __init__(self, fbo_size: tuple, position: glm.vec3, camera_speed=2.5, mouse_sensitivity=0.1):
         self.fbo_size = fbo_size
@@ -77,11 +82,19 @@ class Camera:
 
         self.view_matrix = glm.lookAt(self.position, self.position + self.front, self.up)
 
-    def handle_key_press(self, key):
+    def handle_key_press(self, key, modifiers):
+
+        if key == constants.KEY_LEFT_SHIFT:
+            self.speed = CAMERA_SPEED_FAST
+
         if key in self.key_map:
             self.key_states[self.key_map[key]] = True
 
     def handle_key_release(self, key):
+
+        if key == constants.KEY_LEFT_SHIFT:
+            self.speed = CAMERA_SPEED_NORMAL
+
         if key in self.key_map:
             self.key_states[self.key_map[key]] = False
 

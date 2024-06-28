@@ -7,9 +7,15 @@ from glm import vec3
 from src3 import math_3d
 from src3.shader_loader import ShaderLoader
 
+GIZMO_AXIS_RADIUS = 0.005
 GIZMO_MODE_TRANSLATION = "translation"
 GIZMO_MODE_ROTATION = "rotation"
 GIZMO_MODE_SCALE = "scale"
+
+GIZMO_STATE_INACTIVE = "inactive"
+GIZMO_STATE_HOVERING = "hovering"
+GIZMO_STATE_DRAGGING = "dragging"
+GIZMO_STATE_ACTIVE_AXIS = 0
 
 
 class Gizmo3D:
@@ -25,12 +31,103 @@ class Gizmo3D:
         self.output_fbo = output_fbo
         self.program = shader_loader.get_program("gizmo_shader.glsl")
 
-        self.gizmo_mode = GIZMO_MODE_TRANSLATION
+
         self.gizmo_size_on_screen = gizmo_size_on_screen
 
         self.helper_fbo = self.ctx.framebuffer(
             depth_attachment=self.output_fbo.depth_attachment,
         )
+
+        self.translation_vao, self.translation_vbo = self.generate_translation_vertices()
+
+        self.mode = GIZMO_MODE_TRANSLATION
+        self.active_axis = 0
+        self.axes_dist2 = [0.0] * 3
+
+    def update_and_render(self,
+                          view_matrix: glm.mat4,
+                          projection_matrix: glm.mat4,
+                          entity_matrix: glm.mat4,
+                          ray_origin: vec3,
+                          ray_direction: vec3):
+
+        if self.mode == GIZMO_MODE_TRANSLATION:
+            self.render_gizmo_translation(view_matrix=view_matrix,
+                                          projection_matrix=projection_matrix,
+                                          entity_matrix=entity_matrix,
+                                          ray_origin=ray_origin,
+                                          ray_direction=ray_direction)
+
+        if self.mode == GIZMO_MODE_ROTATION:
+            pass
+
+        if self.mode == GIZMO_MODE_SCALE:
+            pass
+
+    def render_gizmo_translation(self,
+                                 view_matrix: glm.mat4,
+                                 projection_matrix: glm.mat4,
+                                 entity_matrix: glm.mat4,
+                                 ray_origin: vec3,
+                                 ray_direction: vec3):
+
+        # ==========================================
+        #           Update Internal state
+        # ==========================================
+
+        # Calculate the camera position from the view matrix
+        camera_position = glm.inverse(view_matrix) * glm.vec4(0.0, 0.0, 0.0, 1.0)
+        camera_position = glm.vec3(camera_position)  # Convert to vec3
+
+        # Determine the scale factor to keep the gizmo a constant size on the screen
+        # This assumes the gizmo is located at the origin
+        gizmo_position = glm.vec3(entity_matrix[3])
+        distance = glm.length(camera_position - gizmo_position)
+        scale_factor = distance * self.gizmo_size_on_screen
+
+        # Apply the scale factor to the entity transform
+        scale_matrix = glm.scale(glm.mat4(1.0), glm.vec3(scale_factor))
+        transform_matrix = projection_matrix * view_matrix * entity_matrix * scale_matrix
+
+        self.axes_dist2 = [math_3d.distance2_ray_segment(
+            ray_origin=ray_origin,
+            ray_direction=ray_direction,
+            p0=gizmo_position,
+            p1=glm.vec3(entity_matrix[i]) * scale_factor + gizmo_position) for i in range(3)]
+
+        shortest_dist_index = np.argmin(self.axes_dist2)
+
+        if self.axes_dist2[shortest_dist_index] < GIZMO_AXIS_RADIUS * scale_factor:
+            self.active_axis = shortest_dist_index
+        else:
+            self.active_axis = -1
+
+
+        # ==========================================
+        #                   Render
+        # ==========================================
+
+        # Bind the helper framebuffer to clear the depth buffer
+        self.helper_fbo.use()
+        self.helper_fbo.clear(depth=True)
+
+        # Bind the output framebuffer to render the gizmo
+        self.output_fbo.use()
+
+        # Pass the transform matrix to the shader
+        self.program['uViewProjMatrix'].write(transform_matrix.to_bytes())
+
+        # Pass the viewport size to the geometry shader
+        viewport_size = (self.output_fbo.viewport[2], self.output_fbo.viewport[3])
+        self.program['uViewport'].value = viewport_size
+
+        # Set the line width
+        self.ctx.line_width = 3.0
+
+        # Render the gizmo axes
+        self.translation_vao.render(moderngl.LINES)
+
+    def generate_translation_vertices(self):
 
         # Prepare the gizmo vertices for the axes (x, y, z)
         # Each axis will have a line with start and end points, and a specified width
@@ -59,77 +156,10 @@ class Gizmo3D:
         gizmo_vertices = np.array(x_axis_vertices + y_axis_vertices + z_axis_vertices, dtype='f4')
 
         # Create buffer and vertex array for the gizmo
-        self.vbo = self.ctx.buffer(gizmo_vertices.tobytes())
-        self.vao = self.ctx.simple_vertex_array(self.program, self.vbo, 'aPositionSize', 'aColor')
+        vbo = self.ctx.buffer(gizmo_vertices.tobytes())
+        vao = self.ctx.simple_vertex_array(self.program, vbo, 'aPositionSize', 'aColor')
 
-    def render(self,
-               view_matrix: glm.mat4,
-               projection_matrix: glm.mat4,
-               entity_matrix: glm.mat4,
-               ray_origin: vec3,
-               ray_direction: vec3):
-
-        if self.gizmo_mode == GIZMO_MODE_TRANSLATION:
-            self.render_gizmo_translation(view_matrix=view_matrix,
-                                          projection_matrix=projection_matrix,
-                                          entity_matrix=entity_matrix,
-                                          ray_origin=ray_origin,
-                                          ray_direction=ray_direction)
-
-        if self.gizmo_mode == GIZMO_MODE_ROTATION:
-            pass
-
-        if self.gizmo_mode == GIZMO_MODE_SCALE:
-            pass
-
-    def render_gizmo_translation(self,
-                                 view_matrix: glm.mat4,
-                                 projection_matrix: glm.mat4,
-                                 entity_matrix: glm.mat4,
-                                 ray_origin: vec3,
-                                 ray_direction: vec3):
-
-        # Bind the helper framebuffer to clear the depth buffer
-        self.helper_fbo.use()
-        self.helper_fbo.clear(depth=True)
-
-        # Bind the output framebuffer to render the gizmo
-        self.output_fbo.use()
-
-        # Calculate the camera position from the view matrix
-        camera_position = glm.inverse(view_matrix) * glm.vec4(0.0, 0.0, 0.0, 1.0)
-        camera_position = glm.vec3(camera_position)  # Convert to vec3
-
-        # Determine the scale factor to keep the gizmo a constant size on the screen
-        # This assumes the gizmo is located at the origin
-        gizmo_position = glm.vec3(entity_matrix[3])
-        distance = glm.length(camera_position - gizmo_position)
-        scale_factor = distance * self.gizmo_size_on_screen
-
-        # Apply the scale factor to the entity transform
-        scale_matrix = glm.scale(glm.mat4(1.0), glm.vec3(scale_factor))
-        transform_matrix = projection_matrix * view_matrix * entity_matrix * scale_matrix
-
-        #distances = []
-        #for i in range(3):
-        #    distances.append(math_3d.distance2_ray_segment(ray_origin=ray_origin,
-        #                                                   ray_direction=ray_direction,
-        #                                                   p0=vec3(0, 0, 0),
-        #                                                   p1=vec3(scale_matrix[i])))
-        #print(f"Distances {distances}")
-
-        # Pass the transform matrix to the shader
-        self.program['uViewProjMatrix'].write(transform_matrix.to_bytes())
-
-        # Pass the viewport size to the geometry shader
-        viewport_size = (self.output_fbo.viewport[2], self.output_fbo.viewport[3])
-        self.program['uViewport'].value = viewport_size
-
-        # Set the line width
-        self.ctx.line_width = 3.0
-
-        # Render the gizmo axes
-        self.vao.render(moderngl.LINES)
+        return vao, vbo
 
     def handle_event_mouse_button_press(self, event_data: tuple):
         button, x, y = event_data
