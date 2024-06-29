@@ -1,21 +1,12 @@
 import moderngl
 import glm
 import numpy as np
-import constants
+from src3 import constants
 from glm import vec3
 
 from src3 import math_3d
 from src3.shader_loader import ShaderLoader
 
-GIZMO_AXIS_RADIUS = 0.005
-GIZMO_MODE_TRANSLATION = "translation"
-GIZMO_MODE_ROTATION = "rotation"
-GIZMO_MODE_SCALE = "scale"
-
-GIZMO_STATE_INACTIVE = "inactive"
-GIZMO_STATE_HOVERING = "hovering"
-GIZMO_STATE_DRAGGING = "dragging"
-GIZMO_STATE_ACTIVE_AXIS = 0
 
 
 class Gizmo3D:
@@ -31,7 +22,6 @@ class Gizmo3D:
         self.output_fbo = output_fbo
         self.program = shader_loader.get_program("gizmo_shader.glsl")
 
-
         self.gizmo_size_on_screen = gizmo_size_on_screen
 
         self.helper_fbo = self.ctx.framebuffer(
@@ -40,8 +30,10 @@ class Gizmo3D:
 
         self.translation_vao, self.translation_vbo = self.generate_translation_vertices()
 
-        self.mode = GIZMO_MODE_TRANSLATION
-        self.active_axis = 0
+        self.gizmo_mode = constants.GIZMO_MODE_TRANSLATION
+        self.gizmo_state = constants.GIZMO_STATE_INACTIVE
+        self.gizmo_active_axis = 0
+        self.gizmo_translation_offset_point = vec3(0, 0, 0)
         self.axes_dist2 = [0.0] * 3
 
     def update_and_render(self,
@@ -51,17 +43,17 @@ class Gizmo3D:
                           ray_origin: vec3,
                           ray_direction: vec3):
 
-        if self.mode == GIZMO_MODE_TRANSLATION:
+        if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
             self.render_gizmo_translation(view_matrix=view_matrix,
                                           projection_matrix=projection_matrix,
                                           entity_matrix=entity_matrix,
                                           ray_origin=ray_origin,
                                           ray_direction=ray_direction)
 
-        if self.mode == GIZMO_MODE_ROTATION:
+        if self.gizmo_mode == constants.GIZMO_MODE_ROTATION:
             pass
 
-        if self.mode == GIZMO_MODE_SCALE:
+        if self.gizmo_mode == constants.GIZMO_MODE_SCALE:
             pass
 
     def render_gizmo_translation(self,
@@ -97,11 +89,12 @@ class Gizmo3D:
 
         shortest_dist_index = np.argmin(self.axes_dist2)
 
-        if self.axes_dist2[shortest_dist_index] < GIZMO_AXIS_RADIUS * scale_factor:
-            self.active_axis = shortest_dist_index
+        if self.axes_dist2[shortest_dist_index] < constants.GIZMO_AXIS_DETECTION_RADIUS * scale_factor:
+            self.gizmo_state = constants.GIZMO_STATE_HOVERING
+            self.gizmo_active_axis = shortest_dist_index
         else:
-            self.active_axis = -1
-
+            self.gizmo_state = constants.GIZMO_STATE_INACTIVE
+            self.gizmo_active_axis = -1
 
         # ==========================================
         #                   Render
@@ -163,11 +156,19 @@ class Gizmo3D:
 
     def handle_event_mouse_button_press(self, event_data: tuple):
         button, x, y = event_data
+
+        if button == constants.MOUSE_LEFT:
+            self.gizmo_translation_offset_point
+            self.gizmo_state = constants.GIZMO_STATE_HOVERING
+
         # Add code here as needed
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         button, x, y = event_data
-        # Add code here as needed
+        if button == constants.MOUSE_LEFT:
+            self.gizmo_translation_offset_point = math_3d.nearest_point_on_segment(r)
+            # TODO: this may make the gizmo inactive if released on top of the gizmo itself before the mouse moves
+            self.gizmo_state = constants.GIZMO_STATE_INACTIVE
 
     def handle_event_keyboard_press(self, event_data: tuple):
         key, modifiers = event_data

@@ -39,10 +39,8 @@ class Viewer3DMSAA(Editor):
         self.picker_program = self.shader_loader.get_program("fragment_picking.glsl")
         self.picker_buffer = self.ctx.buffer(reserve=3 * 4)  # 3 ints
         self.picker_vao = self.ctx.vertex_array(self.picker_program, [])
-        self.picker_output = None
-        self.image_mouse_x = 0
+        self.image_mouse_x = 0  # Current position of mouse on rendered image
         self.image_mouse_y = 0
-        self.image_mouse_y_opengl = copy.copy(self.fbo_size[1])
         self.texture_entity_info = self.ctx.texture(size=self.fbo_size, components=3, dtype='f4')
         self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
         self.selected_entity_id = -1
@@ -200,9 +198,9 @@ class Viewer3DMSAA(Editor):
                 imgui.text(str(np.sqrt(dist2)))
             imgui.spacing()
             imgui.spacing()
-            imgui.text(self.gizmo_3d.mode)
-            imgui.text(str(self.gizmo_3d.active_axis))
-
+            imgui.text(f"Mode: {self.gizmo_3d.gizmo_mode}")
+            imgui.text(f"State: {str(self.gizmo_3d.gizmo_state)}")
+            imgui.text(f"Axis: {self.gizmo_3d.gizmo_active_axis}")
 
             if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors
@@ -321,12 +319,16 @@ class Viewer3DMSAA(Editor):
             self.camera.right_mouse_button_down = True
 
         if button == constants.MOUSE_LEFT:
-            # The framebuffer image is flipped on the y-axis, so we flip the coordinates as well
-            image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y
-            entity_id = self.read_entity_id(mouse_x=self.image_mouse_x,
-                                            mouse_y=image_mouse_y_opengl)
 
-            self.selected_entity_id = -1 if entity_id < 1 else entity_id
+            # You can only select another entity if, when you click, you are not hovering the gizmo
+            if self.gizmo_3d.gizmo_state == constants.GIZMO_STATE_INACTIVE:
+
+                # The framebuffer image is flipped on the y-axis, so we flip the coordinates as well
+                image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y
+                entity_id = self.read_entity_id(mouse_x=self.image_mouse_x,
+                                                mouse_y=image_mouse_y_opengl)
+
+                self.selected_entity_id = -1 if entity_id < 1 else entity_id
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         button, x, y = event_data

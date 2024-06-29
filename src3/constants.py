@@ -18,6 +18,22 @@ DEFAULT_EDITOR_WINDOW_SIZE = (1600, 900)  # (1280, 720)
 DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD = 0.5  # in seconds - Windows default is 500ms
 
 # =============================================================================
+#                                GIZMO 3D
+# =============================================================================
+
+
+GIZMO_AXIS_DETECTION_RADIUS = 0.005
+GIZMO_MODE_TRANSLATION = "translation"
+GIZMO_MODE_ROTATION = "rotation"
+GIZMO_MODE_SCALE = "scale"
+
+GIZMO_STATE_INACTIVE = "inactive"
+GIZMO_STATE_HOVERING = "hovering"
+GIZMO_STATE_DRAGGING = "dragging"
+GIZMO_STATE_ACTIVE_AXIS = -1
+
+
+# =============================================================================
 #                                INPUT
 # =============================================================================
 
