@@ -21,7 +21,6 @@ class ComponentFactory:
         transform = TransformComponent(position=position,
                                        rotation=quat(rotation),
                                        scale=scale)
-        transform.update_world_matrix()
         return transform
 
     def create_material(self, color=(1, 1, 1), texture=None):

@@ -152,12 +152,16 @@ class Viewer3DMSAA(Editor):
         if self.selected_entity_id not in self.entities:
             return
 
+        selected_entity_transform = self.entities[self.selected_entity_id].component_transform
+
         self.gizmo_3d.update_and_render(
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
-            entity_matrix=self.entities[self.selected_entity_id].component_transform.world_matrix,
+            model_matrix=selected_entity_transform.world_matrix,
             ray_origin=self.camera_ray_origin,
             ray_direction=self.camera_ray_direction)
+
+        selected_entity_transform.update_world_matrix(selected_entity_transform.world_matrix)
 
     def render_ui(self):
 
@@ -202,6 +206,7 @@ class Viewer3DMSAA(Editor):
             imgui.text(f"Mode: {self.gizmo_3d.gizmo_mode}")
             imgui.text(f"State: {str(self.gizmo_3d.gizmo_state)}")
             imgui.text(f"Axis: {self.gizmo_3d.gizmo_active_axis}")
+            imgui.text(f"Scale: {self.gizmo_3d.gizmo_scale}")
 
             if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors

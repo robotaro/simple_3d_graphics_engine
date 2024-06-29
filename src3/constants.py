@@ -21,7 +21,7 @@ DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD = 0.5  # in seconds - Windows default
 #                                GIZMO 3D
 # =============================================================================
 
-GIZMO_AXIS_DETECTION_RADIUS = 0.005
+GIZMO_AXIS_DETECTION_RADIUS = 0.0025
 GIZMO_MODE_TRANSLATION = "translation"
 GIZMO_MODE_ROTATION = "rotation"
 GIZMO_MODE_SCALE = "scale"
