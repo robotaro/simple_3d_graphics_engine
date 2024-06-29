@@ -21,7 +21,6 @@ DEFAULT_EDITOR_DOUBLE_CLICK_TIME_THRESHOLD = 0.5  # in seconds - Windows default
 #                                GIZMO 3D
 # =============================================================================
 
-
 GIZMO_AXIS_DETECTION_RADIUS = 0.005
 GIZMO_MODE_TRANSLATION = "translation"
 GIZMO_MODE_ROTATION = "rotation"
@@ -32,6 +31,12 @@ GIZMO_STATE_HOVERING = "hovering"
 GIZMO_STATE_DRAGGING = "dragging"
 GIZMO_STATE_ACTIVE_AXIS = -1
 
+# =============================================================================
+#                                CAMERA 3D
+# =============================================================================
+
+CAMERA_SPEED_NORMAL = 2.5
+CAMERA_SPEED_FAST = 7.0
 
 # =============================================================================
 #                                INPUT

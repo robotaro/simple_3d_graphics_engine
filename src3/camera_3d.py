@@ -1,10 +1,8 @@
 import glm
 import numpy as np
 
-from src3 import constants
 
-CAMERA_SPEED_NORMAL = 2.5
-CAMERA_SPEED_FAST = 5.0
+from src3 import constants
 
 
 class Camera3D:
@@ -85,7 +83,7 @@ class Camera3D:
     def handle_key_press(self, key, modifiers):
 
         if key == constants.KEY_LEFT_SHIFT:
-            self.speed = CAMERA_SPEED_FAST
+            self.speed = constants.CAMERA_SPEED_FAST
 
         if key in self.key_map:
             self.key_states[self.key_map[key]] = True
@@ -93,7 +91,7 @@ class Camera3D:
     def handle_key_release(self, key):
 
         if key == constants.KEY_LEFT_SHIFT:
-            self.speed = CAMERA_SPEED_NORMAL
+            self.speed = constants.CAMERA_SPEED_NORMAL
 
         if key in self.key_map:
             self.key_states[self.key_map[key]] = False

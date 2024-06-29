@@ -2,7 +2,7 @@ import moderngl
 import glm
 import numpy as np
 from src3 import constants
-from glm import vec3
+from glm import vec3, mat4
 
 from src3 import math_3d
 from src3.shader_loader import ShaderLoader
@@ -36,12 +36,16 @@ class Gizmo3D:
         self.gizmo_translation_offset_point = vec3(0, 0, 0)
         self.axes_dist2 = [0.0] * 3
 
+        self.entity_matrix = mat4(1.0)
+
     def update_and_render(self,
                           view_matrix: glm.mat4,
                           projection_matrix: glm.mat4,
                           entity_matrix: glm.mat4,
                           ray_origin: vec3,
                           ray_direction: vec3):
+
+        self.entity_matrix = entity_matrix
 
         if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
             self.render_gizmo_translation(view_matrix=view_matrix,
@@ -157,14 +161,22 @@ class Gizmo3D:
 
         return vao, vbo
 
-    def handle_event_mouse_button_press(self,  button: int, ray_origin: vec3, ray_direction: vec3):
+    def handle_event_mouse_button_press(self, button: int, ray_origin: vec3, ray_direction: vec3):
 
         if button == constants.MOUSE_LEFT and self.gizmo_state == constants.GIZMO_STATE_HOVERING:
-            """self.gizmo_translation_offset_point = math_3d.nearest_point_on_segment(
+
+            # Get offset on axis where you first clicked, the "translation offset"
+            entity_position = vec3(self.entity_matrix[3])
+            self.gizmo_translation_offset_point, _ = math_3d.nearest_point_on_segment(
                 ray_origin=ray_origin,
                 ray_direction=ray_direction,
-                p1=
-            )"""
+                p0=entity_position,
+                p1=entity_position + vec3(self.entity_matrix[self.gizmo_active_axis])
+            )
+            self.gizmo_translation_offset_point -= entity_position
+
+            print(self.gizmo_translation_offset_point)
+
             self.gizmo_state = constants.GIZMO_STATE_DRAGGING
 
         # Add code here as needed
