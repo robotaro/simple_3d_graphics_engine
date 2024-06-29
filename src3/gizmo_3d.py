@@ -8,7 +8,6 @@ from src3 import math_3d
 from src3.shader_loader import ShaderLoader
 
 
-
 class Gizmo3D:
 
     def __init__(self,
@@ -39,23 +38,34 @@ class Gizmo3D:
         self.gizmo_translation_offset_point = vec3(0, 0, 0)
         self.axes_dist2 = [0.0] * 3
 
+        self.translation_vector = vec3(0)
+        self.translation_axis_segment_p0 = vec3(0)
+        self.translation_axis_segment_p1 = vec3(0)
+
         self.model_matrix = mat4(1.0)
+        self.ray_origin = glm.vec3(0.0)
+        self.ray_direction = glm.vec3(0.0)
 
     def update_and_render(self,
                           view_matrix: glm.mat4,
                           projection_matrix: glm.mat4,
                           model_matrix: glm.mat4,
                           ray_origin: vec3,
-                          ray_direction: vec3):
+                          ray_direction: vec3) -> mat4:
 
+        # Story updated info to be used by callbacks later
         self.model_matrix = model_matrix
+        self.ray_origin = ray_origin
+        self.ray_direction = ray_direction
+
+        new_model_matrix = None
 
         if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
-            self.render_gizmo_translation(view_matrix=view_matrix,
-                                          projection_matrix=projection_matrix,
-                                          model_matrix=model_matrix,
-                                          ray_origin=ray_origin,
-                                          ray_direction=ray_direction)
+            new_model_matrix = self.render_gizmo_translation_mode(view_matrix=view_matrix,
+                projection_matrix=projection_matrix,
+                model_matrix=model_matrix,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction)
 
         if self.gizmo_mode == constants.GIZMO_MODE_ROTATION:
             pass
@@ -63,12 +73,16 @@ class Gizmo3D:
         if self.gizmo_mode == constants.GIZMO_MODE_SCALE:
             pass
 
-    def render_gizmo_translation(self,
-                                 view_matrix: glm.mat4,
-                                 projection_matrix: glm.mat4,
-                                 model_matrix: glm.mat4,
-                                 ray_origin: vec3,
-                                 ray_direction: vec3):
+        return new_model_matrix
+
+    def render_gizmo_translation_mode(self,
+                                      view_matrix: glm.mat4,
+                                      projection_matrix: glm.mat4,
+                                      model_matrix: glm.mat4,
+                                      ray_origin: vec3,
+                                      ray_direction: vec3) -> mat4:
+
+        new_model_matrix = None
 
         # Calculate the camera position from the view matrix
         camera_position = glm.inverse(view_matrix) * glm.vec4(0.0, 0.0, 0.0, 1.0)
@@ -85,13 +99,39 @@ class Gizmo3D:
         # No need to apply the scale to the entity matrix
         transform_matrix = projection_matrix * view_matrix * model_matrix
 
+        if self.gizmo_state == constants.GIZMO_STATE_START_DRAGGING:
+
+            # Generate a long segment representing the axis we're translating
+            selected_axis_direction = vec3(model_matrix[self.gizmo_active_axis])
+            self.translation_axis_segment_p0 = gizmo_position - 500.0 * selected_axis_direction
+            self.translation_axis_segment_p1 = gizmo_position + 500.0 * selected_axis_direction
+
+            # Get offset on axis where you first clicked, the "translation offset"
+            entity_position = vec3(self.model_matrix[3])
+            self.gizmo_translation_offset_point, _ = math_3d.nearest_point_on_segment(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                p0=self.translation_axis_segment_p0,
+                p1=self.translation_axis_segment_p1
+            )
+            self.gizmo_translation_offset_point -= entity_position
+            self.gizmo_state = constants.GIZMO_STATE_DRAGGING
+
         if self.gizmo_state == constants.GIZMO_STATE_DRAGGING:
+            entity_position = glm.vec3(self.model_matrix[3])
+            axis_direction = glm.vec3(self.model_matrix[self.gizmo_active_axis])
 
-            # TODO: Translate the model matrix along the active axis using the self.gizmo_translation_offset_point.
+            nearest_point_on_axis, _ = math_3d.nearest_point_on_segment(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                p0=entity_position,
+                p1=entity_position + axis_direction
+            )
 
+            self.translation_vector = nearest_point_on_axis - (entity_position + self.gizmo_translation_offset_point)
+            new_model_matrix = glm.translate(self.model_matrix, self.translation_vector)
 
-            pass
-        else:
+        else:  # HOVERING OR INACTIVE
             self.axes_dist2 = [math_3d.distance2_ray_segment(
                 ray_origin=ray_origin,
                 ray_direction=ray_direction,
@@ -115,7 +155,7 @@ class Gizmo3D:
         self.output_fbo.use()
 
         # Pass the transform matrix to the shader
-        self.program['uViewProjMatrix'].write(transform_matrix.to_bytes())
+        self.program['uViewProjMatrix'].write(transform_matrix)
 
         # Pass the viewport size to the geometry shader
         viewport_size = (self.output_fbo.viewport[2], self.output_fbo.viewport[3])
@@ -126,6 +166,8 @@ class Gizmo3D:
 
         # Render the gizmo axes
         self.translation_vao.render(moderngl.LINES)
+
+        return new_model_matrix
 
     def generate_translation_vertices(self):
         # Create buffer and vertex array for the gizmo, initially with unit length axes
@@ -189,27 +231,10 @@ class Gizmo3D:
     def handle_event_mouse_button_press(self, button: int, ray_origin: vec3, ray_direction: vec3):
 
         if button == constants.MOUSE_LEFT and self.gizmo_state == constants.GIZMO_STATE_HOVERING:
-
-            # Get offset on axis where you first clicked, the "translation offset"
-            entity_position = vec3(self.model_matrix[3])
-            self.gizmo_translation_offset_point, _ = math_3d.nearest_point_on_segment(
-                ray_origin=ray_origin,
-                ray_direction=ray_direction,
-                p0=entity_position,
-                p1=entity_position + vec3(self.model_matrix[self.gizmo_active_axis])
-            )
-            self.gizmo_translation_offset_point -= entity_position
-
-            print(self.gizmo_translation_offset_point)
-
-            self.gizmo_state = constants.GIZMO_STATE_DRAGGING
-
-        # Add code here as needed
+            self.gizmo_state = constants.GIZMO_STATE_START_DRAGGING
 
     def handle_event_mouse_button_release(self, button: int):
         if button == constants.MOUSE_LEFT:
-
-            # TODO: this may make the gizmo inactive if released on top of the gizmo itself before the mouse moves
             self.gizmo_state = constants.GIZMO_STATE_INACTIVE
 
     def handle_event_keyboard_press(self, event_data: tuple):
@@ -226,4 +251,4 @@ class Gizmo3D:
 
     def handle_event_mouse_drag(self, event_data: tuple):
         x, y, dx, dy = event_data
-        # Add code here as needed
+

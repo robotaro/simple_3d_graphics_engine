@@ -152,16 +152,16 @@ class Viewer3DMSAA(Editor):
         if self.selected_entity_id not in self.entities:
             return
 
-        selected_entity_transform = self.entities[self.selected_entity_id].component_transform
+        entity_world_matrix = self.entities[self.selected_entity_id].component_transform.world_matrix
 
-        self.gizmo_3d.update_and_render(
+        new_entity_world_matrix = self.gizmo_3d.update_and_render(
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
-            model_matrix=selected_entity_transform.world_matrix,
+            model_matrix=entity_world_matrix,
             ray_origin=self.camera_ray_origin,
             ray_direction=self.camera_ray_direction)
 
-        selected_entity_transform.update_world_matrix(selected_entity_transform.world_matrix)
+        self.entities[self.selected_entity_id].component_transform.update_world_matrix(new_entity_world_matrix)
 
     def render_ui(self):
 
@@ -207,6 +207,7 @@ class Viewer3DMSAA(Editor):
             imgui.text(f"State: {str(self.gizmo_3d.gizmo_state)}")
             imgui.text(f"Axis: {self.gizmo_3d.gizmo_active_axis}")
             imgui.text(f"Scale: {self.gizmo_3d.gizmo_scale}")
+            imgui.text(f"Tr. Vector: {self.gizmo_3d.translation_vector}")
 
             if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors
@@ -376,4 +377,5 @@ class Viewer3DMSAA(Editor):
         x, y, dx, dy = event_data
         if self.camera.right_mouse_button_down:
             self.camera.process_mouse_movement(dx=dx, dy=dy)
-        self.gizmo_3d.handle_event_mouse_move(event_data=event_data)
+        #self.gizmo_3d.handle_event_mouse_drag(event_data=event_data)
+        #self.entities[self.selected_entity_id].component_transform.update_world_matrix()

@@ -45,17 +45,17 @@ class TransformComponent:
 
     def update_position(self, position: glm.vec3):
         self.position = position
-        self.trigger_update_from_vectors()
+        self.update_vectors()
 
     def update_rotation(self, rotation: glm.quat):
         self.rotation = rotation
-        self.trigger_update_from_vectors()
+        self.update_vectors()
 
     def update_scale(self, scale: glm.quat):
         self.scale = scale
-        self.trigger_update_from_vectors()
+        self.update_vectors()
 
-    def trigger_update_from_vectors(self,):
+    def update_vectors(self):
 
         # 1) Update local matrix from position, rotation (quat) and scale vectors
         self.local_matrix = self._calculate_local_matrix()
@@ -72,7 +72,9 @@ class TransformComponent:
 
     def update_local_matrix(self, local_matrix: glm.mat4):
 
-        self.local_matrix = local_matrix
+        # Replace current local matrix if a new one is provided
+        if isinstance(local_matrix, glm.mat4):
+            self.local_matrix = local_matrix
 
         # 1) Update vectors (position, rotation and scale) from local matrix
         self.position, self.rotation, self.scale = self.decompose_matrix(self.local_matrix)
@@ -89,7 +91,9 @@ class TransformComponent:
 
     def update_world_matrix(self, world_matrix: glm.mat4):
 
-        self.world_matrix = world_matrix
+        # Replace current world matrix if a new one is provided
+        if isinstance(world_matrix, glm.mat4):
+            self.world_matrix = world_matrix
 
         # 1) Update local matrix using the parent's world matrix if available
         if self.parent:
