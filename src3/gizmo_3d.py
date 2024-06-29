@@ -42,7 +42,6 @@ class Gizmo3D:
         self.translation_axis_segment_p0 = vec3(0)
         self.translation_axis_segment_p1 = vec3(0)
 
-        self.model_matrix = mat4(1.0)
         self.ray_origin = glm.vec3(0.0)
         self.ray_direction = glm.vec3(0.0)
 
@@ -54,14 +53,14 @@ class Gizmo3D:
                           ray_direction: vec3) -> mat4:
 
         # Story updated info to be used by callbacks later
-        self.model_matrix = model_matrix
         self.ray_origin = ray_origin
         self.ray_direction = ray_direction
 
         new_model_matrix = None
 
         if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
-            new_model_matrix = self.render_gizmo_translation_mode(view_matrix=view_matrix,
+            new_model_matrix = self.render_gizmo_translation_mode(
+                view_matrix=view_matrix,
                 projection_matrix=projection_matrix,
                 model_matrix=model_matrix,
                 ray_origin=ray_origin,
@@ -98,54 +97,6 @@ class Gizmo3D:
 
         # No need to apply the scale to the entity matrix
         transform_matrix = projection_matrix * view_matrix * model_matrix
-
-        if self.gizmo_state == constants.GIZMO_STATE_START_DRAGGING:
-
-            # Generate a long segment representing the axis we're translating
-            selected_axis_direction = vec3(model_matrix[self.gizmo_active_axis])
-            self.translation_axis_segment_p0 = gizmo_position - 500.0 * selected_axis_direction
-            self.translation_axis_segment_p1 = gizmo_position + 500.0 * selected_axis_direction
-
-            # Get offset on axis where you first clicked, the "translation offset"
-            entity_position = vec3(self.model_matrix[3])
-            self.gizmo_translation_offset_point, _ = math_3d.nearest_point_on_segment(
-                ray_origin=ray_origin,
-                ray_direction=ray_direction,
-                p0=self.translation_axis_segment_p0,
-                p1=self.translation_axis_segment_p1
-            )
-            self.gizmo_translation_offset_point -= entity_position
-            self.gizmo_state = constants.GIZMO_STATE_DRAGGING
-
-        if self.gizmo_state == constants.GIZMO_STATE_DRAGGING:
-            entity_position = glm.vec3(self.model_matrix[3])
-            axis_direction = glm.vec3(self.model_matrix[self.gizmo_active_axis])
-
-            nearest_point_on_axis, _ = math_3d.nearest_point_on_segment(
-                ray_origin=ray_origin,
-                ray_direction=ray_direction,
-                p0=entity_position,
-                p1=entity_position + axis_direction
-            )
-
-            self.translation_vector = nearest_point_on_axis - (entity_position + self.gizmo_translation_offset_point)
-            new_model_matrix = glm.translate(self.model_matrix, self.translation_vector)
-
-        else:  # HOVERING OR INACTIVE
-            self.axes_dist2 = [math_3d.distance2_ray_segment(
-                ray_origin=ray_origin,
-                ray_direction=ray_direction,
-                p0=gizmo_position,
-                p1=glm.vec3(model_matrix[i]) * self.gizmo_scale + gizmo_position) for i in range(3)]
-
-            shortest_dist_index = np.argmin(self.axes_dist2)
-
-            if self.axes_dist2[shortest_dist_index] < self.gizmo_scale * constants.GIZMO_AXIS_DETECTION_RADIUS:
-                self.gizmo_state = constants.GIZMO_STATE_HOVERING
-                self.gizmo_active_axis = shortest_dist_index
-            else:
-                self.gizmo_state = constants.GIZMO_STATE_INACTIVE
-                self.gizmo_active_axis = -1
 
         # Bind the helper framebuffer to clear the depth buffer
         self.helper_fbo.use()
@@ -228,27 +179,91 @@ class Gizmo3D:
         # Update the VBO with the new vertices
         self.translation_vbo.write(gizmo_vertices.tobytes())
 
-    def handle_event_mouse_button_press(self, button: int, ray_origin: vec3, ray_direction: vec3):
+    # =========================================================================
+    #                           Input Callbacks
+    # =========================================================================
+
+    def handle_event_mouse_button_press(self, button: int, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4):
 
         if button == constants.MOUSE_LEFT and self.gizmo_state == constants.GIZMO_STATE_HOVERING:
-            self.gizmo_state = constants.GIZMO_STATE_START_DRAGGING
 
-    def handle_event_mouse_button_release(self, button: int):
+            gizmo_position = glm.vec3(model_matrix[3])
+
+            # Generate a long segment representing the axis we're translating
+            selected_axis_direction = vec3(model_matrix[self.gizmo_active_axis])
+            self.translation_axis_segment_p0 = gizmo_position - 500.0 * selected_axis_direction
+            self.translation_axis_segment_p1 = gizmo_position + 500.0 * selected_axis_direction
+
+            # Get offset on axis where you first clicked, the "translation offset"
+            entity_position = vec3(model_matrix[3])
+            self.gizmo_translation_offset_point, _ = math_3d.nearest_point_on_segment(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                p0=self.translation_axis_segment_p0,
+                p1=self.translation_axis_segment_p1
+            )
+            self.gizmo_translation_offset_point -= entity_position
+            self.gizmo_state = constants.GIZMO_STATE_DRAGGING
+
+    def handle_event_mouse_button_release(self, button: int, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4):
         if button == constants.MOUSE_LEFT:
             self.gizmo_state = constants.GIZMO_STATE_INACTIVE
 
-    def handle_event_keyboard_press(self, event_data: tuple):
+    def handle_event_keyboard_press(self, event_data: tuple) -> mat4:
         key, modifiers = event_data
         # Add code here as needed
+        return None
 
-    def handle_event_keyboard_release(self, event_data: tuple):
+    def handle_event_keyboard_release(self, event_data: tuple)-> mat4:
         key, modifiers = event_data
         # Add code here as needed
+        return None
 
-    def handle_event_mouse_move(self, event_data: tuple):
-        x, y, dx, dy = event_data
-        # Add code here as needed
-
-    def handle_event_mouse_drag(self, event_data: tuple):
+    def handle_event_mouse_move(self, event_data: tuple, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> mat4:
         x, y, dx, dy = event_data
 
+        if model_matrix is None:
+            return None
+
+        gizmo_position = glm.vec3(model_matrix[3])
+
+        self.axes_dist2 = [math_3d.distance2_ray_segment(
+            ray_origin=ray_origin,
+            ray_direction=ray_direction,
+            p0=gizmo_position,
+            p1=glm.vec3(model_matrix[i]) * self.gizmo_scale + gizmo_position) for i in range(3)]
+
+        shortest_dist_index = np.argmin(self.axes_dist2)
+
+        if self.axes_dist2[shortest_dist_index] < self.gizmo_scale * constants.GIZMO_AXIS_DETECTION_RADIUS:
+            self.gizmo_state = constants.GIZMO_STATE_HOVERING
+            self.gizmo_active_axis = shortest_dist_index
+        else:
+            self.gizmo_state = constants.GIZMO_STATE_INACTIVE
+            self.gizmo_active_axis = -1
+
+        return None
+
+    def handle_event_mouse_drag(self, event_data: tuple, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> mat4:
+        x, y, dx, dy = event_data
+
+        if model_matrix is None:
+            return None
+
+        if self.gizmo_active_axis == -1:
+            return None
+
+
+        # Mark the poojected point
+        entity_position = glm.vec3(model_matrix[3])
+        axis_direction = glm.vec3(model_matrix[self.gizmo_active_axis])
+
+        nearest_point_on_axis, _ = math_3d.nearest_point_on_segment(
+            ray_origin=ray_origin,
+            ray_direction=ray_direction,
+            p0=self.translation_axis_segment_p0,
+            p1=self.translation_axis_segment_p1,
+        )
+
+        self.translation_vector = nearest_point_on_axis - entity_position - self.gizmo_translation_offset_point
+        return glm.translate(model_matrix, self.translation_vector)

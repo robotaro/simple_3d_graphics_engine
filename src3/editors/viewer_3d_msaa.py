@@ -321,6 +321,10 @@ class Viewer3DMSAA(Editor):
         # NOTE: Entity ID is being shown on the gui already
         return entity_id
 
+    # =========================================================================
+    #                           Input Callbacks
+    # =========================================================================
+
     def handle_event_mouse_button_press(self, event_data: tuple):
         button, x, y = event_data
 
@@ -339,17 +343,26 @@ class Viewer3DMSAA(Editor):
 
                 self.selected_entity_id = -1 if entity_id < 1 else entity_id
 
+        selected_entity = self.entities.get(self.selected_entity_id, None)
+        model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
         self.gizmo_3d.handle_event_mouse_button_press(
             button=button,
             ray_direction=self.camera_ray_direction,
-            ray_origin=self.camera_ray_origin)
+            ray_origin=self.camera_ray_origin,
+            model_matrix=model_matrix)
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         button, x, y = event_data
         if button == constants.MOUSE_RIGHT:
             self.camera.right_mouse_button_down = False
 
-        self.gizmo_3d.handle_event_mouse_button_release(button=button)
+        selected_entity = self.entities.get(self.selected_entity_id, None)
+        model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
+        self.gizmo_3d.handle_event_mouse_button_release(
+            button=button,
+            ray_direction=self.camera_ray_direction,
+            ray_origin=self.camera_ray_origin,
+            model_matrix=model_matrix)
 
     def handle_event_keyboard_press(self, event_data: tuple):
         key, modifiers = event_data
@@ -371,11 +384,26 @@ class Viewer3DMSAA(Editor):
 
     def handle_event_mouse_move(self, event_data: tuple):
         x, y, dx, dy = event_data
-        self.gizmo_3d.handle_event_mouse_move(event_data=event_data)
+
+        selected_entity = self.entities.get(self.selected_entity_id, None)
+        model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
+        self.gizmo_3d.handle_event_mouse_move(
+            event_data=event_data,
+            ray_direction=self.camera_ray_direction,
+            ray_origin=self.camera_ray_origin,
+            model_matrix=model_matrix)
 
     def handle_event_mouse_drag(self, event_data: tuple):
         x, y, dx, dy = event_data
         if self.camera.right_mouse_button_down:
             self.camera.process_mouse_movement(dx=dx, dy=dy)
-        #self.gizmo_3d.handle_event_mouse_drag(event_data=event_data)
-        #self.entities[self.selected_entity_id].component_transform.update_world_matrix()
+
+        selected_entity = self.entities.get(self.selected_entity_id, None)
+        model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
+        new_model_matrix = self.gizmo_3d.handle_event_mouse_drag(
+            event_data=event_data,
+            ray_direction=self.camera_ray_direction,
+            ray_origin=self.camera_ray_origin,
+            model_matrix=model_matrix)
+        if selected_entity is not None:
+            selected_entity.component_transform.update_world_matrix(world_matrix=new_model_matrix)
