@@ -39,6 +39,7 @@ class Viewer3DMSAA(Editor):
         self.picker_program = self.shader_loader.get_program("fragment_picking.glsl")
         self.picker_buffer = self.ctx.buffer(reserve=3 * 4)  # 3 ints
         self.picker_vao = self.ctx.vertex_array(self.picker_program, [])
+        self.image_hovering = False
         self.image_mouse_x = 0  # Current position of mouse on rendered image
         self.image_mouse_y = 0
         self.texture_entity_info = self.ctx.texture(size=self.fbo_size, components=3, dtype='f4')
@@ -224,6 +225,7 @@ class Viewer3DMSAA(Editor):
 
             # Check if the mouse is over the image representing the rendered scene
             if imgui.is_item_hovered():
+                self.image_hovering = True
                 mouse_x, mouse_y = imgui.get_mouse_pos()
 
                 # Calculate the mouse position relative to the image
@@ -233,7 +235,8 @@ class Viewer3DMSAA(Editor):
                 # Generate a 3D ray from the camera position
                 self.camera_ray_origin, self.camera_ray_direction = self.camera.screen_to_world(
                     self.image_mouse_x, self.image_mouse_y)
-
+            else:
+                self.image_hovering = False
 
         imgui.end()
 
@@ -330,10 +333,17 @@ class Viewer3DMSAA(Editor):
 
                 self.selected_entity_id = -1 if entity_id < 1 else entity_id
 
+        self.gizmo_3d.handle_event_mouse_button_press(
+            button=button,
+            ray_direction=self.camera_ray_direction,
+            ray_origin=self.camera_ray_origin)
+
     def handle_event_mouse_button_release(self, event_data: tuple):
         button, x, y = event_data
         if button == constants.MOUSE_RIGHT:
             self.camera.right_mouse_button_down = False
+
+        self.gizmo_3d.handle_event_mouse_button_release(button=button)
 
     def handle_event_keyboard_press(self, event_data: tuple):
         key, modifiers = event_data

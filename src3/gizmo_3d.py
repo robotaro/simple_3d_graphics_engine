@@ -81,20 +81,23 @@ class Gizmo3D:
         scale_matrix = glm.scale(glm.mat4(1.0), glm.vec3(scale_factor))
         transform_matrix = projection_matrix * view_matrix * entity_matrix * scale_matrix
 
-        self.axes_dist2 = [math_3d.distance2_ray_segment(
-            ray_origin=ray_origin,
-            ray_direction=ray_direction,
-            p0=gizmo_position,
-            p1=glm.vec3(entity_matrix[i]) * scale_factor + gizmo_position) for i in range(3)]
-
-        shortest_dist_index = np.argmin(self.axes_dist2)
-
-        if self.axes_dist2[shortest_dist_index] < constants.GIZMO_AXIS_DETECTION_RADIUS * scale_factor:
-            self.gizmo_state = constants.GIZMO_STATE_HOVERING
-            self.gizmo_active_axis = shortest_dist_index
+        if self.gizmo_state == constants.GIZMO_STATE_DRAGGING:
+            pass
         else:
-            self.gizmo_state = constants.GIZMO_STATE_INACTIVE
-            self.gizmo_active_axis = -1
+            self.axes_dist2 = [math_3d.distance2_ray_segment(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                p0=gizmo_position,
+                p1=glm.vec3(entity_matrix[i]) * scale_factor + gizmo_position) for i in range(3)]
+
+            shortest_dist_index = np.argmin(self.axes_dist2)
+
+            if self.axes_dist2[shortest_dist_index] < constants.GIZMO_AXIS_DETECTION_RADIUS * scale_factor:
+                self.gizmo_state = constants.GIZMO_STATE_HOVERING
+                self.gizmo_active_axis = shortest_dist_index
+            else:
+                self.gizmo_state = constants.GIZMO_STATE_INACTIVE
+                self.gizmo_active_axis = -1
 
         # ==========================================
         #                   Render
@@ -154,19 +157,21 @@ class Gizmo3D:
 
         return vao, vbo
 
-    def handle_event_mouse_button_press(self, event_data: tuple):
-        button, x, y = event_data
+    def handle_event_mouse_button_press(self,  button: int, ray_origin: vec3, ray_direction: vec3):
 
-        if button == constants.MOUSE_LEFT:
-            self.gizmo_translation_offset_point
-            self.gizmo_state = constants.GIZMO_STATE_HOVERING
+        if button == constants.MOUSE_LEFT and self.gizmo_state == constants.GIZMO_STATE_HOVERING:
+            """self.gizmo_translation_offset_point = math_3d.nearest_point_on_segment(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                p1=
+            )"""
+            self.gizmo_state = constants.GIZMO_STATE_DRAGGING
 
         # Add code here as needed
 
-    def handle_event_mouse_button_release(self, event_data: tuple):
-        button, x, y = event_data
+    def handle_event_mouse_button_release(self, button: int):
         if button == constants.MOUSE_LEFT:
-            self.gizmo_translation_offset_point = math_3d.nearest_point_on_segment(r)
+
             # TODO: this may make the gizmo inactive if released on top of the gizmo itself before the mouse moves
             self.gizmo_state = constants.GIZMO_STATE_INACTIVE
 
