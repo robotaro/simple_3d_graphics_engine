@@ -87,25 +87,6 @@ def test_capsule_negative_collisions():
 
     assert not collision
 
-
-def test_nearest_point_on_segment():
-
-    # Test 1
-    ray_origin = vec3(1.0, 1.0, 1.0)
-    ray_direction = vec3(1.0, 0.0, 0.0)
-
-    p0 = vec3(2.0, 0.5, 0)
-    p1 = vec3(2.0, 0.5, 2.0)
-
-    nearest_point, tr = math_3d.nearest_point_on_segment(
-        ray_origin=ray_origin,
-        ray_direction=ray_direction,
-        p0=p0,
-        p1=p1)
-
-    g = 0
-
-
 def test_distance2_ray_segment():
 
     # Test 1
@@ -152,3 +133,79 @@ def test_distance2_ray_segment():
         p1=p1)
 
     assert dist2 == 1.0
+
+
+def test_ray_intersects_plane():
+    # Test 1: Plane in XY plane, ray perpendicular to plane, plane origin shifted
+    plane_origin = vec3(1.0, 1.0, 0.0)
+    plane_vec1 = vec3(1.0, 0.0, 0.0)
+    plane_vec2 = vec3(0.0, 1.0, 0.0)
+    ray_origin = vec3(1.0, 1.0, 1.0)
+    ray_direction = vec3(0.0, 0.0, -1.0)
+
+    u, v = math_3d.ray_intersect_plane_coordinates(plane_origin, plane_vec1, plane_vec2, ray_origin, ray_direction)
+    assert u == 0.0 and v == 0.0
+
+    # Test 2: Plane in XY plane, ray at an angle, plane origin shifted
+    plane_origin = vec3(1.0, 1.0, 0.0)
+    ray_origin = vec3(2.0, 2.0, 1.0)
+    ray_direction = vec3(0.0, 0.0, -1.0)
+
+    u, v = math_3d.ray_intersect_plane_coordinates(plane_origin, plane_vec1, plane_vec2, ray_origin, ray_direction)
+    assert u == 1.0 and v == 1.0
+
+    # Test 3: Plane in YZ plane, ray perpendicular to plane, plane origin shifted
+    plane_origin = vec3(1.0, 0.0, 0.0)
+    plane_vec1 = vec3(0.0, 1.0, 0.0)
+    plane_vec2 = vec3(0.0, 0.0, 1.0)
+    ray_origin = vec3(1.0, 1.0, 1.0)
+    ray_direction = vec3(-1.0, 0.0, 0.0)
+
+    u, v = math_3d.ray_intersect_plane_coordinates(plane_origin, plane_vec1, plane_vec2, ray_origin, ray_direction)
+    assert u == 0.0 and v == 0.0
+
+    # Test 4: Plane in YZ plane, ray at an angle, plane origin shifted
+    plane_origin = vec3(1.0, 1.0, 0.0)
+    ray_origin = vec3(2.0, 2.0, 0.0)
+    ray_direction = vec3(-1.0, -1.0, 0.0)
+
+    u, v = math_3d.ray_intersect_plane_coordinates(plane_origin, plane_vec1, plane_vec2, ray_origin, ray_direction)
+    assert u == 1.0 and v == -1.0
+
+    # Test 5: Plane in XZ plane, ray perpendicular to plane, plane origin shifted
+    plane_origin = vec3(0.0, 1.0, 0.0)
+    plane_vec1 = vec3(1.0, 0.0, 0.0)
+    plane_vec2 = vec3(0.0, 0.0, 1.0)
+    ray_origin = vec3(0.0, 2.0, 0.0)
+    ray_direction = vec3(0.0, -1.0, 0.0)
+
+    u, v = math_3d.ray_intersect_plane_coordinates(plane_origin, plane_vec1, plane_vec2, ray_origin, ray_direction)
+    assert u == 0.0 and v == 0.0
+
+    # Test 6: Plane in XZ plane, ray at an angle, plane origin shifted
+    plane_origin = vec3(1.0, 1.0, 1.0)
+    ray_origin = vec3(2.0, 2.0, 2.0)
+    ray_direction = vec3(-1.0, -1.0, -1.0)
+
+    u, v = math_3d.ray_intersect_plane_coordinates(plane_origin, plane_vec1, plane_vec2, ray_origin, ray_direction)
+    assert u == 0.0 and v == 0.0
+
+    # Test 7: Plane in arbitrary orientation, ray intersects
+    plane_origin = vec3(1.0, 1.0, 1.0)
+    plane_vec1 = vec3(1.0, 1.0, 0.0)
+    plane_vec2 = vec3(1.0, -1.0, 0.0)
+    ray_origin = vec3(2.0, 2.0, 2.0)
+    ray_direction = vec3(-1.0, -1.0, -1.0)
+
+    u, v = math_3d.ray_intersect_plane_coordinates(plane_origin, plane_vec1, plane_vec2, ray_origin, ray_direction)
+    assert u == 1.0 and v == 0.0
+
+    # Test 8: Plane in arbitrary orientation, ray intersects at an angle
+    plane_origin = vec3(1.0, 1.0, 1.0)
+    plane_vec1 = vec3(1.0, 0.0, 1.0)
+    plane_vec2 = vec3(0.0, 1.0, 1.0)
+    ray_origin = vec3(2.0, 2.0, 2.0)
+    ray_direction = vec3(-1.0, -1.0, -1.0)
+
+    u, v = math_3d.ray_intersect_plane_coordinates(plane_origin, plane_vec1, plane_vec2, ray_origin, ray_direction)
+    assert u == 0.5 and v == 0.5

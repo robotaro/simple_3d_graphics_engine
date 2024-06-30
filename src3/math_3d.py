@@ -1,4 +1,4 @@
-from glm import vec3, mat4, dot, length2, sqrt, epsilon
+from glm import vec3, mat4, dot, length2, sqrt, epsilon, cross, normalize
 
 
 def intersect_ray_plane_boolean(ray_origin: vec3, ray_direction: vec3, plane_normal: vec3, plane_offset: float) -> bool:
@@ -20,6 +20,34 @@ def intersect_ray_plane(ray_origin: vec3, ray_direction: vec3, plane_normal: vec
         return False, None
 
     return True, t
+
+
+def ray_intersect_plane_coordinates(plane_origin, plane_vec1, plane_vec2, ray_origin, ray_direction) -> tuple:
+
+    # Normalize the plane vectors to ensure they have unit length
+    plane_vec1 = normalize(plane_vec1)
+    plane_vec2 = normalize(plane_vec2)
+
+    # Calculate the normal of the plane
+    plane_normal = cross(plane_vec1, plane_vec2)
+
+    # Offset is the distance from the origin to the plane along the plane normal
+    plane_offset = dot(plane_normal, plane_origin)
+
+    # Find the intersection of the ray with the plane
+    intersect, t = intersect_ray_plane(ray_origin, ray_direction, plane_normal, plane_offset)
+    if not intersect:
+        return None, None, None  # No intersection
+
+    # Calculate the intersection point
+    intersection_point = ray_origin + t * ray_direction
+
+    # Project the intersection point onto the plane vectors
+    relative_intersection = intersection_point - plane_origin
+    u_coord = dot(relative_intersection, plane_vec1)
+    v_coord = dot(relative_intersection, plane_vec2)
+
+    return u_coord, v_coord, t
 
 
 def intersect_ray_sphere_boolean(ray_origin: vec3,

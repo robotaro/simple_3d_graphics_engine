@@ -181,6 +181,8 @@ class Viewer3DMSAA(Editor):
                                                                     self.debug_show_hash_colors)
 
             # DEBUG
+            imgui.text("Gizmo Scale")
+            imgui.text(str(self.gizmo_3d.gizmo_scale))
             imgui.text("Ray Origin")
             imgui.text(str(self.camera_ray_origin))
             imgui.spacing()
@@ -195,7 +197,7 @@ class Viewer3DMSAA(Editor):
             imgui.spacing()
             imgui.spacing()
             imgui.text("Gizmo euclidian shortest distance")
-            for dist2 in self.gizmo_3d.axes_dist2:
+            for dist2 in self.gizmo_3d.gizmo_dist2_point_on_axis:
                 imgui.text(str(np.sqrt(dist2)))
             imgui.spacing()
             imgui.spacing()
@@ -204,6 +206,9 @@ class Viewer3DMSAA(Editor):
             imgui.text(f"Axis: {self.gizmo_3d.gizmo_active_axis}")
             imgui.text(f"Scale: {self.gizmo_3d.gizmo_scale}")
             imgui.text(f"Tr. Vector: {self.gizmo_3d.translation_vector}")
+            imgui.spacing()
+            imgui.spacing()
+            imgui.text(f"Plane intersections: {self.gizmo_3d.debug_plane_intersections}")
 
             if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors

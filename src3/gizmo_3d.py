@@ -1,8 +1,7 @@
 import moderngl
-import glm
 import numpy as np
 from src3 import constants
-from glm import vec3, mat4
+from glm import vec3, vec4, mat4, length, length2, inverse, translate
 
 from src3 import math_3d
 from src3.shader_loader import ShaderLoader
@@ -31,22 +30,27 @@ class Gizmo3D:
         self.translation_vbo = None
         self.generate_translation_vertices()
 
+        self.plane_axis_list = [(0, 1), (0, 2), (1, 2)]
+
         self.gizmo_scale = 1.0
         self.gizmo_mode = constants.GIZMO_MODE_TRANSLATION
         self.gizmo_state = constants.GIZMO_STATE_INACTIVE
-        self.gizmo_active_axis = 0
-        self.gizmo_active_plane = 0
+        self.gizmo_active_axis = -1
+        self.gizmo_active_plane = -1
         self.gizmo_translation_offset_point = vec3(0, 0, 0)
-        self.axes_dist2 = [0.0] * 3
+        self.gizmo_dist2_ray = [0.0] * 3  # Closest distance between ray and segment
+        self.gizmo_dist2_point_on_axis = [0.0] * 3  # distance between origin and projected point on axes
+
+        self.debug_plane_intersections = [False] *3
 
         self.translation_vector = vec3(0)
         self.translation_axis_segment_p0 = vec3(0)
         self.translation_axis_segment_p1 = vec3(0)
 
     def render(self,
-               view_matrix: glm.mat4,
-               projection_matrix: glm.mat4,
-               model_matrix: glm.mat4):
+               view_matrix: mat4,
+               projection_matrix: mat4,
+               model_matrix: mat4):
 
         if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
             self.render_gizmo_translation_mode(
@@ -61,17 +65,17 @@ class Gizmo3D:
             pass
 
     def render_gizmo_translation_mode(self,
-                                      view_matrix: glm.mat4,
-                                      projection_matrix: glm.mat4,
-                                      model_matrix: glm.mat4):
+                                      view_matrix: mat4,
+                                      projection_matrix: mat4,
+                                      model_matrix: mat4):
 
         # Calculate the camera position from the view matrix
-        camera_position = glm.inverse(view_matrix) * glm.vec4(0.0, 0.0, 0.0, 1.0)
-        camera_position = glm.vec3(camera_position)  # Convert to vec3
+        camera_position = inverse(view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)
+        camera_position = vec3(camera_position)  # Convert to vec3
 
         # Determine the scale factor to keep the gizmo a constant size on the screen
-        gizmo_position = glm.vec3(model_matrix[3])
-        distance = glm.length(camera_position - gizmo_position)
+        gizmo_position = vec3(model_matrix[3])
+        distance = length(camera_position - gizmo_position)
         self.gizmo_scale = distance * self.gizmo_size_on_screen
 
         # Update vertices with the new scale factor
@@ -104,11 +108,14 @@ class Gizmo3D:
 
         # Create buffer and vertex array for the gizmo
         self.translation_vbo = self.ctx.buffer(constants.GIZMO_TRANSLATION_VERTICES.tobytes())
-        self.translation_vao = self.ctx.simple_vertex_array(self.program, self.translation_vbo, 'aPositionSize',
+        self.translation_vao = self.ctx.simple_vertex_array(self.program,
+                                                            self.translation_vbo,
+                                                            'aPositionSize',
                                                             'aColor')
 
     def update_translation_vertices(self, scale_factor):
 
+        # TODO: [performance] Re-creating arrays here!
         scale_vector = np.array([scale_factor, scale_factor, scale_factor, 1.0, 1.0, 1.0, 1.0, 1.0], dtype='f4').reshape(1, -1)
         scaled_vertices = constants.GIZMO_TRANSLATION_VERTICES * scale_vector
 
@@ -123,7 +130,7 @@ class Gizmo3D:
 
         if button == constants.MOUSE_LEFT and self.gizmo_state == constants.GIZMO_STATE_HOVERING:
 
-            gizmo_position = glm.vec3(model_matrix[3])
+            gizmo_position = vec3(model_matrix[3])
 
             # Generate a long segment representing the axis we're translating
             selected_axis_direction = vec3(model_matrix[self.gizmo_active_axis])
@@ -156,23 +163,53 @@ class Gizmo3D:
         # Add code here as needed
         return None
 
-    def handle_event_mouse_move(self, event_data: tuple, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> mat4:
+    def handle_event_mouse_move(self, event_data: tuple, ray_origin: vec3, ray_direction: vec3,
+                                model_matrix: mat4) -> mat4:
         x, y, dx, dy = event_data
 
         if model_matrix is None:
             return None
 
-        gizmo_position = glm.vec3(model_matrix[3])
-
-        self.axes_dist2 = [math_3d.distance2_ray_segment(
+        # Calculate distances between ray and axes
+        gizmo_position = vec3(model_matrix[3])
+        self.gizmo_dist2_ray = [math_3d.distance2_ray_segment(
             ray_origin=ray_origin,
             ray_direction=ray_direction,
             p0=gizmo_position,
-            p1=glm.vec3(model_matrix[i]) * self.gizmo_scale + gizmo_position) for i in range(3)]
+            p1=vec3(model_matrix[i]) * self.gizmo_scale + gizmo_position) for i in range(3)]
 
-        shortest_dist_index = np.argmin(self.axes_dist2)
+        # Calculate distances between gizmo origin and projected points on axes
+        points = [math_3d.nearest_point_on_segment(
+            ray_origin=ray_origin,
+            ray_direction=ray_direction,
+            p0=gizmo_position,
+            p1=vec3(model_matrix[i]) * self.gizmo_scale + gizmo_position)[0] for i in range(3)]
+        self.gizmo_dist2_point_on_axis = [length2(gizmo_position - point) for point in points]
 
-        if self.axes_dist2[shortest_dist_index] < self.gizmo_scale * constants.GIZMO_AXIS_DETECTION_RADIUS:
+        # Detect if any of the 3 planes are being intersected
+        a = constants.GIZMO_PLANE_OFFSET * self.gizmo_scale
+        b = a + constants.GIZMO_PLANE_SIZE * self.gizmo_scale
+
+        plane_intersections = [False, False, False]
+
+        for index, axis_indices in enumerate(self.plane_axis_list):
+
+            # Check XY plane intersection
+            u, v, t = math_3d.ray_intersect_plane_coordinates(
+                plane_origin=gizmo_position,
+                plane_vec1=vec3(model_matrix[axis_indices[0]]) * self.gizmo_scale,
+                plane_vec2=vec3(model_matrix[axis_indices[1]]) * self.gizmo_scale,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction
+            )
+            if u is not None and a <= u <= b and a <= v <= b:
+                plane_intersections[index] = True
+
+        self.debug_plane_intersections = plane_intersections
+
+        shortest_dist_index = np.argmin(self.gizmo_dist2_ray)
+
+        if self.gizmo_dist2_ray[shortest_dist_index] < self.gizmo_scale * constants.GIZMO_AXIS_DETECTION_RADIUS:
             self.gizmo_state = constants.GIZMO_STATE_HOVERING
             self.gizmo_active_axis = shortest_dist_index
         else:
@@ -193,8 +230,8 @@ class Gizmo3D:
         # TODO: Ignore this function if the right button is being dragged!
 
         # Mark the projected point
-        entity_position = glm.vec3(model_matrix[3])
-        axis_direction = glm.vec3(model_matrix[self.gizmo_active_axis])
+        entity_position = vec3(model_matrix[3])
+        axis_direction = vec3(model_matrix[self.gizmo_active_axis])
 
         nearest_point_on_axis, _ = math_3d.nearest_point_on_segment(
             ray_origin=ray_origin,
@@ -204,4 +241,4 @@ class Gizmo3D:
         )
 
         self.translation_vector = nearest_point_on_axis - entity_position - self.gizmo_translation_offset_point
-        return glm.translate(model_matrix, self.translation_vector)
+        return translate(model_matrix, self.translation_vector)
