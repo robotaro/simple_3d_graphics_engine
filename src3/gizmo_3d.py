@@ -31,6 +31,10 @@ class Gizmo3D:
         self.translation_vbo = None
         self.generate_translation_vertices()
 
+        self.plane_vao = None
+        self.plane_vbo = None
+        self.generate_plane_vertices()
+
         self.gizmo_scale = 1.0
         self.gizmo_mode = constants.GIZMO_MODE_TRANSLATION
         self.gizmo_state = constants.GIZMO_STATE_INACTIVE
@@ -52,7 +56,7 @@ class Gizmo3D:
                ray_origin: vec3,
                ray_direction: vec3) -> mat4:
 
-        # Story updated info to be used by callbacks later
+        # Store updated info to be used by callbacks later
         self.ray_origin = ray_origin
         self.ray_direction = ray_direction
 
@@ -77,8 +81,6 @@ class Gizmo3D:
                                       ray_origin: vec3,
                                       ray_direction: vec3):
 
-        new_model_matrix = None
-
         # Calculate the camera position from the view matrix
         camera_position = glm.inverse(view_matrix) * glm.vec4(0.0, 0.0, 0.0, 1.0)
         camera_position = glm.vec3(camera_position)  # Convert to vec3
@@ -90,6 +92,7 @@ class Gizmo3D:
 
         # Update vertices with the new scale factor
         self.update_translation_vertices(self.gizmo_scale)
+        self.update_plane_vertices(self.gizmo_scale)
 
         # No need to apply the scale to the entity matrix
         transform_matrix = projection_matrix * view_matrix * model_matrix
@@ -113,6 +116,9 @@ class Gizmo3D:
 
         # Render the gizmo axes
         self.translation_vao.render(moderngl.LINES)
+
+        # Render the plane squares
+        self.plane_vao.render(moderngl.TRIANGLES)
 
     def generate_translation_vertices(self):
         # Create buffer and vertex array for the gizmo, initially with unit length axes
@@ -144,6 +150,41 @@ class Gizmo3D:
         self.translation_vbo = self.ctx.buffer(gizmo_vertices.tobytes())
         self.translation_vao = self.ctx.simple_vertex_array(self.program, self.translation_vbo, 'aPositionSize', 'aColor')
 
+    def generate_plane_vertices(self):
+        # Square size
+        square_size = 0.1
+
+        # XY plane (yellow)
+        xy_plane_vertices = [
+            0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0,
+            square_size, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+            square_size, square_size, 0.0, 1.0, 1.0, 0.0, 1.0,
+            0.0, square_size, 0.0, 0.0, 1.0, 1.0, 0.0
+        ]
+
+        # XZ plane (magenta)
+        xz_plane_vertices = [
+            0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
+            square_size, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
+            square_size, 0.0, square_size, 1.0, 0.0, 1.0, 1.0,
+            0.0, 0.0, square_size, 1.0, 0.0, 1.0, 1.0
+        ]
+
+        # YZ plane (cyan)
+        yz_plane_vertices = [
+            0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
+            0.0, square_size, 0.0, 0.0, 1.0, 1.0, 1.0,
+            0.0, square_size, square_size, 0.0, 1.0, 1.0, 1.0,
+            0.0, 0.0, square_size, 0.0, 1.0, 1.0, 1.0
+        ]
+
+        # Combine all vertices
+        plane_vertices = np.array(xy_plane_vertices + xz_plane_vertices + yz_plane_vertices, dtype='f4')
+
+        # Create buffer and vertex array for the planes
+        self.plane_vbo = self.ctx.buffer(plane_vertices.tobytes())
+        self.plane_vao = self.ctx.simple_vertex_array(self.program, self.plane_vbo, 'aPosition', 'aColor')
+
     def update_translation_vertices(self, scale_factor):
         # Scale the vertices directly
         axis_length = scale_factor
@@ -172,6 +213,40 @@ class Gizmo3D:
 
         # Update the VBO with the new vertices
         self.translation_vbo.write(gizmo_vertices.tobytes())
+
+    def update_plane_vertices(self, scale_factor):
+        # Scale the square size
+        square_size = 0.1 * scale_factor
+
+        # XY plane (yellow)
+        xy_plane_vertices = [
+            0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0,
+            square_size, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+            square_size, square_size, 0.0, 1.0, 1.0, 0.0, 1.0,
+            0.0, square_size, 0.0, 0.0, 1.0, 1.0, 0.0
+        ]
+
+        # XZ plane (magenta)
+        xz_plane_vertices = [
+            0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
+            square_size, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
+            square_size, 0.0, square_size, 1.0, 0.0, 1.0, 1.0,
+            0.0, 0.0, square_size, 1.0, 0.0, 1.0, 1.0
+        ]
+
+        # YZ plane (cyan)
+        yz_plane_vertices = [
+            0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
+            0.0, square_size, 0.0, 0.0, 1.0, 1.0, 1.0,
+            0.0, square_size, square_size, 0.0, 1.0, 1.0, 1.0,
+            0.0, 0.0, square_size, 0.0, 1.0, 1.0, 1.0
+        ]
+
+        # Combine all vertices
+        plane_vertices = np.array(xy_plane_vertices + xz_plane_vertices + yz_plane_vertices, dtype='f4')
+
+        # Update the VBO with the new vertices
+        self.plane_vbo.write(plane_vertices.tobytes())
 
     # =========================================================================
     #                           Input Callbacks
