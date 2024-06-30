@@ -31,14 +31,11 @@ class Gizmo3D:
         self.translation_vbo = None
         self.generate_translation_vertices()
 
-        self.plane_vao = None
-        self.plane_vbo = None
-        self.generate_plane_vertices()
-
         self.gizmo_scale = 1.0
         self.gizmo_mode = constants.GIZMO_MODE_TRANSLATION
         self.gizmo_state = constants.GIZMO_STATE_INACTIVE
         self.gizmo_active_axis = 0
+        self.gizmo_active_plane = 0
         self.gizmo_translation_offset_point = vec3(0, 0, 0)
         self.axes_dist2 = [0.0] * 3
 
@@ -46,27 +43,16 @@ class Gizmo3D:
         self.translation_axis_segment_p0 = vec3(0)
         self.translation_axis_segment_p1 = vec3(0)
 
-        self.ray_origin = glm.vec3(0.0)
-        self.ray_direction = glm.vec3(0.0)
-
     def render(self,
                view_matrix: glm.mat4,
                projection_matrix: glm.mat4,
-               model_matrix: glm.mat4,
-               ray_origin: vec3,
-               ray_direction: vec3) -> mat4:
-
-        # Store updated info to be used by callbacks later
-        self.ray_origin = ray_origin
-        self.ray_direction = ray_direction
+               model_matrix: glm.mat4):
 
         if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
             self.render_gizmo_translation_mode(
                 view_matrix=view_matrix,
                 projection_matrix=projection_matrix,
-                model_matrix=model_matrix,
-                ray_origin=ray_origin,
-                ray_direction=ray_direction)
+                model_matrix=model_matrix)
 
         if self.gizmo_mode == constants.GIZMO_MODE_ROTATION:
             pass
@@ -77,9 +63,7 @@ class Gizmo3D:
     def render_gizmo_translation_mode(self,
                                       view_matrix: glm.mat4,
                                       projection_matrix: glm.mat4,
-                                      model_matrix: glm.mat4,
-                                      ray_origin: vec3,
-                                      ray_direction: vec3):
+                                      model_matrix: glm.mat4):
 
         # Calculate the camera position from the view matrix
         camera_position = glm.inverse(view_matrix) * glm.vec4(0.0, 0.0, 0.0, 1.0)
@@ -92,7 +76,6 @@ class Gizmo3D:
 
         # Update vertices with the new scale factor
         self.update_translation_vertices(self.gizmo_scale)
-        self.update_plane_vertices(self.gizmo_scale)
 
         # No need to apply the scale to the entity matrix
         transform_matrix = projection_matrix * view_matrix * model_matrix
@@ -117,136 +100,20 @@ class Gizmo3D:
         # Render the gizmo axes
         self.translation_vao.render(moderngl.LINES)
 
-        # Render the plane squares
-        self.plane_vao.render(moderngl.TRIANGLES)
-
     def generate_translation_vertices(self):
-        # Create buffer and vertex array for the gizmo, initially with unit length axes
-        axis_length = 1.0
-        line_width = 5.0
-
-        # x-axis (red)
-        x_axis_vertices = [
-            0.0, 0.0, 0.0, line_width, 1.0, 0.0, 0.0, 1.0,
-            axis_length, 0.0, 0.0, line_width, 1.0, 0.0, 0.0, 1.0
-        ]
-
-        # y-axis (green)
-        y_axis_vertices = [
-            0.0, 0.0, 0.0, line_width, 0.0, 1.0, 0.0, 1.0,
-            0.0, axis_length, 0.0, line_width, 0.0, 1.0, 0.0, 1.0
-        ]
-
-        # z-axis (blue)
-        z_axis_vertices = [
-            0.0, 0.0, 0.0, line_width, 0.0, 0.0, 1.0, 1.0,
-            0.0, 0.0, axis_length, line_width, 0.0, 0.0, 1.0, 1.0
-        ]
-
-        # Combine all vertices
-        gizmo_vertices = np.array(x_axis_vertices + y_axis_vertices + z_axis_vertices, dtype='f4')
 
         # Create buffer and vertex array for the gizmo
-        self.translation_vbo = self.ctx.buffer(gizmo_vertices.tobytes())
-        self.translation_vao = self.ctx.simple_vertex_array(self.program, self.translation_vbo, 'aPositionSize', 'aColor')
-
-    def generate_plane_vertices(self):
-        # Square size
-        square_size = 0.1
-
-        # XY plane (yellow)
-        xy_plane_vertices = [
-            0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0,
-            square_size, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0,
-            square_size, square_size, 0.0, 1.0, 1.0, 0.0, 1.0,
-            0.0, square_size, 0.0, 0.0, 1.0, 1.0, 0.0
-        ]
-
-        # XZ plane (magenta)
-        xz_plane_vertices = [
-            0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
-            square_size, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
-            square_size, 0.0, square_size, 1.0, 0.0, 1.0, 1.0,
-            0.0, 0.0, square_size, 1.0, 0.0, 1.0, 1.0
-        ]
-
-        # YZ plane (cyan)
-        yz_plane_vertices = [
-            0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
-            0.0, square_size, 0.0, 0.0, 1.0, 1.0, 1.0,
-            0.0, square_size, square_size, 0.0, 1.0, 1.0, 1.0,
-            0.0, 0.0, square_size, 0.0, 1.0, 1.0, 1.0
-        ]
-
-        # Combine all vertices
-        plane_vertices = np.array(xy_plane_vertices + xz_plane_vertices + yz_plane_vertices, dtype='f4')
-
-        # Create buffer and vertex array for the planes
-        self.plane_vbo = self.ctx.buffer(plane_vertices.tobytes())
-        self.plane_vao = self.ctx.simple_vertex_array(self.program, self.plane_vbo, 'aPosition', 'aColor')
+        self.translation_vbo = self.ctx.buffer(constants.GIZMO_TRANSLATION_VERTICES.tobytes())
+        self.translation_vao = self.ctx.simple_vertex_array(self.program, self.translation_vbo, 'aPositionSize',
+                                                            'aColor')
 
     def update_translation_vertices(self, scale_factor):
-        # Scale the vertices directly
-        axis_length = scale_factor
-        line_width = 5.0
 
-        # x-axis (red)
-        x_axis_vertices = [
-            0.0, 0.0, 0.0, line_width, 1.0, 0.0, 0.0, 1.0,
-            axis_length, 0.0, 0.0, line_width, 1.0, 0.0, 0.0, 1.0
-        ]
-
-        # y-axis (green)
-        y_axis_vertices = [
-            0.0, 0.0, 0.0, line_width, 0.0, 1.0, 0.0, 1.0,
-            0.0, axis_length, 0.0, line_width, 0.0, 1.0, 0.0, 1.0
-        ]
-
-        # z-axis (blue)
-        z_axis_vertices = [
-            0.0, 0.0, 0.0, line_width, 0.0, 0.0, 1.0, 1.0,
-            0.0, 0.0, axis_length, line_width, 0.0, 0.0, 1.0, 1.0
-        ]
-
-        # Combine all vertices
-        gizmo_vertices = np.array(x_axis_vertices + y_axis_vertices + z_axis_vertices, dtype='f4')
+        scale_vector = np.array([scale_factor, scale_factor, scale_factor, 1.0, 1.0, 1.0, 1.0, 1.0], dtype='f4').reshape(1, -1)
+        scaled_vertices = constants.GIZMO_TRANSLATION_VERTICES * scale_vector
 
         # Update the VBO with the new vertices
-        self.translation_vbo.write(gizmo_vertices.tobytes())
-
-    def update_plane_vertices(self, scale_factor):
-        # Scale the square size
-        square_size = 0.1 * scale_factor
-
-        # XY plane (yellow)
-        xy_plane_vertices = [
-            0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0,
-            square_size, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0,
-            square_size, square_size, 0.0, 1.0, 1.0, 0.0, 1.0,
-            0.0, square_size, 0.0, 0.0, 1.0, 1.0, 0.0
-        ]
-
-        # XZ plane (magenta)
-        xz_plane_vertices = [
-            0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
-            square_size, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0,
-            square_size, 0.0, square_size, 1.0, 0.0, 1.0, 1.0,
-            0.0, 0.0, square_size, 1.0, 0.0, 1.0, 1.0
-        ]
-
-        # YZ plane (cyan)
-        yz_plane_vertices = [
-            0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0,
-            0.0, square_size, 0.0, 0.0, 1.0, 1.0, 1.0,
-            0.0, square_size, square_size, 0.0, 1.0, 1.0, 1.0,
-            0.0, 0.0, square_size, 0.0, 1.0, 1.0, 1.0
-        ]
-
-        # Combine all vertices
-        plane_vertices = np.array(xy_plane_vertices + xz_plane_vertices + yz_plane_vertices, dtype='f4')
-
-        # Update the VBO with the new vertices
-        self.plane_vbo.write(plane_vertices.tobytes())
+        self.translation_vbo.write(scaled_vertices.tobytes())
 
     # =========================================================================
     #                           Input Callbacks
@@ -322,6 +189,8 @@ class Gizmo3D:
 
         if self.gizmo_active_axis == -1:
             return None
+
+        # TODO: Ignore this function if the right button is being dragged!
 
         # Mark the projected point
         entity_position = glm.vec3(model_matrix[3])

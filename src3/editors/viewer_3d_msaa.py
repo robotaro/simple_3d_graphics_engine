@@ -157,9 +157,7 @@ class Viewer3DMSAA(Editor):
         self.gizmo_3d.render(
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
-            model_matrix=entity_world_matrix,
-            ray_origin=self.camera_ray_origin,
-            ray_direction=self.camera_ray_direction)
+            model_matrix=entity_world_matrix)
 
     def render_ui(self):
 
@@ -294,8 +292,6 @@ class Viewer3DMSAA(Editor):
             sphere_origin=vec3(-3, 0.5, -2))
 
         self.debug_collision_detected = a or b or c
-
-        #num_vertices = self.entities[20].mesh_component.num_vertices
 
         # Sphere
         return vec3(0, 0, 0)
