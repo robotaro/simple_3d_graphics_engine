@@ -154,14 +154,12 @@ class Viewer3DMSAA(Editor):
 
         entity_world_matrix = self.entities[self.selected_entity_id].component_transform.world_matrix
 
-        new_entity_world_matrix = self.gizmo_3d.update_and_render(
+        self.gizmo_3d.render(
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
             model_matrix=entity_world_matrix,
             ray_origin=self.camera_ray_origin,
             ray_direction=self.camera_ray_direction)
-
-        self.entities[self.selected_entity_id].component_transform.update_world_matrix(new_entity_world_matrix)
 
     def render_ui(self):
 

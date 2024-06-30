@@ -45,21 +45,19 @@ class Gizmo3D:
         self.ray_origin = glm.vec3(0.0)
         self.ray_direction = glm.vec3(0.0)
 
-    def update_and_render(self,
-                          view_matrix: glm.mat4,
-                          projection_matrix: glm.mat4,
-                          model_matrix: glm.mat4,
-                          ray_origin: vec3,
-                          ray_direction: vec3) -> mat4:
+    def render(self,
+               view_matrix: glm.mat4,
+               projection_matrix: glm.mat4,
+               model_matrix: glm.mat4,
+               ray_origin: vec3,
+               ray_direction: vec3) -> mat4:
 
         # Story updated info to be used by callbacks later
         self.ray_origin = ray_origin
         self.ray_direction = ray_direction
 
-        new_model_matrix = None
-
         if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
-            new_model_matrix = self.render_gizmo_translation_mode(
+            self.render_gizmo_translation_mode(
                 view_matrix=view_matrix,
                 projection_matrix=projection_matrix,
                 model_matrix=model_matrix,
@@ -72,14 +70,12 @@ class Gizmo3D:
         if self.gizmo_mode == constants.GIZMO_MODE_SCALE:
             pass
 
-        return new_model_matrix
-
     def render_gizmo_translation_mode(self,
                                       view_matrix: glm.mat4,
                                       projection_matrix: glm.mat4,
                                       model_matrix: glm.mat4,
                                       ray_origin: vec3,
-                                      ray_direction: vec3) -> mat4:
+                                      ray_direction: vec3):
 
         new_model_matrix = None
 
@@ -117,8 +113,6 @@ class Gizmo3D:
 
         # Render the gizmo axes
         self.translation_vao.render(moderngl.LINES)
-
-        return new_model_matrix
 
     def generate_translation_vertices(self):
         # Create buffer and vertex array for the gizmo, initially with unit length axes
@@ -191,8 +185,9 @@ class Gizmo3D:
 
             # Generate a long segment representing the axis we're translating
             selected_axis_direction = vec3(model_matrix[self.gizmo_active_axis])
-            self.translation_axis_segment_p0 = gizmo_position - 500.0 * selected_axis_direction
-            self.translation_axis_segment_p1 = gizmo_position + 500.0 * selected_axis_direction
+            segment_vector = constants.GIZMO_AXIS_SEGMENT_LENGTH * selected_axis_direction
+            self.translation_axis_segment_p0 = gizmo_position - segment_vector
+            self.translation_axis_segment_p1 = gizmo_position + segment_vector
 
             # Get offset on axis where you first clicked, the "translation offset"
             entity_position = vec3(model_matrix[3])
@@ -253,8 +248,7 @@ class Gizmo3D:
         if self.gizmo_active_axis == -1:
             return None
 
-
-        # Mark the poojected point
+        # Mark the projected point
         entity_position = glm.vec3(model_matrix[3])
         axis_direction = glm.vec3(model_matrix[self.gizmo_active_axis])
 
