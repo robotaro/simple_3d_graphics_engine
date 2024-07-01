@@ -190,11 +190,19 @@ class Gizmo3D:
             p1=vec3(model_matrix[i]) * self.gizmo_scale + gizmo_position) for i in range(3)]
 
         shortest_axis_dist_index = np.argmin(self.ray_to_axis_dist2)
-        shortest_axis_distance = self.ray_to_axis_dist2[shortest_axis_dist_index]
+        shortest_axis_distance2 = self.ray_to_axis_dist2[shortest_axis_dist_index]
+        shortest_axis_point_dist2 = float('inf')
 
-        if shortest_axis_distance < self.gizmo_scale * constants.GIZMO_AXIS_DETECTION_RADIUS:
+        axis_t = float('inf')
+        if shortest_axis_distance2 < self.gizmo_scale * constants.GIZMO_AXIS_DETECTION_RADIUS:
             is_hovering_axes = True
             self.active_axis_index = shortest_axis_dist_index
+            _, axis_t = math_3d.nearest_point_on_segment(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                p0=gizmo_position,
+                p1=vec3(model_matrix[shortest_axis_dist_index]) * self.gizmo_scale + gizmo_position)
+
         else:
             is_hovering_axes = False
             self.active_axis_index = -1
@@ -226,23 +234,28 @@ class Gizmo3D:
                 plane_intersections.append((index, u, v, t))
 
         # Resolve which patch is the closest
+        planes_t = float('inf')
         if len(plane_intersections) > 0:
             is_hovering_patches = True
             closest_plane_patch = min(plane_intersections, key=lambda x: x[3])  # x[3] is the t value
             self.active_plane_index = closest_plane_patch[0]
-            closest_plane_distance = closest_plane_patch[3]
+            planes_t = closest_plane_patch[3]
+
         else:
             is_hovering_patches = False
             self.active_plane_index = -1
-            closest_plane_distance = float('inf')
 
         if is_hovering_axes and not is_hovering_patches:
             self.state = constants.GIZMO_STATE_HOVERING_AXES
         elif not is_hovering_axes and is_hovering_patches:
             self.state = constants.GIZMO_STATE_HOVERING_PLANES
+        elif not is_hovering_axes and not is_hovering_patches:
+            self.state = constants.GIZMO_STATE_INACTIVE
         else:
-            # Resolve disambiguation between axes and patches
-            pass
+            if axis_t < planes_t:
+                self.state = constants.GIZMO_STATE_HOVERING_AXES
+            else:
+                self.state = constants.GIZMO_STATE_HOVERING_PLANES
 
         self.debug_plane_intersections = [plane[0] for plane in plane_intersections]
 
