@@ -196,16 +196,10 @@ class Viewer3DMSAA(Editor):
             imgui.text(str(np.sqrt(self.debug_shortest_distance2)))
             imgui.spacing()
             imgui.spacing()
-            imgui.text("Gizmo euclidian shortest distance")
-            for dist2 in self.gizmo_3d.gizmo_dist2_point_on_axis:
-                imgui.text(str(np.sqrt(dist2)))
-            imgui.spacing()
-            imgui.spacing()
             imgui.text(f"Mode: {self.gizmo_3d.gizmo_mode}")
-            imgui.text(f"State: {str(self.gizmo_3d.gizmo_state)}")
-            imgui.text(f"Axis: {self.gizmo_3d.gizmo_active_axis}")
+            imgui.text(f"State: {str(self.gizmo_3d.state)}")
+            imgui.text(f"Axis: {self.gizmo_3d.active_axis_index}")
             imgui.text(f"Scale: {self.gizmo_3d.gizmo_scale}")
-            imgui.text(f"Tr. Vector: {self.gizmo_3d.translation_vector}")
             imgui.spacing()
             imgui.spacing()
             imgui.text(f"Plane intersections: {self.gizmo_3d.debug_plane_intersections}")
@@ -333,7 +327,7 @@ class Viewer3DMSAA(Editor):
         if button == constants.MOUSE_LEFT:
 
             # You can only select another entity if, when you click, you are not hovering the gizmo
-            if self.gizmo_3d.gizmo_state == constants.GIZMO_STATE_INACTIVE:
+            if self.gizmo_3d.state == constants.GIZMO_STATE_INACTIVE:
 
                 # The framebuffer image is flipped on the y-axis, so we flip the coordinates as well
                 image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y

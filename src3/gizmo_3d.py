@@ -1,3 +1,5 @@
+import time
+
 import moderngl
 import numpy as np
 from src3 import constants
@@ -34,18 +36,17 @@ class Gizmo3D:
 
         self.gizmo_scale = 1.0
         self.gizmo_mode = constants.GIZMO_MODE_TRANSLATION
-        self.gizmo_state = constants.GIZMO_STATE_INACTIVE
-        self.gizmo_active_axis = -1
-        self.gizmo_active_plane = -1
+        self.state = constants.GIZMO_STATE_INACTIVE
+        self.active_axis_index = -1
+        self.active_plane_index = -1
         self.gizmo_translation_offset_point = vec3(0, 0, 0)
-        self.gizmo_dist2_ray = [0.0] * 3  # Closest distance between ray and segment
-        self.gizmo_dist2_point_on_axis = [0.0] * 3  # distance between origin and projected point on axes
+        self.ray_to_axis_dist2 = [0.0] * 3  # Closest distance between ray and segment
 
-        self.debug_plane_intersections = [False] *3
+        self.debug_plane_intersections = [False] * 3
 
-        self.translation_vector = vec3(0)
-        self.translation_axis_segment_p0 = vec3(0)
-        self.translation_axis_segment_p1 = vec3(0)
+        self.original_position = vec3(0)
+        self.original_axes_p0 = [vec3(0)] * 3
+        self.original_axes_p1 = [vec3(0)] * 3
 
     def render(self,
                view_matrix: mat4,
@@ -128,30 +129,35 @@ class Gizmo3D:
 
     def handle_event_mouse_button_press(self, button: int, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4):
 
-        if button == constants.MOUSE_LEFT and self.gizmo_state == constants.GIZMO_STATE_HOVERING:
+        a = button == constants.MOUSE_LEFT
+        b = self.state == constants.GIZMO_STATE_HOVERING_AXES or self.state == constants.GIZMO_STATE_HOVERING_PLANES
+        if a and b:
 
-            gizmo_position = vec3(model_matrix[3])
+            self.original_position = vec3(model_matrix[3])
 
-            # Generate a long segment representing the axis we're translating
-            selected_axis_direction = vec3(model_matrix[self.gizmo_active_axis])
-            segment_vector = constants.GIZMO_AXIS_SEGMENT_LENGTH * selected_axis_direction
-            self.translation_axis_segment_p0 = gizmo_position - segment_vector
-            self.translation_axis_segment_p1 = gizmo_position + segment_vector
+            # Update axis long segments so that we can start dragging the gizmo along
+            tr_axis_p0_list = []
+            tr_axis_p1_list = []
+            for axis_index in range(len(self.original_axes_p0)):
+                axis_direction = vec3(model_matrix[axis_index])
+                tr_axis_p0_list.append(self.original_position - constants.GIZMO_AXIS_SEGMENT_LENGTH * axis_direction)
+                tr_axis_p1_list.append(self.original_position + constants.GIZMO_AXIS_SEGMENT_LENGTH * axis_direction)
+            self.original_axes_p0 = tr_axis_p0_list
+            self.original_axes_p1 = tr_axis_p1_list
 
             # Get offset on axis where you first clicked, the "translation offset"
-            entity_position = vec3(model_matrix[3])
             self.gizmo_translation_offset_point, _ = math_3d.nearest_point_on_segment(
                 ray_origin=ray_origin,
                 ray_direction=ray_direction,
-                p0=self.translation_axis_segment_p0,
-                p1=self.translation_axis_segment_p1
+                p0=self.original_axes_p0[self.active_axis_index],
+                p1=self.original_axes_p1[self.active_axis_index]
             )
-            self.gizmo_translation_offset_point -= entity_position
-            self.gizmo_state = constants.GIZMO_STATE_DRAGGING
+            self.gizmo_translation_offset_point -= self.original_position
+            self.state = constants.GIZMO_STATE_DRAGGING_AXIS
 
     def handle_event_mouse_button_release(self, button: int, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4):
         if button == constants.MOUSE_LEFT:
-            self.gizmo_state = constants.GIZMO_STATE_INACTIVE
+            self.state = constants.GIZMO_STATE_INACTIVE
 
     def handle_event_keyboard_press(self, event_data: tuple) -> mat4:
         key, modifiers = event_data
@@ -170,31 +176,39 @@ class Gizmo3D:
         if model_matrix is None:
             return None
 
+        is_hovering_axes = False
+        is_hovering_patches = False
+
+        # ================[ Resolve Axes ]==================
+
         # Calculate distances between ray and axes
         gizmo_position = vec3(model_matrix[3])
-        self.gizmo_dist2_ray = [math_3d.distance2_ray_segment(
+        self.ray_to_axis_dist2 = [math_3d.distance2_ray_segment(
             ray_origin=ray_origin,
             ray_direction=ray_direction,
             p0=gizmo_position,
             p1=vec3(model_matrix[i]) * self.gizmo_scale + gizmo_position) for i in range(3)]
 
-        # Calculate distances between gizmo origin and projected points on axes
-        points = [math_3d.nearest_point_on_segment(
-            ray_origin=ray_origin,
-            ray_direction=ray_direction,
-            p0=gizmo_position,
-            p1=vec3(model_matrix[i]) * self.gizmo_scale + gizmo_position)[0] for i in range(3)]
-        self.gizmo_dist2_point_on_axis = [length2(gizmo_position - point) for point in points]
+        shortest_axis_dist_index = np.argmin(self.ray_to_axis_dist2)
+        shortest_axis_distance = self.ray_to_axis_dist2[shortest_axis_dist_index]
+
+        if shortest_axis_distance < self.gizmo_scale * constants.GIZMO_AXIS_DETECTION_RADIUS:
+            is_hovering_axes = True
+            self.active_axis_index = shortest_axis_dist_index
+        else:
+            is_hovering_axes = False
+            self.active_axis_index = -1
+
+        # ================[ Resolve Planes ]==================
 
         # Detect if any of the 3 planes are being intersected
         a = constants.GIZMO_PLANE_OFFSET * self.gizmo_scale
         b = a + constants.GIZMO_PLANE_SIZE * self.gizmo_scale
 
-        plane_intersections = [False, False, False]
+        plane_intersections = []
 
         for index, axis_indices in enumerate(self.plane_axis_list):
 
-            # Check XY plane intersection
             u, v, t = math_3d.ray_intersect_plane_coordinates(
                 plane_origin=gizmo_position,
                 plane_vec1=vec3(model_matrix[axis_indices[0]]) * self.gizmo_scale,
@@ -202,19 +216,35 @@ class Gizmo3D:
                 ray_origin=ray_origin,
                 ray_direction=ray_direction
             )
+
+            # ray does not hit infinite plane
+            if t is None:
+                continue
+
+            # Check if ray hits small patch on the plane
             if u is not None and a <= u <= b and a <= v <= b:
-                plane_intersections[index] = True
+                plane_intersections.append((index, u, v, t))
 
-        self.debug_plane_intersections = plane_intersections
-
-        shortest_dist_index = np.argmin(self.gizmo_dist2_ray)
-
-        if self.gizmo_dist2_ray[shortest_dist_index] < self.gizmo_scale * constants.GIZMO_AXIS_DETECTION_RADIUS:
-            self.gizmo_state = constants.GIZMO_STATE_HOVERING
-            self.gizmo_active_axis = shortest_dist_index
+        # Resolve which patch is the closest
+        if len(plane_intersections) > 0:
+            is_hovering_patches = True
+            closest_plane_patch = min(plane_intersections, key=lambda x: x[3])  # x[3] is the t value
+            self.active_plane_index = closest_plane_patch[0]
+            closest_plane_distance = closest_plane_patch[3]
         else:
-            self.gizmo_state = constants.GIZMO_STATE_INACTIVE
-            self.gizmo_active_axis = -1
+            is_hovering_patches = False
+            self.active_plane_index = -1
+            closest_plane_distance = float('inf')
+
+        if is_hovering_axes and not is_hovering_patches:
+            self.state = constants.GIZMO_STATE_HOVERING_AXES
+        elif not is_hovering_axes and is_hovering_patches:
+            self.state = constants.GIZMO_STATE_HOVERING_PLANES
+        else:
+            # Resolve disambiguation between axes and patches
+            pass
+
+        self.debug_plane_intersections = [plane[0] for plane in plane_intersections]
 
         return None
 
@@ -224,21 +254,23 @@ class Gizmo3D:
         if model_matrix is None:
             return None
 
-        if self.gizmo_active_axis == -1:
+        if self.active_axis_index == -1:
             return None
 
         # TODO: Ignore this function if the right button is being dragged!
 
-        # Mark the projected point
-        entity_position = vec3(model_matrix[3])
-        axis_direction = vec3(model_matrix[self.gizmo_active_axis])
+        if self.state == constants.GIZMO_STATE_DRAGGING_AXIS:
 
-        nearest_point_on_axis, _ = math_3d.nearest_point_on_segment(
-            ray_origin=ray_origin,
-            ray_direction=ray_direction,
-            p0=self.translation_axis_segment_p0,
-            p1=self.translation_axis_segment_p1,
-        )
+            # Mark the projected point
+            current_position = vec3(model_matrix[3])
+            axis_direction = vec3(model_matrix[self.active_axis_index])
 
-        self.translation_vector = nearest_point_on_axis - entity_position - self.gizmo_translation_offset_point
-        return translate(model_matrix, self.translation_vector)
+            nearest_point_on_axis, _ = math_3d.nearest_point_on_segment(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                p0=self.original_axes_p0[self.active_axis_index],
+                p1=self.original_axes_p1[self.active_axis_index],
+            )
+
+            delta_vector = nearest_point_on_axis - current_position - self.gizmo_translation_offset_point
+            return translate(model_matrix, delta_vector)
