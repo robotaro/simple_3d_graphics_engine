@@ -31,7 +31,7 @@ class Gizmo3D:
 
         self.translation_vao = None
         self.translation_vbo = None
-        self.generate_translation_vertices()
+        self.generate_vaos()
 
         self.plane_axis_list = [(0, 1), (0, 2), (1, 2)]
 
@@ -110,10 +110,10 @@ class Gizmo3D:
         # Render the gizmo axes
         self.translation_vao.render(moderngl.LINES)
 
-    def generate_translation_vertices(self):
+    def generate_vaos(self):
 
         # Create buffer and vertex array for the gizmo
-        self.translation_vbo = self.ctx.buffer(constants.GIZMO_TRANSLATION_VERTICES.tobytes())
+        self.translation_vbo = self.ctx.buffer(constants.GIZMO_TRANSLATION_VERTICES_INACTIVE.tobytes())
         self.translation_vao = self.ctx.simple_vertex_array(self.program,
                                                             self.translation_vbo,
                                                             'aPositionSize',
@@ -123,7 +123,7 @@ class Gizmo3D:
 
         # TODO: [performance] Re-creating arrays here!
         scale_vector = np.array([scale_factor, scale_factor, scale_factor, 1.0, 1.0, 1.0, 1.0, 1.0], dtype='f4').reshape(1, -1)
-        scaled_vertices = constants.GIZMO_TRANSLATION_VERTICES * scale_vector
+        scaled_vertices = constants.GIZMO_TRANSLATION_VERTICES_INACTIVE * scale_vector
 
         # Update the VBO with the new vertices
         self.translation_vbo.write(scaled_vertices.tobytes())
