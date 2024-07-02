@@ -139,6 +139,25 @@ def distance2_ray_segment(ray_origin: vec3, ray_direction: vec3, p0: vec3, p1: v
     return length2(p - nearest_point)
 
 
+def distance2_ray_point(ray_origin: vec3, ray_direction: vec3, point: vec3) -> float:
+
+    # Normalize the ray direction
+    ray_direction = normalize(ray_direction)
+
+    # Vector from ray origin to the point
+    origin_to_point = point - ray_origin
+
+    # Projection length of origin_to_point onto the ray direction
+    projection_length = dot(origin_to_point, ray_direction)
+
+    # Calculate the projected point on the ray
+    projected_point = ray_origin + ray_direction * projection_length
+
+    # Distance between the point and its projection on the ray
+    distance = length2(projected_point - point)
+
+    return distance
+
 def intersect_ray_capsule_boolean(ray_origin: vec3, ray_direction: vec3, p0: vec3, p1: vec3, radius: float) -> bool:
     return distance2_ray_segment(ray_origin, ray_direction, p0, p1) < radius * radius
 

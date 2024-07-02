@@ -4,7 +4,7 @@ import time
 import moderngl
 import numpy as np
 from src3 import constants
-from glm import vec3, vec4, mat4, length, length2, inverse, translate, scale
+from glm import vec3, vec4, mat4, length, length2, inverse, translate, scale, dot, normalize
 
 from src3 import math_3d
 from src3.shader_loader import ShaderLoader
@@ -20,7 +20,8 @@ class Gizmo3D:
         self.ctx = ctx
         self.shader_loader = shader_loader
         self.output_fbo = output_fbo
-        self.program = shader_loader.get_program("gizmo_lines.glsl")
+        self.program_lines = shader_loader.get_program("gizmo_lines.glsl")
+        self.program_triangles = shader_loader.get_program("gizmo_triangles.glsl")
 
         self.helper_fbo = self.ctx.framebuffer(
             depth_attachment=self.output_fbo.depth_attachment,
@@ -93,17 +94,20 @@ class Gizmo3D:
         self.output_fbo.use()
 
         # Pass the transform matrix to the shader
-        self.program['uViewProjMatrix'].write(transform_matrix)
+        self.program_lines['uViewProjMatrix'].write(transform_matrix)
 
         # Pass the viewport size to the geometry shader
         viewport_size = (self.output_fbo.viewport[2], self.output_fbo.viewport[3])
-        self.program['uViewport'].value = viewport_size
+        self.program_lines['uViewport'].value = viewport_size
 
         # Set the line width
         self.ctx.line_width = 3.0
 
         if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
-            self.translation_vaos[(self.state, self.active_index)].render(moderngl.LINES)
+            try:
+                self.translation_vaos[(self.state, self.active_index)].render(moderngl.LINES)
+            except Exception as error:
+                g = 0
 
             if self.state == constants.GIZMO_STATE_DRAGGING_AXIS:
                 # Draw axis
@@ -133,7 +137,7 @@ class Gizmo3D:
         self.translation_vaos = {}
         for state_name_and_active_index, vbo in self.translation_vbos.items():
             self.translation_vaos[state_name_and_active_index] = self.ctx.simple_vertex_array(
-                self.program,
+                self.program_lines,
                 vbo,
                 'aPositionSize',
                 'aColor')
@@ -211,91 +215,39 @@ class Gizmo3D:
         if model_matrix is None:
             return None
 
-        is_hovering_axes = False
-        is_hovering_planes = False
-        active_axis_index = -1
-        active_plane_index = -1
-
-        # ================[ Resolve Axes ]==================
-
-        # Calculate distances between ray and axes
-        gizmo_position = vec3(model_matrix[3])
-        self.ray_to_axis_dist2 = [math_3d.distance2_ray_segment(
+        is_hovering_center, centers_t = self.check_center_hovering(
             ray_origin=ray_origin,
             ray_direction=ray_direction,
-            p0=gizmo_position + vec3(model_matrix[i]) * constants.GIZMO_AXIS_OFFSET * self.gizmo_scale,
-            p1=gizmo_position + vec3(model_matrix[i]) * (constants.GIZMO_AXIS_OFFSET + constants.GIZMO_AXIS_LENGTH) * self.gizmo_scale)
-            for i in range(3)]
+            model_matrix=model_matrix)
 
-        shortest_dist2_axis_index = np.argmin(self.ray_to_axis_dist2)
-        shortest_dist2 = self.ray_to_axis_dist2[shortest_dist2_axis_index]
+        is_hovering_axis, axis_t, active_axis_index = self.check_axis_hovering(
+            ray_origin=ray_origin,
+            ray_direction=ray_direction,
+            model_matrix=model_matrix)
 
-        axis_t = float('inf')
-        # TODO: This radius comparison is wrong! Squaring the radius doesn't help! You need in create the radius somehow
-        if shortest_dist2 < self.gizmo_scale ** 2 * constants.GIZMO_AXIS_DETECTION_RADIUS_2:
-            active_axis_index = shortest_dist2_axis_index
-            projected_point, axis_t = math_3d.nearest_point_on_segment(
-                ray_origin=ray_origin,
-                ray_direction=ray_direction,
-                p0=gizmo_position,
-                p1=vec3(model_matrix[shortest_dist2_axis_index]) * self.gizmo_scale + gizmo_position)
+        is_hovering_plane, plane_t, active_plane_index = self.check_plane_hovering(
+            ray_origin=ray_origin,
+            ray_direction=ray_direction,
+            model_matrix=model_matrix)
 
-            # Now that we have the point projected on the axis, we can determine if it within the axis's valid length
-            if length(projected_point - gizmo_position) > constants.GIZMO_AXIS_OFFSET * self.gizmo_scale:
-                is_hovering_axes = True
+        # TODO: Continue from here
 
-        # ================[ Resolve Planes ]==================
-
-        # Detect if any of the 3 planes are being intersected
-        a = constants.GIZMO_PLANE_OFFSET * self.gizmo_scale
-        b = a + constants.GIZMO_PLANE_SIZE * self.gizmo_scale
-
-        plane_intersections = []
-
-        for index, axis_indices in enumerate(self.plane_axis_list):
-
-            u, v, t = math_3d.ray_intersect_plane_coordinates(
-                plane_origin=gizmo_position,
-                plane_vec1=vec3(model_matrix[axis_indices[0]]) * self.gizmo_scale,
-                plane_vec2=vec3(model_matrix[axis_indices[1]]) * self.gizmo_scale,
-                ray_origin=ray_origin,
-                ray_direction=ray_direction
-            )
-
-            # ray does not hit infinite plane
-            if t is None:
-                continue
-
-            # Check if ray hits small patch on the plane
-            if u is not None and a <= u <= b and a <= v <= b:
-                plane_intersections.append((index, u, v, t))
-
-        # Resolve which patch is the closest
-        planes_t = float('inf')
-        if len(plane_intersections) > 0:
-            closest_plane_patch = min(plane_intersections, key=lambda x: x[3])  # x[3] is the t value
-            active_plane_index = closest_plane_patch[0]
-            planes_t = closest_plane_patch[3]
-            is_hovering_planes = True
-
-        if is_hovering_axes and not is_hovering_planes:
+        if is_hovering_axis and not is_hovering_plane:
             self.state = constants.GIZMO_STATE_HOVERING_AXIS
             self.active_index = active_axis_index
-        elif not is_hovering_axes and is_hovering_planes:
+        elif not is_hovering_axis and is_hovering_plane:
             self.state = constants.GIZMO_STATE_HOVERING_PLANE
             self.active_index = active_plane_index
-        elif not is_hovering_axes and not is_hovering_planes:
+        elif not is_hovering_axis and not is_hovering_plane:
             self.state = constants.GIZMO_STATE_INACTIVE
             self.active_index = -1
         else:
-            if axis_t < planes_t:
+            if axis_t < plane_t:
                 self.state = constants.GIZMO_STATE_HOVERING_AXIS
                 self.active_index = active_axis_index
             else:
                 self.state = constants.GIZMO_STATE_HOVERING_PLANE
                 self.active_index = active_plane_index
-
-        self.debug_plane_intersections = [plane[0] for plane in plane_intersections]
 
         return None
 
@@ -360,6 +312,101 @@ class Gizmo3D:
 
             return new_model_matrix
 
+    def check_center_hovering(self, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> tuple:
+        gizmo_position = vec3(model_matrix[3])
+        is_hovering = False
+        ray_t = float('inf')
+
+        center_dist2 = math_3d.distance2_ray_point(
+            ray_origin=ray_origin,
+            ray_direction=ray_direction,
+            point=gizmo_position
+        )
+
+        if center_dist2 < constants.GIZMO_CENTER_RADIUS_2:
+            # Normalize the ray direction
+            direction_normalized = normalize(ray_direction)
+            # Calculate the vector from the ray origin to the gizmo position
+            origin_to_gizmo = gizmo_position - ray_origin
+            # Calculate ray_t as the dot product of origin_to_gizmo and the normalized direction
+            ray_t = dot(origin_to_gizmo, direction_normalized)
+            if ray_t >= 0.0:
+                is_hovering = True
+
+        return is_hovering, ray_t
+
+    def check_axis_hovering(self, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> tuple:
+
+        gizmo_position = vec3(model_matrix[3])
+        is_hovering = False
+        ray_t = float('inf')
+        active_index = -1
+
+        self.ray_to_axis_dist2 = [math_3d.distance2_ray_segment(
+            ray_origin=ray_origin,
+            ray_direction=ray_direction,
+            p0=gizmo_position + vec3(model_matrix[i]) * constants.GIZMO_AXIS_OFFSET * self.gizmo_scale,
+            p1=gizmo_position + vec3(model_matrix[i]) * (
+                        constants.GIZMO_AXIS_OFFSET + constants.GIZMO_AXIS_LENGTH) * self.gizmo_scale)
+            for i in range(3)]
+
+        shortest_dist2_axis_index = np.argmin(self.ray_to_axis_dist2)
+        shortest_dist2 = self.ray_to_axis_dist2[shortest_dist2_axis_index]
+
+        if shortest_dist2 < self.gizmo_scale ** 2 * constants.GIZMO_AXIS_DETECTION_RADIUS_2:
+            active_index = shortest_dist2_axis_index
+            projected_point, ray_t = math_3d.nearest_point_on_segment(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                p0=gizmo_position,
+                p1=vec3(model_matrix[shortest_dist2_axis_index]) * self.gizmo_scale + gizmo_position)
+
+            is_hovering = True
+
+        return is_hovering, ray_t, active_index
+
+    def check_plane_hovering(self, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> tuple:
+
+        gizmo_position = vec3(model_matrix[3])
+        is_hovering = False
+        ray_t = float('inf')
+        active_index = -1
+
+        # Detect if any of the 3 planes are being intersected
+        a = constants.GIZMO_PLANE_OFFSET * self.gizmo_scale
+        b = a + constants.GIZMO_PLANE_SIZE * self.gizmo_scale
+
+        plane_intersections = []
+        for index, axis_indices in enumerate(self.plane_axis_list):
+
+            u, v, t = math_3d.ray_intersect_plane_coordinates(
+                plane_origin=gizmo_position,
+                plane_vec1=vec3(model_matrix[axis_indices[0]]) * self.gizmo_scale,
+                plane_vec2=vec3(model_matrix[axis_indices[1]]) * self.gizmo_scale,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction
+            )
+
+            # ray does not hit infinite plane
+            if t is None:
+                continue
+
+            # Check if ray hits small patch on the plane
+            if u is not None and a <= u <= b and a <= v <= b:
+                plane_intersections.append((index, u, v, t))
+
+        # DEBUG
+        self.debug_plane_intersections = [plane[0] for plane in plane_intersections]
+
+        # Resolve which plane patch is the closest
+        if len(plane_intersections) > 0:
+            closest_plane_patch = min(plane_intersections, key=lambda x: x[3])  # x[3] is the t value
+            active_index = closest_plane_patch[0]
+            ray_t = closest_plane_patch[3]
+            is_hovering = True
+
+        return is_hovering, ray_t, active_index
+
     def release(self):
 
         for _, vao in self.translation_vaos.items():
@@ -371,8 +418,4 @@ class Gizmo3D:
                 vbo.release()
 
 
-
-    # ===========================================================
-    #                   mesh generation functions
-    # ===========================================================
 
