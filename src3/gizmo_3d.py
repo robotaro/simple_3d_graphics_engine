@@ -215,7 +215,7 @@ class Gizmo3D:
         if model_matrix is None:
             return None
 
-        is_hovering_center, centers_t = self.check_center_hovering(
+        is_hovering_center, center_t = self.check_center_hovering(
             ray_origin=ray_origin,
             ray_direction=ray_direction,
             model_matrix=model_matrix)
@@ -230,24 +230,30 @@ class Gizmo3D:
             ray_direction=ray_direction,
             model_matrix=model_matrix)
 
-        # TODO: Continue from here
+        # Initialize the closest state and distance
+        closest_t = float('inf')
+        closest_state = constants.GIZMO_STATE_INACTIVE
+        closest_index = -1
 
-        if is_hovering_axis and not is_hovering_plane:
-            self.state = constants.GIZMO_STATE_HOVERING_AXIS
-            self.active_index = active_axis_index
-        elif not is_hovering_axis and is_hovering_plane:
-            self.state = constants.GIZMO_STATE_HOVERING_PLANE
-            self.active_index = active_plane_index
-        elif not is_hovering_axis and not is_hovering_plane:
-            self.state = constants.GIZMO_STATE_INACTIVE
-            self.active_index = -1
-        else:
-            if axis_t < plane_t:
-                self.state = constants.GIZMO_STATE_HOVERING_AXIS
-                self.active_index = active_axis_index
-            else:
-                self.state = constants.GIZMO_STATE_HOVERING_PLANE
-                self.active_index = active_plane_index
+        # Determine the closest interaction
+        if is_hovering_center and center_t < closest_t:
+            closest_t = center_t
+            closest_state = constants.GIZMO_STATE_HOVERING_CENTER
+            closest_index = -1  # No active index for center
+
+        if is_hovering_axis and axis_t < closest_t:
+            closest_t = axis_t
+            closest_state = constants.GIZMO_STATE_HOVERING_AXIS
+            closest_index = active_axis_index
+
+        if is_hovering_plane and plane_t < closest_t:
+            closest_t = plane_t
+            closest_state = constants.GIZMO_STATE_HOVERING_PLANE
+            closest_index = active_plane_index
+
+        # Update state and active index
+        self.state = closest_state
+        self.active_index = closest_index
 
         return None
 
