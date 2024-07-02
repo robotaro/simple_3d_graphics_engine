@@ -15,15 +15,12 @@ class Gizmo3D:
     def __init__(self,
                  ctx: moderngl.Context,
                  shader_loader: ShaderLoader,
-                 output_fbo: moderngl.Framebuffer,
-                 gizmo_size_on_screen=0.1):
+                 output_fbo: moderngl.Framebuffer):
 
         self.ctx = ctx
         self.shader_loader = shader_loader
         self.output_fbo = output_fbo
-        self.program = shader_loader.get_program("gizmo_shader.glsl")
-
-        self.gizmo_size_on_screen = gizmo_size_on_screen
+        self.program = shader_loader.get_program("gizmo_lines.glsl")
 
         self.helper_fbo = self.ctx.framebuffer(
             depth_attachment=self.output_fbo.depth_attachment,
@@ -55,24 +52,7 @@ class Gizmo3D:
                projection_matrix: mat4,
                model_matrix: mat4):
 
-        self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND)  # Removing has no effect? Why?
-
-        if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
-            self.render_gizmo_translation_mode(
-                view_matrix=view_matrix,
-                projection_matrix=projection_matrix,
-                model_matrix=model_matrix)
-
-        if self.gizmo_mode == constants.GIZMO_MODE_ROTATION:
-            pass
-
-        if self.gizmo_mode == constants.GIZMO_MODE_SCALE:
-            pass
-
-    def render_gizmo_translation_mode(self,
-                                      view_matrix: mat4,
-                                      projection_matrix: mat4,
-                                      model_matrix: mat4):
+        self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND)
 
         # Calculate the camera position from the view matrix
         camera_position = inverse(view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)
@@ -93,7 +73,7 @@ class Gizmo3D:
         # Determine the scale factor to keep the gizmo a constant size on the screen
         viewport_height = self.output_fbo.viewport[3]
         proj_scale_y = 2.0 / projection_matrix[1][1]  # Assuming a standard projection matrix
-        self.gizmo_scale = proj_scale_y * distance_factor * (self.gizmo_size_on_screen / viewport_height)
+        self.gizmo_scale = proj_scale_y * distance_factor * (constants.GIZMO_SIZE_ON_SCREEN_PIXELS / viewport_height)
 
         # Create a scale matrix
         scale_matrix = mat4(1.0)
@@ -122,8 +102,18 @@ class Gizmo3D:
         # Set the line width
         self.ctx.line_width = 3.0
 
-        # Render the gizmo axes
-        self.translation_vaos[(self.state, self.active_index)].render(moderngl.LINES)
+        if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
+            self.translation_vaos[(self.state, self.active_index)].render(moderngl.LINES)
+
+            if self.state == constants.GIZMO_STATE_DRAGGING_AXIS:
+                # Draw axis
+                pass
+
+        if self.gizmo_mode == constants.GIZMO_MODE_ROTATION:
+            pass
+
+        if self.gizmo_mode == constants.GIZMO_MODE_SCALE:
+            pass
 
     def generate_vaos(self):
 
@@ -198,7 +188,6 @@ class Gizmo3D:
                 self.state = constants.GIZMO_STATE_DRAGGING_PLANE
                 return
 
-
     def handle_event_mouse_button_release(self, button: int, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4):
 
         # TODO: When you release the button, you need to check if tou are still hovering the gizmo
@@ -234,25 +223,26 @@ class Gizmo3D:
         self.ray_to_axis_dist2 = [math_3d.distance2_ray_segment(
             ray_origin=ray_origin,
             ray_direction=ray_direction,
-            p0=gizmo_position,
-            p1=vec3(model_matrix[i]) * self.gizmo_scale + gizmo_position) for i in range(3)]
+            p0=gizmo_position + vec3(model_matrix[i]) * constants.GIZMO_AXIS_OFFSET * self.gizmo_scale,
+            p1=gizmo_position + vec3(model_matrix[i]) * (constants.GIZMO_AXIS_OFFSET + constants.GIZMO_AXIS_LENGTH) * self.gizmo_scale)
+            for i in range(3)]
 
-        shortest_axis_dist_index = np.argmin(self.ray_to_axis_dist2)
-        shortest_axis_distance2 = self.ray_to_axis_dist2[shortest_axis_dist_index]
+        shortest_dist2_axis_index = np.argmin(self.ray_to_axis_dist2)
+        shortest_dist2 = self.ray_to_axis_dist2[shortest_dist2_axis_index]
 
         axis_t = float('inf')
-        if shortest_axis_distance2 < self.gizmo_scale * constants.GIZMO_AXIS_DETECTION_RADIUS: # TODO: Square this radius!
-            active_axis_index = shortest_axis_dist_index
-            _, axis_t = math_3d.nearest_point_on_segment(
+        # TODO: This radius comparison is wrong! Squaring the radius doesn't help! You need in create the radius somehow
+        if shortest_dist2 < self.gizmo_scale ** 2 * constants.GIZMO_AXIS_DETECTION_RADIUS_2:
+            active_axis_index = shortest_dist2_axis_index
+            projected_point, axis_t = math_3d.nearest_point_on_segment(
                 ray_origin=ray_origin,
                 ray_direction=ray_direction,
                 p0=gizmo_position,
-                p1=vec3(model_matrix[shortest_axis_dist_index]) * self.gizmo_scale + gizmo_position)
-            is_hovering_axes = True
+                p1=vec3(model_matrix[shortest_dist2_axis_index]) * self.gizmo_scale + gizmo_position)
 
-        else:
-            is_hovering_axes = False
-            active_axis_index = -1
+            # Now that we have the point projected on the axis, we can determine if it within the axis's valid length
+            if length(projected_point - gizmo_position) > constants.GIZMO_AXIS_OFFSET * self.gizmo_scale:
+                is_hovering_axes = True
 
         # ================[ Resolve Planes ]==================
 
@@ -287,9 +277,6 @@ class Gizmo3D:
             active_plane_index = closest_plane_patch[0]
             planes_t = closest_plane_patch[3]
             is_hovering_planes = True
-        else:
-            is_hovering_planes = False
-            active_plane_index = -1
 
         if is_hovering_axes and not is_hovering_planes:
             self.state = constants.GIZMO_STATE_HOVERING_AXIS

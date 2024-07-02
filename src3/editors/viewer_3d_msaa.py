@@ -69,8 +69,8 @@ class Viewer3DMSAA(Editor):
 
         self.gizmo_3d = Gizmo3D(ctx=self.ctx,
                                 shader_loader=self.shader_loader,
-                                output_fbo=self.fbo,
-                                gizmo_size_on_screen=200.0)
+                                output_fbo=self.fbo)
+        self.gizmo_3d_mode_index = 0
 
         self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
 
@@ -179,6 +179,15 @@ class Viewer3DMSAA(Editor):
             activated, self.debug_show_hash_colors = imgui.checkbox("Show entity ID colors",
                                                                     self.debug_show_hash_colors)
 
+            imgui.push_item_width(120)
+            clicked, self.gizmo_3d_mode_index = imgui.combo(
+                "Gizmo Mode", self.gizmo_3d_mode_index,
+                [constants.GIZMO_MODE_TRANSLATION,
+                 constants.GIZMO_MODE_ROTATION]
+            )
+            if clicked:
+                self.gizmo_3d.gizmo_mode = constants.GIZMO_MODES[self.gizmo_3d_mode_index]
+
             # DEBUG
             imgui.text("Gizmo Scale")
             imgui.text(str(self.gizmo_3d.gizmo_scale))
@@ -187,13 +196,6 @@ class Viewer3DMSAA(Editor):
             imgui.spacing()
             imgui.text("Ray Direction")
             imgui.text(str(self.camera_ray_direction))
-            imgui.spacing()
-            imgui.text("Point On segment")
-            imgui.text(str(self.debug_point_on_segment))
-            imgui.spacing()
-            imgui.text("Euclidian shortest distance")
-            imgui.text(str(np.sqrt(self.debug_shortest_distance2)))
-            imgui.spacing()
             imgui.spacing()
             imgui.text(f"Mode: {self.gizmo_3d.gizmo_mode}")
             imgui.text(f"State: {str(self.gizmo_3d.state)}")
@@ -232,6 +234,8 @@ class Viewer3DMSAA(Editor):
                     self.image_mouse_x, self.image_mouse_y)
             else:
                 self.image_hovering = False
+
+        imgui.show_demo_window()
 
         imgui.end()
 
