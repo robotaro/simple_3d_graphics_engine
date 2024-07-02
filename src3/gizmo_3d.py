@@ -1,3 +1,4 @@
+import copy
 import time
 
 import moderngl
@@ -39,12 +40,14 @@ class Gizmo3D:
         self.state = constants.GIZMO_STATE_INACTIVE
         self.active_axis_index = -1
         self.active_plane_index = -1
-        self.gizmo_translation_offset_point = vec3(0, 0, 0)
+        self.axis_offset_point = vec3(0, 0, 0)
+        self.plane_offset_point = vec3(0, 0, 0)
         self.ray_to_axis_dist2 = [0.0] * 3  # Closest distance between ray and segment
 
         self.debug_plane_intersections = [False] * 3
 
-        self.original_position = vec3(0)
+        self.original_model_matrix = mat4(1.0)
+        self.original_position = vec3(0.0)
         self.original_axes_p0 = [vec3(0)] * 3
         self.original_axes_p1 = [vec3(0)] * 3
 
@@ -133,7 +136,8 @@ class Gizmo3D:
         b = self.state == constants.GIZMO_STATE_HOVERING_AXES or self.state == constants.GIZMO_STATE_HOVERING_PLANES
         if a and b:
 
-            self.original_position = vec3(model_matrix[3])
+            self.original_model_matrix = copy.deepcopy(model_matrix)
+            self.original_position = vec3(self.original_model_matrix[3])
 
             # Update axis long segments so that we can start dragging the gizmo along
             tr_axis_p0_list = []
@@ -145,15 +149,32 @@ class Gizmo3D:
             self.original_axes_p0 = tr_axis_p0_list
             self.original_axes_p1 = tr_axis_p1_list
 
+        if a and self.state == constants.GIZMO_STATE_HOVERING_AXES:
+
             # Get offset on axis where you first clicked, the "translation offset"
-            self.gizmo_translation_offset_point, _ = math_3d.nearest_point_on_segment(
+            self.axis_offset_point, _ = math_3d.nearest_point_on_segment(
                 ray_origin=ray_origin,
                 ray_direction=ray_direction,
                 p0=self.original_axes_p0[self.active_axis_index],
                 p1=self.original_axes_p1[self.active_axis_index]
             )
-            self.gizmo_translation_offset_point -= self.original_position
+            self.axis_offset_point -= self.original_position
             self.state = constants.GIZMO_STATE_DRAGGING_AXIS
+            return
+
+        if a and self.state == constants.GIZMO_STATE_HOVERING_PLANES:
+
+            plane_axis_indices = self.plane_axis_list[self.active_plane_index]
+            u, v, t = math_3d.ray_intersect_plane_coordinates(
+                plane_origin=self.original_position,
+                plane_vec1=vec3(model_matrix[plane_axis_indices[0]]) * self.gizmo_scale,
+                plane_vec2=vec3(model_matrix[plane_axis_indices[1]]) * self.gizmo_scale,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction
+            )
+            self.plane_offset_point = ray_origin + ray_direction * t
+            self.state = constants.GIZMO_STATE_DRAGGING_PLANE
+            return
 
     def handle_event_mouse_button_release(self, button: int, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4):
         if button == constants.MOUSE_LEFT:
@@ -267,16 +288,12 @@ class Gizmo3D:
         if model_matrix is None:
             return None
 
-        if self.active_axis_index == -1:
-            return None
-
         # TODO: Ignore this function if the right button is being dragged!
 
         if self.state == constants.GIZMO_STATE_DRAGGING_AXIS:
 
-            # Mark the projected point
-            current_position = vec3(model_matrix[3])
-            axis_direction = vec3(model_matrix[self.active_axis_index])
+            if self.active_axis_index == -1:
+                return None
 
             nearest_point_on_axis, _ = math_3d.nearest_point_on_segment(
                 ray_origin=ray_origin,
@@ -285,5 +302,41 @@ class Gizmo3D:
                 p1=self.original_axes_p1[self.active_axis_index],
             )
 
-            delta_vector = nearest_point_on_axis - current_position - self.gizmo_translation_offset_point
+            # Calculate the delta from the original position
+            delta_vector = nearest_point_on_axis - self.axis_offset_point
+
+            # Create a new translation matrix
+            new_model_matrix = mat4(self.original_model_matrix)
+            new_model_matrix[3] = vec4(delta_vector, 1.0)
+
+            return new_model_matrix
+
+        if self.state == constants.GIZMO_STATE_DRAGGING_PLANE:
+
+            if self.active_plane_index == -1:
+                return None
+
+            # Calculate the plane origin and direction vectors
+            plane_axis_indices = self.plane_axis_list[self.active_plane_index]
+            plane_origin = original_position
+            plane_vec1 = self.original_axes_p0[plane_axis_indices[0]]
+            plane_vec2 = self.original_axes_p0[plane_axis_indices[1]]
+
+            # Calculate intersection of ray with plane
+            u, v, t = math_3d.ray_intersect_plane_coordinates(
+                plane_origin=plane_origin,
+                plane_vec1=plane_vec1,
+                plane_vec2=plane_vec2,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction
+            )
+            print(u, v)
+
+            # Calculate the new position on the plane
+            new_plane_point = ray_origin + ray_direction * t
+
+            # Calculate delta movement based on offset
+            delta_vector = new_plane_point - self.plane_offset_point
+
+            # Apply translation to the model matrix
             return translate(model_matrix, delta_vector)
