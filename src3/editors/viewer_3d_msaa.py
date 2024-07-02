@@ -70,7 +70,7 @@ class Viewer3DMSAA(Editor):
         self.gizmo_3d = Gizmo3D(ctx=self.ctx,
                                 shader_loader=self.shader_loader,
                                 output_fbo=self.fbo,
-                                gizmo_size_on_screen=0.25)
+                                gizmo_size_on_screen=200.0)
 
         self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
 
@@ -205,7 +205,6 @@ class Viewer3DMSAA(Editor):
 
             if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors
-
 
         imgui.same_line(spacing=20)
 

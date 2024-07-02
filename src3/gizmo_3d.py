@@ -4,7 +4,7 @@ import time
 import moderngl
 import numpy as np
 from src3 import constants
-from glm import vec3, vec4, mat4, length, length2, inverse, translate
+from glm import vec3, vec4, mat4, length, length2, inverse, translate, scale
 
 from src3 import math_3d
 from src3.shader_loader import ShaderLoader
@@ -78,16 +78,32 @@ class Gizmo3D:
         camera_position = inverse(view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)
         camera_position = vec3(camera_position)  # Convert to vec3
 
-        # Determine the scale factor to keep the gizmo a constant size on the screen
+        # Determine the gizmo position
         gizmo_position = vec3(model_matrix[3])
-        distance = length(camera_position - gizmo_position)
-        self.gizmo_scale = distance * self.gizmo_size_on_screen
 
-        # Update vertices with the new scale factor
-        self.update_translation_vertices(self.gizmo_scale)
+        # Check if the projection is orthographic or perspective
+        is_ortho = np.isclose(projection_matrix[3][3], 1.0, atol=1e-5)
 
-        # No need to apply the scale to the entity matrix
-        transform_matrix = projection_matrix * view_matrix * model_matrix
+        # Determine the distance factor
+        if is_ortho:
+            distance_factor = 1.0
+        else:
+            distance_factor = length(camera_position - gizmo_position)
+
+        # Determine the scale factor to keep the gizmo a constant size on the screen
+        viewport_height = self.output_fbo.viewport[3]
+        proj_scale_y = 2.0 / projection_matrix[1][1]  # Assuming a standard projection matrix
+        self.gizmo_scale = proj_scale_y * distance_factor * (self.gizmo_size_on_screen / viewport_height)
+
+        # Create a scale matrix
+        scale_matrix = mat4(1.0)
+        scale_matrix = scale(scale_matrix, vec3(self.gizmo_scale))
+
+        # Apply the scale to the model matrix
+        scaled_model_matrix = model_matrix * scale_matrix
+
+        # Create the final transform matrix
+        transform_matrix = projection_matrix * view_matrix * scaled_model_matrix
 
         # Bind the helper framebuffer to clear the depth buffer
         self.helper_fbo.use()
@@ -131,14 +147,6 @@ class Gizmo3D:
                 vbo,
                 'aPositionSize',
                 'aColor')
-
-    def update_translation_vertices(self, scale_factor):
-
-        # TODO: [performance] Re-creating arrays here!
-        scale_vector = np.array([scale_factor, scale_factor, scale_factor, 1.0, 1.0, 1.0, 1.0, 1.0], dtype='f4').reshape(1, -1)
-
-        scaled_vertices = constants.GIZMO_TRANSLATION_STATE_HOVERING_VERTEX_GROUP[(self.state, self.active_index)] * scale_vector
-        self.translation_vbos[(self.state, self.active_index)].write(scaled_vertices.tobytes())
 
     # =========================================================================
     #                           Input Callbacks
