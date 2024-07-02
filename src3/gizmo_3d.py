@@ -56,6 +56,8 @@ class Gizmo3D:
                projection_matrix: mat4,
                model_matrix: mat4):
 
+        self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND)  # Removing has no effect? Why?
+
         if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
             self.render_gizmo_translation_mode(
                 view_matrix=view_matrix,
@@ -185,7 +187,7 @@ class Gizmo3D:
         # Add code here as needed
         return None
 
-    def handle_event_keyboard_release(self, event_data: tuple)-> mat4:
+    def handle_event_keyboard_release(self, event_data: tuple) -> mat4:
         key, modifiers = event_data
         # Add code here as needed
         return None
@@ -212,7 +214,6 @@ class Gizmo3D:
 
         shortest_axis_dist_index = np.argmin(self.ray_to_axis_dist2)
         shortest_axis_distance2 = self.ray_to_axis_dist2[shortest_axis_dist_index]
-        shortest_axis_point_dist2 = float('inf')
 
         axis_t = float('inf')
         if shortest_axis_distance2 < self.gizmo_scale * constants.GIZMO_AXIS_DETECTION_RADIUS:
@@ -330,6 +331,9 @@ class Gizmo3D:
                 ray_origin=ray_origin,
                 ray_direction=ray_direction
             )
+
+            if t is None:
+                return None
 
             # Calculate the new position on the plane
             new_plane_point = ray_origin + ray_direction * t
