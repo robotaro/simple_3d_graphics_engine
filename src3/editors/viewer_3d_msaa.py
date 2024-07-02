@@ -76,7 +76,6 @@ class Viewer3DMSAA(Editor):
 
         # Debug variables
         self.debug_show_hash_colors = False
-        self.debug_collision_detected = False
         self.debug_point_on_segment = vec3(0, 0, 0)
         self.debug_shortest_distance2 = 0.0
 
@@ -198,7 +197,7 @@ class Viewer3DMSAA(Editor):
             imgui.spacing()
             imgui.text(f"Mode: {self.gizmo_3d.gizmo_mode}")
             imgui.text(f"State: {str(self.gizmo_3d.state)}")
-            imgui.text(f"Axis: {self.gizmo_3d.active_axis_index}")
+            imgui.text(f"Axis: {self.gizmo_3d.active_index}")
             imgui.text(f"Scale: {self.gizmo_3d.gizmo_scale}")
             imgui.spacing()
             imgui.spacing()
@@ -207,10 +206,6 @@ class Viewer3DMSAA(Editor):
             if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors
 
-            if self.debug_collision_detected:
-                imgui.text("Collision Detected!")
-            else:
-                imgui.text("No collision")
 
         imgui.same_line(spacing=20)
 
