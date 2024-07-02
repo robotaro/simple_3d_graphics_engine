@@ -318,9 +318,9 @@ class Gizmo3D:
 
             # Calculate the plane origin and direction vectors
             plane_axis_indices = self.plane_axis_list[self.active_plane_index]
-            plane_origin = original_position
-            plane_vec1 = self.original_axes_p0[plane_axis_indices[0]]
-            plane_vec2 = self.original_axes_p0[plane_axis_indices[1]]
+            plane_origin = self.original_position
+            plane_vec1 = vec3(self.original_model_matrix[plane_axis_indices[0]]) * self.gizmo_scale
+            plane_vec2 = vec3(self.original_model_matrix[plane_axis_indices[1]]) * self.gizmo_scale
 
             # Calculate intersection of ray with plane
             u, v, t = math_3d.ray_intersect_plane_coordinates(
@@ -330,13 +330,15 @@ class Gizmo3D:
                 ray_origin=ray_origin,
                 ray_direction=ray_direction
             )
-            print(u, v)
 
             # Calculate the new position on the plane
             new_plane_point = ray_origin + ray_direction * t
 
-            # Calculate delta movement based on offset
-            delta_vector = new_plane_point - self.plane_offset_point
+            # Calculate delta movement based on the new plane point
+            delta_vector = new_plane_point - (self.plane_offset_point - self.original_position)
 
-            # Apply translation to the model matrix
-            return translate(model_matrix, delta_vector)
+            # Create a new translation matrix
+            new_model_matrix = mat4(self.original_model_matrix)
+            new_model_matrix[3] = vec4(delta_vector, 1.0)
+
+            return new_model_matrix
