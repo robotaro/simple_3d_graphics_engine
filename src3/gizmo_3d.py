@@ -82,6 +82,18 @@ class Gizmo3D:
                 'aPositionSize',
                 'aColor')
 
+        # Center
+        center_data = self.generate_center_vertex_data(
+            radius=constants.GIZMO_CENTER_RADIUS,
+            color=(0.7, 0.7, 0.7, constants.GIZMO_ALPHA))
+        self.center_triangles_vbo = self.ctx.buffer(center_data.tobytes())
+        self.center_triangles_vao = self.ctx.vertex_array(
+            self.program_triangles,
+            [
+                (self.center_triangles_vbo, '3f 4f', 'aPosition', 'aColor')  # Assuming each vertex is 8 floats (4 bytes each)
+            ]
+        )
+
     def render(self,
                view_matrix: mat4,
                projection_matrix: mat4,
@@ -142,6 +154,12 @@ class Gizmo3D:
             # TODO: Resolve Z-fighting here by rendering the axis guide and clearing the depth buffer once more (?)
             self.translation_mode_lines_vaos[(self.state, self.active_index)].render(moderngl.LINES)
 
+            self.program_triangles['uViewProjMatrix'].write(transform_matrix)
+
+            self.ctx.enable(moderngl.CULL_FACE)
+            self.center_triangles_vao.render(moderngl.TRIANGLES)
+            self.ctx.disable(moderngl.CULL_FACE)
+
             if self.state == constants.GIZMO_STATE_DRAGGING_AXIS:
                 world_transform_matrix = projection_matrix * view_matrix * mat4(1.0)
                 self.program_lines['uViewProjMatrix'].write(world_transform_matrix)
@@ -153,7 +171,6 @@ class Gizmo3D:
         if self.gizmo_mode == constants.GIZMO_MODE_SCALE:
             pass
 
-
     # =========================================================================
     #                           Input Callbacks
     # =========================================================================
@@ -161,8 +178,6 @@ class Gizmo3D:
     def handle_event_mouse_button_press(self, button: int, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4):
 
         if button == constants.MOUSE_LEFT:
-
-            print("activated!")
 
             if self.state in [constants.GIZMO_STATE_HOVERING_AXIS, constants.GIZMO_STATE_HOVERING_PLANE]:
 
@@ -203,6 +218,7 @@ class Gizmo3D:
                         ],
                         dtype='f4'
                     )
+
                     # Set colour corresponding to the axis
                     new_data[:, 4 + self.active_index] = 1.0
                     self.axis_guide_vbo.write(new_data.tobytes())
@@ -506,63 +522,63 @@ class Gizmo3D:
     #                   Geometry functions
     # =============================================================
 
-    def generate_center_vertex_data(self, diameter: float, color: tuple) -> np.ndarray:
+    def generate_center_vertex_data(self, radius: float, color: tuple) -> np.ndarray:
 
         # TODO: Using a cube for now! I'll change it to a sphere later!
         vertices_and_colors = [
             # Back face
-            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
 
             # Front face
-            [-0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
 
             # Bottom face
-            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
 
             # Top face
-            [-0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
 
             # Left face
-            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [-0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [-1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
 
             # Right face
-            [0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
-            [0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0]
+            [ 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
+            [ 1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0]
         ]
 
         # Convert to numpy array of float32
         vertices_and_colors_array = np.array(vertices_and_colors, dtype=np.float32)
 
-        vertices_and_colors_array[:, :3] *= diameter
+        vertices_and_colors_array[:, :3] *= radius
         vertices_and_colors_array[:, 3:] = color
 
         return vertices_and_colors_array
