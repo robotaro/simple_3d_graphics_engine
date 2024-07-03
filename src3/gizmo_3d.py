@@ -39,6 +39,7 @@ class Gizmo3D:
         self.active_index = -1  # Axis or plane
         self.axis_offset_point = vec3(0, 0, 0)
         self.plane_offset_point = vec3(0, 0, 0)
+        self.center_offset_point = vec3(0, 0, 0)
         self.ray_to_axis_dist2 = [0.0] * 3  # Closest distance between ray and segment
 
         self.debug_plane_intersections = [False] * 3
@@ -189,7 +190,28 @@ class Gizmo3D:
                     ray_direction=ray_direction
                 )
                 self.plane_offset_point = ray_origin + ray_direction * t
+                self.plane_offset_point -= self.original_position
                 self.state = constants.GIZMO_STATE_DRAGGING_PLANE
+                return
+
+            if self.state == constants.GIZMO_STATE_HOVERING_CENTER:
+                # Calculate the plane normal (same as the ray direction)
+                plane_normal = normalize(ray_direction)
+
+                # Calculate the plane offset
+                plane_offset = dot(plane_normal, self.original_position)
+
+                # Calculate the intersection of the ray with the plane
+                is_intersecting, t = math_3d.intersect_ray_plane(
+                    ray_origin=ray_origin,
+                    ray_direction=ray_direction,
+                    plane_normal=plane_normal,
+                    plane_offset=plane_offset
+                )
+                if is_intersecting:
+                    self.center_offset_point = ray_origin + ray_direction * t
+                    self.center_offset_point -= self.original_position
+                    self.state = constants.GIZMO_STATE_DRAGGING_CENTER
                 return
 
     def handle_event_mouse_button_release(self, button: int, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4):
@@ -247,7 +269,6 @@ class Gizmo3D:
             closest_index = active_axis_index
 
         if is_hovering_plane and plane_t < closest_t:
-            closest_t = plane_t
             closest_state = constants.GIZMO_STATE_HOVERING_PLANE
             closest_index = active_plane_index
 
@@ -263,12 +284,39 @@ class Gizmo3D:
         if model_matrix is None:
             return None
 
-        if self.active_index == -1:
-            return None
-
         # TODO: Ignore this function if the right button is being dragged!
+        if self.state == constants.GIZMO_STATE_DRAGGING_CENTER:
 
-        if self.state == constants.GIZMO_STATE_DRAGGING_AXIS:
+            # Calculate the plane normal (same as the ray direction)
+            plane_normal = normalize(ray_direction)
+
+            # Calculate the plane origin (gizmo position)
+            plane_origin = vec3(model_matrix[3])
+
+            # Calculate the intersection of the ray with the plane
+            is_intersecting, t = math_3d.intersect_ray_plane(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                plane_normal=plane_normal,
+                plane_offset=dot(plane_normal, plane_origin)
+            )
+
+            if not is_intersecting:
+                return None
+
+            # Calculate the new position on the plane
+            new_plane_point = ray_origin + ray_direction * t
+
+            # Calculate the delta movement based on the new plane point
+            delta_vector = new_plane_point - self.original_position
+
+            # Create a new translation matrix
+            new_model_matrix = mat4(self.original_model_matrix)
+            new_model_matrix[3] = vec4(delta_vector + self.original_position, 1.0)
+
+            return new_model_matrix
+
+        if self.state == constants.GIZMO_STATE_DRAGGING_AXIS and self.active_index > -1:
 
             nearest_point_on_axis, _ = math_3d.nearest_point_on_segment(
                 ray_origin=ray_origin,
@@ -286,7 +334,7 @@ class Gizmo3D:
 
             return new_model_matrix
 
-        if self.state == constants.GIZMO_STATE_DRAGGING_PLANE:
+        if self.state == constants.GIZMO_STATE_DRAGGING_PLANE and self.active_index > -1:
 
             # Calculate the plane origin and direction vectors
             plane_axis_indices = self.plane_axis_list[self.active_index]
@@ -310,7 +358,7 @@ class Gizmo3D:
             new_plane_point = ray_origin + ray_direction * t
 
             # Calculate delta movement based on the new plane point
-            delta_vector = new_plane_point - (self.plane_offset_point - self.original_position)
+            delta_vector = new_plane_point - self.plane_offset_point
 
             # Create a new translation matrix
             new_model_matrix = mat4(self.original_model_matrix)
