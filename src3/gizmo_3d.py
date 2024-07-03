@@ -1,5 +1,5 @@
 import copy
-import time
+
 
 import moderngl
 import numpy as np
@@ -27,9 +27,13 @@ class Gizmo3D:
             depth_attachment=self.output_fbo.depth_attachment,
         )
 
-        self.translation_vbos = {}
-        self.translation_vaos = {}
-        self.generate_vaos()
+        self.translation_mode_lines_vbos = {}
+        self.translation_mode_lines_vaos = {}
+        self.axis_guide_vbo = None
+        self.axis_guide_vao = None
+        self.center_triangles_vbo = None
+        self.center_triangles_vao = None
+        self.generate_vbos_and_vaos()
 
         self.plane_axis_list = [(0, 1), (0, 2), (1, 2)]
 
@@ -42,12 +46,41 @@ class Gizmo3D:
         self.center_offset_point = vec3(0, 0, 0)
         self.ray_to_axis_dist2 = [0.0] * 3  # Closest distance between ray and segment
 
-        self.debug_plane_intersections = [False] * 3
-
         self.original_model_matrix = mat4(1.0)
         self.original_position = vec3(0.0)
         self.original_axes_p0 = [vec3(0)] * 3
         self.original_axes_p1 = [vec3(0)] * 3
+
+    def generate_vbos_and_vaos(self):
+
+        # Release any previous vaos and vbos if any
+        self.release()
+
+        # First create VBOs for the hovering state
+        self.translation_mode_lines_vbos = {}
+        for state_name_and_active_index, vertices in constants.GIZMO_TRANSLATION_STATE_HOVERING_VERTEX_GROUP.items():
+            self.translation_mode_lines_vbos[state_name_and_active_index] = self.ctx.buffer(vertices.tobytes())
+
+        # Create one vao per vbo
+        for _, vbo in self.translation_mode_lines_vaos:
+            if vbo is not None:
+                vbo.release()
+
+        self.translation_mode_lines_vaos = {}
+        for state_name_and_active_index, vbo in self.translation_mode_lines_vbos.items():
+            self.translation_mode_lines_vaos[state_name_and_active_index] = self.ctx.simple_vertex_array(
+                self.program_lines,
+                vbo,
+                'aPositionSize',
+                'aColor')
+
+        # Generate guides for when the object is being moved along the axes
+        self.axis_guide_vbo = self.ctx.buffer(constants.GIZMO_TRANSLATION_VERTICES_AXIS_GUIDE.tobytes())
+        self.axis_guide_vao = self.ctx.simple_vertex_array(
+                self.program_lines,
+                self.axis_guide_vbo,
+                'aPositionSize',
+                'aColor')
 
     def render(self,
                view_matrix: mat4,
@@ -102,17 +135,17 @@ class Gizmo3D:
         self.program_lines['uViewport'].value = viewport_size
 
         # Set the line width
-        self.ctx.line_width = 3.0
+        self.ctx.line_width = 3.0  # TODO: Figure out how this affects the line rendering
 
         if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
-            try:
-                self.translation_vaos[(self.state, self.active_index)].render(moderngl.LINES)
-            except Exception as error:
-                g = 0
+
+            # TODO: Resolve Z-fighting here by rendering the axis guide and clearing the depth buffer once more (?)
+            self.translation_mode_lines_vaos[(self.state, self.active_index)].render(moderngl.LINES)
 
             if self.state == constants.GIZMO_STATE_DRAGGING_AXIS:
-                # Draw axis
-                pass
+                world_transform_matrix = projection_matrix * view_matrix * mat4(1.0)
+                self.program_lines['uViewProjMatrix'].write(world_transform_matrix)
+                self.axis_guide_vao.render(moderngl.LINES)
 
         if self.gizmo_mode == constants.GIZMO_MODE_ROTATION:
             pass
@@ -120,28 +153,6 @@ class Gizmo3D:
         if self.gizmo_mode == constants.GIZMO_MODE_SCALE:
             pass
 
-    def generate_vaos(self):
-
-        # Release any previous vaos and vbos if any
-        self.release()
-
-        # First create VBOs for the hovering state
-        self.translation_vbos = {}
-        for state_name_and_active_index, vertices in constants.GIZMO_TRANSLATION_STATE_HOVERING_VERTEX_GROUP.items():
-            self.translation_vbos[state_name_and_active_index] = self.ctx.buffer(vertices.tobytes())
-
-        # Create one vao per vbo
-        for _, vbo in self.translation_vaos:
-            if vbo is not None:
-                vbo.release()
-
-        self.translation_vaos = {}
-        for state_name_and_active_index, vbo in self.translation_vbos.items():
-            self.translation_vaos[state_name_and_active_index] = self.ctx.simple_vertex_array(
-                self.program_lines,
-                vbo,
-                'aPositionSize',
-                'aColor')
 
     # =========================================================================
     #                           Input Callbacks
@@ -150,6 +161,8 @@ class Gizmo3D:
     def handle_event_mouse_button_press(self, button: int, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4):
 
         if button == constants.MOUSE_LEFT:
+
+            print("activated!")
 
             if self.state in [constants.GIZMO_STATE_HOVERING_AXIS, constants.GIZMO_STATE_HOVERING_PLANE]:
 
@@ -177,6 +190,23 @@ class Gizmo3D:
                 )
                 self.axis_offset_point -= self.original_position
                 self.state = constants.GIZMO_STATE_DRAGGING_AXIS
+
+                # Update data on the Axis guide to highlight which axis is being dragged
+                if self.axis_guide_vbo:
+                    print(self.active_index)
+                    p0 = self.original_axes_p0[self.active_index]
+                    p1 = self.original_axes_p1[self.active_index]
+                    new_data = np.array(
+                        [  # These values are placeholders. They are overwritten dynamically
+                            [p0.x, p0.y, p0.z, constants.GIZMO_AXIS_GUIDE_LINE_WIDTH, 0.0, 0.0, 0.0, 0.8],
+                            [p1.x, p1.y, p1.z, constants.GIZMO_AXIS_GUIDE_LINE_WIDTH, 0.0, 0.0, 0.0, 0.8]
+                        ],
+                        dtype='f4'
+                    )
+                    # Set colour corresponding to the axis
+                    new_data[:, 4 + self.active_index] = 1.0
+                    self.axis_guide_vbo.write(new_data.tobytes())
+
                 return
 
             if self.state == constants.GIZMO_STATE_HOVERING_PLANE:
@@ -449,9 +479,6 @@ class Gizmo3D:
             if u is not None and a <= u <= b and a <= v <= b:
                 plane_intersections.append((index, u, v, t))
 
-        # DEBUG
-        self.debug_plane_intersections = [plane[0] for plane in plane_intersections]
-
         # Resolve which plane patch is the closest
         if len(plane_intersections) > 0:
             closest_plane_patch = min(plane_intersections, key=lambda x: x[3])  # x[3] is the t value
@@ -461,15 +488,84 @@ class Gizmo3D:
 
         return is_hovering, ray_t, active_index
 
+    def check_disk_hovering(self, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> tuple:
+
+        pass
+
     def release(self):
 
-        for _, vao in self.translation_vaos.items():
+        for _, vao in self.translation_mode_lines_vaos.items():
             if vao:
                 vao.release()
 
-        for _, vbo in self.translation_vbos.items():
+        for _, vbo in self.translation_mode_lines_vbos.items():
             if vbo:
                 vbo.release()
+
+    # =============================================================
+    #                   Geometry functions
+    # =============================================================
+
+    def generate_center_vertex_data(self, diameter: float, color: tuple) -> np.ndarray:
+
+        # TODO: Using a cube for now! I'll change it to a sphere later!
+        vertices_and_colors = [
+            # Back face
+            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+
+            # Front face
+            [-0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+
+            # Bottom face
+            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+
+            # Top face
+            [-0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+
+            # Left face
+            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [-0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+
+            # Right face
+            [0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, 0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, -0.5, -0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, 0.5, 0.5, 1.0, 1.0, 1.0, 1.0],
+            [0.5, -0.5, 0.5, 1.0, 1.0, 1.0, 1.0]
+        ]
+
+        # Convert to numpy array of float32
+        vertices_and_colors_array = np.array(vertices_and_colors, dtype=np.float32)
+
+        vertices_and_colors_array[:, :3] *= diameter
+        vertices_and_colors_array[:, 3:] = color
+
+        return vertices_and_colors_array
 
 
 

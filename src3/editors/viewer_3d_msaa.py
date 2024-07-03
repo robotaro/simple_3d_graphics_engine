@@ -112,12 +112,13 @@ class Viewer3DMSAA(Editor):
 
         self.render_scene()
         self.render_gizmo()
-        self.process_collisions()
         self.render_ui()
 
     def shutdown(self):
         for _, entity in self.entities.items():
             entity.release()
+
+        self.gizmo_3d.release()
 
     def render_scene(self):
 
@@ -135,7 +136,7 @@ class Viewer3DMSAA(Editor):
 
         self.msaa_fbo.use()
         self.ctx.enable(moderngl.DEPTH_TEST)
-        self.msaa_fbo.clear()
+        self.msaa_fbo.clear(*constants.DEFAULT_BACKGROUND_COLOR)
 
         # Render renderable entities
         for entity_id, entity in self.entities.items():
@@ -189,6 +190,10 @@ class Viewer3DMSAA(Editor):
                 self.gizmo_3d.gizmo_mode = constants.GIZMO_MODES[self.gizmo_3d_mode_index]
 
             # DEBUG
+            imgui.text("Image hovering")
+            imgui.text(str(self.image_hovering))
+            imgui.spacing()
+            imgui.spacing()
             imgui.text("Gizmo Scale")
             imgui.text(str(self.gizmo_3d.gizmo_scale))
             imgui.text("Ray Origin")
@@ -201,11 +206,8 @@ class Viewer3DMSAA(Editor):
             imgui.text(f"State: {str(self.gizmo_3d.state)}")
             imgui.text(f"Axis: {self.gizmo_3d.active_index}")
             imgui.text(f"Scale: {self.gizmo_3d.gizmo_scale}")
-            imgui.spacing()
-            imgui.spacing()
-            imgui.text(f"Plane intersections: {self.gizmo_3d.debug_plane_intersections}")
 
-            if activated:
+        if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors
 
         imgui.same_line(spacing=20)
@@ -239,60 +241,6 @@ class Viewer3DMSAA(Editor):
 
         imgui.end()
 
-    def process_collisions(self) -> vec3:
-
-        """
-        self.entities[20] = self.entity_factory.create_sphere(
-            radius=0.2,
-            position=vec3(1, 1, 1),
-            color=(1.0, 0.5, 0.0))
-
-        self.entities[21] = self.entity_factory.create_sphere(
-            radius=0.2,
-            position=vec3(-3, 0.5, -2),
-            color=(1.0, 0.5, 0.0))
-        :return:
-        """
-
-        c = math_3d.intersect_ray_capsule_boolean(
-            ray_origin=self.camera_ray_origin,
-            ray_direction=self.camera_ray_direction,
-            radius=0.05,
-            p0=vec3(0.0, 0.0, 0.0),
-            p1=vec3(1.0, 0.0, 0.0)
-        )
-
-        self.debug_point_on_segment, _ = math_3d.nearest_point_on_segment(
-            ray_origin=self.camera_ray_origin,
-            ray_direction=self.camera_ray_direction,
-            p0=vec3(0.0, 0.0, 0.0),
-            p1=vec3(1.0, 0.0, 0.0)
-        )
-
-        self.debug_shortest_distance2 = math_3d.distance2_ray_segment(
-            ray_origin=self.camera_ray_origin,
-            ray_direction=self.camera_ray_direction,
-            p0=vec3(1.0, 1.0, 1.0),
-            p1=vec3(1.0, 0.0, 0.0)
-        )
-
-        a, _, _ = math_3d.intersect_ray_sphere(
-            ray_origin=self.camera_ray_origin,
-            ray_direction=self.camera_ray_direction,
-            sphere_radius=0.2,
-            sphere_origin=vec3(1.0, 1.0, 1.0))
-
-        b, _, _ = math_3d.intersect_ray_sphere(
-            ray_origin=self.camera_ray_origin,
-            ray_direction=self.camera_ray_direction,
-            sphere_radius=0.2,
-            sphere_origin=vec3(-3, 0.5, -2))
-
-        self.debug_collision_detected = a or b or c
-
-        # Sphere
-        return vec3(0, 0, 0)
-
     def read_entity_id(self, mouse_x, mouse_y) -> int:
 
         # Only read an entity ID if
@@ -322,7 +270,7 @@ class Viewer3DMSAA(Editor):
         if button == constants.MOUSE_RIGHT:
             self.camera.right_mouse_button_down = True
 
-        if button == constants.MOUSE_LEFT:
+        if self.image_hovering and button == constants.MOUSE_LEFT:
 
             # You can only select another entity if, when you click, you are not hovering the gizmo
             if self.gizmo_3d.state == constants.GIZMO_STATE_INACTIVE:
@@ -334,13 +282,14 @@ class Viewer3DMSAA(Editor):
 
                 self.selected_entity_id = -1 if entity_id < 1 else entity_id
 
-        selected_entity = self.entities.get(self.selected_entity_id, None)
-        model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
-        self.gizmo_3d.handle_event_mouse_button_press(
-            button=button,
-            ray_direction=self.camera_ray_direction,
-            ray_origin=self.camera_ray_origin,
-            model_matrix=model_matrix)
+            selected_entity = self.entities.get(self.selected_entity_id, None)
+            model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
+
+            self.gizmo_3d.handle_event_mouse_button_press(
+                button=button,
+                ray_direction=self.camera_ray_direction,
+                ray_origin=self.camera_ray_origin,
+                model_matrix=model_matrix)
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         button, x, y = event_data
@@ -349,11 +298,12 @@ class Viewer3DMSAA(Editor):
 
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
-        self.gizmo_3d.handle_event_mouse_button_release(
-            button=button,
-            ray_direction=self.camera_ray_direction,
-            ray_origin=self.camera_ray_origin,
-            model_matrix=model_matrix)
+        if self.image_hovering:
+            self.gizmo_3d.handle_event_mouse_button_release(
+                button=button,
+                ray_direction=self.camera_ray_direction,
+                ray_origin=self.camera_ray_origin,
+                model_matrix=model_matrix)
 
     def handle_event_keyboard_press(self, event_data: tuple):
         key, modifiers = event_data
@@ -378,11 +328,12 @@ class Viewer3DMSAA(Editor):
 
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
-        self.gizmo_3d.handle_event_mouse_move(
-            event_data=event_data,
-            ray_direction=self.camera_ray_direction,
-            ray_origin=self.camera_ray_origin,
-            model_matrix=model_matrix)
+        if self.image_hovering:
+            self.gizmo_3d.handle_event_mouse_move(
+                event_data=event_data,
+                ray_direction=self.camera_ray_direction,
+                ray_origin=self.camera_ray_origin,
+                model_matrix=model_matrix)
 
     def handle_event_mouse_drag(self, event_data: tuple):
         x, y, dx, dy = event_data
@@ -391,10 +342,11 @@ class Viewer3DMSAA(Editor):
 
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
-        new_model_matrix = self.gizmo_3d.handle_event_mouse_drag(
-            event_data=event_data,
-            ray_direction=self.camera_ray_direction,
-            ray_origin=self.camera_ray_origin,
-            model_matrix=model_matrix)
+        if self.image_hovering:
+            new_model_matrix = self.gizmo_3d.handle_event_mouse_drag(
+                event_data=event_data,
+                ray_direction=self.camera_ray_direction,
+                ray_origin=self.camera_ray_origin,
+                model_matrix=model_matrix)
         if selected_entity is not None:
             selected_entity.component_transform.update_world_matrix(world_matrix=new_model_matrix)
