@@ -33,7 +33,7 @@ class WindowGLFW(ABC):
                  "buffer_size",
                  "cursor_hidden",
                  "event_publisher",
-                 "close_application")
+                 "window_is_open")
 
     def __init__(self,
                  window_size=constants.DEFAULT_EDITOR_WINDOW_SIZE,
@@ -83,11 +83,6 @@ class WindowGLFW(ABC):
 
         self.ctx = moderngl.create_context()
 
-        # ImGUI
-        imgui.create_context()
-        self.imgui_renderer = GlfwRenderer(self.window_glfw, attach_callbacks=False)  # DISABLE attach_callbacks!!!!
-        self.imgui_exit_popup_open = False
-
         # Assign callback functions
         glfw.set_key_callback(self.window_glfw, self._glfw_callback_keyboard)
         glfw.set_char_callback(self.window_glfw, self._glfw_callback_char)
@@ -97,12 +92,18 @@ class WindowGLFW(ABC):
         glfw.set_window_size_callback(self.window_glfw, self._glfw_callback_window_resize)
         glfw.set_framebuffer_size_callback(self.window_glfw, self._glfw_callback_framebuffer_size)
         glfw.set_drop_callback(self.window_glfw, self._glfw_callback_drop_files)
+        glfw.set_window_close_callback(self.window_glfw, self._glfw_callback_window_close)
+
+        # ImGUI
+        imgui.create_context()
+        self.imgui_renderer = GlfwRenderer(self.window_glfw, attach_callbacks=False)  # DISABLE attach_callbacks!!!!
+        self.imgui_exit_popup_open = False
 
         # Update any initialisation variables after window GLFW has been created, if needed
         self.mouse_state[constants.MOUSE_POSITION] = glfw.get_cursor_pos(self.window_glfw)
 
         # Flags
-        self.close_application = False
+        self.window_is_open = True
 
         # Add callbacks for application termination
         signal.signal(signal.SIGINT, self.callback_signal_handler)
@@ -110,7 +111,8 @@ class WindowGLFW(ABC):
 
     def callback_signal_handler(self, signum, frame):
         self.logger.debug("Signal received : Closing editor now")
-        self.close_application = True
+        self.window_is_open = False
+        exit(0)
 
     # ========================================================================
     #                           Input State Functions
@@ -278,6 +280,10 @@ class WindowGLFW(ABC):
                                      event_data=tuple(file_list),
                                      sender=self)
 
+    def _glfw_callback_window_close(self, glfw_window):
+        self.logger.debug("Window close requested")
+        self.window_is_open = False
+
     def _update_inputs(self) -> None:
 
         """
@@ -299,12 +305,12 @@ class WindowGLFW(ABC):
 
     def imgui_start(self):
         self.imgui_renderer.process_inputs()
-        imgui.get_io().ini_file_name = ""  # Disables creating an .ini file with the last window details
+        #imgui.get_io().ini_file_name = ""  # Disables creating an .ini file with the last window details
         imgui.new_frame()
 
     def imgui_stop_and_render(self):
 
-        imgui.end_frame()
+        #imgui.end_frame()
         imgui.render()  # Doesn't really render, only sorts and organises the vertex data
 
         # Render all gui to screen
@@ -337,11 +343,12 @@ class WindowGLFW(ABC):
         self.initialise()
 
         # Prepare to enter main loop
-        self.close_application = False
         timestamp_past = time.perf_counter()
 
         # Main loop
-        while not glfw.window_should_close(self.window_glfw) and not self.close_application:
+        while True:
+            if glfw.window_should_close(self.window_glfw) == 1:
+                break
 
             # Update elapsed time
             timestamp = time.perf_counter()
@@ -359,4 +366,6 @@ class WindowGLFW(ABC):
             # Still swap these even if you have to exit application?
             glfw.swap_buffers(self.window_glfw)
 
+        print("A")
         self.shutdown()
+        print("B")

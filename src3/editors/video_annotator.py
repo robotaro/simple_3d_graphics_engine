@@ -4,7 +4,7 @@ import moderngl
 import imgui
 import imageio
 
-from src3.editor import Editor
+from src3.editors.editor import Editor
 
 
 class VideoAnnotator(Editor):

@@ -1,8 +1,5 @@
-import numpy as np
+import glm
 from src.core import constants
-
-from src.math import mat4
-from src2.components.component import Component
 
 
 class TransformComponent:
@@ -19,89 +16,151 @@ class TransformComponent:
         "use_degrees",
         "input_values_updated",
         "local_matrix_updated",
-        "dirty"
+        "dirty",
+        "parent",
+        "children"
     ]
 
-    def __init__(self, position: tuple, rotation: tuple, scale: tuple, use_degrees=False):
+    def __init__(self, position: glm.vec3, rotation: glm.vec4, scale: glm.vec3, use_degrees=False):
+
+        self.parent = None
+        self.children = []
 
         self.position = position
         self.rotation = rotation
         self.scale = scale
 
-        if len(self.scale) == 1:
-            self.scale = (self.scale[0], self.scale[0], self.scale[0])
-
-        if len(self.scale) == 2:
-            raise Exception("[ERROR] Input scale from parameters contains 2 values. Please make sure you have"
-                            "either 1 or 3")
-
         self.use_degrees = use_degrees
 
         if self.use_degrees:
-            self.rotation = (np.radians(self.rotation[0]),
-                             np.radians(self.rotation[1]),
-                             np.radians(self.rotation[2]))
+            self.rotation = glm.radians(self.rotation)
 
-        self.local_matrix = np.eye(4, dtype=np.float32)
-        self.world_matrix = np.eye(4, dtype=np.float32)
-        self.inverse_world_matrix = np.eye(4, dtype=np.float32)  # Doesn't get update correctly for some reason
+        self.world_matrix = None  # Define before the local matrix
+        self.local_matrix = None
+        self.update_local_matrix(self._calculate_local_matrix())
+
         self.input_values_updated = True
         self.local_matrix_updated = False
         self.dirty = True
 
-    def update(self) -> bool:
-        """
-        This function serverd multiple purposes. If "input_values_updated" is true, it will reconstruct
-        the local matrix based on the translation, rotation (including mode) and scale values.
-        If however, "local_matrix_updated" is true, it will update the input values to reflect what would
-        be necessary to recreate said local matrix
-
-        # IMPORTANT: Updating the local matrix TAKES PRECEDENCE. So if both input values are local matrix
-                     are updated before the update function is called (both flags true) the local matrix
-                     will remain unchanged and the input values will be updated instead
-
-        :return: boolean, TRUE if the local matrix has been updated
-        """
-
-        if self.local_matrix_updated:
-            self.position = tuple(self.local_matrix[:3, 3])
-            self.rotation = tuple(mat4.to_euler_xyz(self.local_matrix))
-            # TODO: Scale is missing!!!
-            self.local_matrix_updated = False
-            self.input_values_updated = False  # They have now been overwritten, so no updated required.
-            self.dirty = True
-            return True
-
-        if self.input_values_updated:
-            self.local_matrix = mat4.create_transform_euler_xyz(
-                np.array(self.position, dtype=np.float32),
-                np.array(self.rotation, dtype=np.float32),
-                np.array(self.scale, dtype=np.float32),)
-            self.input_values_updated = False
-            self.dirty = True
-            return True
-
-        return False
-
-    def move(self, delta_position: np.array):
-        self.position += delta_position
-        self.input_values_updated = True
-
-    def rotate(self, delta_rotation: np.array):
-        self.rotation += delta_rotation
-        self.input_values_updated = True
-
-    def set_position(self, position: tuple):
+    def update_position(self, position: glm.vec3):
         self.position = position
-        self.input_values_updated = True
+        self.update_vectors()
 
-    def set_rotation(self, position: tuple):
-        self.position = position
-        self.input_values_updated = True
+    def update_rotation(self, rotation: glm.quat):
+        self.rotation = rotation
+        self.update_vectors()
+
+    def update_scale(self, scale: glm.quat):
+        self.scale = scale
+        self.update_vectors()
+
+    def update_vectors(self):
+
+        # 1) Update local matrix from position, rotation (quat) and scale vectors
+        self.local_matrix = self._calculate_local_matrix()
+
+        # 2) Update world matrix from local matrix and parent matrix
+        if self.parent:
+            self.world_matrix = self.parent.world_matrix * self.local_matrix
+        else:
+            self.world_matrix = self.local_matrix
+
+        # 3) Update children
+        for child in self.children:
+            child.update_from_parent(self.world_matrix)
+
+    def update_local_matrix(self, local_matrix: glm.mat4):
+
+        # Replace current local matrix if a new one is provided
+        if isinstance(local_matrix, glm.mat4):
+            self.local_matrix = local_matrix
+
+        # 1) Update vectors (position, rotation and scale) from local matrix
+        self.position, self.rotation, self.scale = self.decompose_matrix(self.local_matrix)
+
+        # 2) Update world matrix from local matrix and parent matrix
+        if self.parent:
+            self.world_matrix = self.parent.world_matrix * self.local_matrix
+        else:
+            self.world_matrix = self.local_matrix
+
+        # 3) Update children
+        for child in self.children:
+            child.update_from_parent(self.world_matrix)
+
+    def update_world_matrix(self, world_matrix: glm.mat4):
+
+        # Replace current world matrix if a new one is provided
+        if isinstance(world_matrix, glm.mat4):
+            self.world_matrix = world_matrix
+
+        # 1) Update local matrix using the parent's world matrix if available
+        if self.parent:
+            self.local_matrix = glm.inverse(self.parent.world_matrix) * self.world_matrix
+        else:
+            self.local_matrix = self.world_matrix
+
+        # 2) Update vectors (position, rotation and scale) from local matrix
+        self.position, self.rotation, self.scale = self.decompose_matrix(self.local_matrix)
+
+        # 3) Update children
+        for child in self.children:
+            child.update_from_parent(self.world_matrix)
+
+    def update_from_parent(self, parent_world_matrix: glm.mat4):
+
+        if parent_world_matrix is not None:
+            self.world_matrix = parent_world_matrix * self.local_matrix
+        else:
+            self.world_matrix = self.local_matrix
+
+        # Update world matrix from local matrix and parent matrix
+        self.world_matrix = parent_world_matrix * self.local_matrix
+
+        # Recursively update children's world matrices
+        for child in self.children:
+            child.update_from_parent(self.world_matrix)
+
+    def _calculate_local_matrix(self):
+        return glm.translate(glm.mat4(1.0), self.position) * \
+                            glm.mat4_cast(self.rotation) * \
+                            glm.scale(glm.mat4(1.0), self.scale)
+
+    def decompose_matrix(self, matrix: glm.mat4):
+        # Extract translation
+        position = glm.vec3(matrix[3])
+
+        # Extract scale
+        scale = glm.vec3(glm.length(matrix[0]), glm.length(matrix[1]), glm.length(matrix[2]))
+
+        # Remove the scaling from the matrix
+        rotation_matrix = glm.mat4(matrix)
+        rotation_matrix[0] /= scale.x
+        rotation_matrix[1] /= scale.y
+        rotation_matrix[2] /= scale.z
+
+        # Extract rotation (quaternion)
+        rotation_quat = glm.quat_cast(rotation_matrix)
+
+        return position, rotation_quat, scale
+
+    def move(self, delta_position: glm.vec3):
+        self.position + delta_position
+        self.update_position(position=self.position + delta_position)
+
+    def add_child(self, child):
+        if child not in self.children:
+            self.children.append(child)
+            child.parent = self
+
+    def remove_child(self, child):
+        if child in self.children:
+            self.children.remove(child)
+            child.parent = None
 
     def render_ui(self, imgui):
-
-        imgui.text(f"Transform")
+        imgui.text("Transform")
         a, self.position = imgui.drag_float3("Position", *self.position, constants.IMGUI_DRAG_FLOAT_PRECISION)
         b, self.rotation = imgui.drag_float3("Rotation", *self.rotation, constants.IMGUI_DRAG_FLOAT_PRECISION)
         c, self.scale = imgui.drag_float3("Scale", *self.scale, constants.IMGUI_DRAG_FLOAT_PRECISION)

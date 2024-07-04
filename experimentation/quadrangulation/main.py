@@ -9,46 +9,37 @@ from experimentation.quadrangulation.patch_pattern_4 import PatchPattern4
 from numba import njit
 
 
-@njit
-def unite_points(patch_a, patch_b):
-  #hash = 
-  #if hash
-  #points_b = np.linspace(start=patch_b[0], stop=patch_b[1], num=patch_b[2])
-  
-  
-  return {value for value in np.linspace(start=patch_a[0], stop=patch_a[1], num=patch_a[2])}
-
 def demo():
   
-  a = (1.0, 3.0, 4)
-  b = (2.0, 4.0, 4)
-  
-  result = unite_points(a, b)
-  
-  corners = np.array([(0, 0),
+    a = (1.0, 3.0, 4)
+    b = (2.0, 4.0, 4)
+
+
+
+    corners = np.array([(0, 0),
                       (1, 0),
                       (1, 1),
-                      (0, 1)], 
+                      (0, 1)],
                      dtype=np.float32)
-  
-  patch = PatchPattern4(
+
+    patch = PatchPattern4(
     patch_corners=corners,
     bottom=16,
     right=5,
     top=5,
     left=4
     )
-  
-  patch.process()
+
+    patch.process()
   
  
   
-  #patch.shift_right(step_size=2)
-  #patch.shift_down(step_size=1)
-  
-  patch.show_subpatches()
-  
-  g = 0
+    #patch.shift_right(step_size=2)
+    #patch.shift_down(step_size=1)
+
+    patch.show_subpatches()
+
+    g = 0
   
 
 

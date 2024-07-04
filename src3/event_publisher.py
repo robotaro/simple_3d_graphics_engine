@@ -1,6 +1,7 @@
 import logging
 from typing import Any
 
+
 class EventPublisher:
 
     __slots__ = [

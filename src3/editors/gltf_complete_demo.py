@@ -8,7 +8,7 @@ import imgui
 from pyrr import Matrix44, Vector3
 
 from src3 import constants
-from src3.editor import Editor
+from src3.editors.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
 from src3.io.gltf_reader import GLTFReader

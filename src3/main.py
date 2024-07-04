@@ -24,7 +24,7 @@ def load_gltf():
 
 def main():
 
-    load_gltf()
+    #load_gltf()
 
     app = App(window_title="Basic Scene Demo", vertical_sync=False)
     app.run()

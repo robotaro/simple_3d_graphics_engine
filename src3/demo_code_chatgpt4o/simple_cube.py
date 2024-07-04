@@ -181,7 +181,9 @@ def main():
         vao.render(moderngl.TRIANGLES)
         glfw.swap_buffers(window)
         glfw.poll_events()
+        print(glfw.window_should_close(window))
 
+    print("Window terminated")
     glfw.terminate()
 
 if __name__ == "__main__":

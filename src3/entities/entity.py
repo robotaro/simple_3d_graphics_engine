@@ -9,18 +9,18 @@ class Entity:
         self.archetype = archetype
 
         # Components
-        self.comp_transform = None
-        self.comp_material = None
-        self.comp_mesh = None
+        self.component_transform = None
+        self.component_material = None
+        self.component_mesh = None
 
         # Assign components
         for component in component_list:
             if isinstance(component, TransformComponent):
-                self.comp_transform = component
+                self.component_transform = component
             elif isinstance(component, MaterialComponent):
-                self.comp_material = component
+                self.component_material = component
             elif isinstance(component, MeshComponent):
-                self.comp_mesh = component
+                self.component_mesh = component
 
     def update(self, elapsed_time: float):
         pass

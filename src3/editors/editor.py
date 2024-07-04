@@ -1,5 +1,6 @@
 import logging
 import moderngl
+from moderngl_window.integrations.imgui import ModernglWindowRenderer
 from abc import ABC, abstractmethod
 
 from src3 import constants
@@ -25,12 +26,14 @@ class Editor(ABC):
                  ctx: moderngl.Context,
                  event_publisher: EventPublisher,
                  shader_loader: ShaderLoader,
+                 imgui_renderer: ModernglWindowRenderer,
                  params: dict):
 
         self.logger = logger
         self.ctx = ctx
         self.event_publisher = event_publisher
         self.shader_loader = shader_loader
+        self.imgui_renderer = imgui_renderer
         self.params = params if params is not None else {}
         self.event_handlers = self._assign_event_handlers()
 
@@ -87,6 +90,9 @@ class Editor(ABC):
         pass
 
     def handle_event_mouse_double_click(self, event_data: tuple):
+        pass
+
+    def handle_event_mouse_drag(self, event_data: tuple):
         pass
 
     def handle_event_mouse_move(self, event_data: tuple):

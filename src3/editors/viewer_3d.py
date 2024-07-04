@@ -1,15 +1,16 @@
 import imgui
-import numpy as np
 import moderngl
 import struct
-import glm
 import copy
 from glm import vec3
 
-from src3.io.gltf_reader import GLTFReader
-from src3.editor import Editor
+from src3 import constants
+from src3.editors.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
+from src3.gizmos.transform_gizmo import TransformGizmo
+from src3.camera_3d import Camera3D  # Import the Camera class
+from src3 import math_3d
 
 
 class Viewer3D(Editor):
@@ -21,6 +22,7 @@ class Viewer3D(Editor):
         self.window_size = (900, 600)
         self.fbo_size = (640, 480)
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
+        self.camera = Camera3D(fbo_size=self.fbo_size, position=vec3(0, 1, 5))
 
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
         self.entity_factory = EntityFactory(ctx=self.ctx, shader_loader=self.shader_loader)
@@ -45,24 +47,9 @@ class Viewer3D(Editor):
             depth_attachment=self.ctx.depth_texture(self.fbo_size),
         )
 
+        self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
 
-        # Camera variables - temporary
-        aspect_ratio = self.fbo_size[0] / self.fbo_size[1]
-        self.projection_matrix = glm.perspective(glm.radians(45.0), aspect_ratio, 0.1, 100.0)
-        self.view_matrix = glm.inverse(glm.translate(glm.mat4(1.0), glm.vec3(0.0, 1.0, 5.0)))
-
-        self.camera_position = glm.vec3(0.0, 1.0, 5.0)
-        self.camera_front = glm.vec3(0.0, 0.0, -1.0)
-        self.camera_up = glm.vec3(0.0, 1.0, 0.0)
-        self.camera_speed = 2.5
-        self.mouse_sensitivity = 0.1
-        self.yaw = -90.0
-        self.pitch = 0.0
-
-        self.right_mouse_button_down = False
-        self.last_mouse_x = 0.0
-        self.last_mouse_y = 0.0
-        self.first_mouse = True
+        self.gizmo_3d = TransformGizmo(ctx=self.ctx, shader_loader=self.shader_loader, output_fbo=self.fbo)
 
         self.entities = {}
 
@@ -71,30 +58,13 @@ class Viewer3D(Editor):
 
     def setup(self) -> bool:
 
-        self.entities[1] = self.entity_factory.create_renderable_3d_axis(axis_radius=0.05)
-
-        #gltf_fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "situp_to_iddle.gltf")
-        #self.entities[2] = self.load_gltf_entity(fpath=gltf_fpath)
-
+        self.entities[23] = self.entity_factory.create_renderable_3d_axis(axis_radius=0.05)
         return True
 
-    def load_gltf_entity(self, fpath: str):
-        reader = GLTFReader()
-        reader.load(gltf_fpath=fpath)
-        meshes = reader.get_meshes()
-
-        mesh_component = self.component_factory.create_mesh(
-            vertices=meshes[-1]["attributes"]["POSITION"],
-            normals=meshes[-1]["attributes"]["NORMAL"],
-            indices=meshes[-1]["indices"].astype(np.uint32))
-        transform_component = self.component_factory.create_transform()
-
-        # Create entity
-        return self.entity_factory.create_renderable(component_list=[mesh_component, transform_component])
-
     def update(self, time: float, elapsed_time: float):
-        self.process_input(elapsed_time)
+        self.camera.process_keyboard(elapsed_time)
         self.render_scene()
+        self.render_gizmo()
         self.render_ui()
 
     def shutdown(self):
@@ -104,9 +74,8 @@ class Viewer3D(Editor):
     def render_scene(self):
 
         # Setup mvp cameras
-        self.program["m_proj"].write(self.projection_matrix)
-        self.program['m_view'].write(self.view_matrix)
-        self.program['m_model'].write(glm.mat4(1.0))
+        self.program["m_proj"].write(self.camera.projection_matrix)
+        self.program['m_view'].write(self.camera.view_matrix)
 
         # Setup lights
         self.program["light.position"].value = (10.0, 10.0, -10.0)
@@ -123,7 +92,20 @@ class Viewer3D(Editor):
         # Render renderable entities
         for entity_id, entity in self.entities.items():
             self.program["entity_id"].value = entity_id
-            entity.comp_mesh.render(shader_program_name="basic.glsl")
+            self.program['m_model'].write(entity.component_transform.world_matrix)
+            entity.component_mesh.render(shader_program_name="basic.glsl")
+
+    def render_gizmo(self):
+
+        if self.selected_entity_id < 1:
+            return
+
+        self.gizmo_3d.render(
+            view_matrix=self.camera.view_matrix,
+            projection_matrix=self.camera.projection_matrix,
+            entity_matrix=self.entities[self.selected_entity_id].component_transform.world_matrix,
+            ray_origin=vec3(0, 0, 0),
+            ray_direction=vec3(1, 0, 0))
 
     def render_ui(self):
         imgui.begin("Viewer 3D", True)
@@ -138,6 +120,8 @@ class Viewer3D(Editor):
                     imgui.selectable("Selected", True)
                     imgui.selectable("Not Selected", False)
             imgui.pop_style_var(1)
+
+            imgui.text(f"Selected entity: {self.selected_entity_id}")
 
         imgui.same_line(spacing=20)
 
@@ -158,61 +142,27 @@ class Viewer3D(Editor):
                 # Calculate the mouse position relative to the image
                 self.image_mouse_x = mouse_x - image_pos[0]
                 self.image_mouse_y = mouse_y - image_pos[1]
-                self.image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y
 
-                # TODO: Window rays will be cast from here
-                #if 0 <= self.image_mouse_x <= self.fbo_size[0] and 0 <= self.image_mouse_y <= self.fbo_size[1]:
-                #
-                #   print(f"Mouse position over image: ({image_mouse_x}, {image_mouse_y})")
-                #   pass
+                # Generate a 3D ray from the camera position
+                ray_origin, ray_direction = self.camera.screen_to_world(self.image_mouse_x, self.image_mouse_y)
+
+                collision = math_3d.intersect_ray_sphere_boolean(
+                    ray_origin=ray_origin,
+                    ray_direction=ray_direction,
+                    sphere_origin=vec3(0, 0, 0),
+                    sphere_radius=1.0)
+
+                # DEBUG
+                #print(f"Ray Origin: {ray_origin}, Ray Direction: {ray_direction}")
+                #print(f"Collision: {collision}")
 
         imgui.end()
 
     def process_input(self, elapsed_time):
         io = imgui.get_io()
 
-        if self.right_mouse_button_down:
-            # Mouse movement
-            mouse_x, mouse_y = io.mouse_pos
-
-            if self.first_mouse:
-                self.last_mouse_x, self.last_mouse_y = mouse_x, mouse_y
-                self.first_mouse = False
-
-            x_offset = (mouse_x - self.last_mouse_x) * self.mouse_sensitivity
-            y_offset = (self.last_mouse_y - mouse_y) * self.mouse_sensitivity
-            self.last_mouse_x, self.last_mouse_y = mouse_x, mouse_y
-
-            self.yaw += x_offset
-            self.pitch += y_offset
-
-            self.pitch = max(-89.0, min(89.0, self.pitch))
-
-            front = glm.vec3()
-            front.x = np.cos(glm.radians(self.yaw)) * np.cos(glm.radians(self.pitch))
-            front.y = np.sin(glm.radians(self.pitch))
-            front.z = np.sin(glm.radians(self.yaw)) * np.cos(glm.radians(self.pitch))
-            self.camera_front = glm.normalize(front)
-
-            factor = self.camera_speed * elapsed_time
-
-            # Keyboard movement
-            if io.keys_down[ord('W')]:
-                self.camera_position += factor * self.camera_front
-            if io.keys_down[ord('S')]:
-                self.camera_position -= factor * self.camera_front
-            if io.keys_down[ord('E')]:
-                self.camera_position += factor * vec3(0, 1, 0)
-            if io.keys_down[ord('Q')]:
-                self.camera_position -= factor * vec3(0, 1, 0)
-            if io.keys_down[ord('A')]:
-                self.camera_position -= glm.normalize(glm.cross(self.camera_front, self.camera_up)) * factor
-            if io.keys_down[ord('D')]:
-                self.camera_position += glm.normalize(glm.cross(self.camera_front, self.camera_up)) * factor
-
-            self.view_matrix = glm.lookAt(self.camera_position,
-                                          self.camera_position + self.camera_front,
-                                          self.camera_up)
+        if self.camera.right_mouse_button_down:
+            self.camera.process_keyboard(elapsed_time)
 
     def get_entity_id(self, mouse_x, mouse_y) -> int:
 
@@ -231,40 +181,38 @@ class Viewer3D(Editor):
         return entity_id
 
     def handle_event_mouse_button_press(self, event_data: tuple):
-        button, _, x, _, y = event_data
-        if button == imgui.MOUSE_BUTTON_RIGHT:
-            self.right_mouse_button_down = True
-            self.first_mouse = True
-            self.last_mouse_x, self.last_mouse_y = x, y
+        button, x, y = event_data
 
-        if button == imgui.MOUSE_BUTTON_LEFT:
+        if button == constants.MOUSE_RIGHT:
+            self.camera.right_mouse_button_down = True
+
+        if button == constants.MOUSE_LEFT:
+            # The framebuffer image is flipped on the y-axis, so we flip the coordinates as well
+            image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y
             entity_id = self.get_entity_id(mouse_x=self.image_mouse_x,
-                                           mouse_y=self.image_mouse_y_opengl)
+                                           mouse_y=image_mouse_y_opengl)
             self.selected_entity_id = -1 if entity_id < 0 else entity_id
-            print(self.selected_entity_id)
 
     def handle_event_mouse_button_release(self, event_data: tuple):
-        button, _, x, _, y = event_data
-        if button == imgui.MOUSE_BUTTON_RIGHT:
-            self.right_mouse_button_down = False
-            self.first_mouse = True
+        button, x, y = event_data
+        if button == constants.MOUSE_RIGHT:
+            self.camera.right_mouse_button_down = False
+
+    def handle_event_keyboard_press(self, event_data: tuple):
+        key, modifiers = event_data
+        self.camera.handle_key_press(key)
+
+    def handle_event_keyboard_release(self, event_data: tuple):
+        key, modifiers = event_data
+        self.camera.handle_key_release(key)
+
+    def handle_event_mouse_double_click(self, event_data: tuple):
+        print("Double click!")
 
     def handle_event_mouse_move(self, event_data: tuple):
-        x, _, y = event_data
-        if self.right_mouse_button_down:
-            x_offset = (x - self.last_mouse_x) * self.mouse_sensitivity
-            y_offset = (self.last_mouse_y - y) * self.mouse_sensitivity
-            self.last_mouse_x, self.last_mouse_y = x, y
+        x, y, dx, dy = event_data
 
-            self.yaw += x_offset
-            self.pitch += y_offset
-
-            self.pitch = max(-89.0, min(89.0, self.pitch))
-
-            front = glm.vec3()
-            front.x = np.cos(glm.radians(self.yaw)) * np.cos(glm.radians(self.pitch))
-            front.y = np.sin(glm.radians(self.pitch))
-            front.z = np.sin(glm.radians(self.yaw)) * np.cos(glm.radians(self.pitch))
-            self.camera_front = glm.normalize(front)
-            self.view_matrix = glm.lookAt(self.camera_position, self.camera_position + self.camera_front,
-                                          self.camera_up)
+    def handle_event_mouse_drag(self, event_data: tuple):
+        x, y, dx, dy = event_data
+        if self.camera.right_mouse_button_down:
+            self.camera.process_mouse_movement(dx=dx, dy=dy)

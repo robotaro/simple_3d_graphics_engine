@@ -2,8 +2,6 @@ import numpy as np
 import moderngl
 from src3 import constants
 
-from src2.core import meshes_3d
-from src.core.data_group import DataGroup
 
 VBO_DECLARATION_MAP = {
     # key       (buffer_data_type, buffer_data_size, shader_variable)
@@ -25,7 +23,7 @@ class MeshComponent:
         "vbos",
         "ibo",
         "render_mode",
-        "visible"
+        "num_vertices"
     ]
 
     def __init__(self,
@@ -40,11 +38,11 @@ class MeshComponent:
         self.vbos = {
             "vertices": self.create_vbo(vbo_name="vertices", vbo_data=vertices),
             "normals": self.create_vbo(vbo_name="normals", vbo_data=normals),
-            "colors": self.create_vbo(vbo_name="colors", vbo_data=colors),
-        }
+            "colors": self.create_vbo(vbo_name="colors", vbo_data=colors)}
         self.ibo = self.ctx.buffer(indices.astype("i4").tobytes()) if indices is not None else None
         self.vaos = {}
         self.render_mode = render_mode
+        self.num_vertices = vertices.shape[0]
 
     def render(self, shader_program_name: str, num_instances=1):
         vao = self.vaos.get(shader_program_name, None)
