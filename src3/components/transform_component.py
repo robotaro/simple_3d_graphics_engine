@@ -166,28 +166,3 @@ class TransformComponent:
         c, self.scale = imgui.drag_float3("Scale", *self.scale, constants.IMGUI_DRAG_FLOAT_PRECISION)
         self.input_values_updated |= a | b | c
         imgui.spacing()
-
-    """def update_world_matrix(self) -> bool:
-            if self.local_matrix_updated:
-                self.position, self.rotation, self.scale = self.decompose_matrix(matrix=self.local_matrix)
-
-                self.local_matrix_updated = False
-                self.input_values_updated = False
-                self.dirty = True
-
-            if self.input_values_updated:
-                self.update_local_matrix()
-                self.input_values_updated = False
-                self.dirty = True
-
-            # Update world matrix based on parent's world matrix
-            if self.parent:
-                self.world_matrix = self.parent.world_matrix * self.local_matrix
-            else:
-                self.world_matrix = self.local_matrix
-
-            # Recursively update children's world matrices
-            for child in self.children:
-                child.update_world_matrix()
-
-            return True"""

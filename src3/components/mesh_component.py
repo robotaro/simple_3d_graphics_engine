@@ -2,8 +2,6 @@ import numpy as np
 import moderngl
 from src3 import constants
 
-from src2.core import meshes_3d
-from src.core.data_group import DataGroup
 
 VBO_DECLARATION_MAP = {
     # key       (buffer_data_type, buffer_data_size, shader_variable)

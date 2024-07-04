@@ -1,5 +1,4 @@
 from src3.camera_3d import Camera3D
-from src3.gizmo_3d import Gizmo3D
 
 
 class Scene3D:

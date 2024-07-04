@@ -1,17 +1,14 @@
 import imgui
 import moderngl
 import struct
-import copy
 from glm import vec3
-import numpy as np
 
 from src3 import constants
 from src3.editors.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
-from src3.gizmo_3d import Gizmo3D
+from src3.gizmos.transform_gizmo import TransformGizmo
 from src3.camera_3d import Camera3D  # Import the Camera class
-from src3 import math_3d
 
 
 class Viewer3DMSAA(Editor):
@@ -67,9 +64,9 @@ class Viewer3DMSAA(Editor):
             depth_attachment=self.ctx.depth_texture(self.fbo_size),
         )
 
-        self.gizmo_3d = Gizmo3D(ctx=self.ctx,
-                                shader_loader=self.shader_loader,
-                                output_fbo=self.fbo)
+        self.transform_gizmo = TransformGizmo(ctx=self.ctx,
+                                              shader_loader=self.shader_loader,
+                                              output_fbo=self.fbo)
         self.gizmo_3d_mode_index = 0
 
         self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
@@ -111,14 +108,14 @@ class Viewer3DMSAA(Editor):
             self.camera.process_keyboard(elapsed_time)
 
         self.render_scene()
-        self.render_gizmo()
+        self.render_gizmos()
         self.render_ui()
 
     def shutdown(self):
         for _, entity in self.entities.items():
             entity.release()
 
-        self.gizmo_3d.release()
+        self.transform_gizmo.release()
 
     def render_scene(self):
 
@@ -147,14 +144,14 @@ class Viewer3DMSAA(Editor):
         # Resolve MSAA
         self.ctx.copy_framebuffer(self.fbo, self.msaa_fbo)
 
-    def render_gizmo(self):
+    def render_gizmos(self):
 
         if self.selected_entity_id not in self.entities:
             return
 
         entity_world_matrix = self.entities[self.selected_entity_id].component_transform.world_matrix
 
-        self.gizmo_3d.render(
+        self.transform_gizmo.render(
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
             model_matrix=entity_world_matrix)
@@ -187,7 +184,7 @@ class Viewer3DMSAA(Editor):
                  constants.GIZMO_MODE_ROTATION]
             )
             if clicked:
-                self.gizmo_3d.gizmo_mode = constants.GIZMO_MODES[self.gizmo_3d_mode_index]
+                self.transform_gizmo.gizmo_mode = constants.GIZMO_MODES[self.gizmo_3d_mode_index]
 
             # DEBUG
             imgui.text("Image hovering")
@@ -195,17 +192,17 @@ class Viewer3DMSAA(Editor):
             imgui.spacing()
             imgui.spacing()
             imgui.text("Gizmo Scale")
-            imgui.text(str(self.gizmo_3d.gizmo_scale))
+            imgui.text(str(self.transform_gizmo.gizmo_scale))
             imgui.text("Ray Origin")
             imgui.text(str(self.camera_ray_origin))
             imgui.spacing()
             imgui.text("Ray Direction")
             imgui.text(str(self.camera_ray_direction))
             imgui.spacing()
-            imgui.text(f"Mode: {self.gizmo_3d.gizmo_mode}")
-            imgui.text(f"State: {str(self.gizmo_3d.state)}")
-            imgui.text(f"Axis: {self.gizmo_3d.active_index}")
-            imgui.text(f"Scale: {self.gizmo_3d.gizmo_scale}")
+            imgui.text(f"Mode: {self.transform_gizmo.gizmo_mode}")
+            imgui.text(f"State: {str(self.transform_gizmo.state)}")
+            imgui.text(f"Axis: {self.transform_gizmo.active_index}")
+            imgui.text(f"Scale: {self.transform_gizmo.gizmo_scale}")
 
         if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors
@@ -273,7 +270,7 @@ class Viewer3DMSAA(Editor):
         if self.image_hovering and button == constants.MOUSE_LEFT:
 
             # You can only select another entity if, when you click, you are not hovering the gizmo
-            if self.gizmo_3d.state == constants.GIZMO_STATE_INACTIVE:
+            if self.transform_gizmo.state == constants.GIZMO_STATE_INACTIVE:
 
                 # The framebuffer image is flipped on the y-axis, so we flip the coordinates as well
                 image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y
@@ -285,7 +282,7 @@ class Viewer3DMSAA(Editor):
             selected_entity = self.entities.get(self.selected_entity_id, None)
             model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
 
-            self.gizmo_3d.handle_event_mouse_button_press(
+            self.transform_gizmo.handle_event_mouse_button_press(
                 button=button,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
@@ -299,7 +296,7 @@ class Viewer3DMSAA(Editor):
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
         if self.image_hovering:
-            self.gizmo_3d.handle_event_mouse_button_release(
+            self.transform_gizmo.handle_event_mouse_button_release(
                 button=button,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
@@ -329,7 +326,7 @@ class Viewer3DMSAA(Editor):
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
         if self.image_hovering:
-            self.gizmo_3d.handle_event_mouse_move(
+            self.transform_gizmo.handle_event_mouse_move(
                 event_data=event_data,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
@@ -343,10 +340,10 @@ class Viewer3DMSAA(Editor):
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
         if self.image_hovering:
-            new_model_matrix = self.gizmo_3d.handle_event_mouse_drag(
+            new_model_matrix = self.transform_gizmo.handle_event_mouse_drag(
                 event_data=event_data,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
                 model_matrix=model_matrix)
-        if selected_entity is not None:
-            selected_entity.component_transform.update_world_matrix(world_matrix=new_model_matrix)
+            if selected_entity is not None:
+                selected_entity.component_transform.update_world_matrix(world_matrix=new_model_matrix)

@@ -1,16 +1,16 @@
-import copy
 
 
 import moderngl
 import numpy as np
 from src3 import constants
 from glm import vec3, vec4, mat4, length, length2, inverse, translate, scale, dot, normalize
+import copy
 
 from src3 import math_3d
 from src3.shader_loader import ShaderLoader
 
 
-class Gizmo3D:
+class TransformGizmo:
 
     def __init__(self,
                  ctx: moderngl.Context,
@@ -156,9 +156,9 @@ class Gizmo3D:
 
             self.program_triangles['uViewProjMatrix'].write(transform_matrix)
 
-            self.ctx.enable(moderngl.CULL_FACE)
+            #self.ctx.enable(moderngl.CULL_FACE)
             self.center_triangles_vao.render(moderngl.TRIANGLES)
-            self.ctx.disable(moderngl.CULL_FACE)
+            #self.ctx.disable(moderngl.CULL_FACE)
 
             if self.state == constants.GIZMO_STATE_DRAGGING_AXIS:
                 world_transform_matrix = projection_matrix * view_matrix * mat4(1.0)
@@ -208,7 +208,6 @@ class Gizmo3D:
 
                 # Update data on the Axis guide to highlight which axis is being dragged
                 if self.axis_guide_vbo:
-                    print(self.active_index)
                     p0 = self.original_axes_p0[self.active_index]
                     p1 = self.original_axes_p1[self.active_index]
                     new_data = np.array(

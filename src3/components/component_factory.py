@@ -47,3 +47,9 @@ class ComponentFactory:
                 shader_program=shader.program)
 
         return mesh
+
+    def create_bezier_segment(self, control_points=None):
+
+
+
+        pass

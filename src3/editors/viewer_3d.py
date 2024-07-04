@@ -8,7 +8,7 @@ from src3 import constants
 from src3.editors.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
-from src3.gizmo_3d import Gizmo3D
+from src3.gizmos.transform_gizmo import TransformGizmo
 from src3.camera_3d import Camera3D  # Import the Camera class
 from src3 import math_3d
 
@@ -49,7 +49,7 @@ class Viewer3D(Editor):
 
         self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
 
-        self.gizmo_3d = Gizmo3D(ctx=self.ctx, shader_loader=self.shader_loader, output_fbo=self.fbo)
+        self.gizmo_3d = TransformGizmo(ctx=self.ctx, shader_loader=self.shader_loader, output_fbo=self.fbo)
 
         self.entities = {}
 
