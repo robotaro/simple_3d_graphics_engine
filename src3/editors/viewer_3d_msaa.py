@@ -7,8 +7,11 @@ from src3 import constants
 from src3.editors.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
-from src3.gizmos.transform_gizmo import TransformGizmo
 from src3.camera_3d import Camera3D  # Import the Camera class
+
+# Gizmos
+from src3.gizmos.transform_gizmo import TransformGizmo
+from src3.gizmos.bezier_gizmo import BezierGizmo
 
 
 class Viewer3DMSAA(Editor):
@@ -63,14 +66,16 @@ class Viewer3DMSAA(Editor):
             ],
             depth_attachment=self.ctx.depth_texture(self.fbo_size),
         )
+        self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
 
+        # Gizmos
+        self.gizmo_3d_mode_index = 0
         self.transform_gizmo = TransformGizmo(ctx=self.ctx,
                                               shader_loader=self.shader_loader,
                                               output_fbo=self.fbo)
-        self.gizmo_3d_mode_index = 0
-
-        self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
-
+        self.bezier_gizmo = BezierGizmo(ctx=self.ctx,
+                                        shader_loader=self.shader_loader,
+                                        output_fbo=self.fbo)
         # Debug variables
         self.debug_show_hash_colors = False
         self.debug_point_on_segment = vec3(0, 0, 0)
@@ -81,8 +86,7 @@ class Viewer3DMSAA(Editor):
 
     def setup(self) -> bool:
 
-        self.entities[10] = self.entity_factory.create_renderable_3d_axis(
-            axis_radius=0.05)
+        self.entities[10] = self.entity_factory.create_bezier_curve()
 
         self.entities[20] = self.entity_factory.create_sphere(
             radius=0.2,
@@ -139,7 +143,9 @@ class Viewer3DMSAA(Editor):
         for entity_id, entity in self.entities.items():
             self.program["entity_id"].value = entity_id
             self.program['m_model'].write(entity.component_transform.world_matrix)
-            entity.component_mesh.render(shader_program_name="basic.glsl")
+
+            if entity.component_mesh:
+                entity.component_mesh.render(shader_program_name="basic.glsl")
 
         # Resolve MSAA
         self.ctx.copy_framebuffer(self.fbo, self.msaa_fbo)
@@ -199,10 +205,7 @@ class Viewer3DMSAA(Editor):
             imgui.text("Ray Direction")
             imgui.text(str(self.camera_ray_direction))
             imgui.spacing()
-            imgui.text(f"Mode: {self.transform_gizmo.gizmo_mode}")
-            imgui.text(f"State: {str(self.transform_gizmo.state)}")
-            imgui.text(f"Axis: {self.transform_gizmo.active_index}")
-            imgui.text(f"Scale: {self.transform_gizmo.gizmo_scale}")
+            self.transform_gizmo.render_ui()
 
         if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors
@@ -281,12 +284,14 @@ class Viewer3DMSAA(Editor):
 
             selected_entity = self.entities.get(self.selected_entity_id, None)
             model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
+            component = selected_entity.component_transform if selected_entity else None
 
             self.transform_gizmo.handle_event_mouse_button_press(
                 button=button,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
-                model_matrix=model_matrix)
+                model_matrix=model_matrix,
+                component=component)
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         button, x, y = event_data
@@ -295,12 +300,15 @@ class Viewer3DMSAA(Editor):
 
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
+        component = selected_entity.component_transform if selected_entity else None
+
         if self.image_hovering:
             self.transform_gizmo.handle_event_mouse_button_release(
                 button=button,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
-                model_matrix=model_matrix)
+                model_matrix=model_matrix,
+                component=component)
 
     def handle_event_keyboard_press(self, event_data: tuple):
         key, modifiers = event_data
@@ -323,14 +331,18 @@ class Viewer3DMSAA(Editor):
     def handle_event_mouse_move(self, event_data: tuple):
         x, y, dx, dy = event_data
 
+        # TODO: Revise this logic. It is superfluous
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
+        component = selected_entity.component_transform if selected_entity else None
         if self.image_hovering:
             self.transform_gizmo.handle_event_mouse_move(
                 event_data=event_data,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
-                model_matrix=model_matrix)
+                model_matrix=model_matrix,
+                component=component
+            )
 
     def handle_event_mouse_drag(self, event_data: tuple):
         x, y, dx, dy = event_data
@@ -339,11 +351,14 @@ class Viewer3DMSAA(Editor):
 
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
+        component = selected_entity.component_transform if selected_entity else None
         if self.image_hovering:
             new_model_matrix = self.transform_gizmo.handle_event_mouse_drag(
                 event_data=event_data,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
-                model_matrix=model_matrix)
+                model_matrix=model_matrix,
+                component=component)
+
             if selected_entity is not None:
                 selected_entity.component_transform.update_world_matrix(world_matrix=new_model_matrix)

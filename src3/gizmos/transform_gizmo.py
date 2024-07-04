@@ -1,26 +1,22 @@
 import moderngl
 import numpy as np
 from src3 import constants
+import imgui
+from typing import Any
 from glm import vec3, vec4, mat4, length, length2, inverse, translate, scale, dot, normalize
 import copy
 
 from src3 import math_3d
+from src3.gizmos.gizmo import Gizmo
 from src3.shader_loader import ShaderLoader
 from src3.mesh_factory_3d import MeshFactory3D
 
 
-class TransformGizmo:
+class TransformGizmo(Gizmo):
 
-    def __init__(self,
-                 ctx: moderngl.Context,
-                 shader_loader: ShaderLoader,
-                 output_fbo: moderngl.Framebuffer):
+    def __init__(self, **kwargs):
 
-        self.ctx = ctx
-        self.shader_loader = shader_loader
-        self.output_fbo = output_fbo
-        self.program_lines = shader_loader.get_program("gizmo_lines.glsl")
-        self.program_triangles = shader_loader.get_program("gizmo_triangles.glsl")
+        super().__init__(**kwargs)
 
         self.helper_fbo = self.ctx.framebuffer(
             depth_attachment=self.output_fbo.depth_attachment,
@@ -32,6 +28,8 @@ class TransformGizmo:
         self.axis_guide_vao = None
         self.center_triangles_vbo = None
         self.center_triangles_vao = None
+        self.center_triangles_highlight_vbo = None
+        self.center_triangles_highlight_vao = None
         self.generate_vbos_and_vaos()
 
         self.plane_axis_list = [(0, 1), (0, 2), (1, 2)]
@@ -90,6 +88,16 @@ class TransformGizmo:
             self.program_triangles,
             [
                 (self.center_triangles_vbo, '3f 4f', 'aPosition', 'aColor')  # Assuming each vertex is 8 floats (4 bytes each)
+            ]
+        )
+        center_data = self.generate_center_vertex_data(
+            radius=constants.GIZMO_CENTER_RADIUS,
+            color=(0.8, 0.8, 0.0, constants.GIZMO_ALPHA))
+        self.center_triangles_highlight_vbo = self.ctx.buffer(center_data.tobytes())
+        self.center_triangles_highlight_vao = self.ctx.vertex_array(
+            self.program_triangles,
+            [
+                (self.center_triangles_highlight_vbo, '3f 4f', 'aPosition', 'aColor')
             ]
         )
 
@@ -155,9 +163,10 @@ class TransformGizmo:
 
             self.program_triangles['uViewProjMatrix'].write(transform_matrix)
 
-            #self.ctx.enable(moderngl.CULL_FACE)
-            self.center_triangles_vao.render(moderngl.TRIANGLES)
-            #self.ctx.disable(moderngl.CULL_FACE)
+            if self.state in (constants.GIZMO_STATE_HOVERING_CENTER, constants.GIZMO_STATE_DRAGGING_CENTER):
+                self.center_triangles_highlight_vao.render(moderngl.TRIANGLES)
+            else:
+                self.center_triangles_vao.render(moderngl.TRIANGLES)
 
             if self.state == constants.GIZMO_STATE_DRAGGING_AXIS:
                 world_transform_matrix = projection_matrix * view_matrix * mat4(1.0)
@@ -174,7 +183,12 @@ class TransformGizmo:
     #                           Input Callbacks
     # =========================================================================
 
-    def handle_event_mouse_button_press(self, button: int, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4):
+    def handle_event_mouse_button_press(self,
+                                        button: int,
+                                        ray_origin: vec3,
+                                        ray_direction: vec3,
+                                        model_matrix: mat4,
+                                        component: Any):
 
         if button == constants.MOUSE_LEFT:
 
@@ -258,7 +272,12 @@ class TransformGizmo:
                     self.state = constants.GIZMO_STATE_DRAGGING_CENTER
                 return
 
-    def handle_event_mouse_button_release(self, button: int, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4):
+    def handle_event_mouse_button_release(self,
+                                          button: int,
+                                          ray_origin: vec3,
+                                          ray_direction: vec3,
+                                          model_matrix: mat4,
+                                          component: Any):
 
         # TODO: When you release the button, you need to check if tou are still hovering the gizmo
         if button == constants.MOUSE_LEFT:
@@ -274,8 +293,12 @@ class TransformGizmo:
         # Add code here as needed
         return None
 
-    def handle_event_mouse_move(self, event_data: tuple, ray_origin: vec3, ray_direction: vec3,
-                                model_matrix: mat4) -> mat4:
+    def handle_event_mouse_move(self,
+                                event_data: tuple,
+                                ray_origin: vec3,
+                                ray_direction: vec3,
+                                model_matrix: mat4,
+                                component: Any) -> mat4:
         x, y, dx, dy = event_data
 
         if model_matrix is None:
@@ -322,7 +345,12 @@ class TransformGizmo:
 
         return None
 
-    def handle_event_mouse_drag(self, event_data: tuple, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> mat4:
+    def handle_event_mouse_drag(self,
+                                event_data: tuple,
+                                ray_origin: vec3,
+                                ray_direction: vec3,
+                                model_matrix: mat4,
+                                component: Any) -> mat4:
         x, y, dx, dy = event_data
 
         if model_matrix is None:
@@ -410,7 +438,10 @@ class TransformGizmo:
 
             return new_model_matrix
 
-    def check_center_hovering(self, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> tuple:
+    def check_center_hovering(self,
+                              ray_origin: vec3,
+                              ray_direction: vec3,
+                              model_matrix: mat4) -> tuple:
         gizmo_position = vec3(model_matrix[3])
         is_hovering = False
         ray_t = float('inf')
@@ -421,13 +452,17 @@ class TransformGizmo:
             point=gizmo_position
         )
 
-        if center_dist2 < constants.GIZMO_CENTER_RADIUS_2:
+        if center_dist2 < (self.gizmo_scale * constants.GIZMO_CENTER_RADIUS) ** 2:
+
             # Normalize the ray direction
             direction_normalized = normalize(ray_direction)
+
             # Calculate the vector from the ray origin to the gizmo position
             origin_to_gizmo = gizmo_position - ray_origin
+
             # Calculate ray_t as the dot product of origin_to_gizmo and the normalized direction
             ray_t = dot(origin_to_gizmo, direction_normalized)
+
             if ray_t >= 0.0:
                 is_hovering = True
 
@@ -503,7 +538,6 @@ class TransformGizmo:
         return is_hovering, ray_t, active_index
 
     def check_disk_hovering(self, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> tuple:
-
         pass
 
     def release(self):
@@ -534,5 +568,13 @@ class TransformGizmo:
 
         return vertices_and_colors
 
+    def render_ui(self):
 
+        with imgui.begin_child("region", 250, 200, border=True):
+            imgui.text(f"Transform Gizmo")
+            imgui.separator()
+            imgui.text(f"Mode: {self.gizmo_mode}")
+            imgui.text(f"State: {str(self.state)}")
+            imgui.text(f"Axis: {self.active_index}")
+            imgui.text(f"Scale: {self.gizmo_scale}")
 

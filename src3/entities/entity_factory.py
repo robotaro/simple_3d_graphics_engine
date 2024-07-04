@@ -86,3 +86,8 @@ class EntityFactory:
 
         transform_component = self.component_factory.create_transform()
         return Entity(archetype="renderable", component_list=[mesh_component, transform_component])
+
+    def create_bezier_curve(self,):
+        bezier_segment_component = self.component_factory.create_bezier_segment()
+        transform_component = self.component_factory.create_transform()
+        return Entity(archetype="renderable", component_list=[bezier_segment_component, transform_component])

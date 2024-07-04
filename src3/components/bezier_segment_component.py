@@ -32,8 +32,6 @@ class BezierSegmentComponent:
                 raise Exception("[ERROR] Provided 'control_point' doesn#t match shape (4, 3)")
 
         self.num_segments = num_segments
-
-
         self.start_twist_angle = start_twist_angle
         self.stop_twist_angle = stop_twist_angle
 
