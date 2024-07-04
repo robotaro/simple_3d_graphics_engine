@@ -1,5 +1,3 @@
-
-
 import moderngl
 import numpy as np
 from src3 import constants
@@ -8,6 +6,7 @@ import copy
 
 from src3 import math_3d
 from src3.shader_loader import ShaderLoader
+from src3.mesh_factory_3d import MeshFactory3D
 
 
 class TransformGizmo:
@@ -523,64 +522,17 @@ class TransformGizmo:
 
     def generate_center_vertex_data(self, radius: float, color: tuple) -> np.ndarray:
 
-        # TODO: Using a cube for now! I'll change it to a sphere later!
-        vertices_and_colors = [
-            # Back face
-            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-
-            # Front face
-            [-1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-
-            # Bottom face
-            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-
-            # Top face
-            [-1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-
-            # Left face
-            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [-1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-
-            # Right face
-            [ 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0,  1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0,  1.0,  1.0, 1.0, 1.0, 1.0, 1.0],
-            [ 1.0, -1.0,  1.0, 1.0, 1.0, 1.0, 1.0]
+        mesh_factory = MeshFactory3D()
+        shape_list = [
+            {"name": "icosphere",
+             "radius": radius,
+             "color": color,
+             "subdivisions": 3},
         ]
+        mesh_data = mesh_factory.generate_mesh(shape_list=shape_list)
+        vertices_and_colors = np.concatenate([mesh_data["vertices"], mesh_data["colors"]], axis=1)
 
-        # Convert to numpy array of float32
-        vertices_and_colors_array = np.array(vertices_and_colors, dtype=np.float32)
-
-        vertices_and_colors_array[:, :3] *= radius
-        vertices_and_colors_array[:, 3:] = color
-
-        return vertices_and_colors_array
+        return vertices_and_colors
 
 
 

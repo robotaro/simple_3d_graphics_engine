@@ -5,7 +5,7 @@ from src3 import constants
 from src3.entities.entity import Entity
 from src3.shader_loader import ShaderLoader
 from src3.components.component_factory import ComponentFactory
-from src.geometry_3d.mesh_factory_3d import MeshFactory3D
+from src3.mesh_factory_3d import MeshFactory3D
 
 
 class EntityFactory:

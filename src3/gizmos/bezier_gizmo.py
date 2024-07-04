@@ -19,6 +19,7 @@ class BezierGizmo:
         self.handle_world_matrix = mat4(1.0)
 
     def generate_vbos_and_vaos(self):
+
         pass
 
     def render(self,
