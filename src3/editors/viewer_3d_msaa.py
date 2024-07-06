@@ -1,7 +1,8 @@
 import imgui
 import moderngl
 import struct
-from glm import vec3
+import numpy as np
+from glm import vec3, vec4, inverse
 
 from src3 import constants
 from src3.editors.editor import Editor
@@ -104,6 +105,11 @@ class Viewer3DMSAA(Editor):
             grid_color=(0.5, 0.5, 0.5)
         )
 
+        self.entities[40] = self.entity_factory.create_point_cloud(
+            points=np.random.rand(30, 3).astype('f4'),
+            colors=np.random.rand(30, 3).astype('f4')
+        )
+
         return True
 
     def update(self, time: float, elapsed_time: float):
@@ -123,6 +129,8 @@ class Viewer3DMSAA(Editor):
 
     def render_scene(self):
 
+        # ============[ Render meshes ]================
+
         # Setup mvp cameras
         self.program["m_proj"].write(self.camera.projection_matrix)
         self.program['m_view'].write(self.camera.view_matrix)
@@ -139,13 +147,34 @@ class Viewer3DMSAA(Editor):
         self.ctx.enable(moderngl.DEPTH_TEST)
         self.msaa_fbo.clear(*constants.DEFAULT_BACKGROUND_COLOR)
 
-        # Render renderable entities
+        # Render entities
         for entity_id, entity in self.entities.items():
             self.program["entity_id"].value = entity_id
             self.program['m_model'].write(entity.component_transform.world_matrix)
 
             if entity.component_mesh:
                 entity.component_mesh.render(shader_program_name="basic.glsl")
+
+        # ==========[ Render point clouds ]============
+
+        self.ctx.enable(flags=moderngl.PROGRAM_POINT_SIZE)
+        self.ctx.gc_mode = 'auto'
+
+        # Setup mvp cameras
+        pc_program = self.shader_loader.get_program("point_cloud.glsl")
+        pc_program["m_proj"].write(self.camera.projection_matrix)
+        pc_program['m_view'].write(self.camera.view_matrix)
+        pc_program['cam_pos'].write(vec3(inverse(self.camera.view_matrix)[3]))
+
+        # Render entities
+        for entity_id, entity in self.entities.items():
+            pc_program['m_model'].write(entity.component_transform.world_matrix)
+
+            if entity.component_point_cloud:
+                entity.component_point_cloud.render()
+
+        self.ctx.disable(flags=moderngl.PROGRAM_POINT_SIZE)
+        self.ctx.gc_mode = None
 
         # Resolve MSAA
         self.ctx.copy_framebuffer(self.fbo, self.msaa_fbo)

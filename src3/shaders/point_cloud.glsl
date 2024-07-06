@@ -1,59 +1,36 @@
 #version 330
 
 // Code modified from: https://github.com/StanislavPetrovV/3D-Number-Renderer-with-UMAP
-
 #if defined VERTEX_SHADER
 
 layout (location = 0) in vec3 in_position;
-layout (location = 1) in int is_prime;
-
-layout (std140) uniform UBO {
-    mat4  m_proj;
-    vec3  u_center;
-    float rot_speed;
-    mat4  m_view;
-    vec3  cam_pos;
-    float u_time;
-};
+layout (location = 1) in vec3 in_color;
 
 out vec3 v_color;
 
-mat2 rot(float a) {
-    float sa = sin(a);
-    float ca = cos(a);
-    return mat2(ca, -sa, sa, ca);
-}
+uniform mat4 m_proj;
+uniform mat4 m_view;
+uniform mat4 m_model;
 
-
-vec3 rotate_world(vec3 in_position) {
-    vec3 v_position = in_position;
-    v_position -= u_center;
-    v_position.xz *= rot(u_time * rot_speed);
-    v_position += u_center;
-    return v_position;
-}
-
-
-vec3 hsl2rgb(vec3 c) {
-    vec3 rgb = clamp(abs(mod(c.x * 6.0 + vec3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
-    return c.z + c.y * (rgb - 0.5) * (1.0 - abs(2.0 * c.z - 1.0));
-}
+uniform bool u_constant_size = false;
+uniform vec3 cam_pos;
 
 void main() {
-    float max_point_size = 12.0;
-    float min_point_size = 2.0;
+    float max_point_size = 100.0;
+    float min_point_size = 10.0;
+    float point_size = max_point_size;
 
-    if (is_prime == 1) v_color = vec3(1);
-    else {
-        v_color = abs(normalize(in_position));
-        v_color = hsl2rgb(vec3(mix(v_color.r, v_color.b, length(v_color)), 1.0, 0.5));
+    // Use the color provided by the attribute
+    v_color = in_color;
+
+    vec3 v_position = vec3(m_model * vec4(in_position, 1.0));
+
+    if (!u_constant_size) {
+        float dist = length(v_position - cam_pos);
+        point_size = max(max_point_size / dist, min_point_size);
     }
 
-    vec3 v_position = rotate_world(in_position);
-
-    float dist = length(v_position - cam_pos);
-    gl_PointSize = max(max_point_size / dist, min_point_size);
-
+    gl_PointSize = point_size;
     gl_Position = m_proj * m_view * vec4(v_position, 1);
 }
 
@@ -62,7 +39,6 @@ void main() {
 layout (location = 0) out vec4 fragColor;
 
 in vec3 v_color;
-
 
 void main() {
     vec2 point_uv = 2.0 * gl_PointCoord - 1.0;
