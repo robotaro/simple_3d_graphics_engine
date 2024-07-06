@@ -1,4 +1,4 @@
-#version 330
+#version 430
 
 // Code modified from: https://github.com/StanislavPetrovV/3D-Number-Renderer-with-UMAP
 #if defined VERTEX_SHADER
@@ -8,16 +8,24 @@ layout (location = 1) in vec3 in_color;
 
 out vec3 v_color;
 
-uniform mat4 m_proj;
-uniform mat4 m_view;
-uniform mat4 m_model;
+layout (std140, binding = 1) uniform test {
+    mat4 m_3proj;
+    mat4 m_3view;
+    mat4 m_3model;
+};
 
-uniform bool u_constant_size = false;
+layout (std140, binding = 0) uniform UBO_MVP {
+    mat4 m_proj;
+    mat4 m_view;
+    mat4 m_model;
+};
+
+uniform bool u_constant_size = true;
 uniform vec3 cam_pos;
 
 void main() {
-    float max_point_size = 100.0;
-    float min_point_size = 10.0;
+    float max_point_size = 20.0;
+    float min_point_size = 5.0;
     float point_size = max_point_size;
 
     // Use the color provided by the attribute

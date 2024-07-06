@@ -1,6 +1,7 @@
 import imgui
 import moderngl
 import struct
+from itertools import accumulate
 import numpy as np
 from glm import vec3, vec4, inverse
 
@@ -27,6 +28,19 @@ class Viewer3DMSAA(Editor):
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
         self.entities = {}
         self.selected_entity_id = -1
+
+        # Uniform Blocks
+        self.ubo_mvp_sizes = {
+            'm_proj': 64,
+            'm_view': 64,
+            'm_model': 64
+        }
+        # Calculate uniform buffer size while taking into account 16bytes memory alignment
+        min_size = sum(self.ubo_mvp_sizes.values())
+        buffer_size = min_size if not min_size % 16 else ((min_size // 16) + 1) * 16
+        self.ubo_mvp_offsets = dict(zip(self.ubo_mvp_sizes, accumulate(self.ubo_mvp_sizes.values(), initial=0)))
+        self.ubo_mvp = self.ctx.buffer(reserve=buffer_size)
+        self.ubo_mvp.bind_to_uniform_block(binding=constants.UBO_BINDING_MVP)
 
         # Factories
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
@@ -129,11 +143,14 @@ class Viewer3DMSAA(Editor):
 
     def render_scene(self):
 
+        # Common UBO settings
+        self.ubo_mvp.write(data=self.camera.projection_matrix, offset=self.ubo_mvp_offsets['m_proj'])
+        self.ubo_mvp.write(data=self.camera.view_matrix, offset=self.ubo_mvp_offsets['m_view'])
+
         # ============[ Render meshes ]================
 
-        # Setup mvp cameras
-        self.program["m_proj"].write(self.camera.projection_matrix)
-        self.program['m_view'].write(self.camera.view_matrix)
+        # Setup mvp ubo
+
 
         # Setup lights
         self.program["light.position"].value = (10.0, 10.0, -10.0)
@@ -150,7 +167,7 @@ class Viewer3DMSAA(Editor):
         # Render entities
         for entity_id, entity in self.entities.items():
             self.program["entity_id"].value = entity_id
-            self.program['m_model'].write(entity.component_transform.world_matrix)
+            self.ubo_mvp.write(data=entity.component_transform.world_matrix, offset=self.ubo_mvp_offsets['m_model'])
 
             if entity.component_mesh:
                 entity.component_mesh.render(shader_program_name="basic.glsl")
@@ -162,13 +179,12 @@ class Viewer3DMSAA(Editor):
 
         # Setup mvp cameras
         pc_program = self.shader_loader.get_program("point_cloud.glsl")
-        pc_program["m_proj"].write(self.camera.projection_matrix)
-        pc_program['m_view'].write(self.camera.view_matrix)
+
         pc_program['cam_pos'].write(vec3(inverse(self.camera.view_matrix)[3]))
 
         # Render entities
         for entity_id, entity in self.entities.items():
-            pc_program['m_model'].write(entity.component_transform.world_matrix)
+            self.ubo_mvp.write(data=entity.component_transform.world_matrix, offset=self.ubo_mvp_offsets['m_model'])
 
             if entity.component_point_cloud:
                 entity.component_point_cloud.render()

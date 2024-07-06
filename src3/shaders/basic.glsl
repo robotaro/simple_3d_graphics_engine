@@ -10,9 +10,11 @@ out vec3 normal;
 out vec3 color;
 out vec3 fragPos;
 
-uniform mat4 m_proj;
-uniform mat4 m_view;
-uniform mat4 m_model;
+layout (std140) uniform UBO_MVP {
+    mat4 m_proj;
+    mat4 m_view;
+    mat4 m_model;
+};
 
 uniform mat4 m_view_light;
 
