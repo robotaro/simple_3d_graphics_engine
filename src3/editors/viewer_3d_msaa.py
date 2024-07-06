@@ -101,7 +101,7 @@ class Viewer3DMSAA(Editor):
 
     def setup(self) -> bool:
 
-        self.entities[10] = self.entity_factory.create_bezier_curve()
+        self.entities[10] = self.entity_factory.create_bezier_curve(origin=vec3(1, 0, 0))
 
         self.entities[20] = self.entity_factory.create_sphere(
             radius=0.2,
@@ -110,7 +110,7 @@ class Viewer3DMSAA(Editor):
 
         self.entities[21] = self.entity_factory.create_sphere(
             radius=0.2,
-            position=vec3(-3, 0.5, -2),
+            position=vec3(-1, 0.5, -2),
             color=(1.0, 0.5, 0.0))
 
         self.entities[30] = self.entity_factory.create_grid_xz(
@@ -120,7 +120,7 @@ class Viewer3DMSAA(Editor):
         )
 
         self.entities[40] = self.entity_factory.create_point_cloud(
-            points=np.random.rand(30, 3).astype('f4'),
+            points=np.random.rand(30, 3).astype('f4') + np.array(vec3(-2, 0, 0)),
             colors=np.random.rand(30, 3).astype('f4')
         )
 

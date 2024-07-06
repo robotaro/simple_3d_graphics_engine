@@ -107,14 +107,15 @@ class EntityFactory:
             points=points,
             colors=colors)
 
+
         transform_component = self.component_factory.create_transform(position=vec3(0, 0, 0))
         return Entity(label=label,
                       archetype="point_cloud",
                       component_list=[point_cloud_component, transform_component])
 
-    def create_bezier_curve(self, label="bezier_curve"):
+    def create_bezier_curve(self, origin: vec3, label="bezier_curve"):
         bezier_segment_component = self.component_factory.create_bezier_segment()
-        transform_component = self.component_factory.create_transform()
+        transform_component = self.component_factory.create_transform(position=origin)
         return Entity(label=label,
                       archetype="renderable",
                       component_list=[bezier_segment_component, transform_component])

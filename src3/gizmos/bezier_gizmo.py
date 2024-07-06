@@ -7,8 +7,6 @@ import copy
 
 from src3.gizmos.gizmo import Gizmo
 from src3 import math_3d
-from src3.shader_loader import ShaderLoader
-from src3.mesh_factory_3d import MeshFactory3D
 from src3.components.bezier_segment_component import BezierSegmentComponent
 
 
@@ -72,9 +70,7 @@ class BezierGizmo(Gizmo):
 
         self.curve_vao.render(moderngl.LINES)
 
-
         # ==========[ Render Control Points ]=============
-
 
         self.ctx.enable(flags=moderngl.PROGRAM_POINT_SIZE)
         self.ctx.gc_mode = 'auto'
@@ -125,7 +121,6 @@ class BezierGizmo(Gizmo):
                                         component: Any) -> mat4:
 
         # If the
-
 
         return None
 
