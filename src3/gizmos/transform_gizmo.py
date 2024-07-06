@@ -18,10 +18,6 @@ class TransformGizmo(Gizmo):
 
         super().__init__(**kwargs)
 
-        self.helper_fbo = self.ctx.framebuffer(
-            depth_attachment=self.output_fbo.depth_attachment,
-        )
-
         self.translation_mode_lines_vbos = {}
         self.translation_mode_lines_vaos = {}
         self.axis_guide_vbo = None
@@ -104,7 +100,18 @@ class TransformGizmo(Gizmo):
     def render(self,
                view_matrix: mat4,
                projection_matrix: mat4,
-               model_matrix: mat4):
+               model_matrix: mat4,
+               component: Any):
+
+        """
+        The render function of the transform gizmo is different from other gizmos as it can render with only
+        a model matrix.
+        :param view_matrix:
+        :param projection_matrix:
+        :param model_matrix:
+        :param component:
+        :return:
+        """
 
         self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND)
 
@@ -112,29 +119,10 @@ class TransformGizmo(Gizmo):
         camera_position = inverse(view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)
         camera_position = vec3(camera_position)  # Convert to vec3
 
-        # Determine the gizmo position
-        gizmo_position = vec3(model_matrix[3])
-
-        # Check if the projection is orthographic or perspective
-        is_ortho = np.isclose(projection_matrix[3][3], 1.0, atol=1e-5)
-
-        # Determine the distance factor
-        if is_ortho:
-            distance_factor = 1.0
-        else:
-            distance_factor = length(camera_position - gizmo_position)
-
-        # Determine the scale factor to keep the gizmo a constant size on the screen
-        viewport_height = self.output_fbo.viewport[3]
-        proj_scale_y = 2.0 / projection_matrix[1][1]  # Assuming a standard projection matrix
-        self.gizmo_scale = proj_scale_y * distance_factor * (constants.GIZMO_SIZE_ON_SCREEN_PIXELS / viewport_height)
-
-        # Create a scale matrix
-        scale_matrix = mat4(1.0)
-        scale_matrix = scale(scale_matrix, vec3(self.gizmo_scale))
-
         # Apply the scale to the model matrix
-        scaled_model_matrix = model_matrix * scale_matrix
+        scaled_model_matrix = self.calculate_scaled_model_matrix(camera_position=camera_position,
+                                                                 projection_matrix=projection_matrix,
+                                                                 model_matrix=model_matrix)
 
         # Create the final transform matrix
         transform_matrix = projection_matrix * view_matrix * scaled_model_matrix

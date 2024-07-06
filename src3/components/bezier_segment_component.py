@@ -10,7 +10,8 @@ class BezierSegmentComponent:
     There are four 3D control points and two twists controls for rotation along the bezier segment (begining and end)
     """
 
-    def __init__(self, control_points=None,
+    def __init__(self,
+                 control_points=None,
                  num_segments=32,
                  start_twist_angle=0.0,
                  stop_twist_angle=0.0):
@@ -35,11 +36,32 @@ class BezierSegmentComponent:
         self.start_twist_angle = start_twist_angle
         self.stop_twist_angle = stop_twist_angle
 
+
     def generate_vbos_and_vaos(self):
         pass
 
     def render(self):
         pass
+
+    # ==============================================================
+    #                        Update Functions
+    # ==============================================================
+
+    def update_parameters(self, control_points: list, start_twist_angle):
+        pass
+
+    def update_radius(self, radius: float):
+        pass
+
+    def trigger_update(self):
+
+        # Generate mesh
+
+        pass
+
+    # ==============================================================
+    #                       Auxiliary Functions
+    # ==============================================================
 
     def interpolate_single_point(self, t_value):
 

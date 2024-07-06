@@ -25,6 +25,7 @@ class Viewer3DMSAA(Editor):
         self.fbo_image_position = (0, 0)  # Indicates where on the moderngl-window the scene was rendered
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
         self.entities = {}
+        self.selected_entity_id = -1
 
         # Factories
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
@@ -44,7 +45,6 @@ class Viewer3DMSAA(Editor):
         self.image_mouse_y = 0
         self.texture_entity_info = self.ctx.texture(size=self.fbo_size, components=3, dtype='f4')
         self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.selected_entity_id = -1
 
         # Create MSAA framebuffer
         self.msaa_samples = 4
@@ -155,12 +155,21 @@ class Viewer3DMSAA(Editor):
         if self.selected_entity_id not in self.entities:
             return
 
-        entity_world_matrix = self.entities[self.selected_entity_id].component_transform.world_matrix
+        selected_entity = self.entities[self.selected_entity_id]
 
         self.transform_gizmo.render(
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
-            model_matrix=entity_world_matrix)
+            model_matrix=selected_entity.component_transform.world_matrix,
+            component=selected_entity.component_transform
+        )
+
+        self.bezier_gizmo.render(
+            view_matrix=self.camera.view_matrix,
+            projection_matrix=self.camera.projection_matrix,
+            model_matrix=selected_entity.component_transform.world_matrix,
+            component=selected_entity.component_bezier_segment
+        )
 
     def render_ui(self):
 
@@ -170,15 +179,7 @@ class Viewer3DMSAA(Editor):
 
         # Left Column - Menus
         with imgui.begin_group():
-            imgui.push_style_var(imgui.STYLE_FRAME_BORDERSIZE, 1.0)
-            imgui.text("Entities")
-            with imgui.begin_list_box("", 200, 100) as list_box:
-                if list_box.opened:
-                    imgui.selectable("Selected", True)
-                    imgui.selectable("Not Selected", False)
-            imgui.pop_style_var(1)
-
-            imgui.text(f"Selected entity: {self.selected_entity_id}")
+            self.render_ui_entity_list()
 
             activated, self.debug_show_hash_colors = imgui.checkbox("Show entity ID colors",
                                                                     self.debug_show_hash_colors)
@@ -334,14 +335,23 @@ class Viewer3DMSAA(Editor):
         # TODO: Revise this logic. It is superfluous
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
-        component = selected_entity.component_transform if selected_entity else None
-        if self.image_hovering:
+
+        if self.image_hovering and selected_entity:
+
+            self.bezier_gizmo.handle_event_mouse_move(
+                event_data=event_data,
+                ray_direction=self.camera_ray_direction,
+                ray_origin=self.camera_ray_origin,
+                model_matrix=model_matrix,
+                component=selected_entity.component_bezier_segment
+            )
+
             self.transform_gizmo.handle_event_mouse_move(
                 event_data=event_data,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
                 model_matrix=model_matrix,
-                component=component
+                component=selected_entity.component_transform
             )
 
     def handle_event_mouse_drag(self, event_data: tuple):
@@ -362,3 +372,25 @@ class Viewer3DMSAA(Editor):
 
             if selected_entity is not None:
                 selected_entity.component_transform.update_world_matrix(world_matrix=new_model_matrix)
+
+    # ======================================================================
+    #                             UI Functions
+    # ======================================================================
+
+    def render_ui_entity_list(self):
+        """
+        Shows the list of current entities in the scene, and which entity is actively selected
+        :return:
+        """
+        imgui.push_style_var(imgui.STYLE_FRAME_BORDERSIZE, 1.0)
+        imgui.text("Entities")
+        with imgui.begin_list_box("", 250, 150) as list_box:
+            for entity_id, entity in self.entities.items():
+                text = f"[{entity_id}] {entity.label}"
+                if self.selected_entity_id == entity_id:
+                    imgui.selectable(text, True)
+                    continue
+                opened, selected = imgui.selectable(text, False)
+                if selected:
+                    self.selected_entity_id = entity_id
+        imgui.pop_style_var(1)

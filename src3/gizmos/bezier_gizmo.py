@@ -9,6 +9,7 @@ from src3.gizmos.gizmo import Gizmo
 from src3 import math_3d
 from src3.shader_loader import ShaderLoader
 from src3.mesh_factory_3d import MeshFactory3D
+from src3.components.bezier_segment_component import BezierSegmentComponent
 
 
 class BezierGizmo(Gizmo):
@@ -24,6 +25,7 @@ class BezierGizmo(Gizmo):
         self.handle_triangles_vao = None
         self.handle_triangles_highlight_vbo = None
         self.handle_triangles_highlight_vao = None
+        self.generate_vbos_and_vaos()
 
     def generate_vbos_and_vaos(self):
 
@@ -68,13 +70,44 @@ class BezierGizmo(Gizmo):
     def render(self,
                view_matrix: mat4,
                projection_matrix: mat4,
-               model_matrix: mat4):
+               model_matrix: mat4,
+               component: Any):
 
         # Update lines VBOs
+        if not isinstance(component, BezierSegmentComponent):
+            return
 
+        self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND)
 
+        # Bind the helper framebuffer to clear the depth buffer
+        self.helper_fbo.use()
+        self.helper_fbo.clear(depth=True)
 
-        pass
+        # Bind the output framebuffer to render the gizmo
+        self.output_fbo.use()
+
+        # Calculate the camera position from the view matrix
+        camera_position = inverse(view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)
+        camera_position = vec3(camera_position)  # Convert to vec3
+
+        for control_point in component.control_points:
+
+            # Is this correct?
+            control_point_model_matrix = translate(model_matrix, vec3(control_point))
+
+            # Apply the scale to the model matrix
+            scaled_model_matrix = self.calculate_scaled_model_matrix(camera_position=camera_position,
+                                                                     projection_matrix=projection_matrix,
+                                                                     model_matrix=control_point_model_matrix)
+
+            # Create the final transform matrix
+            mvp_matrix = projection_matrix * view_matrix * scaled_model_matrix
+
+            # Pass the transform matrix to the shader
+            self.program_triangles['uViewProjMatrix'].write(mvp_matrix)
+
+            self.handle_triangles_vao.render(moderngl.TRIANGLES)
+
 
     def handle_event_mouse_move(self,
                                 event_data: tuple,
@@ -83,7 +116,7 @@ class BezierGizmo(Gizmo):
                                 model_matrix: mat4,
                                 component: Any) -> mat4:
 
-        if component is None:
+        if not isinstance(component, BezierSegmentComponent):
             return None
 
         # Calculate perpendicular distances between handles and ray
@@ -91,10 +124,10 @@ class BezierGizmo(Gizmo):
                                                      ray_direction=ray_direction,
                                                      point=vec3(point)) for point in component.control_points]
 
+        # TODO: Continue from here (B)
 
         #if handles_dist2 < (self.gizmo_scale * constants.GIZMO_CENTER_RADIUS) ** 2:
         #    pass
-
 
 
         return None
