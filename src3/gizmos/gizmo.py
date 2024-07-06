@@ -19,6 +19,7 @@ class Gizmo:
         self.ctx = ctx
         self.shader_loader = shader_loader
         self.output_fbo = output_fbo
+
         self.program_points = shader_loader.get_program("points.glsl")
         self.program_lines = shader_loader.get_program("gizmo_lines.glsl")
         self.program_triangles = shader_loader.get_program("gizmo_triangles.glsl")

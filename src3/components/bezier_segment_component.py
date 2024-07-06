@@ -33,6 +33,7 @@ class BezierSegmentComponent:
                 raise Exception("[ERROR] Provided 'control_point' doesn#t match shape (4, 3)")
 
         self.num_segments = num_segments
+        self.t_values = np.linspace(start=0, stop=1.0, num=self.num_segments, endpoint=True)
         self.start_twist_angle = start_twist_angle
         self.stop_twist_angle = stop_twist_angle
 
@@ -46,7 +47,7 @@ class BezierSegmentComponent:
     #                        Update Functions
     # ==============================================================
 
-    def update_parameters(self, control_points: list, start_twist_angle):
+    def update_contro_points(self, control_points: np.ndarray):
         pass
 
     def update_radius(self, radius: float):
@@ -54,7 +55,7 @@ class BezierSegmentComponent:
 
     def trigger_update(self):
 
-        # Generate mesh
+        # Upd
 
         pass
 

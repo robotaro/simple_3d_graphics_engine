@@ -206,6 +206,8 @@ class Viewer3DMSAA(Editor):
             component=selected_entity.component_transform
         )
 
+        self.ubo_mvp.write(data=selected_entity.component_transform.world_matrix, offset=self.ubo_mvp_offsets['m_model'])
+
         self.bezier_gizmo.render(
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
@@ -435,4 +437,7 @@ class Viewer3DMSAA(Editor):
                 opened, selected = imgui.selectable(text, False)
                 if selected:
                     self.selected_entity_id = entity_id
+
+                    # TODO: Think of a way to trigger updates when selected from the entity list
+                    self.bezier_gizmo.update_selection(component=self.entities[entity_id].component_bezier_segment)
         imgui.pop_style_var(1)

@@ -19,53 +19,39 @@ class BezierGizmo(Gizmo):
         super().__init__(**kwargs)
 
         self.active_handle_index = -1
-        self.handle_world_matrix = mat4(1.0)
+        self.line_width = 3.0
+        self.line_color = vec4(1, 0.5, 0, 1)
 
-        self.handle_triangles_vbo = None
-        self.handle_triangles_vao = None
-        self.handle_triangles_highlight_vbo = None
-        self.handle_triangles_highlight_vao = None
+        self.control_points_vertices_vbo = None
+        self.control_points_colors_vbo = None
+        self.control_points_vao = None
+        self.curve_vbo = None
+        self.curve_vao = None
+
         self.generate_vbos_and_vaos()
 
     def generate_vbos_and_vaos(self):
 
-        center_data = self.generate_center_vertex_data(
-            radius=constants.GIZMO_CENTER_RADIUS,
-            color=(0.7, 0.7, 0.7, constants.GIZMO_ALPHA))
-        self.handle_triangles_vbo = self.ctx.buffer(center_data.tobytes())
-        self.handle_triangles_vao = self.ctx.vertex_array(
-            self.program_triangles,
+        dummy_vertices = np.ones((4, 3), dtype='f4') * 0.5
+        self.control_points_vertices_vbo = self.ctx.buffer(dummy_vertices.tobytes())
+
+        dummy_colors = np.ones((4, 3), dtype='f4')
+        self.control_points_colors_vbo = self.ctx.buffer(dummy_colors.tobytes())
+
+        self.control_points_vao = self.ctx.vertex_array(
+            self.program_points,
             [
-                (self.handle_triangles_vbo, '3f 4f', 'aPosition', 'aColor')
-                # Assuming each vertex is 8 floats (4 bytes each)
-            ]
-        )
-        center_data = self.generate_center_vertex_data(
-            radius=constants.GIZMO_CENTER_RADIUS,
-            color=(0.8, 0.8, 0.0, constants.GIZMO_ALPHA))
-        self.handle_triangles_highlight_vbo = self.ctx.buffer(center_data.tobytes())
-        self.handle_triangles_highlight_vao = self.ctx.vertex_array(
-            self.program_triangles,
-            [
-                (self.handle_triangles_highlight_vbo, '3f 4f', 'aPosition', 'aColor')
+                (self.control_points_vertices_vbo, '3f', 'in_position'),
+                (self.control_points_colors_vbo, '3f', 'in_color')
             ]
         )
 
-    def generate_center_vertex_data(self, radius: float, color: tuple) -> np.ndarray:
-
-        # TODO: same function as the one transform gizmo. Move this to a common base class
-
-        mesh_factory = MeshFactory3D()
-        shape_list = [
-            {"name": "icosphere",
-             "radius": radius,
-             "color": color,
-             "subdivisions": 3},
-        ]
-        mesh_data = mesh_factory.generate_mesh(shape_list=shape_list)
-        vertices_and_colors = np.concatenate([mesh_data["vertices"], mesh_data["colors"]], axis=1)
-
-        return vertices_and_colors
+        self.curve_vbo = self.ctx.buffer(reserve=4096, dynamic=True)
+        self.curve_vao = self.ctx.simple_vertex_array(
+                self.program_lines,
+                self.curve_vbo,
+                'aPositionSize',
+                'aColor')
 
     def render(self,
                view_matrix: mat4,
@@ -79,6 +65,20 @@ class BezierGizmo(Gizmo):
 
         self.ctx.enable_only(moderngl.DEPTH_TEST | moderngl.BLEND)
 
+        # ==========[ Render Lines Between Control Points ]=============
+
+        mvp = projection_matrix * view_matrix * model_matrix
+        self.program_lines['uViewProjMatrix'].write(mvp)
+
+        self.curve_vao.render(moderngl.LINES)
+
+
+        # ==========[ Render Control Points ]=============
+
+
+        self.ctx.enable(flags=moderngl.PROGRAM_POINT_SIZE)
+        self.ctx.gc_mode = 'auto'
+
         # Bind the helper framebuffer to clear the depth buffer
         self.helper_fbo.use()
         self.helper_fbo.clear(depth=True)
@@ -86,28 +86,48 @@ class BezierGizmo(Gizmo):
         # Bind the output framebuffer to render the gizmo
         self.output_fbo.use()
 
-        # Calculate the camera position from the view matrix
-        camera_position = inverse(view_matrix) * vec4(0.0, 0.0, 0.0, 1.0)
-        camera_position = vec3(camera_position)  # Convert to vec3
+        # TODO: Put this in the UBO
+        #self.program_points['cam_pos'].write(vec3(inverse(view_matrix)[3]))
 
-        for control_point in component.control_points:
+        self.control_points_vao.render(moderngl.POINTS)
 
-            # Is this correct?
-            control_point_model_matrix = translate(model_matrix, vec3(control_point))
+        self.ctx.disable(flags=moderngl.PROGRAM_POINT_SIZE)
+        self.ctx.gc_mode = None
 
-            # Apply the scale to the model matrix
-            scaled_model_matrix = self.calculate_scaled_model_matrix(camera_position=camera_position,
-                                                                     projection_matrix=projection_matrix,
-                                                                     model_matrix=control_point_model_matrix)
+    def update_selection(self, component: BezierSegmentComponent):
+        """
+        This function should be called when the component is updated
+        :param component:
+        :return:
+        """
 
-            # Create the final transform matrix
-            mvp_matrix = projection_matrix * view_matrix * scaled_model_matrix
+        if component is None:
+            return
 
-            # Pass the transform matrix to the shader
-            self.program_triangles['uViewProjMatrix'].write(mvp_matrix)
+        # Update current vbos
+        points = component.interpolate_points(t_values=component.t_values)
+        a = np.array([self.line_width,
+                      self.line_color.x,
+                      self.line_color.y,
+                      self.line_color.z,
+                      self.line_color.w], dtype='f4').reshape(-1, 5)
+        size_and_colors = np.tile(a, (points.shape[0], 1))
 
-            self.handle_triangles_vao.render(moderngl.TRIANGLES)
+        vertex_data = np.concatenate([points, size_and_colors], axis=1)
+        self.curve_vbo.write(vertex_data.tobytes())
+        self.control_points_vertices_vbo.write(component.control_points.tobytes())
 
+    def handle_event_mouse_button_press(self,
+                                        button: int,
+                                        ray_origin: vec3,
+                                        ray_direction: vec3,
+                                        model_matrix: mat4,
+                                        component: Any) -> mat4:
+
+        # If the
+
+
+        return None
 
     def handle_event_mouse_move(self,
                                 event_data: tuple,
