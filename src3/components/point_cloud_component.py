@@ -26,7 +26,7 @@ class PointCloudComponent:
 
         self.ctx = ctx
         self.shader_loader = shader_loader
-        self.program = shader_loader.get_program("point_cloud.glsl")
+        self.program = shader_loader.get_program("points.glsl")
         self.vertex_vbo = self.ctx.buffer(points.tobytes())
         self.color_vbo = self.ctx.buffer(colors.tobytes())
         self.vao = self.ctx.vertex_array(

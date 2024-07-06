@@ -1,18 +1,13 @@
 #version 430
 
 // Code modified from: https://github.com/StanislavPetrovV/3D-Number-Renderer-with-UMAP
+
 #if defined VERTEX_SHADER
 
 layout (location = 0) in vec3 in_position;
 layout (location = 1) in vec3 in_color;
 
 out vec3 v_color;
-
-layout (std140, binding = 1) uniform test {
-    mat4 m_3proj;
-    mat4 m_3view;
-    mat4 m_3model;
-};
 
 layout (std140, binding = 0) uniform UBO_MVP {
     mat4 m_proj;

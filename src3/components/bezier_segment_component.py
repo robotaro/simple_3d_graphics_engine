@@ -23,8 +23,8 @@ class BezierSegmentComponent:
         # Control points are absolute values! Forget about the blender handles!
         if control_points is None:
             self.control_points = np.array([[0, 0, 0],
-                                            [0.3333, 0, 0],
-                                            [0.6667, 0, 0],
+                                            [0, 1.0, 0],
+                                            [1.0, 1.0, 0],
                                             [1.0, 0, 0]], dtype=np.float32)
         elif type(control_points) is np.ndarray:
             if control_points.shape == (4, 3):
@@ -35,7 +35,6 @@ class BezierSegmentComponent:
         self.num_segments = num_segments
         self.start_twist_angle = start_twist_angle
         self.stop_twist_angle = stop_twist_angle
-
 
     def generate_vbos_and_vaos(self):
         pass

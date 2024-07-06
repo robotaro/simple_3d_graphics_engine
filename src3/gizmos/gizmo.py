@@ -9,7 +9,6 @@ from src3.shader_loader import ShaderLoader
 from src3.mesh_factory_3d import MeshFactory3D
 
 
-
 class Gizmo:
 
     def __init__(self,
@@ -20,12 +19,11 @@ class Gizmo:
         self.ctx = ctx
         self.shader_loader = shader_loader
         self.output_fbo = output_fbo
+        self.program_points = shader_loader.get_program("points.glsl")
         self.program_lines = shader_loader.get_program("gizmo_lines.glsl")
         self.program_triangles = shader_loader.get_program("gizmo_triangles.glsl")
 
-        self.helper_fbo = self.ctx.framebuffer(
-            depth_attachment=self.output_fbo.depth_attachment,
-        )
+        self.helper_fbo = self.ctx.framebuffer(depth_attachment=self.output_fbo.depth_attachment)
 
         self.gizmo_scale = 1.0
 

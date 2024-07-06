@@ -149,9 +149,6 @@ class Viewer3DMSAA(Editor):
 
         # ============[ Render meshes ]================
 
-        # Setup mvp ubo
-
-
         # Setup lights
         self.program["light.position"].value = (10.0, 10.0, -10.0)
         self.program['light.position'].value = vec3(1.0, 1.0, 1.0)
@@ -178,7 +175,7 @@ class Viewer3DMSAA(Editor):
         self.ctx.gc_mode = 'auto'
 
         # Setup mvp cameras
-        pc_program = self.shader_loader.get_program("point_cloud.glsl")
+        pc_program = self.shader_loader.get_program("points.glsl")
 
         pc_program['cam_pos'].write(vec3(inverse(self.camera.view_matrix)[3]))
 
