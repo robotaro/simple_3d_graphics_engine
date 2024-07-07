@@ -24,6 +24,7 @@ class App(mglw.WindowConfig):
     title = "App"
     aspect_ratio = None
     window_size = (1600, 900)
+    #vsync = False  # Disable V-Sync
 
     def __init__(self, **kwargs):
 

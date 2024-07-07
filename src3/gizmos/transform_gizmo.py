@@ -5,14 +5,14 @@ import numpy as np
 
 import imgui
 from typing import Any
-from glm import vec3, vec4, mat4, length, length2, inverse, translate, scale, dot, normalize
+from glm import vec3, vec4, mat4, length, length2, inverse, translate, scale, dot, normalize, sin, cos, cross
 import copy
 
 from src3 import constants
-from src3.gizmos import gizmo_constants
 from src3 import math_3d
+from src3.gizmos import gizmo_constants
+from src3.gizmos import gizmo_utils
 from src3.gizmos.gizmo import Gizmo
-from src3.shader_loader import ShaderLoader
 from src3.mesh_factory_3d import MeshFactory3D
 
 
@@ -22,7 +22,7 @@ class TransformGizmo(Gizmo):
 
         super().__init__(**kwargs)
 
-        self.alpha = 0.7
+        self.alpha = 0.55
         self.scale = 1.0
         self.mode = gizmo_constants.GIZMO_MODE_TRANSLATION
         self.state = gizmo_constants.GIZMO_STATE_INACTIVE
@@ -42,67 +42,23 @@ class TransformGizmo(Gizmo):
         self.translation_mode_triangles_vbo = None
         self.translation_mode_triangles_vao = None
 
+        self.rotation_mode_lines_vbos = {}  # All 3 axes
+        self.rotation_mode_lines_vaos = {}
+
         self.axis_guide_vbo = None
         self.axis_guide_vao = None
         self.center_triangles_vbo = None
         self.center_triangles_vao = None
         self.center_triangles_highlight_vbo = None
         self.center_triangles_highlight_vao = None
-        self.generate_vbos_and_vaos()
+
+        self.generate_translation_mode_vbos_and_vaos()
+        self.generate_rotation_mode_vbos_and_vaos()
 
         self.original_model_matrix = mat4(1.0)
         self.original_position = vec3(0.0)
         self.original_axes_p0 = [vec3(0)] * 3
         self.original_axes_p1 = [vec3(0)] * 3
-
-    def generate_vbos_and_vaos(self):
-
-        # Release any previous vaos and vbos if any
-        self.release()
-
-        # Lines Vertices and Colors
-        num_vertices = gizmo_constants.GIZMO_MODE_TRANSLATION_VERTICES.shape[0]
-        self.translation_mode_lines_vertices_vbo = self.ctx.buffer(gizmo_constants.GIZMO_MODE_TRANSLATION_VERTICES.tobytes())
-        colors = np.concatenate([gizmo_constants.GIZMO_MODE_TRANSLATION_DEFAULT_COLORS,
-                                 np.ones((num_vertices, 1), dtype='f4') * self.alpha], axis=1)
-        self.translation_mode_lines_colors_vbo = self.ctx.buffer(colors.tobytes(), dynamic=True)
-        self.translation_mode_lines_vao = self.ctx.vertex_array(
-            self.program_lines,
-            [
-                (self.translation_mode_lines_vertices_vbo, '4f', 'aPositionSize'),
-                (self.translation_mode_lines_colors_vbo, '4f', 'aColor'),
-            ]
-        )
-
-        # Generate guides for when the object is being moved along the axes
-        self.axis_guide_vbo = self.ctx.buffer(gizmo_constants.GIZMO_TRANSLATION_VERTICES_AXIS_GUIDE.tobytes())
-        self.axis_guide_vao = self.ctx.simple_vertex_array(
-            self.program_lines,
-            self.axis_guide_vbo,
-            'aPositionSize',
-            'aColor')
-
-        # Center
-        center_data = self.generate_center_vertex_data(
-            radius=gizmo_constants.GIZMO_CENTER_RADIUS,
-            color=(0.7, 0.7, 0.7, self.alpha))
-        self.center_triangles_vbo = self.ctx.buffer(center_data.tobytes())
-        self.center_triangles_vao = self.ctx.vertex_array(
-            self.program_triangles,
-            [
-                (self.center_triangles_vbo, '3f 4f', 'aPosition', 'aColor')  # Assuming each vertex is 8 floats (4 bytes each)
-            ]
-        )
-        center_data = self.generate_center_vertex_data(
-            radius=gizmo_constants.GIZMO_CENTER_RADIUS,
-            color=(0.8, 0.8, 0.0, self.alpha))
-        self.center_triangles_highlight_vbo = self.ctx.buffer(center_data.tobytes())
-        self.center_triangles_highlight_vao = self.ctx.vertex_array(
-            self.program_triangles,
-            [
-                (self.center_triangles_highlight_vbo, '3f 4f', 'aPosition', 'aColor')
-            ]
-        )
 
     def render(self,
                view_matrix: mat4,
@@ -154,6 +110,8 @@ class TransformGizmo(Gizmo):
         # Important! Run this before you render to make sure your vbos are reflecting the current state!
         self.trigger_vbo_state_update()
 
+        rendering_state = (self.state, self.active_index)
+
         if self.mode == gizmo_constants.GIZMO_MODE_TRANSLATION:
 
             # TODO: Resolve Z-fighting here by rendering the axis guide and clearing the depth buffer once more (?)
@@ -161,18 +119,21 @@ class TransformGizmo(Gizmo):
 
             self.program_triangles['uViewProjMatrix'].write(transform_matrix)
 
+            # Centers
             if self.state in (gizmo_constants.GIZMO_STATE_HOVERING_CENTER, gizmo_constants.GIZMO_STATE_DRAGGING_CENTER):
                 self.center_triangles_highlight_vao.render(moderngl.TRIANGLES)
             else:
                 self.center_triangles_vao.render(moderngl.TRIANGLES)
 
+            # Axis Guides
             if self.state == gizmo_constants.GIZMO_STATE_DRAGGING_AXIS:
                 world_transform_matrix = projection_matrix * view_matrix * mat4(1.0)
                 self.program_lines['uViewProjMatrix'].write(world_transform_matrix)
                 self.axis_guide_vao.render(moderngl.LINES)
 
         if self.mode == gizmo_constants.GIZMO_MODE_ROTATION:
-            pass
+            if rendering_state in self.rotation_mode_lines_vaos:
+                self.rotation_mode_lines_vaos[rendering_state].render(moderngl.LINES)
 
         if self.mode == gizmo_constants.GIZMO_MODE_SCALE:
             pass
@@ -185,8 +146,6 @@ class TransformGizmo(Gizmo):
         if current_state_and_index == self.previous_state_and_index:
             # If there was no change in state or axis, then there is nothing to update
             return
-
-        print(f"vbo updated! {time.perf_counter()}")
 
         # Reset colors
         num_vertices = gizmo_constants.GIZMO_MODE_TRANSLATION_DEFAULT_COLORS.shape[0]
@@ -213,6 +172,258 @@ class TransformGizmo(Gizmo):
                                         ray_direction: vec3,
                                         model_matrix: mat4,
                                         component: Any):
+
+        if self.mode == gizmo_constants.GIZMO_MODE_TRANSLATION:
+            self.translation_mode_mouse_press(
+                button=button,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                model_matrix=model_matrix,
+                component=component
+            )
+        if self.mode == gizmo_constants.GIZMO_MODE_ROTATION:
+            self.rotation_mode_button_press(
+                button=button,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                model_matrix=model_matrix,
+                component=component
+            )
+
+    def handle_event_mouse_button_release(self,
+                                          button: int,
+                                          ray_origin: vec3,
+                                          ray_direction: vec3,
+                                          model_matrix: mat4,
+                                          component: Any):
+
+        # TODO: When you release the button, you need to check if tou are still hovering the gizmo
+        if button == constants.MOUSE_LEFT:
+            self.state = gizmo_constants.GIZMO_STATE_INACTIVE
+
+    def handle_event_mouse_move(self,
+                                event_data: tuple,
+                                ray_origin: vec3,
+                                ray_direction: vec3,
+                                model_matrix: mat4,
+                                component: Any):
+        x, y, dx, dy = event_data
+
+        if model_matrix is None:
+            return
+
+        if self.mode == gizmo_constants.GIZMO_MODE_TRANSLATION:
+            self.translation_mode_mouse_move(
+                event_data=event_data,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                model_matrix=model_matrix,
+                component=component)
+
+        if self.mode == gizmo_constants.GIZMO_MODE_ROTATION:
+            self.rotation_mode_mouse_move(
+                event_data=event_data,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                model_matrix=model_matrix,
+                component=component)
+
+    def handle_event_mouse_drag(self,
+                                event_data: tuple,
+                                ray_origin: vec3,
+                                ray_direction: vec3,
+                                model_matrix: mat4,
+                                component: Any) -> mat4:
+        x, y, dx, dy = event_data
+
+        if model_matrix is None:
+            return None
+
+        # TODO: Ignore this function if the right button is being dragged!
+        if self.mode == gizmo_constants.GIZMO_MODE_TRANSLATION:
+            return self.translation_mode_mouse_drag(
+                event_data=event_data,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                model_matrix=model_matrix,
+                component=component)
+
+        if self.mode == gizmo_constants.GIZMO_MODE_ROTATION:
+            return self.rotation_mode_mouse_drag(
+                event_data=event_data,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                model_matrix=model_matrix,
+                component=component)
+
+    def release(self):
+
+        # Release VAOs first
+        if self.translation_mode_lines_vao:
+            self.translation_mode_lines_vao.release()
+
+        if self.translation_mode_triangles_vao:
+            self.translation_mode_triangles_vao.release()
+
+        # Then the VBOs
+        if self.translation_mode_lines_vertices_vbo:
+            self.translation_mode_lines_vertices_vbo.release()
+
+        if self.translation_mode_triangles_vbo:
+            self.translation_mode_triangles_vbo.release()
+
+    # =============================================================
+    #                   VAO and VBO creation functions
+    # =============================================================
+
+    def generate_translation_mode_vbos_and_vaos(self):
+
+        # Release any previous vaos and vbos if any
+        self.release()
+
+        # Lines Vertices and Colors
+        num_vertices = gizmo_constants.GIZMO_MODE_TRANSLATION_VERTICES.shape[0]
+        self.translation_mode_lines_vertices_vbo = self.ctx.buffer(gizmo_constants.GIZMO_MODE_TRANSLATION_VERTICES.tobytes())
+        colors = np.concatenate([gizmo_constants.GIZMO_MODE_TRANSLATION_DEFAULT_COLORS,
+                                 np.ones((num_vertices, 1), dtype='f4') * self.alpha], axis=1)
+        self.translation_mode_lines_colors_vbo = self.ctx.buffer(colors.tobytes(), dynamic=True)
+        self.translation_mode_lines_vao = self.ctx.vertex_array(
+            self.program_lines,
+            [
+                (self.translation_mode_lines_vertices_vbo, '4f', 'aPositionSize'),
+                (self.translation_mode_lines_colors_vbo, '4f', 'aColor'),
+            ]
+        )
+
+        # Generate guides for when the object is being moved along the axes
+        self.axis_guide_vbo = self.ctx.buffer(gizmo_constants.GIZMO_TRANSLATION_VERTICES_AXIS_GUIDE.tobytes())
+        self.axis_guide_vao = self.ctx.vertex_array(
+            self.program_lines,
+            [
+                (self.axis_guide_vbo, '4f 4f', 'aPositionSize', 'aColor')
+            ]
+        )
+
+        # Center
+        center_data = self.generate_center_vertex_data(
+            radius=gizmo_constants.GIZMO_CENTER_RADIUS,
+            color=(0.7, 0.7, 0.7, self.alpha))
+        self.center_triangles_vbo = self.ctx.buffer(center_data.tobytes())
+        self.center_triangles_vao = self.ctx.vertex_array(
+            self.program_triangles,
+            [
+                (self.center_triangles_vbo, '3f 4f', 'aPosition', 'aColor')
+            ]
+        )
+        center_data = self.generate_center_vertex_data(
+            radius=gizmo_constants.GIZMO_CENTER_RADIUS,
+            color=(0.8, 0.8, 0.0, self.alpha))
+        self.center_triangles_highlight_vbo = self.ctx.buffer(center_data.tobytes())
+        self.center_triangles_highlight_vao = self.ctx.vertex_array(
+            self.program_triangles,
+            [
+                (self.center_triangles_highlight_vbo, '3f 4f', 'aPosition', 'aColor')
+            ]
+        )
+
+    def generate_rotation_mode_vbos_and_vaos(self):
+
+        x_axis_normal = gizmo_utils.generate_disk_vertex_data(
+            origin=vec3(0, 0, 0),
+            line_width=5.0,
+            color=(1.0, 0, 0, self.alpha),
+            direction=vec3(1.0, 0, 0),
+            num_segments=32,
+            radius=1.0
+        )
+        x_axis_highlight = gizmo_utils.generate_disk_vertex_data(
+            origin=vec3(0, 0, 0),
+            line_width=5.0,
+            color=(7.0, 0.7, 0, self.alpha),
+            direction=vec3(1.0, 0, 0),
+            num_segments=32,
+            radius=1.0
+        )
+        y_axis_normal = gizmo_utils.generate_disk_vertex_data(
+            origin=vec3(0, 0, 0),
+            line_width=5.0,
+            color=(0, 1.0, 0, self.alpha),
+            direction=vec3(0, 1.0, 0),
+            num_segments=32,
+            radius=1.0
+        )
+        y_axis_highlight = gizmo_utils.generate_disk_vertex_data(
+            origin=vec3(0, 0, 0),
+            line_width=5.0,
+            color=(0.7, 7.0, 0, self.alpha),
+            direction=vec3(0, 1.0, 0),
+            num_segments=32,
+            radius=1.0
+        )
+        z_axis_normal = gizmo_utils.generate_disk_vertex_data(
+            origin=vec3(0, 0, 0),
+            line_width=5.0,
+            color=(0, 0, 1.0, self.alpha),
+            direction=vec3(0, 0, 1.0),
+            num_segments=32,
+            radius=1.0
+        )
+        z_axis_highlight = gizmo_utils.generate_disk_vertex_data(
+            origin=vec3(0, 0, 0),
+            line_width=5.0,
+            color=(0, 0.7, 7.0, self.alpha),
+            direction=vec3(0, 0, 1.0),
+            num_segments=32,
+            radius=1.0
+        )
+
+        vertices_inactive = np.concatenate([x_axis_normal, y_axis_normal, z_axis_normal], axis=0)
+        vertices_x_hovering = np.concatenate([x_axis_highlight, y_axis_normal, z_axis_normal], axis=0)
+        vertices_y_hovering = np.concatenate([x_axis_normal, y_axis_highlight, z_axis_normal], axis=0)
+        vertices_z_hovering = np.concatenate([x_axis_normal, y_axis_normal, z_axis_highlight], axis=0)
+
+        # Create VBOs
+        vbo_inactive = self.ctx.buffer(vertices_inactive.tobytes())
+        vbo_x_hovering = self.ctx.buffer(vertices_x_hovering.tobytes())
+        vbo_y_hovering = self.ctx.buffer(vertices_y_hovering.tobytes())
+        vbo_z_hovering = self.ctx.buffer(vertices_z_hovering.tobytes())
+
+        vbo_dragging_x = self.ctx.buffer(vertices_x_hovering.tobytes())
+        vbo_dragging_y = self.ctx.buffer(vertices_y_hovering.tobytes())
+        vbo_dragging_z = self.ctx.buffer(vertices_z_hovering.tobytes())
+
+        self.rotation_mode_lines_vbos = {
+            (gizmo_constants.GIZMO_STATE_INACTIVE, -1): vbo_inactive,
+            (gizmo_constants.GIZMO_STATE_INACTIVE, 0): vbo_inactive,
+            (gizmo_constants.GIZMO_STATE_INACTIVE, 1): vbo_inactive,
+            (gizmo_constants.GIZMO_STATE_INACTIVE, 2): vbo_inactive,
+            (gizmo_constants.GIZMO_STATE_HOVERING_DISK, 0): vbo_x_hovering,
+            (gizmo_constants.GIZMO_STATE_HOVERING_DISK, 1): vbo_y_hovering,
+            (gizmo_constants.GIZMO_STATE_HOVERING_DISK, 2): vbo_z_hovering,
+            (gizmo_constants.GIZMO_STATE_DRAGGING_DISK, 0): vbo_dragging_x,
+            (gizmo_constants.GIZMO_STATE_DRAGGING_DISK, 1): vbo_dragging_y,
+            (gizmo_constants.GIZMO_STATE_DRAGGING_DISK, 2): vbo_dragging_z,
+        }
+
+        # Create VAOs
+        for state_condition, selected_vbo in self.rotation_mode_lines_vbos.items():
+            self.rotation_mode_lines_vaos[state_condition] = self.ctx.vertex_array(
+                self.program_lines,
+                [
+                    (selected_vbo, '4f 4f', 'aPositionSize', 'aColor'),
+                ]
+            )
+
+    # =============================================================
+    #                Translation Mode-Specific Functions
+    # =============================================================
+
+    def translation_mode_mouse_press(self,
+                                     button: int,
+                                     ray_origin: vec3,
+                                     ray_direction: vec3,
+                                     model_matrix: mat4,
+                                     component: Any):
 
         if button == constants.MOUSE_LEFT:
 
@@ -296,37 +507,13 @@ class TransformGizmo(Gizmo):
                     self.state = gizmo_constants.GIZMO_STATE_DRAGGING_CENTER
                 return
 
-    def handle_event_mouse_button_release(self,
-                                          button: int,
-                                          ray_origin: vec3,
-                                          ray_direction: vec3,
-                                          model_matrix: mat4,
-                                          component: Any):
-
-        # TODO: When you release the button, you need to check if tou are still hovering the gizmo
-        if button == constants.MOUSE_LEFT:
-            self.state = gizmo_constants.GIZMO_STATE_INACTIVE
-
-    def handle_event_keyboard_press(self, event_data: tuple) -> mat4:
-        key, modifiers = event_data
-        # Add code here as needed
-        return None
-
-    def handle_event_keyboard_release(self, event_data: tuple) -> mat4:
-        key, modifiers = event_data
-        # Add code here as needed
-        return None
-
-    def handle_event_mouse_move(self,
-                                event_data: tuple,
-                                ray_origin: vec3,
-                                ray_direction: vec3,
-                                model_matrix: mat4,
-                                component: Any) -> mat4:
+    def translation_mode_mouse_move(self,
+                                    event_data: tuple,
+                                    ray_origin: vec3,
+                                    ray_direction: vec3,
+                                    model_matrix: mat4,
+                                    component: Any):
         x, y, dx, dy = event_data
-
-        if model_matrix is None:
-            return None
 
         is_hovering_center, center_t = self.check_center_hovering(
             ray_origin=ray_origin,
@@ -367,18 +554,13 @@ class TransformGizmo(Gizmo):
         self.state = closest_state
         self.active_index = closest_index
 
-        return None
-
-    def handle_event_mouse_drag(self,
-                                event_data: tuple,
-                                ray_origin: vec3,
-                                ray_direction: vec3,
-                                model_matrix: mat4,
-                                component: Any) -> mat4:
+    def translation_mode_mouse_drag(self,
+                                    event_data: tuple,
+                                    ray_origin: vec3,
+                                    ray_direction: vec3,
+                                    model_matrix: mat4,
+                                    component: Any) -> mat4:
         x, y, dx, dy = event_data
-
-        if model_matrix is None:
-            return None
 
         # TODO: Ignore this function if the right button is being dragged!
         if self.state == gizmo_constants.GIZMO_STATE_DRAGGING_CENTER:
@@ -461,6 +643,38 @@ class TransformGizmo(Gizmo):
             new_model_matrix[3] = vec4(delta_vector, 1.0)
 
             return new_model_matrix
+
+    # =============================================================
+    #                Rotation Mode-Specific Functions
+    # =============================================================
+
+    def rotation_mode_button_press(self,
+                                   button: int,
+                                   ray_origin: vec3,
+                                   ray_direction: vec3,
+                                   model_matrix: mat4,
+                                   component: Any):
+        pass
+
+    def rotation_mode_mouse_move(self,
+                                    event_data: tuple,
+                                    ray_origin: vec3,
+                                    ray_direction: vec3,
+                                    model_matrix: mat4,
+                                    component: Any):
+        x, y, dx, dy = event_data
+
+    def rotation_mode_mouse_drag(self,
+                                 event_data: tuple,
+                                 ray_origin: vec3,
+                                 ray_direction: vec3,
+                                 model_matrix: mat4,
+                                 component: Any) -> mat4:
+        return None
+
+    # =============================================================
+    #                Hovering-check functions
+    # =============================================================
 
     def check_center_hovering(self,
                               ray_origin: vec3,
@@ -562,23 +776,15 @@ class TransformGizmo(Gizmo):
         return is_hovering, ray_t, active_index
 
     def check_disk_hovering(self, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> tuple:
+
+        """
+        Check if the  ray is close enough to intersec the disk
+        :param ray_origin:
+        :param ray_direction:
+        :param model_matrix:
+        :return:
+        """
         pass
-
-    def release(self):
-
-        # Release VAOs first
-        if self.translation_mode_lines_vao:
-            self.translation_mode_lines_vao.release()
-
-        if self.translation_mode_triangles_vao:
-            self.translation_mode_triangles_vao.release()
-
-        # Then the VBOs
-        if self.translation_mode_lines_vertices_vbo:
-            self.translation_mode_lines_vertices_vbo.release()
-
-        if self.translation_mode_triangles_vbo:
-            self.translation_mode_triangles_vbo.release()
 
     # =============================================================
     #                   Geometry functions
@@ -597,6 +803,7 @@ class TransformGizmo(Gizmo):
         vertices_and_colors = np.concatenate([mesh_data["vertices"], mesh_data["colors"]], axis=1)
 
         return vertices_and_colors
+
 
     def render_ui(self):
 
