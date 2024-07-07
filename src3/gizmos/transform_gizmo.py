@@ -400,9 +400,9 @@ class TransformGizmo(Gizmo):
         vbo_y_hovering = self.ctx.buffer(vertices_y_hovering.tobytes())
         vbo_z_hovering = self.ctx.buffer(vertices_z_hovering.tobytes())
 
-        vbo_dragging_x = self.ctx.buffer(vertices_x_hovering.tobytes())
-        vbo_dragging_y = self.ctx.buffer(vertices_y_hovering.tobytes())
-        vbo_dragging_z = self.ctx.buffer(vertices_z_hovering.tobytes())
+        vbo_dragging_x = self.ctx.buffer(x_axis_highlight.tobytes())
+        vbo_dragging_y = self.ctx.buffer(y_axis_highlight.tobytes())
+        vbo_dragging_z = self.ctx.buffer(z_axis_highlight.tobytes())
 
         self.rotation_mode_lines_vbos = {
             (gizmo_constants.GIZMO_STATE_INACTIVE, -1): vbo_inactive,
@@ -441,18 +441,7 @@ class TransformGizmo(Gizmo):
 
             if self.state in [gizmo_constants.GIZMO_STATE_HOVERING_AXIS, gizmo_constants.GIZMO_STATE_HOVERING_PLANE]:
 
-                self.original_model_matrix = copy.deepcopy(model_matrix)
-                self.original_position = vec3(self.original_model_matrix[3])
-
-                # Update axis long segments so that we can start dragging the gizmo along
-                tr_axis_p0_list = []
-                tr_axis_p1_list = []
-                for axis_index in range(len(self.original_axes_p0)):
-                    axis_direction = vec3(model_matrix[axis_index])
-                    tr_axis_p0_list.append(self.original_position - gizmo_constants.GIZMO_AXIS_SEGMENT_LENGTH * axis_direction)
-                    tr_axis_p1_list.append(self.original_position + gizmo_constants.GIZMO_AXIS_SEGMENT_LENGTH * axis_direction)
-                self.original_axes_p0 = tr_axis_p0_list
-                self.original_axes_p1 = tr_axis_p1_list
+                self.update_original_model_matrx(model_matrix=model_matrix)
 
             if self.state == gizmo_constants.GIZMO_STATE_HOVERING_AXIS:
 
@@ -517,6 +506,7 @@ class TransformGizmo(Gizmo):
                     self.center_offset_point = ray_origin + ray_direction * t
                     self.center_offset_point -= self.original_position
                     self.state = gizmo_constants.GIZMO_STATE_DRAGGING_CENTER
+
                 return
 
     def translation_mode_mouse_move(self,
@@ -666,7 +656,13 @@ class TransformGizmo(Gizmo):
                                    ray_direction: vec3,
                                    model_matrix: mat4,
                                    component: Any):
-        pass
+
+        if self.state in [gizmo_constants.GIZMO_STATE_HOVERING_DISK, gizmo_constants.GIZMO_STATE_DRAGGING_DISK]:
+            self.update_original_model_matrx(model_matrix=model_matrix)
+
+        if self.state == gizmo_constants.GIZMO_STATE_HOVERING_DISK:
+            # TODO: Add logic here
+            self.state = gizmo_constants.GIZMO_STATE_DRAGGING_DISK
 
     def rotation_mode_mouse_move(self,
                                     event_data: tuple,
@@ -690,13 +686,16 @@ class TransformGizmo(Gizmo):
             self.state = gizmo_constants.GIZMO_STATE_HOVERING_DISK
             self.active_index = active_index
 
-
     def rotation_mode_mouse_drag(self,
                                  event_data: tuple,
                                  ray_origin: vec3,
                                  ray_direction: vec3,
                                  model_matrix: mat4,
                                  component: Any) -> mat4:
+
+        if self.state == gizmo_constants.GIZMO_STATE_DRAGGING_DISK and self.active_index > -1:
+            pass
+
         return None
 
     # =============================================================
@@ -846,8 +845,28 @@ class TransformGizmo(Gizmo):
         return is_hovering, ray_t, active_index
 
     # =============================================================
-    #                   Geometry functions
+    #                   Utility functions
     # =============================================================
+
+    def update_original_model_matrx(self, model_matrix: mat4):
+        """
+        This function updates the gizmo's internal copy of the model matrix that is made when you
+        activate a gizmo. This matrix is used to compar
+        :param model_matrix:
+        :return:
+        """
+        self.original_model_matrix = copy.deepcopy(model_matrix)
+        self.original_position = vec3(self.original_model_matrix[3])
+
+        # Update axis long segments so that we can start dragging the gizmo along
+        tr_axis_p0_list = []
+        tr_axis_p1_list = []
+        for axis_index in range(len(self.original_axes_p0)):
+            axis_direction = vec3(model_matrix[axis_index])
+            tr_axis_p0_list.append(self.original_position - gizmo_constants.GIZMO_AXIS_SEGMENT_LENGTH * axis_direction)
+            tr_axis_p1_list.append(self.original_position + gizmo_constants.GIZMO_AXIS_SEGMENT_LENGTH * axis_direction)
+        self.original_axes_p0 = tr_axis_p0_list
+        self.original_axes_p1 = tr_axis_p1_list
 
     def generate_center_vertex_data(self, radius: float, color: tuple) -> np.ndarray:
 
