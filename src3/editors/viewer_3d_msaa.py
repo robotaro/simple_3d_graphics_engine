@@ -1,3 +1,4 @@
+import os
 import imgui
 import moderngl
 import struct
@@ -104,17 +105,15 @@ class Viewer3DMSAA(Editor):
 
     def setup(self) -> bool:
 
-        self.entities[10] = self.entity_factory.create_bezier_curve(origin=vec3(1, 0, 0))
+        self.entities[10] = self.entity_factory.create_bezier_curve(position=vec3(1, 0, 0))
 
         self.entities[20] = self.entity_factory.create_sphere(
             radius=0.2,
             position=vec3(1, 1, 1),
             color=(1.0, 0.5, 0.0))
 
-        self.entities[21] = self.entity_factory.create_sphere(
-            radius=0.2,
-            position=vec3(-1, 0.5, -2),
-            color=(1.0, 0.5, 0.0))
+        fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "female_body_single_mesh_y_up.glb")
+        self.entities[21] = self.entity_factory.create_renderable_from_gltf(fpath=fpath)
 
         self.entities[30] = self.entity_factory.create_grid_xz(
             num_cells=10,

@@ -22,15 +22,19 @@ class TransformGizmo(Gizmo):
 
         super().__init__(**kwargs)
 
-        self.alpha = 0.55
+        self.alpha = 0.75
         self.scale = 1.0
         self.mode = gizmo_constants.GIZMO_MODE_TRANSLATION
         self.state = gizmo_constants.GIZMO_STATE_INACTIVE
         self.active_index = -1  # Axis or plane
         self.previous_state_and_index = (self.state, self.active_index)  # Used to minimise vbo updates
+
+        # Dynamic offsets when gizmos are dragged
         self.axis_offset_point = vec3(0, 0, 0)
         self.plane_offset_point = vec3(0, 0, 0)
         self.center_offset_point = vec3(0, 0, 0)
+        self.disk_offset_angle = 0.0
+
         self.ray_to_axis_dist2 = [0.0] * 3  # Closest distance between ray and segment
         self.update_colors = np.ndarray((30, 4), dtype='f4')
         self.plane_axis_list = [(0, 1), (0, 2), (1, 2)]
