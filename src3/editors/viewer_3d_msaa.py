@@ -256,6 +256,9 @@ class Viewer3DMSAA(Editor):
             imgui.text("Ray Direction")
             imgui.text(str(self.camera_ray_direction))
             imgui.spacing()
+            imgui.text("Debug Plane intersections")
+            imgui.text(str(self.transform_gizmo.debug_plane_intersections))
+            imgui.spacing()
             self.transform_gizmo.render_ui()
 
         if activated:

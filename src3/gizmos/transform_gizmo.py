@@ -34,6 +34,7 @@ class TransformGizmo(Gizmo):
         self.ray_to_axis_dist2 = [0.0] * 3  # Closest distance between ray and segment
         self.update_colors = np.ndarray((30, 4), dtype='f4')
         self.plane_axis_list = [(0, 1), (0, 2), (1, 2)]
+        self.disks_axis_list = [(1, 2), (0, 2), (0, 1)]
 
         # VAOs and VBOs
         self.translation_mode_lines_vertices_vbo = None
@@ -59,6 +60,8 @@ class TransformGizmo(Gizmo):
         self.original_position = vec3(0.0)
         self.original_axes_p0 = [vec3(0)] * 3
         self.original_axes_p1 = [vec3(0)] * 3
+
+        self.debug_plane_intersections = []
 
     def set_mode_translation(self):
         self.gizmo_size_on_screen_pixels = gizmo_constants.GIZMO_SIZE_ON_SCREEN_PIXELS_TRANSLATION
@@ -348,7 +351,7 @@ class TransformGizmo(Gizmo):
         x_axis_highlight = gizmo_utils.generate_disk_vertex_data(
             origin=vec3(0, 0, 0),
             line_width=5.0,
-            color=(7.0, 0.7, 0, self.alpha),
+            color=(*gizmo_constants.GIZMO_HIGHLIGHT, self.alpha),
             direction=vec3(1.0, 0, 0),
             num_segments=gizmo_constants.GIZMO_DISK_NUM_SEGMENTS,
             radius=1.0
@@ -364,7 +367,7 @@ class TransformGizmo(Gizmo):
         y_axis_highlight = gizmo_utils.generate_disk_vertex_data(
             origin=vec3(0, 0, 0),
             line_width=5.0,
-            color=(0.7, 7.0, 0, self.alpha),
+            color=(*gizmo_constants.GIZMO_HIGHLIGHT, self.alpha),
             direction=vec3(0, 1.0, 0),
             num_segments=gizmo_constants.GIZMO_DISK_NUM_SEGMENTS,
             radius=1.0
@@ -380,7 +383,7 @@ class TransformGizmo(Gizmo):
         z_axis_highlight = gizmo_utils.generate_disk_vertex_data(
             origin=vec3(0, 0, 0),
             line_width=5.0,
-            color=(*gizmo_constants.GIZMO_DISK_Z_COLOR_NORMAL, self.alpha),
+            color=(*gizmo_constants.GIZMO_HIGHLIGHT, self.alpha),
             direction=vec3(0, 0, 1.0),
             num_segments=gizmo_constants.GIZMO_DISK_NUM_SEGMENTS,
             radius=1.0
@@ -776,8 +779,8 @@ class TransformGizmo(Gizmo):
 
             u, v, t = math_3d.ray_intersect_plane_coordinates(
                 plane_origin=gizmo_position,
-                plane_vec1=vec3(model_matrix[axis_indices[0]]) * self.scale,
-                plane_vec2=vec3(model_matrix[axis_indices[1]]) * self.scale,
+                plane_vec1=vec3(model_matrix[axis_indices[0]]),
+                plane_vec2=vec3(model_matrix[axis_indices[1]]),
                 ray_origin=ray_origin,
                 ray_direction=ray_direction
             )
@@ -800,27 +803,25 @@ class TransformGizmo(Gizmo):
         return is_hovering, ray_t, active_index
 
     def check_disk_hovering(self, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> tuple:
+
         gizmo_position = vec3(model_matrix[3])
         is_hovering = False
         ray_t = float('inf')
         active_index = -1
 
-        # We assume the disk is perpendicular to one of the primary axes
-        disk_planes = [
-            (vec3(model_matrix[0]), vec3(model_matrix[1])),  # X-Y plane
-            (vec3(model_matrix[1]), vec3(model_matrix[2])),  # Y-Z plane
-            (vec3(model_matrix[2]), vec3(model_matrix[0])),  # Z-X plane
-        ]
+        plane_intersections = []
+        for index, axis_indices in enumerate(self.disks_axis_list):
 
-        for index, (plane_vec1, plane_vec2) in enumerate(disk_planes):
+            # t is distance to camera
             u, v, t = math_3d.ray_intersect_plane_coordinates(
                 plane_origin=gizmo_position,
-                plane_vec1=plane_vec1 * self.scale,
-                plane_vec2=plane_vec2 * self.scale,
+                plane_vec1=vec3(model_matrix[axis_indices[0]]),
+                plane_vec2=vec3(model_matrix[axis_indices[1]]),
                 ray_origin=ray_origin,
                 ray_direction=ray_direction
             )
 
+            # ray does not hit infinite plane
             if t is None:
                 continue
 
@@ -828,14 +829,19 @@ class TransformGizmo(Gizmo):
             intersection_point = ray_origin + t * ray_direction
             dist_to_center = length(intersection_point - gizmo_position)
 
-            inner_radius = self.scale * (gizmo_constants.GIZMO_DISK_RADIUS - gizmo_constants.GIZMO_DISK_EDGE_THICKNESS)
-            outer_radius = self.scale * gizmo_constants.GIZMO_DISK_RADIUS
+            # NOTE: We substract scale because the length is always 1.0! The vectors from the model matrix are unitary!
+            threshold = gizmo_constants.GIZMO_DISK_EDGE_THICKNESS
+            delta = dist_to_center - self.scale
+            if -threshold <= delta <= threshold:
+                plane_intersections.append((index, delta, t))
 
-            if inner_radius <= dist_to_center <= outer_radius:
-                is_hovering = True
-                ray_t = t
-                active_index = index
-                break
+        self.debug_plane_intersections = "\n".join([str(inter) for inter in plane_intersections])
+
+        if len(plane_intersections) > 0:
+            closest_plane_patch = min(plane_intersections, key=lambda x: x[1])  # x[1] is distance to the edge
+            active_index = closest_plane_patch[0]
+            ray_t = closest_plane_patch[2]
+            is_hovering = True
 
         return is_hovering, ray_t, active_index
 
