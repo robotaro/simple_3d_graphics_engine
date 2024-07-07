@@ -60,6 +60,14 @@ class TransformGizmo(Gizmo):
         self.original_axes_p0 = [vec3(0)] * 3
         self.original_axes_p1 = [vec3(0)] * 3
 
+    def set_mode_translation(self):
+        self.gizmo_size_on_screen_pixels = gizmo_constants.GIZMO_SIZE_ON_SCREEN_PIXELS_TRANSLATION
+        self.mode = gizmo_constants.GIZMO_MODE_TRANSLATION
+
+    def set_mode_rotation(self):
+        self.gizmo_size_on_screen_pixels = gizmo_constants.GIZMO_SIZE_ON_SCREEN_PIXELS_ROTATION
+        self.mode = gizmo_constants.GIZMO_MODE_ROTATION
+
     def render(self,
                view_matrix: mat4,
                projection_matrix: mat4,
@@ -137,6 +145,7 @@ class TransformGizmo(Gizmo):
 
         if self.mode == gizmo_constants.GIZMO_MODE_SCALE:
             pass
+
 
     def trigger_vbo_state_update(self):
 
@@ -333,7 +342,7 @@ class TransformGizmo(Gizmo):
             line_width=5.0,
             color=(1.0, 0, 0, self.alpha),
             direction=vec3(1.0, 0, 0),
-            num_segments=32,
+            num_segments=gizmo_constants.GIZMO_DISK_NUM_SEGMENTS,
             radius=1.0
         )
         x_axis_highlight = gizmo_utils.generate_disk_vertex_data(
@@ -341,7 +350,7 @@ class TransformGizmo(Gizmo):
             line_width=5.0,
             color=(7.0, 0.7, 0, self.alpha),
             direction=vec3(1.0, 0, 0),
-            num_segments=32,
+            num_segments=gizmo_constants.GIZMO_DISK_NUM_SEGMENTS,
             radius=1.0
         )
         y_axis_normal = gizmo_utils.generate_disk_vertex_data(
@@ -349,7 +358,7 @@ class TransformGizmo(Gizmo):
             line_width=5.0,
             color=(0, 1.0, 0, self.alpha),
             direction=vec3(0, 1.0, 0),
-            num_segments=32,
+            num_segments=gizmo_constants.GIZMO_DISK_NUM_SEGMENTS,
             radius=1.0
         )
         y_axis_highlight = gizmo_utils.generate_disk_vertex_data(
@@ -357,23 +366,23 @@ class TransformGizmo(Gizmo):
             line_width=5.0,
             color=(0.7, 7.0, 0, self.alpha),
             direction=vec3(0, 1.0, 0),
-            num_segments=32,
+            num_segments=gizmo_constants.GIZMO_DISK_NUM_SEGMENTS,
             radius=1.0
         )
         z_axis_normal = gizmo_utils.generate_disk_vertex_data(
             origin=vec3(0, 0, 0),
             line_width=5.0,
-            color=(0, 0, 1.0, self.alpha),
+            color=(*gizmo_constants.GIZMO_DISK_Z_COLOR_NORMAL, self.alpha),
             direction=vec3(0, 0, 1.0),
-            num_segments=32,
+            num_segments=gizmo_constants.GIZMO_DISK_NUM_SEGMENTS,
             radius=1.0
         )
         z_axis_highlight = gizmo_utils.generate_disk_vertex_data(
             origin=vec3(0, 0, 0),
             line_width=5.0,
-            color=(0, 0.7, 7.0, self.alpha),
+            color=(*gizmo_constants.GIZMO_DISK_Z_COLOR_NORMAL, self.alpha),
             direction=vec3(0, 0, 1.0),
-            num_segments=32,
+            num_segments=gizmo_constants.GIZMO_DISK_NUM_SEGMENTS,
             radius=1.0
         )
 
@@ -664,6 +673,21 @@ class TransformGizmo(Gizmo):
                                     component: Any):
         x, y, dx, dy = event_data
 
+        # Initialize the closest state and distance
+        closest_t = float('inf')
+        self.state = gizmo_constants.GIZMO_STATE_INACTIVE
+        self.active_index = -1
+
+        is_hovering_disk, center_t, active_index = self.check_disk_hovering(
+            ray_origin=ray_origin,
+            ray_direction=ray_direction,
+            model_matrix=model_matrix)
+
+        if is_hovering_disk:
+            self.state = gizmo_constants.GIZMO_STATE_HOVERING_DISK
+            self.active_index = active_index
+
+
     def rotation_mode_mouse_drag(self,
                                  event_data: tuple,
                                  ray_origin: vec3,
@@ -776,15 +800,44 @@ class TransformGizmo(Gizmo):
         return is_hovering, ray_t, active_index
 
     def check_disk_hovering(self, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> tuple:
+        gizmo_position = vec3(model_matrix[3])
+        is_hovering = False
+        ray_t = float('inf')
+        active_index = -1
 
-        """
-        Check if the  ray is close enough to intersec the disk
-        :param ray_origin:
-        :param ray_direction:
-        :param model_matrix:
-        :return:
-        """
-        pass
+        # We assume the disk is perpendicular to one of the primary axes
+        disk_planes = [
+            (vec3(model_matrix[0]), vec3(model_matrix[1])),  # X-Y plane
+            (vec3(model_matrix[1]), vec3(model_matrix[2])),  # Y-Z plane
+            (vec3(model_matrix[2]), vec3(model_matrix[0])),  # Z-X plane
+        ]
+
+        for index, (plane_vec1, plane_vec2) in enumerate(disk_planes):
+            u, v, t = math_3d.ray_intersect_plane_coordinates(
+                plane_origin=gizmo_position,
+                plane_vec1=plane_vec1 * self.scale,
+                plane_vec2=plane_vec2 * self.scale,
+                ray_origin=ray_origin,
+                ray_direction=ray_direction
+            )
+
+            if t is None:
+                continue
+
+            # Calculate the intersection point
+            intersection_point = ray_origin + t * ray_direction
+            dist_to_center = length(intersection_point - gizmo_position)
+
+            inner_radius = self.scale * (gizmo_constants.GIZMO_DISK_RADIUS - gizmo_constants.GIZMO_DISK_EDGE_THICKNESS)
+            outer_radius = self.scale * gizmo_constants.GIZMO_DISK_RADIUS
+
+            if inner_radius <= dist_to_center <= outer_radius:
+                is_hovering = True
+                ray_t = t
+                active_index = index
+                break
+
+        return is_hovering, ray_t, active_index
 
     # =============================================================
     #                   Geometry functions
@@ -814,4 +867,3 @@ class TransformGizmo(Gizmo):
             imgui.text(f"State: {str(self.state)}")
             imgui.text(f"Axis: {self.active_index}")
             imgui.text(f"Scale: {self.scale}")
-

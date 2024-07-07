@@ -85,10 +85,12 @@ class Viewer3DMSAA(Editor):
         self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
 
         # Gizmos
-        self.gizmo_3d_mode_index = 0
         self.transform_gizmo = TransformGizmo(ctx=self.ctx,
                                               shader_loader=self.shader_loader,
                                               output_fbo=self.fbo)
+        self.transform_gizmo.set_mode_rotation()
+        self.gizmo_3d_mode_index = 1
+
         self.bezier_gizmo = BezierGizmo(ctx=self.ctx,
                                         shader_loader=self.shader_loader,
                                         output_fbo=self.fbo)
@@ -236,7 +238,10 @@ class Viewer3DMSAA(Editor):
                  gizmo_constants.GIZMO_MODE_ROTATION]
             )
             if clicked:
-                self.transform_gizmo.mode = gizmo_constants.GIZMO_MODES[self.gizmo_3d_mode_index]
+                if self.gizmo_3d_mode_index == 0:
+                    self.transform_gizmo.set_mode_translation()
+                elif self.gizmo_3d_mode_index == 1:
+                    self.transform_gizmo.set_mode_rotation()
 
             # DEBUG
             imgui.text("Image hovering")

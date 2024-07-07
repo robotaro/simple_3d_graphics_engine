@@ -26,7 +26,7 @@ class Gizmo:
         self.program_triangles = shader_loader.get_program("gizmo_triangles.glsl")
 
         self.helper_fbo = self.ctx.framebuffer(depth_attachment=self.output_fbo.depth_attachment)
-
+        self.gizmo_size_on_screen_pixels = 150.0
         self.scale = 1.0
 
     def calculate_scaled_model_matrix(self,
@@ -49,7 +49,7 @@ class Gizmo:
         # Determine the scale factor to keep the gizmo a constant size on the screen
         viewport_height = self.output_fbo.viewport[3]
         proj_scale_y = 2.0 / projection_matrix[1][1]  # Assuming a standard projection matrix
-        self.scale = proj_scale_y * distance_factor * (gizmo_constants.GIZMO_SIZE_ON_SCREEN_PIXELS / viewport_height)
+        self.scale = proj_scale_y * distance_factor * (self.gizmo_size_on_screen_pixels / viewport_height)
 
         # Create a scale matrix
         scale_matrix = mat4(1.0)
