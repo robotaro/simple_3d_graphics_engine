@@ -1,11 +1,15 @@
+import time
+
 import moderngl
 import numpy as np
-from src3 import constants
+
 import imgui
 from typing import Any
 from glm import vec3, vec4, mat4, length, length2, inverse, translate, scale, dot, normalize
 import copy
 
+from src3 import constants
+from src3.gizmos import gizmo_constants
 from src3 import math_3d
 from src3.gizmos.gizmo import Gizmo
 from src3.shader_loader import ShaderLoader
@@ -18,8 +22,26 @@ class TransformGizmo(Gizmo):
 
         super().__init__(**kwargs)
 
-        self.translation_mode_lines_vbos = {}
-        self.translation_mode_lines_vaos = {}
+        self.alpha = 0.7
+        self.scale = 1.0
+        self.mode = gizmo_constants.GIZMO_MODE_TRANSLATION
+        self.state = gizmo_constants.GIZMO_STATE_INACTIVE
+        self.active_index = -1  # Axis or plane
+        self.previous_state_and_index = (self.state, self.active_index)  # Used to minimise vbo updates
+        self.axis_offset_point = vec3(0, 0, 0)
+        self.plane_offset_point = vec3(0, 0, 0)
+        self.center_offset_point = vec3(0, 0, 0)
+        self.ray_to_axis_dist2 = [0.0] * 3  # Closest distance between ray and segment
+        self.update_colors = np.ndarray((30, 4), dtype='f4')
+        self.plane_axis_list = [(0, 1), (0, 2), (1, 2)]
+
+        # VAOs and VBOs
+        self.translation_mode_lines_vertices_vbo = None
+        self.translation_mode_lines_colors_vbo = None
+        self.translation_mode_lines_vao = None
+        self.translation_mode_triangles_vbo = None
+        self.translation_mode_triangles_vao = None
+
         self.axis_guide_vbo = None
         self.axis_guide_vao = None
         self.center_triangles_vbo = None
@@ -27,17 +49,6 @@ class TransformGizmo(Gizmo):
         self.center_triangles_highlight_vbo = None
         self.center_triangles_highlight_vao = None
         self.generate_vbos_and_vaos()
-
-        self.plane_axis_list = [(0, 1), (0, 2), (1, 2)]
-
-        self.gizmo_scale = 1.0
-        self.gizmo_mode = constants.GIZMO_MODE_TRANSLATION
-        self.state = constants.GIZMO_STATE_INACTIVE
-        self.active_index = -1  # Axis or plane
-        self.axis_offset_point = vec3(0, 0, 0)
-        self.plane_offset_point = vec3(0, 0, 0)
-        self.center_offset_point = vec3(0, 0, 0)
-        self.ray_to_axis_dist2 = [0.0] * 3  # Closest distance between ray and segment
 
         self.original_model_matrix = mat4(1.0)
         self.original_position = vec3(0.0)
@@ -49,36 +60,32 @@ class TransformGizmo(Gizmo):
         # Release any previous vaos and vbos if any
         self.release()
 
-        # First create VBOs for the hovering state
-        self.translation_mode_lines_vbos = {}
-        for state_name_and_active_index, vertices in constants.GIZMO_TRANSLATION_STATE_HOVERING_VERTEX_GROUP.items():
-            self.translation_mode_lines_vbos[state_name_and_active_index] = self.ctx.buffer(vertices.tobytes())
-
-        # Create one vao per vbo
-        for _, vbo in self.translation_mode_lines_vaos:
-            if vbo is not None:
-                vbo.release()
-
-        self.translation_mode_lines_vaos = {}
-        for state_name_and_active_index, vbo in self.translation_mode_lines_vbos.items():
-            self.translation_mode_lines_vaos[state_name_and_active_index] = self.ctx.simple_vertex_array(
-                self.program_lines,
-                vbo,
-                'aPositionSize',
-                'aColor')
+        # Lines Vertices and Colors
+        num_vertices = gizmo_constants.GIZMO_MODE_TRANSLATION_VERTICES.shape[0]
+        self.translation_mode_lines_vertices_vbo = self.ctx.buffer(gizmo_constants.GIZMO_MODE_TRANSLATION_VERTICES.tobytes())
+        colors = np.concatenate([gizmo_constants.GIZMO_MODE_TRANSLATION_DEFAULT_COLORS,
+                                 np.ones((num_vertices, 1), dtype='f4') * self.alpha], axis=1)
+        self.translation_mode_lines_colors_vbo = self.ctx.buffer(colors.tobytes(), dynamic=True)
+        self.translation_mode_lines_vao = self.ctx.vertex_array(
+            self.program_lines,
+            [
+                (self.translation_mode_lines_vertices_vbo, '4f', 'aPositionSize'),
+                (self.translation_mode_lines_colors_vbo, '4f', 'aColor'),
+            ]
+        )
 
         # Generate guides for when the object is being moved along the axes
-        self.axis_guide_vbo = self.ctx.buffer(constants.GIZMO_TRANSLATION_VERTICES_AXIS_GUIDE.tobytes())
+        self.axis_guide_vbo = self.ctx.buffer(gizmo_constants.GIZMO_TRANSLATION_VERTICES_AXIS_GUIDE.tobytes())
         self.axis_guide_vao = self.ctx.simple_vertex_array(
-                self.program_lines,
-                self.axis_guide_vbo,
-                'aPositionSize',
-                'aColor')
+            self.program_lines,
+            self.axis_guide_vbo,
+            'aPositionSize',
+            'aColor')
 
         # Center
         center_data = self.generate_center_vertex_data(
-            radius=constants.GIZMO_CENTER_RADIUS,
-            color=(0.7, 0.7, 0.7, constants.GIZMO_ALPHA))
+            radius=gizmo_constants.GIZMO_CENTER_RADIUS,
+            color=(0.7, 0.7, 0.7, self.alpha))
         self.center_triangles_vbo = self.ctx.buffer(center_data.tobytes())
         self.center_triangles_vao = self.ctx.vertex_array(
             self.program_triangles,
@@ -87,8 +94,8 @@ class TransformGizmo(Gizmo):
             ]
         )
         center_data = self.generate_center_vertex_data(
-            radius=constants.GIZMO_CENTER_RADIUS,
-            color=(0.8, 0.8, 0.0, constants.GIZMO_ALPHA))
+            radius=gizmo_constants.GIZMO_CENTER_RADIUS,
+            color=(0.8, 0.8, 0.0, self.alpha))
         self.center_triangles_highlight_vbo = self.ctx.buffer(center_data.tobytes())
         self.center_triangles_highlight_vao = self.ctx.vertex_array(
             self.program_triangles,
@@ -144,28 +151,57 @@ class TransformGizmo(Gizmo):
         # Set the line width
         self.ctx.line_width = 3.0  # TODO: Figure out how this affects the line rendering
 
-        if self.gizmo_mode == constants.GIZMO_MODE_TRANSLATION:
+        # Important! Run this before you render to make sure your vbos are reflecting the current state!
+        self.trigger_vbo_state_update()
+
+        if self.mode == gizmo_constants.GIZMO_MODE_TRANSLATION:
 
             # TODO: Resolve Z-fighting here by rendering the axis guide and clearing the depth buffer once more (?)
-            self.translation_mode_lines_vaos[(self.state, self.active_index)].render(moderngl.LINES)
+            self.translation_mode_lines_vao.render(moderngl.LINES)
 
             self.program_triangles['uViewProjMatrix'].write(transform_matrix)
 
-            if self.state in (constants.GIZMO_STATE_HOVERING_CENTER, constants.GIZMO_STATE_DRAGGING_CENTER):
+            if self.state in (gizmo_constants.GIZMO_STATE_HOVERING_CENTER, gizmo_constants.GIZMO_STATE_DRAGGING_CENTER):
                 self.center_triangles_highlight_vao.render(moderngl.TRIANGLES)
             else:
                 self.center_triangles_vao.render(moderngl.TRIANGLES)
 
-            if self.state == constants.GIZMO_STATE_DRAGGING_AXIS:
+            if self.state == gizmo_constants.GIZMO_STATE_DRAGGING_AXIS:
                 world_transform_matrix = projection_matrix * view_matrix * mat4(1.0)
                 self.program_lines['uViewProjMatrix'].write(world_transform_matrix)
                 self.axis_guide_vao.render(moderngl.LINES)
 
-        if self.gizmo_mode == constants.GIZMO_MODE_ROTATION:
+        if self.mode == gizmo_constants.GIZMO_MODE_ROTATION:
             pass
 
-        if self.gizmo_mode == constants.GIZMO_MODE_SCALE:
+        if self.mode == gizmo_constants.GIZMO_MODE_SCALE:
             pass
+
+    def trigger_vbo_state_update(self):
+
+        # TODO: Think if there is an easier way to pre-allocate all this memory
+
+        current_state_and_index = (self.state, self.active_index)
+        if current_state_and_index == self.previous_state_and_index:
+            # If there was no change in state or axis, then there is nothing to update
+            return
+
+        print(f"vbo updated! {time.perf_counter()}")
+
+        # Reset colors
+        num_vertices = gizmo_constants.GIZMO_MODE_TRANSLATION_DEFAULT_COLORS.shape[0]
+        self.update_colors[:] = np.concatenate([gizmo_constants.GIZMO_MODE_TRANSLATION_DEFAULT_COLORS,
+                                                np.ones((num_vertices, 1), dtype='f4') * self.alpha], axis=1)
+
+        # Update only the colors pertaining to the current state and active axis, IF it is valid
+        if current_state_and_index in gizmo_constants.GIZMO_MODE_TRANSLATION_RANGES:
+            (a, b) = gizmo_constants.GIZMO_MODE_TRANSLATION_RANGES[current_state_and_index]
+            self.update_colors[a:b, :] = np.array(gizmo_constants.GIZMO_HIGHLIGHT + [self.alpha], dtype='f4')
+
+        self.translation_mode_lines_colors_vbo.write(self.update_colors.tobytes())
+
+        # And finally update our previous state
+        self.previous_state_and_index = current_state_and_index
 
     # =========================================================================
     #                           Input Callbacks
@@ -180,7 +216,7 @@ class TransformGizmo(Gizmo):
 
         if button == constants.MOUSE_LEFT:
 
-            if self.state in [constants.GIZMO_STATE_HOVERING_AXIS, constants.GIZMO_STATE_HOVERING_PLANE]:
+            if self.state in [gizmo_constants.GIZMO_STATE_HOVERING_AXIS, gizmo_constants.GIZMO_STATE_HOVERING_PLANE]:
 
                 self.original_model_matrix = copy.deepcopy(model_matrix)
                 self.original_position = vec3(self.original_model_matrix[3])
@@ -190,12 +226,12 @@ class TransformGizmo(Gizmo):
                 tr_axis_p1_list = []
                 for axis_index in range(len(self.original_axes_p0)):
                     axis_direction = vec3(model_matrix[axis_index])
-                    tr_axis_p0_list.append(self.original_position - constants.GIZMO_AXIS_SEGMENT_LENGTH * axis_direction)
-                    tr_axis_p1_list.append(self.original_position + constants.GIZMO_AXIS_SEGMENT_LENGTH * axis_direction)
+                    tr_axis_p0_list.append(self.original_position - gizmo_constants.GIZMO_AXIS_SEGMENT_LENGTH * axis_direction)
+                    tr_axis_p1_list.append(self.original_position + gizmo_constants.GIZMO_AXIS_SEGMENT_LENGTH * axis_direction)
                 self.original_axes_p0 = tr_axis_p0_list
                 self.original_axes_p1 = tr_axis_p1_list
 
-            if self.state == constants.GIZMO_STATE_HOVERING_AXIS:
+            if self.state == gizmo_constants.GIZMO_STATE_HOVERING_AXIS:
 
                 # Get offset on axis where you first clicked, the "translation offset"
                 self.axis_offset_point, _ = math_3d.nearest_point_on_segment(
@@ -205,7 +241,7 @@ class TransformGizmo(Gizmo):
                     p1=self.original_axes_p1[self.active_index]
                 )
                 self.axis_offset_point -= self.original_position
-                self.state = constants.GIZMO_STATE_DRAGGING_AXIS
+                self.state = gizmo_constants.GIZMO_STATE_DRAGGING_AXIS
 
                 # Update data on the Axis guide to highlight which axis is being dragged
                 if self.axis_guide_vbo:
@@ -213,8 +249,8 @@ class TransformGizmo(Gizmo):
                     p1 = self.original_axes_p1[self.active_index]
                     new_data = np.array(
                         [  # These values are placeholders. They are overwritten dynamically
-                            [p0.x, p0.y, p0.z, constants.GIZMO_AXIS_GUIDE_LINE_WIDTH, 0.0, 0.0, 0.0, 0.8],
-                            [p1.x, p1.y, p1.z, constants.GIZMO_AXIS_GUIDE_LINE_WIDTH, 0.0, 0.0, 0.0, 0.8]
+                            [p0.x, p0.y, p0.z, gizmo_constants.GIZMO_AXIS_GUIDE_LINE_WIDTH, 0.0, 0.0, 0.0, 0.8],
+                            [p1.x, p1.y, p1.z, gizmo_constants.GIZMO_AXIS_GUIDE_LINE_WIDTH, 0.0, 0.0, 0.0, 0.8]
                         ],
                         dtype='f4'
                     )
@@ -225,22 +261,22 @@ class TransformGizmo(Gizmo):
 
                 return
 
-            if self.state == constants.GIZMO_STATE_HOVERING_PLANE:
+            if self.state == gizmo_constants.GIZMO_STATE_HOVERING_PLANE:
 
                 plane_axis_indices = self.plane_axis_list[self.active_index]
                 u, v, t = math_3d.ray_intersect_plane_coordinates(
                     plane_origin=self.original_position,
-                    plane_vec1=vec3(model_matrix[plane_axis_indices[0]]) * self.gizmo_scale,
-                    plane_vec2=vec3(model_matrix[plane_axis_indices[1]]) * self.gizmo_scale,
+                    plane_vec1=vec3(model_matrix[plane_axis_indices[0]]) * self.scale,
+                    plane_vec2=vec3(model_matrix[plane_axis_indices[1]]) * self.scale,
                     ray_origin=ray_origin,
                     ray_direction=ray_direction
                 )
                 self.plane_offset_point = ray_origin + ray_direction * t
                 self.plane_offset_point -= self.original_position
-                self.state = constants.GIZMO_STATE_DRAGGING_PLANE
+                self.state = gizmo_constants.GIZMO_STATE_DRAGGING_PLANE
                 return
 
-            if self.state == constants.GIZMO_STATE_HOVERING_CENTER:
+            if self.state == gizmo_constants.GIZMO_STATE_HOVERING_CENTER:
                 # Calculate the plane normal (same as the ray direction)
                 plane_normal = normalize(ray_direction)
 
@@ -257,7 +293,7 @@ class TransformGizmo(Gizmo):
                 if is_intersecting:
                     self.center_offset_point = ray_origin + ray_direction * t
                     self.center_offset_point -= self.original_position
-                    self.state = constants.GIZMO_STATE_DRAGGING_CENTER
+                    self.state = gizmo_constants.GIZMO_STATE_DRAGGING_CENTER
                 return
 
     def handle_event_mouse_button_release(self,
@@ -269,7 +305,7 @@ class TransformGizmo(Gizmo):
 
         # TODO: When you release the button, you need to check if tou are still hovering the gizmo
         if button == constants.MOUSE_LEFT:
-            self.state = constants.GIZMO_STATE_INACTIVE
+            self.state = gizmo_constants.GIZMO_STATE_INACTIVE
 
     def handle_event_keyboard_press(self, event_data: tuple) -> mat4:
         key, modifiers = event_data
@@ -309,22 +345,22 @@ class TransformGizmo(Gizmo):
 
         # Initialize the closest state and distance
         closest_t = float('inf')
-        closest_state = constants.GIZMO_STATE_INACTIVE
+        closest_state = gizmo_constants.GIZMO_STATE_INACTIVE
         closest_index = -1
 
         # Determine the closest interaction
         if is_hovering_center and center_t < closest_t:
             closest_t = center_t
-            closest_state = constants.GIZMO_STATE_HOVERING_CENTER
+            closest_state = gizmo_constants.GIZMO_STATE_HOVERING_CENTER
             closest_index = -1  # No active index for center
 
         if is_hovering_axis and axis_t < closest_t:
             closest_t = axis_t
-            closest_state = constants.GIZMO_STATE_HOVERING_AXIS
+            closest_state = gizmo_constants.GIZMO_STATE_HOVERING_AXIS
             closest_index = active_axis_index
 
         if is_hovering_plane and plane_t < closest_t:
-            closest_state = constants.GIZMO_STATE_HOVERING_PLANE
+            closest_state = gizmo_constants.GIZMO_STATE_HOVERING_PLANE
             closest_index = active_plane_index
 
         # Update state and active index
@@ -345,7 +381,7 @@ class TransformGizmo(Gizmo):
             return None
 
         # TODO: Ignore this function if the right button is being dragged!
-        if self.state == constants.GIZMO_STATE_DRAGGING_CENTER:
+        if self.state == gizmo_constants.GIZMO_STATE_DRAGGING_CENTER:
 
             # Calculate the plane normal (same as the ray direction)
             plane_normal = normalize(ray_direction)
@@ -376,7 +412,7 @@ class TransformGizmo(Gizmo):
 
             return new_model_matrix
 
-        if self.state == constants.GIZMO_STATE_DRAGGING_AXIS and self.active_index > -1:
+        if self.state == gizmo_constants.GIZMO_STATE_DRAGGING_AXIS and self.active_index > -1:
 
             nearest_point_on_axis, _ = math_3d.nearest_point_on_segment(
                 ray_origin=ray_origin,
@@ -394,13 +430,13 @@ class TransformGizmo(Gizmo):
 
             return new_model_matrix
 
-        if self.state == constants.GIZMO_STATE_DRAGGING_PLANE and self.active_index > -1:
+        if self.state == gizmo_constants.GIZMO_STATE_DRAGGING_PLANE and self.active_index > -1:
 
             # Calculate the plane origin and direction vectors
             plane_axis_indices = self.plane_axis_list[self.active_index]
             plane_origin = self.original_position
-            plane_vec1 = vec3(self.original_model_matrix[plane_axis_indices[0]]) * self.gizmo_scale
-            plane_vec2 = vec3(self.original_model_matrix[plane_axis_indices[1]]) * self.gizmo_scale
+            plane_vec1 = vec3(self.original_model_matrix[plane_axis_indices[0]]) * self.scale
+            plane_vec2 = vec3(self.original_model_matrix[plane_axis_indices[1]]) * self.scale
 
             # Calculate intersection of ray with plane
             u, v, t = math_3d.ray_intersect_plane_coordinates(
@@ -440,7 +476,7 @@ class TransformGizmo(Gizmo):
             point=gizmo_position
         )
 
-        if center_dist2 < (self.gizmo_scale * constants.GIZMO_CENTER_RADIUS) ** 2:
+        if center_dist2 < (self.scale * gizmo_constants.GIZMO_CENTER_RADIUS) ** 2:
 
             # Normalize the ray direction
             direction_normalized = normalize(ray_direction)
@@ -466,21 +502,21 @@ class TransformGizmo(Gizmo):
         self.ray_to_axis_dist2 = [math_3d.distance2_ray_segment(
             ray_origin=ray_origin,
             ray_direction=ray_direction,
-            p0=gizmo_position + vec3(model_matrix[i]) * constants.GIZMO_AXIS_OFFSET * self.gizmo_scale,
+            p0=gizmo_position + vec3(model_matrix[i]) * gizmo_constants.GIZMO_AXIS_OFFSET * self.scale,
             p1=gizmo_position + vec3(model_matrix[i]) * (
-                        constants.GIZMO_AXIS_OFFSET + constants.GIZMO_AXIS_LENGTH) * self.gizmo_scale)
+                        gizmo_constants.GIZMO_AXIS_OFFSET + gizmo_constants.GIZMO_AXIS_LENGTH) * self.scale)
             for i in range(3)]
 
         shortest_dist2_axis_index = np.argmin(self.ray_to_axis_dist2)
         shortest_dist2 = self.ray_to_axis_dist2[shortest_dist2_axis_index]
 
-        if shortest_dist2 < self.gizmo_scale ** 2 * constants.GIZMO_AXIS_DETECTION_RADIUS_2:
+        if shortest_dist2 < self.scale ** 2 * gizmo_constants.GIZMO_AXIS_DETECTION_RADIUS_2:
             active_index = shortest_dist2_axis_index
             projected_point, ray_t = math_3d.nearest_point_on_segment(
                 ray_origin=ray_origin,
                 ray_direction=ray_direction,
                 p0=gizmo_position,
-                p1=vec3(model_matrix[shortest_dist2_axis_index]) * self.gizmo_scale + gizmo_position)
+                p1=vec3(model_matrix[shortest_dist2_axis_index]) * self.scale + gizmo_position)
 
             is_hovering = True
 
@@ -494,16 +530,16 @@ class TransformGizmo(Gizmo):
         active_index = -1
 
         # Detect if any of the 3 planes are being intersected
-        a = constants.GIZMO_PLANE_OFFSET * self.gizmo_scale
-        b = a + constants.GIZMO_PLANE_SIZE * self.gizmo_scale
+        a = gizmo_constants.GIZMO_PLANE_OFFSET * self.scale
+        b = a + gizmo_constants.GIZMO_PLANE_SIZE * self.scale
 
         plane_intersections = []
         for index, axis_indices in enumerate(self.plane_axis_list):
 
             u, v, t = math_3d.ray_intersect_plane_coordinates(
                 plane_origin=gizmo_position,
-                plane_vec1=vec3(model_matrix[axis_indices[0]]) * self.gizmo_scale,
-                plane_vec2=vec3(model_matrix[axis_indices[1]]) * self.gizmo_scale,
+                plane_vec1=vec3(model_matrix[axis_indices[0]]) * self.scale,
+                plane_vec2=vec3(model_matrix[axis_indices[1]]) * self.scale,
                 ray_origin=ray_origin,
                 ray_direction=ray_direction
             )
@@ -530,13 +566,19 @@ class TransformGizmo(Gizmo):
 
     def release(self):
 
-        for _, vao in self.translation_mode_lines_vaos.items():
-            if vao:
-                vao.release()
+        # Release VAOs first
+        if self.translation_mode_lines_vao:
+            self.translation_mode_lines_vao.release()
 
-        for _, vbo in self.translation_mode_lines_vbos.items():
-            if vbo:
-                vbo.release()
+        if self.translation_mode_triangles_vao:
+            self.translation_mode_triangles_vao.release()
+
+        # Then the VBOs
+        if self.translation_mode_lines_vertices_vbo:
+            self.translation_mode_lines_vertices_vbo.release()
+
+        if self.translation_mode_triangles_vbo:
+            self.translation_mode_triangles_vbo.release()
 
     # =============================================================
     #                   Geometry functions
@@ -561,8 +603,8 @@ class TransformGizmo(Gizmo):
         with imgui.begin_child("region", 250, 200, border=True):
             imgui.text(f"Transform Gizmo")
             imgui.separator()
-            imgui.text(f"Mode: {self.gizmo_mode}")
+            imgui.text(f"Mode: {self.mode}")
             imgui.text(f"State: {str(self.state)}")
             imgui.text(f"Axis: {self.active_index}")
-            imgui.text(f"Scale: {self.gizmo_scale}")
+            imgui.text(f"Scale: {self.scale}")
 

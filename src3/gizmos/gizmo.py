@@ -4,6 +4,7 @@ from typing import Any
 from glm import vec3, vec4, mat4, length, length2, inverse, translate, scale, dot, normalize
 
 from src3 import constants
+from src3.gizmos import gizmo_constants
 from src3 import math_3d
 from src3.shader_loader import ShaderLoader
 from src3.mesh_factory_3d import MeshFactory3D
@@ -26,7 +27,7 @@ class Gizmo:
 
         self.helper_fbo = self.ctx.framebuffer(depth_attachment=self.output_fbo.depth_attachment)
 
-        self.gizmo_scale = 1.0
+        self.scale = 1.0
 
     def calculate_scaled_model_matrix(self,
                                       camera_position: vec3,
@@ -48,11 +49,11 @@ class Gizmo:
         # Determine the scale factor to keep the gizmo a constant size on the screen
         viewport_height = self.output_fbo.viewport[3]
         proj_scale_y = 2.0 / projection_matrix[1][1]  # Assuming a standard projection matrix
-        self.gizmo_scale = proj_scale_y * distance_factor * (constants.GIZMO_SIZE_ON_SCREEN_PIXELS / viewport_height)
+        self.scale = proj_scale_y * distance_factor * (gizmo_constants.GIZMO_SIZE_ON_SCREEN_PIXELS / viewport_height)
 
         # Create a scale matrix
         scale_matrix = mat4(1.0)
-        scale_matrix = scale(scale_matrix, vec3(self.gizmo_scale))
+        scale_matrix = scale(scale_matrix, vec3(self.scale))
 
         # Apply the scale to the model matrix
         return model_matrix * scale_matrix

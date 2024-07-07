@@ -6,6 +6,7 @@ import numpy as np
 from glm import vec3, vec4, inverse
 
 from src3 import constants
+from src3.gizmos import gizmo_constants
 from src3.editors.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
@@ -231,11 +232,11 @@ class Viewer3DMSAA(Editor):
             imgui.push_item_width(120)
             clicked, self.gizmo_3d_mode_index = imgui.combo(
                 "Gizmo Mode", self.gizmo_3d_mode_index,
-                [constants.GIZMO_MODE_TRANSLATION,
-                 constants.GIZMO_MODE_ROTATION]
+                [gizmo_constants.GIZMO_MODE_TRANSLATION,
+                 gizmo_constants.GIZMO_MODE_ROTATION]
             )
             if clicked:
-                self.transform_gizmo.gizmo_mode = constants.GIZMO_MODES[self.gizmo_3d_mode_index]
+                self.transform_gizmo.mode = gizmo_constants.GIZMO_MODES[self.gizmo_3d_mode_index]
 
             # DEBUG
             imgui.text("Image hovering")
@@ -243,7 +244,7 @@ class Viewer3DMSAA(Editor):
             imgui.spacing()
             imgui.spacing()
             imgui.text("Gizmo Scale")
-            imgui.text(str(self.transform_gizmo.gizmo_scale))
+            imgui.text(str(self.transform_gizmo.scale))
             imgui.text("Ray Origin")
             imgui.text(str(self.camera_ray_origin))
             imgui.spacing()
@@ -318,7 +319,7 @@ class Viewer3DMSAA(Editor):
         if self.image_hovering and button == constants.MOUSE_LEFT:
 
             # You can only select another entity if, when you click, you are not hovering the gizmo
-            if self.transform_gizmo.state == constants.GIZMO_STATE_INACTIVE:
+            if self.transform_gizmo.state == gizmo_constants.GIZMO_STATE_INACTIVE:
 
                 # The framebuffer image is flipped on the y-axis, so we flip the coordinates as well
                 image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y

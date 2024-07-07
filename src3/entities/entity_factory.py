@@ -16,8 +16,6 @@ from src3.components.component_factory import ComponentFactory
 from src3.mesh_factory_3d import MeshFactory3D
 
 
-
-
 class EntityFactory:
 
     def __init__(self, ctx: moderngl.Context, shader_loader: ShaderLoader):
@@ -106,7 +104,6 @@ class EntityFactory:
             shader_loader=self.shader_loader,
             points=points,
             colors=colors)
-
 
         transform_component = self.component_factory.create_transform(position=vec3(0, 0, 0))
         return Entity(label=label,
