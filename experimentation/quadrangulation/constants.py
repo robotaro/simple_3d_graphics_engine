@@ -78,7 +78,7 @@ PATTERN_1_VERTICES = {
 PATTERN_1_SUBPATCH_KEYS = [
     ["C0", "V0", "V2", "C3"],
     ["V0", "C1", "V1", "V2"],
-    ["V2", "V1", "C1", "C3"]
+    ["V2", "V1", "C2", "C3"]
 ]
 
 """
