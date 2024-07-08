@@ -284,7 +284,7 @@ class Patch:
         
         # Test different rotations and inversions to see which one is solvable
         matches = []
-        for (rotation, inverted, b_index, r_index, t_index, l_index) in constants.SIDES_ORDERED:
+        for (rotation, b_index, r_index, t_index, l_index) in constants.SIDES_ORDERED:
             for pattern in range(5):
                 parameters = self.solve_pattern_marameters_ilp(
                     pattern=pattern,
@@ -298,7 +298,6 @@ class Patch:
                     continue
                 
                 # Extend patch parameters to contain all necessary info to reconstruct the patch
-                parameters["inverted"] = inverted
                 parameters["rotation"] = rotation
                 matches.append(parameters)
                 

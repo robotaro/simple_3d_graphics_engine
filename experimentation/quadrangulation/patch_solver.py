@@ -408,15 +408,14 @@ class PatchSolver:
                   verticalalignment='center',
                   transform=axis.transAxes)
 
-    def draw_regular_grid(self, corners: np.ndarray, u: int, v: int, edge_color: tuple, edge_width=2, fill_color=None):
-
+    def draw_regular_grid(self, corners: list, u: int, v: int, edge_color: tuple, edge_width=2, fill_color=None):
         """_summary_
 
         Parameters
         ----------
-        corners : Numpy ndarray <float32>
-            Array (4, 2) <float32>
-            Rows follow order [NW, NE, SE, SW]
+        corners : list of tuples
+            List [(x1, y1), (x2, y2), (x3, y3), (x4, y4)]
+            Points follow order [SW, SE, NE, NW]
         u : int
             number of U divisions
         v : int
@@ -429,36 +428,38 @@ class PatchSolver:
             RGB color filling all mesh cells
         """
 
-        TOP = 0
+        BOTTOM = 0
         RIGHT = 1
-        BOTTOM = 2
+        TOP = 2
         LEFT = 3
 
         OPPOSITE_SIDE_MAP = {
-            TOP: BOTTOM,
-            RIGHT: LEFT,
             BOTTOM: TOP,
+            RIGHT: LEFT,
+            TOP: BOTTOM,
             LEFT: RIGHT
         }
 
         n_sides_order = [u, v, u, v]
         side_points = []
 
-        fig, ax = plt.subplots(figsize=(10, 10), dpi=150)
+        fig, ax = plt.subplots(figsize=(5, 5), dpi=150)
+
+        # Convert corners to a numpy array for easier manipulation
+        corners_np = np.array(corners, dtype=np.float32)
 
         # Calculate point interpolations
         for edge_index, n_sides in enumerate(n_sides_order):
             a = edge_index
-            b = (edge_index + 1) % corners.shape[0]
+            b = (edge_index + 1) % len(corners)
             points = np.ndarray((n_sides, 2), dtype=np.float32)
-            points[:, 0] = np.linspace(start=corners[a, 0], stop=corners[b, 0], num=n_sides, endpoint=True)
-            points[:, 1] = np.linspace(start=corners[a, 1], stop=corners[b, 1], num=n_sides, endpoint=True)
+            points[:, 0] = np.linspace(start=corners_np[a, 0], stop=corners_np[b, 0], num=n_sides, endpoint=True)
+            points[:, 1] = np.linspace(start=corners_np[a, 1], stop=corners_np[b, 1], num=n_sides, endpoint=True)
             side_points.append(points)
 
         # Build line segments to be drawn
         line_segments = []
         for side_index, points_a in enumerate(side_points):
-
             points_b = side_points[OPPOSITE_SIDE_MAP[side_index]]
             num_points = points_a.shape[0]
             for index_a in range(num_points):
@@ -468,7 +469,7 @@ class PatchSolver:
 
         # Draw filling color, if specified
         if fill_color is not None:
-            self.ax.fill(corners[:, 0], corners[:, 1], facecolor=fill_color)
+            ax.fill(corners_np[:, 0], corners_np[:, 1], facecolor=fill_color)
 
         # Draw all line segments
         lc = mc.LineCollection(line_segments, color=(*edge_color, 1), linewidths=edge_width)
@@ -486,6 +487,20 @@ class PatchSolver:
 def demo():
 
     patch = PatchSolver()
+
+    corners = [(0, 0),
+               (0.5, 0),
+               (1, 0.75),
+               (0.5, 1)]
+
+    patch.draw_regular_grid(
+        corners=corners,
+        u=5,
+        v=4,
+        edge_color=(1, 1, 1),
+        fill_color="tab:blue")
+
+    return
 
     list_of_sides = [
         (16, 5, 5, 4),
