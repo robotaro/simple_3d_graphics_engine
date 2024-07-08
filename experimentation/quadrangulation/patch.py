@@ -566,18 +566,23 @@ class Patch:
 
 def demo():
   
-    corners = np.array([(0, 0),
-                        (1, 0),
+    corners = np.array([(1, 0),
                         (1, 1),
-                        (0, 1)], 
+                        (0, 1),
+                        (0, 0)],
                         dtype=np.float32)
 
-    patch = Patch(
-        patch_corners=corners,
-        bottom=16,
-        right=5,
-        top=5,
-    left=4)
+    """patch = Patch(patch_corners=corners,
+                  bottom=16,
+                  right=5,
+                  top=5,
+                  left=4)"""
+
+    patch = Patch(patch_corners=corners,
+                  bottom=5,
+                  right=5,
+                  top=4,
+                  left=16)
 
     patch.process()
 

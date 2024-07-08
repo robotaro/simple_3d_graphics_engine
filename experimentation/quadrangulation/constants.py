@@ -29,14 +29,11 @@ INV_SIDES_ROTATION_180   = (LEFT_INDEX, TOP_INDEX, RIGHT_INDEX, BOTTOM_INDEX)
 INV_SIDES_ROTATION_270   = (BOTTOM_INDEX, LEFT_INDEX, TOP_INDEX, RIGHT_INDEX)
 INV_SIDES_ROTATION_TUPLE = (INV_SIDES_ROTATION_0, INV_SIDES_ROTATION_90, INV_SIDES_ROTATION_180, INV_SIDES_ROTATION_270)
 
-SIDES_ORDERED = ((0, "not_inverted", *SIDES_ROTATION_0),
-                 (90, "not_inverted", *SIDES_ROTATION_90),
-                 (180, "not_inverted", *SIDES_ROTATION_180),
-                 (270, "not_inverted", *SIDES_ROTATION_270),
-                 (0, "inverted", *INV_SIDES_ROTATION_0),
-                 (90, "inverted", *INV_SIDES_ROTATION_90),
-                 (180, "inverted", *INV_SIDES_ROTATION_180),
-                 (270, "inverted", *INV_SIDES_ROTATION_270),)
+                # rotation, side indices
+SIDES_ORDERED = ((0, *SIDES_ROTATION_0),
+                 (90, *SIDES_ROTATION_90),
+                 (180, *SIDES_ROTATION_180),
+                 (270, *SIDES_ROTATION_270))
 
 """
 
