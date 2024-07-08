@@ -173,6 +173,13 @@ PATTERN_4_SUBPATCH_KEYS = [
     ["V6", "V5", "C2", "C3"]
 ]
 
+PATTERNS_SUBPATCHES = {
+    0: {"vertices": PATTERN_0_VERTICES, "subpatch_keys": PATTERN_0_SUBPATCH_KEYS},
+    1: {"vertices": PATTERN_1_VERTICES, "subpatch_keys": PATTERN_1_SUBPATCH_KEYS},
+    2: {"vertices": PATTERN_2_VERTICES, "subpatch_keys": PATTERN_2_SUBPATCH_KEYS},
+    3: {"vertices": PATTERN_3_VERTICES, "subpatch_keys": PATTERN_3_SUBPATCH_KEYS},
+    4: {"vertices": PATTERN_4_VERTICES, "subpatch_keys": PATTERN_4_SUBPATCH_KEYS},
+}
 
 """
 

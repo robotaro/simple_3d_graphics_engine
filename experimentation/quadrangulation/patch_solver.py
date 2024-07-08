@@ -81,21 +81,6 @@ class PatchSolver:
     #                       Core functions
     # =================================================================
 
-    def show_match(self, match: dict):
-        """
-        Matches are generated from the
-        :param match:
-        :return:
-        """
-
-        subpatch_sizes = self.calculate_subpatch_sizes(match=match)
-
-        self.show_subpatches(subpatch_sizes=subpatch_sizes)
-
-        # TODO: Continue from here
-
-        pass
-    
     def calculate_subpatch_sizes(self, match: dict) -> np.ndarray:
         
         """
@@ -408,7 +393,34 @@ class PatchSolver:
                   verticalalignment='center',
                   transform=axis.transAxes)
 
-    def draw_regular_grid(self, corners: list, u: int, v: int, edge_color: tuple, edge_width=2, fill_color=None):
+    def show_match(self, match: dict):
+        """
+        Matches are generated from the
+        :param match:
+        :return:
+        """
+
+        subpatch_sizes = self.calculate_subpatch_sizes(match=match)
+
+        #self.show_subpatches(subpatch_sizes=subpatch_sizes)
+
+        pattern = constants.PATTERNS_SUBPATCHES[match["pattern"]]
+        vertices, subpatches = pattern["vertices"], pattern["subpatch_keys"]
+
+        # This has been modified to focus on the central patch pattern
+        fig, ax = plt.subplots(figsize=(5, 5), dpi=150)
+
+        for subpatch in subpatches:
+            corners = [vertices[key] for key in subpatch]
+            self.draw_regular_grid(ax=ax, corners=corners, u=5, v=5, edge_color=(1, 1, 1),
+                                   edge_width=2.0, fill_color=tuple(np.random.rand(3, )))
+
+        ax.set_aspect('equal')
+        plt.show()
+
+        pass
+
+    def draw_regular_grid(self, ax, corners: list, u: int, v: int, edge_color: tuple, edge_width=2, fill_color=None):
         """_summary_
 
         Parameters
@@ -443,7 +455,7 @@ class PatchSolver:
         n_sides_order = [u, v, u, v]
         side_points = []
 
-        fig, ax = plt.subplots(figsize=(5, 5), dpi=150)
+
 
         # Convert corners to a numpy array for easier manipulation
         corners_np = np.array(corners, dtype=np.float32)
@@ -475,8 +487,7 @@ class PatchSolver:
         lc = mc.LineCollection(line_segments, color=(*edge_color, 1), linewidths=edge_width)
         ax.add_collection(lc)
 
-        ax.set_aspect('equal')
-        plt.show()
+
 
 
 # =================================================================
@@ -487,20 +498,6 @@ class PatchSolver:
 def demo():
 
     patch = PatchSolver()
-
-    corners = [(0, 0),
-               (0.5, 0),
-               (1, 0.75),
-               (0.5, 1)]
-
-    patch.draw_regular_grid(
-        corners=corners,
-        u=5,
-        v=4,
-        edge_color=(1, 1, 1),
-        fill_color="tab:blue")
-
-    return
 
     list_of_sides = [
         (16, 5, 5, 4),
