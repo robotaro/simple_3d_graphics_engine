@@ -22,13 +22,11 @@ def demo():
                       (0, 1)],
                      dtype=np.float32)
 
-    patch = PatchPattern4(
-    patch_corners=corners,
-    bottom=16,
-    right=5,
-    top=5,
-    left=4
-    )
+    patch = PatchPattern4(patch_corners=corners,
+        bottom=16,
+        right=5,
+        top=5,
+        left=4)
 
     patch.process()
   

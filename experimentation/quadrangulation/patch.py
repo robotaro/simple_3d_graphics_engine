@@ -14,11 +14,13 @@ import matplotlib.pyplot as plt
 MARGIN = 0.1
 MAX_NUM_VERTICES = 625
 
+
 class QuadEdge:
     
     def __init__(self) -> None:
         self.neighbor_quad_index = -1
         self.vertex_indices = []
+
 
 class UniformQuad:
     
@@ -27,12 +29,25 @@ class UniformQuad:
         self.right = QuadEdge()
         self.top = QuadEdge()
         self.left = QuadEdge()
-    
+
+
 class Patch:
     
-    __slots__ = ['bottom', 'right', 'top', 'left', 'num_sides',
-                 'patch_edge_offset', 'patch_edge_size',
-                 'pattern', 'p0', 'p1', 'p2', 'p3', 'q1', 'x', 'y',
+    __slots__ = ['bottom',
+                 'right',
+                 'top',
+                 'left',
+                 'num_sides',
+                 'patch_edge_offset',
+                 'patch_edge_size',
+                 'pattern',
+                 'p0',
+                 'p1',
+                 'p2',
+                 'p3',
+                 'q1',
+                 'x',
+                 'y',
                  'inverted', 'rotation', 'subpatch_sizes', 'subpatch_edge_indices',
                  'num_vertices', 'vertices', 'macro_edges']
     
