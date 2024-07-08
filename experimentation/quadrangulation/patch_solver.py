@@ -3,32 +3,13 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
-from re import sub
+from matplotlib import collections as mc
 from experimentation.quadrangulation import constants
 import numpy as np
 from scipy.optimize import linprog
-from typing import Tuple
 
 # DEBUG
 import matplotlib.pyplot as plt
-MARGIN = 0.1
-MAX_NUM_VERTICES = 625
-
-
-class QuadEdge:
-    
-    def __init__(self) -> None:
-        self.neighbor_quad_index = -1
-        self.vertex_indices = []
-
-
-class UniformQuad:
-    
-    def __init__(self) -> None:
-        self.bottom = QuadEdge()
-        self.right = QuadEdge()
-        self.top = QuadEdge()
-        self.left = QuadEdge()
 
 
 class PatchSolver:
@@ -50,10 +31,6 @@ class PatchSolver:
         self.y = 0
         self.inverted = False
         self.rotation = 0
-        
-        # Subpatch variables
-        self.subpatch_edge_indices = [{'bottom': None, 'right': None, 'top': None, 'left': None} for _ in range(9)]
-
         
         # Initialise patch edge offsets
         self.patch_edge_offset = np.zeros((4,), dtype=np.int32)
@@ -115,7 +92,8 @@ class PatchSolver:
 
         self.show_subpatches(subpatch_sizes=subpatch_sizes)
 
-        g = 0
+        # TODO: Continue from here
+
         pass
     
     def calculate_subpatch_sizes(self, match: dict) -> np.ndarray:
@@ -319,58 +297,9 @@ class PatchSolver:
     # =================================================================
     #                       DEBUG FUNCTIONS
     # =================================================================
-    
-    def _plot_rectangle_with_sides(self, axis: plt.Axes, x: float, y: float, width: float, height: float, 
-                                   margin: float, bottom: int, right: int, top: int, left: int):
-    
-        """
-            +------------------+
-            |                  |
-        height                 |
-            |                  |
-           (xy)---- width -----+
-        
-        """
-
-        rect = plt.Rectangle((x, y), width, height, fill=False)
-        rect.set_transform(axis.transAxes)
-        rect.set_clip_on(False)
-        axis.add_patch(rect)
-        
-        # Bottom Label
-        x_bottom = x + width * 0.5
-        y_bottom = y + margin
-        axis.text(x_bottom, y_bottom, str(bottom),
-            horizontalalignment='center',
-            verticalalignment='bottom',
-            transform=axis.transAxes)
-        
-        # Right Label
-        x_right = x + width - margin
-        y_right = y + height * 0.5
-        axis.text(x_right, y_right, str(right),
-            horizontalalignment='right',
-            verticalalignment='center',
-            transform=axis.transAxes)
-        
-        # Top Label
-        x_top = x + width * 0.5
-        y_top = y + height - margin
-        axis.text(x_top, y_top, str(top),
-            horizontalalignment='center',
-            verticalalignment='top',
-            transform=axis.transAxes)
-        
-        # Left Label
-        x_left = x + margin
-        y_left = y + height * 0.5
-        axis.text(x_left, y_left, str(left),
-            horizontalalignment='left',
-            verticalalignment='center',
-            transform=axis.transAxes)
 
     def show_subpatches(self, subpatch_sizes: np.ndarray, margin=0.02):
-        
+
         """
         Returns the sides for each of the subpatches around the pattern, and the size of the pattern in the middle
 
@@ -382,7 +311,7 @@ class PatchSolver:
         |   |         |   |
         +---+---------+---+
         | 7 |    0    | 1 |
-        +---+---------+---+ 
+        +---+---------+---+
 
         """
 
@@ -400,30 +329,154 @@ class PatchSolver:
             (x_ticks[0], y_ticks[0], x_ticks[1] - x_ticks[0], y_ticks[1] - y_ticks[0]),
             (x_ticks[1], y_ticks[1], x_ticks[2] - x_ticks[1], y_ticks[2] - y_ticks[1]),
         ]
-        
+
         fig, ax = plt.subplots()
         ax.set_axis_off()
-        
+
         for index, sides in enumerate(subpatch_sizes):
 
             if np.sum(subpatch_sizes[index, :] == 0) != 0:
                 continue
 
+            bgcolor = None if index != 8 else (0, 1, 0, 0.3)
+
             self._plot_rectangle_with_sides(
-                axis=ax, 
-                bottom=sides[0], 
+                axis=ax,
+                bottom=sides[0],
                 right=sides[1],
-                top=sides[2], 
+                top=sides[2],
                 left=sides[3],
-                x=plot_params[index][0], 
-                y=plot_params[index][1], 
-                width=plot_params[index][2], 
-                height=plot_params[index][3], 
-                margin=margin
+                x=plot_params[index][0],
+                y=plot_params[index][1],
+                width=plot_params[index][2],
+                height=plot_params[index][3],
+                margin=margin,
+                bgcolor=bgcolor
             )
-    
+
         ax.set_aspect('equal')
         plt.show()
+
+    def _plot_rectangle_with_sides(self, axis: plt.Axes, x: float, y: float, width: float, height: float,
+                                   margin: float, bottom: int, right: int, top: int, left: int, bgcolor=None):
+
+        """
+            +------------------+
+            |                  |
+        height                 |
+            |                  |
+           (xy)---- width -----+
+
+        """
+
+        rect = plt.Rectangle((x, y), width, height, fill=True if bgcolor else False, edgecolor='black')
+        if bgcolor:
+            rect.set_facecolor(bgcolor)
+        rect.set_transform(axis.transAxes)
+        rect.set_clip_on(False)
+        axis.add_patch(rect)
+
+        # Bottom Label
+        x_bottom = x + width * 0.5
+        y_bottom = y + margin
+        axis.text(x_bottom, y_bottom, str(bottom),
+                  horizontalalignment='center',
+                  verticalalignment='bottom',
+                  transform=axis.transAxes)
+
+        # Right Label
+        x_right = x + width - margin
+        y_right = y + height * 0.5
+        axis.text(x_right, y_right, str(right),
+                  horizontalalignment='right',
+                  verticalalignment='center',
+                  transform=axis.transAxes)
+
+        # Top Label
+        x_top = x + width * 0.5
+        y_top = y + height - margin
+        axis.text(x_top, y_top, str(top),
+                  horizontalalignment='center',
+                  verticalalignment='top',
+                  transform=axis.transAxes)
+
+        # Left Label
+        x_left = x + margin
+        y_left = y + height * 0.5
+        axis.text(x_left, y_left, str(left),
+                  horizontalalignment='left',
+                  verticalalignment='center',
+                  transform=axis.transAxes)
+
+    def draw_regular_grid(self, corners: np.ndarray, u: int, v: int, edge_color: tuple, edge_width=2, fill_color=None):
+
+        """_summary_
+
+        Parameters
+        ----------
+        corners : Numpy ndarray <float32>
+            Array (4, 2) <float32>
+            Rows follow order [NW, NE, SE, SW]
+        u : int
+            number of U divisions
+        v : int
+            number of V divisions
+        edge_color : tuple
+            RGB color of the grid edges
+        edge_width : float
+            Thickness of the grid's edges
+        fill_color : tuple
+            RGB color filling all mesh cells
+        """
+
+        TOP = 0
+        RIGHT = 1
+        BOTTOM = 2
+        LEFT = 3
+
+        OPPOSITE_SIDE_MAP = {
+            TOP: BOTTOM,
+            RIGHT: LEFT,
+            BOTTOM: TOP,
+            LEFT: RIGHT
+        }
+
+        n_sides_order = [u, v, u, v]
+        side_points = []
+
+        fig, ax = plt.subplots(figsize=(10, 10), dpi=150)
+
+        # Calculate point interpolations
+        for edge_index, n_sides in enumerate(n_sides_order):
+            a = edge_index
+            b = (edge_index + 1) % corners.shape[0]
+            points = np.ndarray((n_sides, 2), dtype=np.float32)
+            points[:, 0] = np.linspace(start=corners[a, 0], stop=corners[b, 0], num=n_sides, endpoint=True)
+            points[:, 1] = np.linspace(start=corners[a, 1], stop=corners[b, 1], num=n_sides, endpoint=True)
+            side_points.append(points)
+
+        # Build line segments to be drawn
+        line_segments = []
+        for side_index, points_a in enumerate(side_points):
+
+            points_b = side_points[OPPOSITE_SIDE_MAP[side_index]]
+            num_points = points_a.shape[0]
+            for index_a in range(num_points):
+                index_b = num_points - index_a - 1
+                line_segments.append([(points_a[index_a, 0], points_a[index_a, 1]),
+                                      (points_b[index_b, 0], points_b[index_b, 1])])
+
+        # Draw filling color, if specified
+        if fill_color is not None:
+            self.ax.fill(corners[:, 0], corners[:, 1], facecolor=fill_color)
+
+        # Draw all line segments
+        lc = mc.LineCollection(line_segments, color=(*edge_color, 1), linewidths=edge_width)
+        ax.add_collection(lc)
+
+        ax.set_aspect('equal')
+        plt.show()
+
 
 # =================================================================
 #                              DEMO
