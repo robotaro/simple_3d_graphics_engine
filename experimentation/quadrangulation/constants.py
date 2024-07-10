@@ -29,17 +29,21 @@ INV_SIDES_ROTATION_180   = (LEFT_INDEX, TOP_INDEX, RIGHT_INDEX, BOTTOM_INDEX)
 INV_SIDES_ROTATION_270   = (BOTTOM_INDEX, LEFT_INDEX, TOP_INDEX, RIGHT_INDEX)
 INV_SIDES_ROTATION_TUPLE = (INV_SIDES_ROTATION_0, INV_SIDES_ROTATION_90, INV_SIDES_ROTATION_180, INV_SIDES_ROTATION_270)
 
-                # rotation, side indices
-SIDES_ORDERED = ((0, *SIDES_ROTATION_0),
-                 (90, *SIDES_ROTATION_90),
-                 (180, *SIDES_ROTATION_180),
-                 (270, *SIDES_ROTATION_270))
+                # rotation, inverted, side indices
+SIDES_ORDERED = ((0, False, *SIDES_ROTATION_0),
+                 (90,False,  *SIDES_ROTATION_90),
+                 (180, False, *SIDES_ROTATION_180),
+                 (270, False, *SIDES_ROTATION_270),
+                 (0, True, *INV_SIDES_ROTATION_0),
+                 (90, True, *INV_SIDES_ROTATION_90),
+                 (180, True, *INV_SIDES_ROTATION_180),
+                 (270, True, *INV_SIDES_ROTATION_270))
 
 # Relative Pattern positions
 """
 C3----C2
 |      |
-|      |
+|  0   |
 C0----C1
 """
 PATTERN_0_VERTICES = {
@@ -55,12 +59,12 @@ PATTERN_0_SUBPATCH_KEYS = [
 """
 C3--------C2
 |\        |
-| \       | <--x
+| \    2  | <--x
 |  \      |
 |   \     |
 |    V2---V1
 |    |    |
-|    |    |
+| 0  |  1 |
 |    |    |
 |    |    |
 C0---V0---C1
@@ -85,8 +89,8 @@ PATTERN_1_SUBPATCH_KEYS = [
     C3-------------C2
     |            _/|
     |          _/  |
-y-->|        _/    | <--x
-    |      _/      |
+y-->|   0    _/    | <--x
+    |      _/   1  |
     |     /        |
     C0---V0---V1---C1
     x--^    ^--y
@@ -109,11 +113,11 @@ PATTERN_2_SUBPATCH_KEYS = [
 C3-------------C2
 |\            /|
 | \          / |
-|  \        /  |
+|  \   3    /  |
 |   \      /   |
 |    V3--V2    |
 |    |    |    |
-|    |    |    |
+| 0  | 1  | 2  |
 |    |    |    |
 |    |    |    |
 C0---V0---V1---C1
@@ -312,6 +316,7 @@ SUBPATCH_INNER_CORNERS_EDGE_INTERSECTIONS = {
     15: ((5, 8), (10, 7)),
 }
 
+# Top left (TL) and Bottom Right (BR)
 SUBPATCH_TL_AND_BR_MAP = {
   (5, 1): {"bottom": [7, 0, 1], "right": [3, 2, 1], "top": [5, 4, 3], "left": [5, 6, 7]},
   (5, 2): {"bottom": [6, 8, 2], "right": [3, 2],    "top": [5, 4, 3], "left": [5, 6]},
