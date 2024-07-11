@@ -17,6 +17,8 @@ from src3.camera_3d import Camera3D  # Import the Camera class
 from src3.gizmos.transform_gizmo import TransformGizmo
 from src3.gizmos.bezier_gizmo import BezierGizmo
 
+SPHERE_ID = 20
+
 
 class Viewer3DMSAA(Editor):
 
@@ -107,8 +109,8 @@ class Viewer3DMSAA(Editor):
 
         self.entities[10] = self.entity_factory.create_bezier_curve(position=vec3(1, 0, 0))
 
-        self.entities[20] = self.entity_factory.create_sphere(
-            radius=0.2,
+        self.entities[SPHERE_ID] = self.entity_factory.create_sphere(
+            radius=0.05,
             position=vec3(1, 1, 1),
             color=(1.0, 0.5, 0.0))
 
@@ -144,6 +146,14 @@ class Viewer3DMSAA(Editor):
         self.transform_gizmo.release()
 
     def render_scene(self):
+
+        # DEBUG - Update intersection point using a sphere
+        """x = self.transform_gizmo.debug_intersection_u
+        y = self.transform_gizmo.debug_intersection_v
+        if x:
+            world_matrix = self.entities[SPHERE_ID].component_transform.world_matrix
+            world_matrix[3] = vec4(x, 0, y, 1.0)
+            self.entities[SPHERE_ID].component_transform.update_world_matrix(world_matrix=world_matrix)"""
 
         # Common UBO settings
         self.ubo_mvp.write(data=self.camera.projection_matrix, offset=self.ubo_mvp_offsets['m_proj'])
@@ -258,6 +268,15 @@ class Viewer3DMSAA(Editor):
             imgui.text("Debug Plane intersections")
             imgui.text(str(self.transform_gizmo.debug_plane_intersections))
             imgui.spacing()
+            imgui.spacing()
+            imgui.text("Original Angle")
+            imgui.text(str(self.transform_gizmo.original_rotation_angle))
+            imgui.spacing()
+            imgui.text("Delta Angle")
+            imgui.text(str(self.transform_gizmo.debug_rotation_delta))
+            imgui.spacing()
+
+            #self.original_rotation_angle
             self.transform_gizmo.render_ui()
 
         if activated:

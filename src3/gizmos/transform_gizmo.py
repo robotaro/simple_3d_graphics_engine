@@ -1,11 +1,11 @@
 import time
-
+import math
 import moderngl
 import numpy as np
 
 import imgui
 from typing import Any
-from glm import vec3, vec4, mat4, length, length2, inverse, translate, scale, dot, normalize, sin, cos, cross
+from glm import vec3, vec4, mat4, length, length2, inverse, translate, rotate, scale, dot, normalize, sin, cos, cross
 import copy
 
 from src3 import constants
@@ -64,8 +64,12 @@ class TransformGizmo(Gizmo):
         self.original_position = vec3(0.0)
         self.original_axes_p0 = [vec3(0)] * 3
         self.original_axes_p1 = [vec3(0)] * 3
+        self.original_rotation_angle = 0.0
 
         self.debug_plane_intersections = []
+        self.debug_rotation_delta = 0.0
+        self.debug_intersection_u = 0.0
+        self.debug_intersection_v = 0.0
 
     def set_mode_translation(self):
         self.gizmo_size_on_screen_pixels = gizmo_constants.GIZMO_SIZE_ON_SCREEN_PIXELS_TRANSLATION
@@ -195,16 +199,15 @@ class TransformGizmo(Gizmo):
                 ray_origin=ray_origin,
                 ray_direction=ray_direction,
                 model_matrix=model_matrix,
-                component=component
-            )
-        if self.mode == gizmo_constants.GIZMO_MODE_ROTATION:
-            self.rotation_mode_button_press(
+                component=component)
+
+        elif self.mode == gizmo_constants.GIZMO_MODE_ROTATION:
+            self.rotation_mode_mouse_press(
                 button=button,
                 ray_origin=ray_origin,
                 ray_direction=ray_direction,
                 model_matrix=model_matrix,
-                component=component
-            )
+                component=component)
 
     def handle_event_mouse_button_release(self,
                                           button: int,
@@ -635,6 +638,10 @@ class TransformGizmo(Gizmo):
                 ray_direction=ray_direction
             )
 
+            # DEBUG
+            #self.debug_intersection_u = u
+            #self.debug_intersection_v = v
+
             if t is None:
                 return None
 
@@ -654,18 +661,52 @@ class TransformGizmo(Gizmo):
     #                Rotation Mode-Specific Functions
     # =============================================================
 
-    def rotation_mode_button_press(self,
-                                   button: int,
-                                   ray_origin: vec3,
-                                   ray_direction: vec3,
-                                   model_matrix: mat4,
-                                   component: Any):
+    def calculate_rotation_angle(self,
+                                 ray_origin: vec3,
+                                 ray_direction: vec3,
+                                 active_index: int) -> float:
+
+        plane_vec1 = vec3(self.original_model_matrix[self.plane_axis_list[active_index][0]])
+        plane_vec2 = vec3(self.original_model_matrix[self.plane_axis_list[active_index][1]])
+
+        u, v, t = math_3d.ray_intersect_plane_coordinates(
+            plane_origin=self.original_position,
+            plane_vec1=plane_vec1,
+            plane_vec2=plane_vec2,
+            ray_origin=ray_origin,
+            ray_direction=ray_direction
+        )
+
+        # DEBUG
+        #self.debug_intersection_u = u
+        #self.debug_intersection_v = v
+
+        if t is not None:
+            intersection_point = ray_origin + t * ray_direction
+            vector_to_point = intersection_point - self.original_position
+            rotation_angle = math.atan2(dot(vector_to_point, plane_vec2), dot(vector_to_point, plane_vec1))
+            return rotation_angle
+
+        return 0.0
+
+    def rotation_mode_mouse_press(self,
+                                  button: int,
+                                  ray_origin: vec3,
+                                  ray_direction: vec3,
+                                  model_matrix: mat4,
+                                  component: Any):
 
         if self.state in [gizmo_constants.GIZMO_STATE_HOVERING_DISK, gizmo_constants.GIZMO_STATE_DRAGGING_DISK]:
             self.update_original_model_matrx(model_matrix=model_matrix)
 
         if self.state == gizmo_constants.GIZMO_STATE_HOVERING_DISK:
-            # TODO: Add logic here
+
+            # Determine initial angle of rotation based on the ray's closest project point to the circumference
+            self.original_rotation_angle = self.calculate_rotation_angle(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                active_index=self.active_index)
+
             self.state = gizmo_constants.GIZMO_STATE_DRAGGING_DISK
 
     def rotation_mode_mouse_move(self,
@@ -690,6 +731,14 @@ class TransformGizmo(Gizmo):
             self.state = gizmo_constants.GIZMO_STATE_HOVERING_DISK
             self.active_index = active_index
 
+    def calculate_angle_delta(self, original_angle: float, current_angle: float) -> float:
+        delta_angle = current_angle - original_angle
+        while delta_angle > math.pi:
+            delta_angle -= 2 * math.pi
+        while delta_angle < -math.pi:
+            delta_angle += 2 * math.pi
+        return delta_angle
+
     def rotation_mode_mouse_drag(self,
                                  event_data: tuple,
                                  ray_origin: vec3,
@@ -698,13 +747,84 @@ class TransformGizmo(Gizmo):
                                  component: Any) -> mat4:
 
         if self.state == gizmo_constants.GIZMO_STATE_DRAGGING_DISK and self.active_index > -1:
-            pass
+
+            current_rotation_angle = self.calculate_rotation_angle(
+                ray_origin=ray_origin,
+                ray_direction=ray_direction,
+                active_index=self.active_index)
+
+            if current_rotation_angle is not None:
+                rotation_delta = self.calculate_angle_delta(self.original_rotation_angle, current_rotation_angle)
+                self.debug_rotation_delta = rotation_delta
+
+                plane_vec1 = vec3(self.original_model_matrix[self.disks_axis_list[self.active_index][0]])
+                plane_vec2 = vec3(self.original_model_matrix[self.disks_axis_list[self.active_index][1]])
+                rotation_axis = normalize(cross(plane_vec1, plane_vec2))
+                rotation_matrix = rotate(mat4(1.0), rotation_delta, rotation_axis)
+
+                # Extract the translation from the original model matrix
+                translation = vec3(self.original_model_matrix[3])
+
+                # Apply the rotation to the original model matrix without translation
+                original_model_matrix_no_translation = mat4(self.original_model_matrix)
+                original_model_matrix_no_translation[3] = vec4(0.0, 0.0, 0.0, 1.0)
+
+                # Apply rotation
+                new_model_matrix = rotation_matrix * original_model_matrix_no_translation
+
+                # Reapply the translation
+                new_model_matrix[3] = vec4(translation, 1.0)
+
+                return new_model_matrix
 
         return None
 
     # =============================================================
     #                Hovering-check functions
     # =============================================================
+
+    def check_disk_hovering(self, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> tuple:
+
+        gizmo_position = vec3(model_matrix[3])
+        is_hovering = False
+        ray_t = float('inf')
+        active_index = -1
+
+        plane_intersections = []
+        for index, axis_indices in enumerate(self.disks_axis_list):
+
+            # t is distance to camera
+            u, v, t = math_3d.ray_intersect_plane_coordinates(
+                plane_origin=gizmo_position,
+                plane_vec1=vec3(model_matrix[axis_indices[0]]),
+                plane_vec2=vec3(model_matrix[axis_indices[1]]),
+                ray_origin=ray_origin,
+                ray_direction=ray_direction
+            )
+
+            # ray does not hit infinite plane
+            if t is None:
+                continue
+
+            # Calculate the intersection point
+            intersection_point = ray_origin + t * ray_direction
+            dist_to_center = length(intersection_point - gizmo_position)
+
+            # NOTE: We substract scale because the length of axis is always 1.0! The vectors from the model matrix are unitary!
+            scaled_threshold = gizmo_constants.GIZMO_DISK_EDGE_THICKNESS * self.scale
+            delta = dist_to_center - self.scale
+            if -scaled_threshold <= delta <= scaled_threshold:
+                plane_intersections.append((index, delta, t))
+
+        self.debug_plane_intersections = "\n".join([str(inter) for inter in plane_intersections])
+
+        if len(plane_intersections) > 0:
+            closest_plane_patch = min(plane_intersections, key=lambda x: x[1])  # x[1] is distance to the edge
+            active_index = closest_plane_patch[0]
+            ray_t = closest_plane_patch[2]
+            is_hovering = True
+
+        return is_hovering, ray_t, active_index
 
     def check_center_hovering(self,
                               ray_origin: vec3,
@@ -805,49 +925,6 @@ class TransformGizmo(Gizmo):
 
         return is_hovering, ray_t, active_index
 
-    def check_disk_hovering(self, ray_origin: vec3, ray_direction: vec3, model_matrix: mat4) -> tuple:
-
-        gizmo_position = vec3(model_matrix[3])
-        is_hovering = False
-        ray_t = float('inf')
-        active_index = -1
-
-        plane_intersections = []
-        for index, axis_indices in enumerate(self.disks_axis_list):
-
-            # t is distance to camera
-            u, v, t = math_3d.ray_intersect_plane_coordinates(
-                plane_origin=gizmo_position,
-                plane_vec1=vec3(model_matrix[axis_indices[0]]),
-                plane_vec2=vec3(model_matrix[axis_indices[1]]),
-                ray_origin=ray_origin,
-                ray_direction=ray_direction
-            )
-
-            # ray does not hit infinite plane
-            if t is None:
-                continue
-
-            # Calculate the intersection point
-            intersection_point = ray_origin + t * ray_direction
-            dist_to_center = length(intersection_point - gizmo_position)
-
-            # NOTE: We substract scale because the length is always 1.0! The vectors from the model matrix are unitary!
-            threshold = gizmo_constants.GIZMO_DISK_EDGE_THICKNESS
-            delta = dist_to_center - self.scale
-            if -threshold <= delta <= threshold:
-                plane_intersections.append((index, delta, t))
-
-        self.debug_plane_intersections = "\n".join([str(inter) for inter in plane_intersections])
-
-        if len(plane_intersections) > 0:
-            closest_plane_patch = min(plane_intersections, key=lambda x: x[1])  # x[1] is distance to the edge
-            active_index = closest_plane_patch[0]
-            ray_t = closest_plane_patch[2]
-            is_hovering = True
-
-        return is_hovering, ray_t, active_index
-
     # =============================================================
     #                   Utility functions
     # =============================================================
@@ -885,7 +962,6 @@ class TransformGizmo(Gizmo):
         vertices_and_colors = np.concatenate([mesh_data["vertices"], mesh_data["colors"]], axis=1)
 
         return vertices_and_colors
-
 
     def render_ui(self):
 
