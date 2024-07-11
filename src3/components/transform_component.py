@@ -43,6 +43,55 @@ class TransformComponent:
         self.local_matrix_updated = False
         self.dirty = True
 
+    def _calculate_local_matrix(self):
+        return glm.translate(glm.mat4(1.0), self.position) * \
+                            glm.mat4_cast(self.rotation) * \
+                            glm.scale(glm.mat4(1.0), self.scale)
+
+    def decompose_matrix(self, matrix: glm.mat4):
+        # Extract translation
+        position = glm.vec3(matrix[3])
+
+        # Extract scale
+        scale = glm.vec3(glm.length(matrix[0]), glm.length(matrix[1]), glm.length(matrix[2]))
+
+        # Remove the scaling from the matrix
+        rotation_matrix = glm.mat4(matrix)
+        rotation_matrix[0] /= scale.x
+        rotation_matrix[1] /= scale.y
+        rotation_matrix[2] /= scale.z
+
+        # Extract rotation (quaternion)
+        rotation_quat = glm.quat_cast(rotation_matrix)
+
+        return position, rotation_quat, scale
+
+    def move(self, delta_position: glm.vec3):
+        self.position + delta_position
+        self.update_position(position=self.position + delta_position)
+
+    def add_child(self, child):
+        if child not in self.children:
+            self.children.append(child)
+            child.parent = self
+
+    def remove_child(self, child):
+        if child in self.children:
+            self.children.remove(child)
+            child.parent = None
+
+    def render_ui(self, imgui):
+        imgui.text("Transform")
+        a, self.position = imgui.drag_float3("Position", *self.position, constants.IMGUI_DRAG_FLOAT_PRECISION)
+        b, self.rotation = imgui.drag_float3("Rotation", *self.rotation, constants.IMGUI_DRAG_FLOAT_PRECISION)
+        c, self.scale = imgui.drag_float3("Scale", *self.scale, constants.IMGUI_DRAG_FLOAT_PRECISION)
+        self.input_values_updated |= a | b | c
+        imgui.spacing()
+
+    # ==============================================================
+    #                        Update Functions
+    # ==============================================================
+
     def update_position(self, position: glm.vec3):
         self.position = position
         self.update_vectors()
@@ -121,48 +170,3 @@ class TransformComponent:
         # Recursively update children's world matrices
         for child in self.children:
             child.update_from_parent(self.world_matrix)
-
-    def _calculate_local_matrix(self):
-        return glm.translate(glm.mat4(1.0), self.position) * \
-                            glm.mat4_cast(self.rotation) * \
-                            glm.scale(glm.mat4(1.0), self.scale)
-
-    def decompose_matrix(self, matrix: glm.mat4):
-        # Extract translation
-        position = glm.vec3(matrix[3])
-
-        # Extract scale
-        scale = glm.vec3(glm.length(matrix[0]), glm.length(matrix[1]), glm.length(matrix[2]))
-
-        # Remove the scaling from the matrix
-        rotation_matrix = glm.mat4(matrix)
-        rotation_matrix[0] /= scale.x
-        rotation_matrix[1] /= scale.y
-        rotation_matrix[2] /= scale.z
-
-        # Extract rotation (quaternion)
-        rotation_quat = glm.quat_cast(rotation_matrix)
-
-        return position, rotation_quat, scale
-
-    def move(self, delta_position: glm.vec3):
-        self.position + delta_position
-        self.update_position(position=self.position + delta_position)
-
-    def add_child(self, child):
-        if child not in self.children:
-            self.children.append(child)
-            child.parent = self
-
-    def remove_child(self, child):
-        if child in self.children:
-            self.children.remove(child)
-            child.parent = None
-
-    def render_ui(self, imgui):
-        imgui.text("Transform")
-        a, self.position = imgui.drag_float3("Position", *self.position, constants.IMGUI_DRAG_FLOAT_PRECISION)
-        b, self.rotation = imgui.drag_float3("Rotation", *self.rotation, constants.IMGUI_DRAG_FLOAT_PRECISION)
-        c, self.scale = imgui.drag_float3("Scale", *self.scale, constants.IMGUI_DRAG_FLOAT_PRECISION)
-        self.input_values_updated |= a | b | c
-        imgui.spacing()

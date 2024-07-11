@@ -2,19 +2,15 @@ from typing import List
 import imgui
 import time
 import moderngl_window as mglw
-from moderngl_window import geometry
 from moderngl_window.integrations.imgui import ModernglWindowRenderer
 
 from src3 import constants
 from src3.shader_loader import ShaderLoader
-from src3.window_glfw import WindowGLFW
 from src.utilities import utils_logging
 from src3.event_publisher import EventPublisher
 
 # Temporary
-from src3.editors.viewer_3d import Viewer3D
 from src3.editors.viewer_3d_msaa import Viewer3DMSAA
-from src3.editors.gltf_load_demo import GLTFLoadDemo
 
 EDITOR_CLASSES = [
     Viewer3DMSAA
@@ -28,6 +24,7 @@ class App(mglw.WindowConfig):
     title = "App"
     aspect_ratio = None
     window_size = (1600, 900)
+    #vsync = False  # Disable V-Sync
 
     def __init__(self, **kwargs):
 

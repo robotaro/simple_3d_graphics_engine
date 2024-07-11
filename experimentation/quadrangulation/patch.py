@@ -14,11 +14,13 @@ import matplotlib.pyplot as plt
 MARGIN = 0.1
 MAX_NUM_VERTICES = 625
 
+
 class QuadEdge:
     
     def __init__(self) -> None:
         self.neighbor_quad_index = -1
         self.vertex_indices = []
+
 
 class UniformQuad:
     
@@ -27,12 +29,25 @@ class UniformQuad:
         self.right = QuadEdge()
         self.top = QuadEdge()
         self.left = QuadEdge()
-    
+
+
 class Patch:
     
-    __slots__ = ['bottom', 'right', 'top', 'left', 'num_sides',
-                 'patch_edge_offset', 'patch_edge_size',
-                 'pattern', 'p0', 'p1', 'p2', 'p3', 'q1', 'x', 'y',
+    __slots__ = ['bottom',
+                 'right',
+                 'top',
+                 'left',
+                 'num_sides',
+                 'patch_edge_offset',
+                 'patch_edge_size',
+                 'pattern',
+                 'p0',
+                 'p1',
+                 'p2',
+                 'p3',
+                 'q1',
+                 'x',
+                 'y',
                  'inverted', 'rotation', 'subpatch_sizes', 'subpatch_edge_indices',
                  'num_vertices', 'vertices', 'macro_edges']
     
@@ -269,7 +284,7 @@ class Patch:
         
         # Test different rotations and inversions to see which one is solvable
         matches = []
-        for (rotation, inverted, b_index, r_index, t_index, l_index) in constants.SIDES_ORDERED:
+        for (rotation, b_index, r_index, t_index, l_index) in constants.SIDES_ORDERED:
             for pattern in range(5):
                 parameters = self.solve_pattern_marameters_ilp(
                     pattern=pattern,
@@ -283,7 +298,6 @@ class Patch:
                     continue
                 
                 # Extend patch parameters to contain all necessary info to reconstruct the patch
-                parameters["inverted"] = inverted
                 parameters["rotation"] = rotation
                 matches.append(parameters)
                 
@@ -551,18 +565,23 @@ class Patch:
 
 def demo():
   
-    corners = np.array([(0, 0),
-                        (1, 0),
+    corners = np.array([(1, 0),
                         (1, 1),
-                        (0, 1)], 
+                        (0, 1),
+                        (0, 0)],
                         dtype=np.float32)
 
-    patch = Patch(
-        patch_corners=corners,
-        bottom=16,
-        right=5,
-        top=5,
-    left=4)
+    """patch = Patch(patch_corners=corners,
+                  bottom=16,
+                  right=5,
+                  top=5,
+                  left=4)"""
+
+    patch = Patch(patch_corners=corners,
+                  bottom=5,
+                  right=5,
+                  top=4,
+                  left=16)
 
     patch.process()
 

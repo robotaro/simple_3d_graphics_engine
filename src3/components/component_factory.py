@@ -4,8 +4,10 @@ from glm import vec3, quat
 
 from src3 import constants
 from src3.components.mesh_component import MeshComponent
+from src3.components.point_cloud_component import PointCloudComponent
 from src3.components.transform_component import TransformComponent
 from src3.components.material_component import MaterialComponent
+from src3.components.bezier_segment_component import BezierSegmentComponent
 from src3.shader_loader import ShaderLoader
 
 
@@ -24,7 +26,7 @@ class ComponentFactory:
         return transform
 
     def create_material(self, color=(1, 1, 1), texture=None):
-        return MaterialComponent(color, texture)
+        return MaterialComponent(color=color, texture=texture)
 
     def create_mesh(self,
                     vertices: np.array,
@@ -32,6 +34,7 @@ class ComponentFactory:
                     colors=None,
                     indices=None,
                     render_mode=constants.MESH_RENDER_MODE_TRIANGLES) -> MeshComponent:
+
         mesh = MeshComponent(
             ctx=self.ctx,
             vertices=vertices,
@@ -48,8 +51,7 @@ class ComponentFactory:
 
         return mesh
 
-    def create_bezier_segment(self, control_points=None):
-
-
-
-        pass
+    def create_bezier_segment(self, control_points=None, num_segments=32):
+        return BezierSegmentComponent(
+            control_points=control_points,
+            num_segments=num_segments)

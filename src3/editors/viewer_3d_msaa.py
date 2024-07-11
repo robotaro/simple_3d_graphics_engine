@@ -1,14 +1,21 @@
+import os
 import imgui
 import moderngl
 import struct
-from glm import vec3
+from itertools import accumulate
+import numpy as np
+from glm import vec3, vec4, inverse
 
 from src3 import constants
+from src3.gizmos import gizmo_constants
 from src3.editors.editor import Editor
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
-from src3.gizmos.transform_gizmo import TransformGizmo
 from src3.camera_3d import Camera3D  # Import the Camera class
+
+# Gizmos
+from src3.gizmos.transform_gizmo import TransformGizmo
+from src3.gizmos.bezier_gizmo import BezierGizmo
 
 
 class Viewer3DMSAA(Editor):
@@ -22,6 +29,20 @@ class Viewer3DMSAA(Editor):
         self.fbo_image_position = (0, 0)  # Indicates where on the moderngl-window the scene was rendered
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
         self.entities = {}
+        self.selected_entity_id = -1
+
+        # Uniform Blocks
+        self.ubo_mvp_sizes = {
+            'm_proj': 64,
+            'm_view': 64,
+            'm_model': 64
+        }
+        # Calculate uniform buffer size while taking into account 16bytes memory alignment
+        min_size = sum(self.ubo_mvp_sizes.values())
+        buffer_size = min_size if not min_size % 16 else ((min_size // 16) + 1) * 16
+        self.ubo_mvp_offsets = dict(zip(self.ubo_mvp_sizes, accumulate(self.ubo_mvp_sizes.values(), initial=0)))
+        self.ubo_mvp = self.ctx.buffer(reserve=buffer_size)
+        self.ubo_mvp.bind_to_uniform_block(binding=constants.UBO_BINDING_MVP)
 
         # Factories
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
@@ -41,7 +62,6 @@ class Viewer3DMSAA(Editor):
         self.image_mouse_y = 0
         self.texture_entity_info = self.ctx.texture(size=self.fbo_size, components=3, dtype='f4')
         self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
-        self.selected_entity_id = -1
 
         # Create MSAA framebuffer
         self.msaa_samples = 4
@@ -63,14 +83,18 @@ class Viewer3DMSAA(Editor):
             ],
             depth_attachment=self.ctx.depth_texture(self.fbo_size),
         )
+        self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
 
+        # Gizmos
         self.transform_gizmo = TransformGizmo(ctx=self.ctx,
                                               shader_loader=self.shader_loader,
                                               output_fbo=self.fbo)
-        self.gizmo_3d_mode_index = 0
+        self.transform_gizmo.set_mode_rotation()
+        self.gizmo_3d_mode_index = 1
 
-        self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
-
+        self.bezier_gizmo = BezierGizmo(ctx=self.ctx,
+                                        shader_loader=self.shader_loader,
+                                        output_fbo=self.fbo)
         # Debug variables
         self.debug_show_hash_colors = False
         self.debug_point_on_segment = vec3(0, 0, 0)
@@ -81,23 +105,25 @@ class Viewer3DMSAA(Editor):
 
     def setup(self) -> bool:
 
-        self.entities[10] = self.entity_factory.create_renderable_3d_axis(
-            axis_radius=0.05)
+        self.entities[10] = self.entity_factory.create_bezier_curve(position=vec3(1, 0, 0))
 
         self.entities[20] = self.entity_factory.create_sphere(
             radius=0.2,
             position=vec3(1, 1, 1),
             color=(1.0, 0.5, 0.0))
 
-        self.entities[21] = self.entity_factory.create_sphere(
-            radius=0.2,
-            position=vec3(-3, 0.5, -2),
-            color=(1.0, 0.5, 0.0))
+        fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "female_body_single_mesh_y_up.glb")
+        self.entities[21] = self.entity_factory.create_renderable_from_gltf(fpath=fpath)
 
         self.entities[30] = self.entity_factory.create_grid_xz(
             num_cells=10,
             cell_size=1.0,
             grid_color=(0.5, 0.5, 0.5)
+        )
+
+        self.entities[40] = self.entity_factory.create_point_cloud(
+            points=np.random.rand(30, 3).astype('f4') + np.array(vec3(-2, 0, 0)),
+            colors=np.random.rand(30, 3).astype('f4')
         )
 
         return True
@@ -119,9 +145,11 @@ class Viewer3DMSAA(Editor):
 
     def render_scene(self):
 
-        # Setup mvp cameras
-        self.program["m_proj"].write(self.camera.projection_matrix)
-        self.program['m_view'].write(self.camera.view_matrix)
+        # Common UBO settings
+        self.ubo_mvp.write(data=self.camera.projection_matrix, offset=self.ubo_mvp_offsets['m_proj'])
+        self.ubo_mvp.write(data=self.camera.view_matrix, offset=self.ubo_mvp_offsets['m_view'])
+
+        # ============[ Render meshes ]================
 
         # Setup lights
         self.program["light.position"].value = (10.0, 10.0, -10.0)
@@ -135,11 +163,33 @@ class Viewer3DMSAA(Editor):
         self.ctx.enable(moderngl.DEPTH_TEST)
         self.msaa_fbo.clear(*constants.DEFAULT_BACKGROUND_COLOR)
 
-        # Render renderable entities
+        # Render entities
         for entity_id, entity in self.entities.items():
             self.program["entity_id"].value = entity_id
-            self.program['m_model'].write(entity.component_transform.world_matrix)
-            entity.component_mesh.render(shader_program_name="basic.glsl")
+            self.ubo_mvp.write(data=entity.component_transform.world_matrix, offset=self.ubo_mvp_offsets['m_model'])
+
+            if entity.component_mesh:
+                entity.component_mesh.render(shader_program_name="basic.glsl")
+
+        # ==========[ Render point clouds ]============
+
+        self.ctx.enable(flags=moderngl.PROGRAM_POINT_SIZE)
+        self.ctx.gc_mode = 'auto'
+
+        # Setup mvp cameras
+        pc_program = self.shader_loader.get_program("points.glsl")
+
+        pc_program['cam_pos'].write(vec3(inverse(self.camera.view_matrix)[3]))
+
+        # Render entities
+        for entity_id, entity in self.entities.items():
+            self.ubo_mvp.write(data=entity.component_transform.world_matrix, offset=self.ubo_mvp_offsets['m_model'])
+
+            if entity.component_point_cloud:
+                entity.component_point_cloud.render()
+
+        self.ctx.disable(flags=moderngl.PROGRAM_POINT_SIZE)
+        self.ctx.gc_mode = None
 
         # Resolve MSAA
         self.ctx.copy_framebuffer(self.fbo, self.msaa_fbo)
@@ -149,12 +199,23 @@ class Viewer3DMSAA(Editor):
         if self.selected_entity_id not in self.entities:
             return
 
-        entity_world_matrix = self.entities[self.selected_entity_id].component_transform.world_matrix
+        selected_entity = self.entities[self.selected_entity_id]
 
         self.transform_gizmo.render(
             view_matrix=self.camera.view_matrix,
             projection_matrix=self.camera.projection_matrix,
-            model_matrix=entity_world_matrix)
+            model_matrix=selected_entity.component_transform.world_matrix,
+            component=selected_entity.component_transform
+        )
+
+        self.ubo_mvp.write(data=selected_entity.component_transform.world_matrix, offset=self.ubo_mvp_offsets['m_model'])
+
+        self.bezier_gizmo.render(
+            view_matrix=self.camera.view_matrix,
+            projection_matrix=self.camera.projection_matrix,
+            model_matrix=selected_entity.component_transform.world_matrix,
+            component=selected_entity.component_bezier_segment
+        )
 
     def render_ui(self):
 
@@ -164,15 +225,7 @@ class Viewer3DMSAA(Editor):
 
         # Left Column - Menus
         with imgui.begin_group():
-            imgui.push_style_var(imgui.STYLE_FRAME_BORDERSIZE, 1.0)
-            imgui.text("Entities")
-            with imgui.begin_list_box("", 200, 100) as list_box:
-                if list_box.opened:
-                    imgui.selectable("Selected", True)
-                    imgui.selectable("Not Selected", False)
-            imgui.pop_style_var(1)
-
-            imgui.text(f"Selected entity: {self.selected_entity_id}")
+            self.render_ui_entity_list()
 
             activated, self.debug_show_hash_colors = imgui.checkbox("Show entity ID colors",
                                                                     self.debug_show_hash_colors)
@@ -180,11 +233,14 @@ class Viewer3DMSAA(Editor):
             imgui.push_item_width(120)
             clicked, self.gizmo_3d_mode_index = imgui.combo(
                 "Gizmo Mode", self.gizmo_3d_mode_index,
-                [constants.GIZMO_MODE_TRANSLATION,
-                 constants.GIZMO_MODE_ROTATION]
+                [gizmo_constants.GIZMO_MODE_TRANSLATION,
+                 gizmo_constants.GIZMO_MODE_ROTATION]
             )
             if clicked:
-                self.transform_gizmo.gizmo_mode = constants.GIZMO_MODES[self.gizmo_3d_mode_index]
+                if self.gizmo_3d_mode_index == 0:
+                    self.transform_gizmo.set_mode_translation()
+                elif self.gizmo_3d_mode_index == 1:
+                    self.transform_gizmo.set_mode_rotation()
 
             # DEBUG
             imgui.text("Image hovering")
@@ -192,17 +248,17 @@ class Viewer3DMSAA(Editor):
             imgui.spacing()
             imgui.spacing()
             imgui.text("Gizmo Scale")
-            imgui.text(str(self.transform_gizmo.gizmo_scale))
+            imgui.text(str(self.transform_gizmo.scale))
             imgui.text("Ray Origin")
             imgui.text(str(self.camera_ray_origin))
             imgui.spacing()
             imgui.text("Ray Direction")
             imgui.text(str(self.camera_ray_direction))
             imgui.spacing()
-            imgui.text(f"Mode: {self.transform_gizmo.gizmo_mode}")
-            imgui.text(f"State: {str(self.transform_gizmo.state)}")
-            imgui.text(f"Axis: {self.transform_gizmo.active_index}")
-            imgui.text(f"Scale: {self.transform_gizmo.gizmo_scale}")
+            imgui.text("Debug Plane intersections")
+            imgui.text(str(self.transform_gizmo.debug_plane_intersections))
+            imgui.spacing()
+            self.transform_gizmo.render_ui()
 
         if activated:
                 self.program["hash_color"] = self.debug_show_hash_colors
@@ -270,7 +326,7 @@ class Viewer3DMSAA(Editor):
         if self.image_hovering and button == constants.MOUSE_LEFT:
 
             # You can only select another entity if, when you click, you are not hovering the gizmo
-            if self.transform_gizmo.state == constants.GIZMO_STATE_INACTIVE:
+            if self.transform_gizmo.state == gizmo_constants.GIZMO_STATE_INACTIVE:
 
                 # The framebuffer image is flipped on the y-axis, so we flip the coordinates as well
                 image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y
@@ -281,12 +337,14 @@ class Viewer3DMSAA(Editor):
 
             selected_entity = self.entities.get(self.selected_entity_id, None)
             model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
+            component = selected_entity.component_transform if selected_entity else None
 
             self.transform_gizmo.handle_event_mouse_button_press(
                 button=button,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
-                model_matrix=model_matrix)
+                model_matrix=model_matrix,
+                component=component)
 
     def handle_event_mouse_button_release(self, event_data: tuple):
         button, x, y = event_data
@@ -295,12 +353,15 @@ class Viewer3DMSAA(Editor):
 
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
+        component = selected_entity.component_transform if selected_entity else None
+
         if self.image_hovering:
             self.transform_gizmo.handle_event_mouse_button_release(
                 button=button,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
-                model_matrix=model_matrix)
+                model_matrix=model_matrix,
+                component=component)
 
     def handle_event_keyboard_press(self, event_data: tuple):
         key, modifiers = event_data
@@ -323,14 +384,27 @@ class Viewer3DMSAA(Editor):
     def handle_event_mouse_move(self, event_data: tuple):
         x, y, dx, dy = event_data
 
+        # TODO: Revise this logic. It is superfluous
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
-        if self.image_hovering:
+
+        if self.image_hovering and selected_entity:
+
+            self.bezier_gizmo.handle_event_mouse_move(
+                event_data=event_data,
+                ray_direction=self.camera_ray_direction,
+                ray_origin=self.camera_ray_origin,
+                model_matrix=model_matrix,
+                component=selected_entity.component_bezier_segment
+            )
+
             self.transform_gizmo.handle_event_mouse_move(
                 event_data=event_data,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
-                model_matrix=model_matrix)
+                model_matrix=model_matrix,
+                component=selected_entity.component_transform
+            )
 
     def handle_event_mouse_drag(self, event_data: tuple):
         x, y, dx, dy = event_data
@@ -339,11 +413,39 @@ class Viewer3DMSAA(Editor):
 
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
+        component = selected_entity.component_transform if selected_entity else None
         if self.image_hovering:
             new_model_matrix = self.transform_gizmo.handle_event_mouse_drag(
                 event_data=event_data,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
-                model_matrix=model_matrix)
+                model_matrix=model_matrix,
+                component=component)
+
             if selected_entity is not None:
                 selected_entity.component_transform.update_world_matrix(world_matrix=new_model_matrix)
+
+    # ======================================================================
+    #                             UI Functions
+    # ======================================================================
+
+    def render_ui_entity_list(self):
+        """
+        Shows the list of current entities in the scene, and which entity is actively selected
+        :return:
+        """
+        imgui.push_style_var(imgui.STYLE_FRAME_BORDERSIZE, 1.0)
+        imgui.text("Entities")
+        with imgui.begin_list_box("", 250, 150) as list_box:
+            for entity_id, entity in self.entities.items():
+                text = f"[{entity_id}] {entity.label}"
+                if self.selected_entity_id == entity_id:
+                    imgui.selectable(text, True)
+                    continue
+                opened, selected = imgui.selectable(text, False)
+                if selected:
+                    self.selected_entity_id = entity_id
+
+                    # TODO: Think of a way to trigger updates when selected from the entity list
+                    self.bezier_gizmo.update_selection(component=self.entities[entity_id].component_bezier_segment)
+        imgui.pop_style_var(1)

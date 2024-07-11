@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from matplotlib import collections  as mc
+from matplotlib import collections as mc
 import numpy as np
 
 class TopoViz:

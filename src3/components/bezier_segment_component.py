@@ -10,7 +10,8 @@ class BezierSegmentComponent:
     There are four 3D control points and two twists controls for rotation along the bezier segment (begining and end)
     """
 
-    def __init__(self, control_points=None,
+    def __init__(self,
+                 control_points=None,
                  num_segments=32,
                  start_twist_angle=0.0,
                  stop_twist_angle=0.0):
@@ -22,8 +23,8 @@ class BezierSegmentComponent:
         # Control points are absolute values! Forget about the blender handles!
         if control_points is None:
             self.control_points = np.array([[0, 0, 0],
-                                            [0.3333, 0, 0],
-                                            [0.6667, 0, 0],
+                                            [0, 1.0, 0],
+                                            [1.0, 1.0, 0],
                                             [1.0, 0, 0]], dtype=np.float32)
         elif type(control_points) is np.ndarray:
             if control_points.shape == (4, 3):
@@ -32,8 +33,7 @@ class BezierSegmentComponent:
                 raise Exception("[ERROR] Provided 'control_point' doesn#t match shape (4, 3)")
 
         self.num_segments = num_segments
-
-
+        self.t_values = np.linspace(start=0, stop=1.0, num=self.num_segments, endpoint=True)
         self.start_twist_angle = start_twist_angle
         self.stop_twist_angle = stop_twist_angle
 
@@ -42,6 +42,26 @@ class BezierSegmentComponent:
 
     def render(self):
         pass
+
+    # ==============================================================
+    #                        Update Functions
+    # ==============================================================
+
+    def update_contro_points(self, control_points: np.ndarray):
+        pass
+
+    def update_radius(self, radius: float):
+        pass
+
+    def trigger_update(self):
+
+        # Upd
+
+        pass
+
+    # ==============================================================
+    #                       Auxiliary Functions
+    # ==============================================================
 
     def interpolate_single_point(self, t_value):
 

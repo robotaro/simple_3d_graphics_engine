@@ -22,8 +22,8 @@ class PatchPattern4(Patch):
 
     """
     
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self._pattern = 4
 
     @property

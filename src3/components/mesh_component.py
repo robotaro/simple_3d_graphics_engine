@@ -34,6 +34,9 @@ class MeshComponent:
                  indices: np.array,
                  render_mode=constants.MESH_RENDER_MODE_TRIANGLES):
 
+        # TODO: Maybe the mesh should always be rendered with the same shader and always in triagles.
+        #       Leave specialisations to other types of renderable components
+
         self.ctx = ctx
         self.vbos = {
             "vertices": self.create_vbo(vbo_name="vertices", vbo_data=vertices),
