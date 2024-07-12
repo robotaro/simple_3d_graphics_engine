@@ -1,4 +1,33 @@
-from glm import vec3, mat4, dot, length2, sqrt, epsilon, cross, normalize
+from glm import vec3, vec4, mat4, dot, length2, sqrt, epsilon, cross, normalize
+
+
+def world_to_screen(point: vec3, model_matrix: mat4, view_matrix: mat4, projection_matrix: mat4, viewport: tuple) -> vec3:
+    """
+    Convert a point from 3D world space to 2D screen space.
+
+    Args:
+        point (vec3): The 3D world coordinates of the point.
+        model_matrix (mat4): The model transformation matrix.
+        view_matrix (mat4): The view transformation matrix.
+        projection_matrix (mat4): The projection transformation matrix.
+        viewport (tuple): The viewport dimensions (x, y, width, height).
+
+    Returns:
+        vec3: The 2D screen coordinates of the point.
+    """
+
+    # Transform the point to clip space
+    clip_space_point = projection_matrix * view_matrix * model_matrix * vec4(point, 1.0)
+
+    # Perform perspective division to get normalized device coordinates (NDC)
+    ndc = vec3(clip_space_point) / clip_space_point.w
+
+    # Convert NDC to screen coordinates
+    x = (ndc.x + 1) * 0.5 * viewport[2] + viewport[0]
+    y = (ndc.y + 1) * 0.5 * viewport[3] + viewport[1]
+    z = (ndc.z + 1) * 0.5
+
+    return vec3(x, y, z)
 
 
 def intersect_ray_plane_boolean(ray_origin: vec3, ray_direction: vec3, plane_normal: vec3, plane_offset: float) -> bool:

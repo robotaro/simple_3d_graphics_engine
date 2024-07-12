@@ -359,7 +359,7 @@ class Viewer3DMSAA(Editor):
             component = selected_entity.component_transform if selected_entity else None
 
             self.transform_gizmo.handle_event_mouse_button_press(
-                button=button,
+                event_data=event_data,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
                 model_matrix=model_matrix,
@@ -376,7 +376,7 @@ class Viewer3DMSAA(Editor):
 
         if self.image_hovering:
             self.transform_gizmo.handle_event_mouse_button_release(
-                button=button,
+                event_data=event_data,
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
                 model_matrix=model_matrix,

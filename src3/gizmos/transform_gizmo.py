@@ -1,4 +1,3 @@
-import time
 import math
 import moderngl
 import numpy as np
@@ -187,7 +186,7 @@ class TransformGizmo(Gizmo):
     # =========================================================================
 
     def handle_event_mouse_button_press(self,
-                                        button: int,
+                                        event_data: tuple,
                                         ray_origin: vec3,
                                         ray_direction: vec3,
                                         model_matrix: mat4,
@@ -195,7 +194,7 @@ class TransformGizmo(Gizmo):
 
         if self.mode == gizmo_constants.GIZMO_MODE_TRANSLATION:
             self.translation_mode_mouse_press(
-                button=button,
+                event_data=event_data,
                 ray_origin=ray_origin,
                 ray_direction=ray_direction,
                 model_matrix=model_matrix,
@@ -203,18 +202,20 @@ class TransformGizmo(Gizmo):
 
         elif self.mode == gizmo_constants.GIZMO_MODE_ROTATION:
             self.rotation_mode_mouse_press(
-                button=button,
+                event_data=event_data,
                 ray_origin=ray_origin,
                 ray_direction=ray_direction,
                 model_matrix=model_matrix,
                 component=component)
 
     def handle_event_mouse_button_release(self,
-                                          button: int,
+                                          event_data: tuple,
                                           ray_origin: vec3,
                                           ray_direction: vec3,
                                           model_matrix: mat4,
                                           component: Any):
+
+        button, x, y = event_data
 
         # TODO: When you release the button, you need to check if tou are still hovering the gizmo
         if button == constants.MOUSE_LEFT:
@@ -438,11 +439,13 @@ class TransformGizmo(Gizmo):
     # =============================================================
 
     def translation_mode_mouse_press(self,
-                                     button: int,
+                                     event_data: tuple,
                                      ray_origin: vec3,
                                      ray_direction: vec3,
                                      model_matrix: mat4,
                                      component: Any):
+
+        button, x, y = event_data
 
         if button == constants.MOUSE_LEFT:
 
@@ -690,7 +693,7 @@ class TransformGizmo(Gizmo):
         return 0.0
 
     def rotation_mode_mouse_press(self,
-                                  button: int,
+                                  event_data: tuple,
                                   ray_origin: vec3,
                                   ray_direction: vec3,
                                   model_matrix: mat4,
