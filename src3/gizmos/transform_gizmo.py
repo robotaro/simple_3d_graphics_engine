@@ -40,6 +40,8 @@ class TransformGizmo(Gizmo):
         self.disks_axis_list = [(1, 2), (0, 2), (0, 1)]
 
         # VAOs and VBOs
+        self.translation_mode_lines_vbos = {}
+        self.translation_mode_lines_vaos = {}
         self.translation_mode_lines_vertices_vbo = None
         self.translation_mode_lines_colors_vbo = None
         self.translation_mode_lines_vao = None
