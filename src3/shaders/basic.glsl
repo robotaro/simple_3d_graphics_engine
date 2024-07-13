@@ -10,7 +10,7 @@ out vec3 normal;
 out vec3 color;
 out vec3 fragPos;
 
-layout (std140) uniform UBO_MVP {
+layout (std140, binding = 0) uniform UBO_MVP {
     mat4 m_proj;
     mat4 m_view;
     mat4 m_model;

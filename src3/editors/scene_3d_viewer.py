@@ -9,6 +9,7 @@ from glm import vec2, vec3, vec4, inverse
 from src3 import constants
 from src3.gizmos import gizmo_constants
 from src3.editors.editor import Editor
+from src3.ubo_manager import UBOManager
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
 from src3.camera_3d import Camera3D  # Import the Camera class
@@ -48,6 +49,7 @@ class Scene3DViewer(Editor):
         self.ubo_mvp.bind_to_uniform_block(binding=constants.UBO_BINDING_MVP)
 
         # Factories
+        self.ubo_manager = UBOManager(logger=self.logger, ctx=self.ctx)
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
         self.entity_factory = EntityFactory(ctx=self.ctx, shader_loader=self.shader_loader)
 
@@ -111,6 +113,17 @@ class Scene3DViewer(Editor):
         self.renderable_entity_grid = None
 
     def setup(self) -> bool:
+
+        # register UBOs
+        """self.ubo_manager.register_ubo(
+            ubo_id="mvp",
+            binding_point=constants.UBO_BINDING_MVP,
+            variable_names_and_sizes=[
+                ("m_proj", 64),
+                ("m_view", 64),
+                ("m_model", 64),
+            ]
+        )"""
 
         self.entities[10] = self.entity_factory.create_bezier_curve(position=vec3(1, 0, 0))
 
