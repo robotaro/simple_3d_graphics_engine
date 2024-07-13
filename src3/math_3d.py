@@ -1,20 +1,9 @@
-from glm import vec3, vec4, mat4, dot, length2, sqrt, epsilon, cross, normalize
+from typing import Tuple
+
+from glm import vec2, vec3, vec4, mat4, dot, length2, sqrt, epsilon, cross, normalize
 
 
-def world_to_screen(point: vec3, model_matrix: mat4, view_matrix: mat4, projection_matrix: mat4, viewport: tuple) -> vec3:
-    """
-    Convert a point from 3D world space to 2D screen space.
-
-    Args:
-        point (vec3): The 3D world coordinates of the point.
-        model_matrix (mat4): The model transformation matrix.
-        view_matrix (mat4): The view transformation matrix.
-        projection_matrix (mat4): The projection transformation matrix.
-        viewport (tuple): The viewport dimensions (x, y, width, height).
-
-    Returns:
-        vec3: The 2D screen coordinates of the point.
-    """
+"""def world_to_screen(point: vec3, model_matrix: mat4, view_matrix: mat4, projection_matrix: mat4, viewport: tuple) -> vec2:
 
     # Transform the point to clip space
     clip_space_point = projection_matrix * view_matrix * model_matrix * vec4(point, 1.0)
@@ -23,11 +12,30 @@ def world_to_screen(point: vec3, model_matrix: mat4, view_matrix: mat4, projecti
     ndc = vec3(clip_space_point) / clip_space_point.w
 
     # Convert NDC to screen coordinates
-    x = (ndc.x + 1) * 0.5 * viewport[2] + viewport[0]
-    y = (ndc.y + 1) * 0.5 * viewport[3] + viewport[1]
-    z = (ndc.z + 1) * 0.5
+    x = (ndc.x + 1) * 0.5 * viewport[0] + viewport[2]
+    y = (ndc.y + 1) * 0.5 * viewport[1] + viewport[3]
 
-    return vec3(x, y, z)
+    return vec2(x, y)"""
+
+
+def world_to_screen(point: vec3,
+                    view_matrix: mat4,
+                    projection_matrix: mat4,
+                    viewport: Tuple[int, int, int, int]) -> vec2:
+    # Transform point to clip space
+    point_clip = projection_matrix * view_matrix * vec4(point, 1.0)
+
+    # Perspective divide to get normalized device coordinates (NDC)
+    if point_clip.w != 0:
+        point_ndc = point_clip / point_clip.w
+    else:
+        point_ndc = point_clip
+
+    # Convert NDC to window coordinates
+    screen_x = ((point_ndc.x + 1) / 2.0) * viewport[2] + viewport[0]
+    screen_y = ((1 - point_ndc.y) / 2.0) * viewport[3] + viewport[1]
+
+    return vec2(screen_x, screen_y)
 
 
 def intersect_ray_plane_boolean(ray_origin: vec3, ray_direction: vec3, plane_normal: vec3, plane_offset: float) -> bool:

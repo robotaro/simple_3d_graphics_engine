@@ -4,6 +4,13 @@ import numpy as np
 #                               Transform Gizmo
 # =============================================================================
 
+GIZMO_ORIENTATION_GLOBAL = "global"
+GIZMO_ORIENTATION_LOCAL = "local"
+GIZMO_ORIENTATIONS = [
+    GIZMO_ORIENTATION_GLOBAL,
+    GIZMO_ORIENTATION_LOCAL
+]
+
 GIZMO_SIZE_ON_SCREEN_PIXELS_TRANSLATION = 150.0
 GIZMO_SIZE_ON_SCREEN_PIXELS_ROTATION = 100.0
 

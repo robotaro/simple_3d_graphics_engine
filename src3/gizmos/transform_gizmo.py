@@ -78,6 +78,15 @@ class TransformGizmo(Gizmo):
         self.gizmo_size_on_screen_pixels = gizmo_constants.GIZMO_SIZE_ON_SCREEN_PIXELS_ROTATION
         self.mode = gizmo_constants.GIZMO_MODE_ROTATION
 
+    def set_orientation_global(self):
+        self.orientation = gizmo_constants.GIZMO_ORIENTATION_GLOBAL
+
+    def set_orientation_local(self):
+        self.orientation = gizmo_constants.GIZMO_ORIENTATION_LOCAL
+
+    def set_viewport(self, viewport: tuple):
+        self.original_viewport = viewport
+
     def render(self,
                view_matrix: mat4,
                projection_matrix: mat4,

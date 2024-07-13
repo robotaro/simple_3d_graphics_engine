@@ -10,10 +10,10 @@ from src.utilities import utils_logging
 from src3.event_publisher import EventPublisher
 
 # Temporary
-from src3.editors.viewer_3d_msaa import Viewer3DMSAA
+from src3.editors.scene_3d_viewer import Scene3DViewer
 
 EDITOR_CLASSES = [
-    Viewer3DMSAA
+    Scene3DViewer
     #Viewer3D
 ]
 

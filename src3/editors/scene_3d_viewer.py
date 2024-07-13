@@ -4,7 +4,7 @@ import moderngl
 import struct
 from itertools import accumulate
 import numpy as np
-from glm import vec3, vec4, inverse
+from glm import vec2, vec3, vec4, inverse
 
 from src3 import constants
 from src3.gizmos import gizmo_constants
@@ -18,17 +18,18 @@ from src3.gizmos.transform_gizmo import TransformGizmo
 from src3.gizmos.bezier_gizmo import BezierGizmo
 
 SPHERE_ID = 20
+IMAGE_WIDTH = 800
+IMAGE_HEIGHT = 600
 
 
-class Viewer3DMSAA(Editor):
+class Scene3DViewer(Editor):
 
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
 
-        self.window_size = (1100, 600)
-        self.fbo_size = (640, 480)
-        self.fbo_image_position = (0, 0)  # Indicates where on the moderngl-window the scene was rendered
+        self.window_size = (1200, 750)
+        self.fbo_size = (IMAGE_WIDTH, IMAGE_HEIGHT)
         self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
         self.entities = {}
         self.selected_entity_id = -1
@@ -62,6 +63,7 @@ class Viewer3DMSAA(Editor):
         self.image_hovering = False
         self.image_mouse_x = 0  # Current position of mouse on rendered image
         self.image_mouse_y = 0
+        self.image_viewport = (0, 0, IMAGE_WIDTH, IMAGE_HEIGHT)  # This will be updated periodically"
         self.texture_entity_info = self.ctx.texture(size=self.fbo_size, components=3, dtype='f4')
         self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
 
@@ -91,15 +93,18 @@ class Viewer3DMSAA(Editor):
         self.transform_gizmo = TransformGizmo(ctx=self.ctx,
                                               shader_loader=self.shader_loader,
                                               output_fbo=self.fbo)
-        self.transform_gizmo.set_mode_rotation()
-        self.gizmo_3d_mode_index = 1
+        self.transform_gizmo_mode_translation = True
+        self.transform_gizmo_mode_rotation = False
+        self.transform_gizmo_orientation_global = True
+        self.transform_gizmo_orientation_local = False
+        self.transform_gizmo.set_mode_translation()
+        self.transform_gizmo.set_viewport(viewport=self.image_viewport)
 
         self.bezier_gizmo = BezierGizmo(ctx=self.ctx,
                                         shader_loader=self.shader_loader,
                                         output_fbo=self.fbo)
         # Debug variables
         self.debug_show_hash_colors = False
-        self.debug_point_on_segment = vec3(0, 0, 0)
         self.debug_shortest_distance2 = 0.0
 
         # System-only entities
@@ -241,16 +246,33 @@ class Viewer3DMSAA(Editor):
                                                                     self.debug_show_hash_colors)
 
             imgui.push_item_width(120)
-            clicked, self.gizmo_3d_mode_index = imgui.combo(
-                "Gizmo Mode", self.gizmo_3d_mode_index,
-                [gizmo_constants.GIZMO_MODE_TRANSLATION,
-                 gizmo_constants.GIZMO_MODE_ROTATION]
-            )
-            if clicked:
-                if self.gizmo_3d_mode_index == 0:
-                    self.transform_gizmo.set_mode_translation()
-                elif self.gizmo_3d_mode_index == 1:
-                    self.transform_gizmo.set_mode_rotation()
+
+            # Replace the combo menu with radio buttons for Gizmo Mode
+            imgui.text("Gizmo Mode")
+            if imgui.radio_button("Translation", self.transform_gizmo_mode_translation):
+                self.transform_gizmo_mode_rotation = False
+                self.transform_gizmo_mode_translation = True
+                self.transform_gizmo.set_mode_translation()
+
+            if imgui.radio_button("Rotation", self.transform_gizmo_mode_rotation):
+                self.transform_gizmo_mode_rotation = True
+                self.transform_gizmo_mode_translation = False
+                self.transform_gizmo.set_mode_rotation()
+            imgui.spacing()
+            imgui.spacing()
+
+            imgui.text("Gizmo Orientation")
+            if imgui.radio_button("Global", self.transform_gizmo_orientation_global):
+                self.transform_gizmo_orientation_global = True
+                self.transform_gizmo_orientation_local = False
+                self.transform_gizmo.set_orientation_global()
+
+            if imgui.radio_button("Local", self.transform_gizmo_orientation_local):
+                self.transform_gizmo_orientation_global = False
+                self.transform_gizmo_orientation_local = True
+                self.transform_gizmo.set_orientation_local()
+            imgui.spacing()
+            imgui.spacing()
 
             # DEBUG
             imgui.text("Image hovering")
@@ -289,7 +311,9 @@ class Viewer3DMSAA(Editor):
             texture_id = self.fbo.color_attachments[0].glo
 
             # Get the position where the image will be drawn
-            self.fbo_image_position = imgui.get_cursor_screen_pos()
+            image_position = imgui.get_cursor_screen_pos()
+            self.image_viewport = (image_position[0], image_position[1], IMAGE_HEIGHT, IMAGE_WIDTH)
+            self.transform_gizmo.set_viewport(viewport=self.image_viewport)
 
             # NOTE: I'm using the uv0 and uv1 arguments to FLIP the image back vertically, as it is flipped by default
             imgui.image(texture_id, *self.fbo.size, uv0=(0, 1), uv1=(1, 0))
@@ -300,8 +324,8 @@ class Viewer3DMSAA(Editor):
                 mouse_x, mouse_y = imgui.get_mouse_pos()
 
                 # Calculate the mouse position relative to the image
-                self.image_mouse_x = mouse_x - self.fbo_image_position[0]
-                self.image_mouse_y = mouse_y - self.fbo_image_position[1]
+                self.image_mouse_x = mouse_x - self.image_viewport[0]
+                self.image_mouse_y = mouse_y - self.image_viewport[1]
 
                 # Generate a 3D ray from the camera position
                 self.camera_ray_origin, self.camera_ray_direction = self.camera.screen_to_world(
@@ -359,7 +383,7 @@ class Viewer3DMSAA(Editor):
             component = selected_entity.component_transform if selected_entity else None
 
             self.transform_gizmo.handle_event_mouse_button_press(
-                event_data=event_data,
+                event_data=(button, self.image_mouse_x, self.image_mouse_y),
                 ray_direction=self.camera_ray_direction,
                 ray_origin=self.camera_ray_origin,
                 model_matrix=model_matrix,
@@ -370,6 +394,7 @@ class Viewer3DMSAA(Editor):
         if button == constants.MOUSE_RIGHT:
             self.camera.right_mouse_button_down = False
 
+        # TODO: Getting the component is too verbose
         selected_entity = self.entities.get(self.selected_entity_id, None)
         model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
         component = selected_entity.component_transform if selected_entity else None
