@@ -35,23 +35,12 @@ class Scene3DViewer(Editor):
         self.entities = {}
         self.selected_entity_id = -1
 
-        # Uniform Blocks
-        self.ubo_mvp_sizes = {
-            'm_proj': 64,
-            'm_view': 64,
-            'm_model': 64
-        }
-        # Calculate uniform buffer size while taking into account 16bytes memory alignment
-        min_size = sum(self.ubo_mvp_sizes.values())
-        buffer_size = min_size if not min_size % 16 else ((min_size // 16) + 1) * 16
-        self.ubo_mvp_offsets = dict(zip(self.ubo_mvp_sizes, accumulate(self.ubo_mvp_sizes.values(), initial=0)))
-        self.ubo_mvp = self.ctx.buffer(reserve=buffer_size)
-        self.ubo_mvp.bind_to_uniform_block(binding=constants.UBO_BINDING_MVP)
-
         # Factories
         self.ubo_manager = UBOManager(logger=self.logger, ctx=self.ctx)
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
-        self.entity_factory = EntityFactory(ctx=self.ctx, shader_loader=self.shader_loader)
+        self.entity_factory = EntityFactory(ctx=self.ctx,
+                                            shader_loader=self.shader_loader,
+                                            ubo_manager=self.ubo_manager)
 
         # Camera variables
         self.camera = Camera3D(fbo_size=self.fbo_size, position=vec3(0, 1, 5))
@@ -114,16 +103,16 @@ class Scene3DViewer(Editor):
 
     def setup(self) -> bool:
 
-        # register UBOs
-        """self.ubo_manager.register_ubo(
+        # ===========[ Register UBOs ]===========
+        self.ubo_manager.register_ubo(
             ubo_id="mvp",
             binding_point=constants.UBO_BINDING_MVP,
             variable_names_and_sizes=[
                 ("m_proj", 64),
                 ("m_view", 64),
-                ("m_model", 64),
+                ("m_model", 64)
             ]
-        )"""
+        )
 
         self.entities[10] = self.entity_factory.create_bezier_curve(position=vec3(1, 0, 0))
 
@@ -174,8 +163,8 @@ class Scene3DViewer(Editor):
             self.entities[SPHERE_ID].component_transform.update_world_matrix(world_matrix=world_matrix)"""
 
         # Common UBO settings
-        self.ubo_mvp.write(data=self.camera.projection_matrix, offset=self.ubo_mvp_offsets['m_proj'])
-        self.ubo_mvp.write(data=self.camera.view_matrix, offset=self.ubo_mvp_offsets['m_view'])
+        self.ubo_manager.update_ubo(ubo_id="mvp", variable_id="m_proj", data=self.camera.projection_matrix)
+        self.ubo_manager.update_ubo(ubo_id="mvp", variable_id="m_view", data=self.camera.view_matrix)
 
         # ============[ Render meshes ]================
 
@@ -194,10 +183,11 @@ class Scene3DViewer(Editor):
         # Render entities
         for entity_id, entity in self.entities.items():
             self.program["entity_id"].value = entity_id
-            self.ubo_mvp.write(data=entity.component_transform.world_matrix, offset=self.ubo_mvp_offsets['m_model'])
+            self.ubo_manager.update_ubo(ubo_id="mvp",
+                                        variable_id="m_model",
+                                        data=entity.component_transform.world_matrix)
 
-            if entity.component_mesh:
-                entity.component_mesh.render(shader_program_name="basic.glsl")
+            entity.render(entity_id=entity_id)
 
         # ==========[ Render point clouds ]============
 
@@ -211,7 +201,9 @@ class Scene3DViewer(Editor):
 
         # Render entities
         for entity_id, entity in self.entities.items():
-            self.ubo_mvp.write(data=entity.component_transform.world_matrix, offset=self.ubo_mvp_offsets['m_model'])
+            self.ubo_manager.update_ubo(ubo_id="mvp",
+                                        variable_id="m_model",
+                                        data=entity.component_transform.world_matrix)
 
             if entity.component_point_cloud:
                 entity.component_point_cloud.render()
@@ -236,7 +228,8 @@ class Scene3DViewer(Editor):
             component=selected_entity.component_transform
         )
 
-        self.ubo_mvp.write(data=selected_entity.component_transform.world_matrix, offset=self.ubo_mvp_offsets['m_model'])
+        self.ubo_manager.update_ubo(ubo_id="mvp", variable_id="m_model",
+                                    data=selected_entity.component_transform.world_matrix)
 
         self.bezier_gizmo.render(
             view_matrix=self.camera.view_matrix,

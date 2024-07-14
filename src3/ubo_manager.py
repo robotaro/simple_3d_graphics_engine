@@ -90,9 +90,9 @@ class UBOManager:
         if ubo_id not in self.ubos:
             raise ValueError(f"UBO with id {ubo_id} not registered.")
 
-        ubo_info = self.ubos[ubo_id]
-        ubo_buffer = ubo_info['buffer']
-        offsets = ubo_info['offsets']
+        ubo_instance = self.ubos[ubo_id]
+        ubo_buffer = ubo_instance.ubo
+        offsets = ubo_instance.offsets
 
         if variable_id not in offsets:
             raise ValueError(f"Variable {variable_id} not found in UBO {ubo_id}.")

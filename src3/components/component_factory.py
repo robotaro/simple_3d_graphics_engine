@@ -32,22 +32,18 @@ class ComponentFactory:
                     vertices: np.array,
                     normals=None,
                     colors=None,
-                    indices=None,
-                    render_mode=constants.MESH_RENDER_MODE_TRIANGLES) -> MeshComponent:
+                    indices=None) -> MeshComponent:
 
         mesh = MeshComponent(
             ctx=self.ctx,
+            program=self.shader_loader.get_program(shader_filename="basic.glsl"),
             vertices=vertices,
             normals=normals,
             colors=colors,
-            indices=indices,
-            render_mode=render_mode
-        )
+            indices=indices)
 
         for shader_program_name, shader in self.shader_loader.shaders.items():
-            mesh.create_vao(
-                shader_program_name=shader_program_name,
-                shader_program=shader.program)
+            mesh.create_vao(shader_program=shader.program)
 
         return mesh
 

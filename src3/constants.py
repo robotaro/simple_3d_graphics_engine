@@ -69,6 +69,8 @@ MESH_RENDER_MODES = {
     "lines": MESH_RENDER_MODE_LINES,
     "triangles": MESH_RENDER_MODE_TRIANGLES
 }
+MESH_LIGHTING_MODE_SOLID = 0
+MESH_LIGHTING_MODE_LIT = 0
 
 # Uniform Buffer Object binding points. They should match the GLSL code:
 # E.G: layout (std140, binding = 0) uniform UBO_MVP { ... }

@@ -640,8 +640,8 @@ class TransformGizmo(Gizmo):
             # Calculate the plane origin and direction vectors
             plane_axis_indices = self.plane_axis_list[self.active_index]
             plane_origin = self.original_position
-            plane_vec1 = vec3(self.original_model_matrix[plane_axis_indices[0]]) * self.scale
-            plane_vec2 = vec3(self.original_model_matrix[plane_axis_indices[1]]) * self.scale
+            plane_vec1 = vec3(self.original_model_matrix[plane_axis_indices[0]])
+            plane_vec2 = vec3(self.original_model_matrix[plane_axis_indices[1]])
 
             # Calculate intersection of ray with plane
             u, v, t = math_3d.ray_intersect_plane_coordinates(
@@ -651,10 +651,6 @@ class TransformGizmo(Gizmo):
                 ray_origin=ray_origin,
                 ray_direction=ray_direction
             )
-
-            # DEBUG
-            #self.debug_intersection_u = u
-            #self.debug_intersection_v = v
 
             if t is None:
                 return None
@@ -690,10 +686,6 @@ class TransformGizmo(Gizmo):
             ray_origin=ray_origin,
             ray_direction=ray_direction
         )
-
-        # DEBUG
-        #self.debug_intersection_u = u
-        #self.debug_intersection_v = v
 
         if t is not None:
             intersection_point = ray_origin + t * ray_direction

@@ -1,3 +1,6 @@
+
+from src3.ubo_manager import UBOManager
+from src3.shader_loader import ShaderLoader
 from src3.components.mesh_component import MeshComponent
 from src3.components.transform_component import TransformComponent
 from src3.components.material_component import MaterialComponent
@@ -7,9 +10,11 @@ from src3.components.point_cloud_component import PointCloudComponent
 
 class Entity:
 
-    def __init__(self, archetype: str, component_list: list, label=None):
-        self.label = label if isinstance(label, str) else "generic"
-        self.archetype = archetype
+    def __init__(self, shader_loader: ShaderLoader, ubo_manager: UBOManager, component_list: list, label=None):
+
+        self.shader_loader = shader_loader
+        self.ubo_manager = ubo_manager
+        self.label = label if isinstance(label, str) else "entity"
 
         # Components
         self.component_transform = None
@@ -31,7 +36,7 @@ class Entity:
             elif isinstance(component, BezierSegmentComponent):
                 self.component_bezier_segment = component
 
-    def render(self):
+    def render(self, entity_id=None):
         pass
 
     def update(self, elapsed_time: float):
@@ -41,7 +46,7 @@ class Entity:
 
         # Go over every component (that starts with "comp_") and release it if not None
         for attr_name in dir(self):
-            if not attr_name.startswith("comp_"):
+            if not attr_name.startswith("component_"):
                 continue
 
             component = getattr(self, attr_name)
