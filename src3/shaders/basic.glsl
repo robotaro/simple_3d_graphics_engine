@@ -14,9 +14,29 @@ layout (std140, binding = 0) uniform UBO_MVP {
     mat4 m_proj;
     mat4 m_view;
     mat4 m_model;
+    vec3 v_cam_pos;
+    float padding_1;
 };
 
 uniform mat4 m_view_light;
+
+// Ambient Lighting
+struct GlobalAmbient
+{
+    vec3 direction;  // direction of top color
+    vec3 top;        // top color
+    vec3 bottom;     // bottom color
+    float strength;
+};
+uniform GlobalAmbient global = GlobalAmbient(
+    vec3(0.0, 1.0, 0.0),
+    vec3(1.0, 1.0, 1.0),
+    vec3(0.0, 0.0, 0.0),
+    1.0
+);
+uniform vec3 hemisphere_up_color = vec3(1.0, 1.0, 1.0);
+uniform vec3 hemisphere_down_color = vec3(0.0, 0.0, 0.0);
+uniform vec3 hemisphere_light_direction = vec3(0.0, 1.0, 0.0);
 
 
 void main() {
@@ -34,6 +54,14 @@ layout (location = 1) out vec4 out_fragment_entity_info;
 in vec3 normal;
 in vec3 color;
 in vec3 fragPos;
+
+layout (std140, binding = 0) uniform UBO_MVP {
+    mat4 m_proj;
+    mat4 m_view;
+    mat4 m_model;
+    vec3 v_cam_pos;
+    float padding_1;
+};
 
 struct Light {
     vec3 position;

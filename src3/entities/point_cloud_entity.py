@@ -23,14 +23,6 @@ class PointCloudEntity(Entity):
 
     def render(self, entity_id=None):
 
-        self.ubo_manager.update_ubo(
-            ubo_id="mvp",
-            variable_id="m_model",
-            data=self.component_transform.world_matrix)
-
-        if entity_id:
-            self.program["entity_id"].value = entity_id
-
         self.ctx.enable(flags=moderngl.PROGRAM_POINT_SIZE)
         self.ctx.gc_mode = 'auto'
 

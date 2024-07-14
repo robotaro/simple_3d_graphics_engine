@@ -31,7 +31,8 @@ class Scene3DViewer(Editor):
 
         self.window_size = (1200, 750)
         self.fbo_size = (IMAGE_WIDTH, IMAGE_HEIGHT)
-        self.program = self.shader_loader.get_program(shader_filename="basic.glsl")
+        self.program_basic = self.shader_loader.get_program(shader_filename="basic.glsl")
+        self.program_points = self.shader_loader.get_program(shader_filename="points.glsl")
         self.entities = {}
         self.selected_entity_id = -1
 
@@ -110,7 +111,8 @@ class Scene3DViewer(Editor):
             variable_names_and_sizes=[
                 ("m_proj", 64),
                 ("m_view", 64),
-                ("m_model", 64)
+                ("m_model", 64),
+                ("v_cam_pos", 3)
             ]
         )
 
@@ -121,7 +123,7 @@ class Scene3DViewer(Editor):
             position=vec3(1, 1, 1),
             color=(1.0, 0.5, 0.0))
 
-        fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "female_body_single_mesh_y_up.glb")
+        fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "Honkai_Star_Rail_Ruan_Mei_Base_DL.gltf")
         self.entities[21] = self.entity_factory.create_renderable_from_gltf(fpath=fpath)
 
         self.entities[30] = self.entity_factory.create_grid_xz(
@@ -154,27 +156,18 @@ class Scene3DViewer(Editor):
 
     def render_scene(self):
 
-        # DEBUG - Update intersection point using a sphere
-        """x = self.transform_gizmo.debug_intersection_u
-        y = self.transform_gizmo.debug_intersection_v
-        if x:
-            world_matrix = self.entities[SPHERE_ID].component_transform.world_matrix
-            world_matrix[3] = vec4(x, 0, y, 1.0)
-            self.entities[SPHERE_ID].component_transform.update_world_matrix(world_matrix=world_matrix)"""
-
         # Common UBO settings
         self.ubo_manager.update_ubo(ubo_id="mvp", variable_id="m_proj", data=self.camera.projection_matrix)
         self.ubo_manager.update_ubo(ubo_id="mvp", variable_id="m_view", data=self.camera.view_matrix)
-
-        # ============[ Render meshes ]================
+        self.ubo_manager.update_ubo(ubo_id="mvp", variable_id="v_cam_pos", data=self.camera.position)
 
         # Setup lights
-        self.program["light.position"].value = (10.0, 10.0, -10.0)
-        self.program['light.position'].value = vec3(1.0, 1.0, 1.0)
-        self.program['light.Ia'].value = vec3(0.2, 0.2, 0.2)
-        self.program['light.Id'].value = vec3(0.5, 0.5, 0.5)
-        self.program['light.Is'].value = vec3(1.0, 1.0, 1.0)
-        self.program['camPos'].value = (0.0, 0.0, 3.0)
+        # TODO: Prevent re-uploading lighting information at every frame
+        self.program_basic["light.position"].value = (10.0, 10.0, -10.0)
+        self.program_basic['light.position'].value = vec3(1.0, 1.0, 1.0)
+        self.program_basic['light.Ia'].value = vec3(0.2, 0.2, 0.2)
+        self.program_basic['light.Id'].value = vec3(0.5, 0.5, 0.5)
+        self.program_basic['light.Is'].value = vec3(1.0, 1.0, 1.0)
 
         self.msaa_fbo.use()
         self.ctx.enable(moderngl.DEPTH_TEST)
@@ -182,34 +175,12 @@ class Scene3DViewer(Editor):
 
         # Render entities
         for entity_id, entity in self.entities.items():
-            self.program["entity_id"].value = entity_id
+            self.program_basic["entity_id"].value = entity_id
             self.ubo_manager.update_ubo(ubo_id="mvp",
                                         variable_id="m_model",
                                         data=entity.component_transform.world_matrix)
 
             entity.render(entity_id=entity_id)
-
-        # ==========[ Render point clouds ]============
-
-        self.ctx.enable(flags=moderngl.PROGRAM_POINT_SIZE)
-        self.ctx.gc_mode = 'auto'
-
-        # Setup mvp cameras
-        pc_program = self.shader_loader.get_program("points.glsl")
-
-        pc_program['cam_pos'].write(vec3(inverse(self.camera.view_matrix)[3]))
-
-        # Render entities
-        for entity_id, entity in self.entities.items():
-            self.ubo_manager.update_ubo(ubo_id="mvp",
-                                        variable_id="m_model",
-                                        data=entity.component_transform.world_matrix)
-
-            if entity.component_point_cloud:
-                entity.component_point_cloud.render()
-
-        self.ctx.disable(flags=moderngl.PROGRAM_POINT_SIZE)
-        self.ctx.gc_mode = None
 
         # Resolve MSAA
         self.ctx.copy_framebuffer(self.fbo, self.msaa_fbo)
@@ -308,7 +279,7 @@ class Scene3DViewer(Editor):
             self.transform_gizmo.render_ui()
 
         if activated:
-                self.program["hash_color"] = self.debug_show_hash_colors
+                self.program_basic["hash_color"] = self.debug_show_hash_colors
 
         imgui.same_line(spacing=20)
 
@@ -424,7 +395,7 @@ class Scene3DViewer(Editor):
         # DEBUG
         if key == ord("h"):
             self.debug_show_hash_colors = not self.debug_show_hash_colors
-            self.program["hash_color"] = self.debug_show_hash_colors
+            self.program_basic["hash_color"] = self.debug_show_hash_colors
 
         self.camera.handle_key_release(key)
 

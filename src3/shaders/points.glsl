@@ -13,10 +13,11 @@ layout (std140, binding = 0) uniform UBO_MVP {
     mat4 m_proj;
     mat4 m_view;
     mat4 m_model;
+    vec3 v_cam_pos;
+    float padding_1;
 };
 
 uniform bool u_constant_size = true;
-uniform vec3 cam_pos;
 
 void main() {
     float max_point_size = 20.0;
@@ -29,7 +30,7 @@ void main() {
     vec3 v_position = vec3(m_model * vec4(in_position, 1.0));
 
     if (!u_constant_size) {
-        float dist = length(v_position - cam_pos);
+        float dist = length(v_position - v_cam_pos);
         point_size = max(max_point_size / dist, min_point_size);
     }
 

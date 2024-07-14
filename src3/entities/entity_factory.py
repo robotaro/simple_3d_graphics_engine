@@ -14,6 +14,7 @@ from src3.components.bezier_segment_component import BezierSegmentComponent
 
 # Entities
 from src3.entities.simple_renderable_entity import SimpleRenderableEntity
+from src3.entities.point_cloud_entity import PointCloudEntity
 
 
 from src3 import constants
@@ -52,6 +53,7 @@ class EntityFactory:
         transform_component = self.component_factory.create_transform(position=position)
 
         return SimpleRenderableEntity(
+            ctx=self.ctx,
             label=label,
             component_list=[mesh_component, transform_component],
             shader_loader=self.shader_loader,
@@ -86,7 +88,8 @@ class EntityFactory:
 
         transform_component = self.component_factory.create_transform()
 
-        return Entity(label=label,
+        return Entity(ctx=self.ctx,
+                      label=label,
                       shader_loader=self.shader_loader,
                       ubo_manager=self.ubo_manager,
                       component_list=[mesh_component, transform_component])
@@ -108,7 +111,8 @@ class EntityFactory:
 
         transform_component = self.component_factory.create_transform(position=position)
 
-        return Entity(label=label,
+        return Entity(ctx=self.ctx,
+                      label=label,
                       shader_loader=self.shader_loader,
                       ubo_manager=self.ubo_manager,
                       component_list=[mesh_component, transform_component])
@@ -127,6 +131,7 @@ class EntityFactory:
 
         transform_component = self.component_factory.create_transform()
         return SimpleRenderableEntity(
+            ctx=self.ctx,
             label=label,
             shader_loader=self.shader_loader,
             ubo_manager=self.ubo_manager,
@@ -142,15 +147,17 @@ class EntityFactory:
             colors=colors)
 
         transform_component = self.component_factory.create_transform(position=vec3(0, 0, 0))
-        return Entity(label=label,
-                      shader_loader=self.shader_loader,
-                      ubo_manager=self.ubo_manager,
-                      component_list=[point_cloud_component, transform_component])
+        return PointCloudEntity(ctx=self.ctx,
+                                label=label,
+                                shader_loader=self.shader_loader,
+                                ubo_manager=self.ubo_manager,
+                                component_list=[point_cloud_component, transform_component])
 
     def create_bezier_curve(self, position: vec3, label="bezier_curve"):
         bezier_segment_component = self.component_factory.create_bezier_segment()
         transform_component = self.component_factory.create_transform(position=position)
-        return Entity(label=label,
+        return Entity(ctx=self.ctx,
+                      label=label,
                       shader_loader=self.shader_loader,
                       ubo_manager=self.ubo_manager,
                       component_list=[bezier_segment_component, transform_component])

@@ -1,3 +1,4 @@
+import moderngl
 
 from src3.ubo_manager import UBOManager
 from src3.shader_loader import ShaderLoader
@@ -10,8 +11,14 @@ from src3.components.point_cloud_component import PointCloudComponent
 
 class Entity:
 
-    def __init__(self, shader_loader: ShaderLoader, ubo_manager: UBOManager, component_list: list, label=None):
+    def __init__(self,
+                 ctx: moderngl.Context,
+                 shader_loader: ShaderLoader,
+                 ubo_manager: UBOManager,
+                 component_list: list,
+                 label=None):
 
+        self.ctx = ctx
         self.shader_loader = shader_loader
         self.ubo_manager = ubo_manager
         self.label = label if isinstance(label, str) else "entity"
