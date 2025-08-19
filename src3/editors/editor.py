@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from src3 import constants
 from src3.event_publisher import EventPublisher
 from src3.shader_loader import ShaderLoader
+from src3.ubo_manager import UBOManager
 
 
 class Editor(ABC):
@@ -27,6 +28,7 @@ class Editor(ABC):
                  event_publisher: EventPublisher,
                  shader_loader: ShaderLoader,
                  imgui_renderer: ModernglWindowRenderer,
+                 ubo_manager: UBOManager,
                  params: dict):
 
         self.logger = logger

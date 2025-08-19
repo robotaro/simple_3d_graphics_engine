@@ -6,6 +6,7 @@ from moderngl_window.integrations.imgui import ModernglWindowRenderer
 
 from src3 import constants
 from src3.shader_loader import ShaderLoader
+from src3.ubo_manager import UBOManager  # Add this import
 from src.utilities import utils_logging
 from src3.event_publisher import EventPublisher
 
@@ -14,17 +15,17 @@ from src3.editors.scene_3d_viewer import Scene3DViewer
 
 EDITOR_CLASSES = [
     Scene3DViewer
-    #Viewer3D
+    # Viewer3D
 ]
 
 
 class App(mglw.WindowConfig):
-
     gl_version = (4, 3)
     title = "App"
     aspect_ratio = None
     window_size = (1600, 900)
-    #vsync = False  # Disable V-Sync
+
+    # vsync = False  # Disable V-Sync
 
     def __init__(self, **kwargs):
 
@@ -32,6 +33,9 @@ class App(mglw.WindowConfig):
         self.logger = utils_logging.get_project_logger(project_logger_name="Editor")
         self.shader_loader = ShaderLoader(logger=self.logger, ctx=self.ctx)
         self.event_publisher = EventPublisher(logger=self.logger)
+
+        # Create UBO manager HERE, before creating editors
+        self.ubo_manager = UBOManager(logger=self.logger, ctx=self.ctx)
 
         # Input variables
         self.mouse_press_last_timestamp = time.perf_counter()
@@ -48,13 +52,14 @@ class App(mglw.WindowConfig):
         self.shader_loader.load_shaders(directory=constants.SHADERS_DIR)
 
         for editor_class in EDITOR_CLASSES:
-            self.editors.append(editor_class(
-                ctx=self.ctx,
-                logger=self.logger,
-                event_publisher=self.event_publisher,
-                shader_loader=self.shader_loader,
-                imgui_renderer=self.imgui_renderer,
-                params={}
+                self.editors.append(editor_class(
+                    ctx=self.ctx,
+                    logger=self.logger,
+                    event_publisher=self.event_publisher,
+                    shader_loader=self.shader_loader,
+                    imgui_renderer=self.imgui_renderer,
+                    ubo_manager=self.ubo_manager,
+                    params={}
                 )
             )
 
@@ -75,7 +80,7 @@ class App(mglw.WindowConfig):
         # Render UI to screen
         self.wnd.use()
 
-        #imgui.end_frame()  # When to use this?
+        # imgui.end_frame()  # When to use this?
         imgui.render()
         self.imgui_renderer.render(imgui.get_draw_data())
 
@@ -93,6 +98,18 @@ class App(mglw.WindowConfig):
 
     def key_event(self, key, action, modifiers):
         self.imgui_renderer.key_event(key, action, modifiers)
+
+        if action == "ACTION_PRESS":
+            self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_PRESS,
+                                         event_data=(key, modifiers),
+                                         sender=self)
+            return
+
+        if action == "ACTION_RELEASE":
+            self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_RELEASE,
+                                         event_data=(key, modifiers),
+                                         sender=self)
+            return
 
     def mouse_drag_event(self, x, y, dx, dy):
         if not self.right_mouse_button_down:
@@ -162,19 +179,6 @@ class App(mglw.WindowConfig):
         # self.camera.pitch += dy * self.camera.sensitivity
         # Ensure pitch is within bounds
         pass
-
-    def key_event(self, key, action, modifiers):
-        if action == "ACTION_PRESS":
-            self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_PRESS,
-                                         event_data=(key, modifiers),
-                                         sender=self)
-            return
-
-        if action == "ACTION_RELEASE":
-            self.event_publisher.publish(event_type=constants.EVENT_KEYBOARD_RELEASE,
-                                         event_data=(key, modifiers),
-                                         sender=self)
-            return
 
     def unicode_char_entered(self, char):
         self.imgui_renderer.unicode_char_entered(char)

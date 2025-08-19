@@ -12,7 +12,8 @@ from src3.editors.editor import Editor
 from src3.ubo_manager import UBOManager
 from src3.components.component_factory import ComponentFactory
 from src3.entities.entity_factory import EntityFactory
-from src3.camera_3d import Camera3D  # Import the Camera class
+from src3.camera_3d import Camera3D
+from src3.scene.scene_manager import SceneManager
 
 # Gizmos
 from src3.gizmos.transform_gizmo import TransformGizmo
@@ -29,19 +30,31 @@ class Scene3DViewer(Editor):
 
         super().__init__(**kwargs)
 
+        # Extract ubo_manager from kwargs FIRST, before using it
+        # The App passes these through the constructor
+        self.ubo_manager = kwargs.get('ubo_manager')
+
         self.window_size = (1200, 750)
         self.fbo_size = (IMAGE_WIDTH, IMAGE_HEIGHT)
         self.program_basic = self.shader_loader.get_program(shader_filename="basic.glsl")
         self.program_points = self.shader_loader.get_program(shader_filename="points.glsl")
-        self.entities = {}
-        self.selected_entity_id = -1
+
+        # Create scene manager and default scene (now ubo_manager is available)
+        self.scene_manager = SceneManager(
+            ctx=self.ctx,
+            shader_loader=self.shader_loader,
+            ubo_manager=self.ubo_manager,
+            logger=self.logger
+        )
+        self.scene = self.scene_manager.create_scene("Main Scene")
 
         # Factories
-        self.ubo_manager = UBOManager(logger=self.logger, ctx=self.ctx)
         self.component_factory = ComponentFactory(ctx=self.ctx, shader_loader=self.shader_loader)
-        self.entity_factory = EntityFactory(ctx=self.ctx,
-                                            shader_loader=self.shader_loader,
-                                            ubo_manager=self.ubo_manager)
+        self.entity_factory = EntityFactory(
+            ctx=self.ctx,
+            shader_loader=self.shader_loader,
+            ubo_manager=self.ubo_manager
+        )
 
         # Camera variables
         self.camera = Camera3D(fbo_size=self.fbo_size, position=vec3(0, 1, 5))
@@ -55,14 +68,15 @@ class Scene3DViewer(Editor):
         self.image_hovering = False
         self.image_mouse_x = 0  # Current position of mouse on rendered image
         self.image_mouse_y = 0
-        self.image_viewport = (0, 0, IMAGE_WIDTH, IMAGE_HEIGHT)  # This will be updated periodically"
+        self.image_viewport = (0, 0, IMAGE_WIDTH, IMAGE_HEIGHT)
         self.texture_entity_info = self.ctx.texture(size=self.fbo_size, components=3, dtype='f4')
-        self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)  # No interpolation!
+        self.texture_entity_info.filter = (moderngl.NEAREST, moderngl.NEAREST)
 
         # Create MSAA framebuffer
         self.msaa_samples = 4
         self.msaa_color_renderbuffer = self.ctx.renderbuffer(self.fbo_size, components=3, samples=self.msaa_samples)
-        self.msaa_entity_info_renderbuffer = self.ctx.renderbuffer(self.fbo_size, components=3, samples=self.msaa_samples, dtype='f4')
+        self.msaa_entity_info_renderbuffer = self.ctx.renderbuffer(self.fbo_size, components=3,
+                                                                   samples=self.msaa_samples, dtype='f4')
         self.msaa_depth_renderbuffer = self.ctx.depth_renderbuffer(self.fbo_size, samples=self.msaa_samples)
         self.msaa_fbo = self.ctx.framebuffer(
             color_attachments=[self.msaa_color_renderbuffer, self.msaa_entity_info_renderbuffer],
@@ -74,17 +88,19 @@ class Scene3DViewer(Editor):
         self.resolve_entity_info_texture = self.ctx.texture(self.fbo_size, components=3, dtype='f4')
         self.fbo = self.ctx.framebuffer(
             color_attachments=[
-                self.resolve_color_texture,  # Main RGB color output that will be rendered to screen
-                self.resolve_entity_info_texture  # Entity info output
+                self.resolve_color_texture,
+                self.resolve_entity_info_texture
             ],
             depth_attachment=self.ctx.depth_texture(self.fbo_size),
         )
         self.imgui_renderer.register_texture(self.fbo.color_attachments[0])
 
         # Gizmos
-        self.transform_gizmo = TransformGizmo(ctx=self.ctx,
-                                              shader_loader=self.shader_loader,
-                                              output_fbo=self.fbo)
+        self.transform_gizmo = TransformGizmo(
+            ctx=self.ctx,
+            shader_loader=self.shader_loader,
+            output_fbo=self.fbo
+        )
         self.transform_gizmo_mode_translation = True
         self.transform_gizmo_mode_rotation = False
         self.transform_gizmo_orientation_global = True
@@ -92,15 +108,15 @@ class Scene3DViewer(Editor):
         self.transform_gizmo.set_mode_translation()
         self.transform_gizmo.set_viewport(viewport=self.image_viewport)
 
-        self.bezier_gizmo = BezierGizmo(ctx=self.ctx,
-                                        shader_loader=self.shader_loader,
-                                        output_fbo=self.fbo)
+        self.bezier_gizmo = BezierGizmo(
+            ctx=self.ctx,
+            shader_loader=self.shader_loader,
+            output_fbo=self.fbo
+        )
+
         # Debug variables
         self.debug_show_hash_colors = False
         self.debug_shortest_distance2 = 0.0
-
-        # System-only entities
-        self.renderable_entity_grid = None
 
     def setup(self) -> bool:
 
@@ -116,26 +132,34 @@ class Scene3DViewer(Editor):
             ]
         )
 
-        self.entities[10] = self.entity_factory.create_bezier_curve(position=vec3(1, 0, 0))
+        bezier_entity = self.entity_factory.create_bezier_curve(position=vec3(1, 0, 0))
+        self.scene.add_entity(bezier_entity)
 
-        self.entities[SPHERE_ID] = self.entity_factory.create_sphere(
+        sphere_entity = self.entity_factory.create_sphere(
             radius=0.05,
             position=vec3(1, 1, 1),
             color=(1.0, 0.5, 0.0))
+        sphere_id = self.scene.add_entity(sphere_entity)
 
+        # Load GLTF
         fpath = os.path.join(constants.RESOURCES_DIR, "meshes", "Honkai_Star_Rail_Ruan_Mei_Base_DL.gltf")
-        self.entities[21] = self.entity_factory.create_renderable_from_gltf(fpath=fpath)
+        gltf_entity = self.entity_factory.create_renderable_from_gltf(fpath=fpath)
+        self.scene.add_entity(gltf_entity)
 
-        self.entities[30] = self.entity_factory.create_grid_xz(
+        # Add grid
+        grid_entity = self.entity_factory.create_grid_xz(
             num_cells=10,
             cell_size=1.0,
             grid_color=(0.5, 0.5, 0.5)
         )
+        self.scene.add_entity(grid_entity)
 
-        self.entities[40] = self.entity_factory.create_point_cloud(
+        # Add point cloud
+        point_cloud_entity = self.entity_factory.create_point_cloud(
             points=np.random.rand(30, 3).astype('f4') + np.array(vec3(-2, 0, 0)),
             colors=np.random.rand(30, 3).astype('f4')
         )
+        self.scene.add_entity(point_cloud_entity)
 
         return True
 
@@ -173,13 +197,16 @@ class Scene3DViewer(Editor):
         self.ctx.enable(moderngl.DEPTH_TEST)
         self.msaa_fbo.clear(*constants.DEFAULT_BACKGROUND_COLOR)
 
-        # Render entities
-        for entity_id, entity in self.entities.items():
-            self.program_basic["entity_id"].value = entity_id
-            self.ubo_manager.update_ubo(ubo_id="mvp",
-                                        variable_id="m_model",
-                                        data=entity.component_transform.world_matrix)
+        # Get render list from scene
+        render_list = self.scene.get_render_list()
 
+        # Render entities
+        for entity_id, entity, world_matrix in render_list:
+            self.program_basic["entity_id"].value = entity_id
+            self.ubo_manager.update_ubo(
+                ubo_id="mvp",
+                variable_id="m_model",
+                data=world_matrix)
             entity.render(entity_id=entity_id)
 
         # Resolve MSAA
@@ -347,13 +374,17 @@ class Scene3DViewer(Editor):
 
             # You can only select another entity if, when you click, you are not hovering the gizmo
             if self.transform_gizmo.state == gizmo_constants.GIZMO_STATE_INACTIVE:
-
-                # The framebuffer image is flipped on the y-axis, so we flip the coordinates as well
+                # The framebuffer image is flipped on the y-axis
                 image_mouse_y_opengl = self.fbo_size[1] - self.image_mouse_y
-                entity_id = self.read_entity_id(mouse_x=self.image_mouse_x,
-                                                mouse_y=image_mouse_y_opengl)
+                entity_id = self.read_entity_id(
+                    mouse_x=self.image_mouse_x,
+                    mouse_y=image_mouse_y_opengl)
 
-                self.selected_entity_id = -1 if entity_id < 1 else entity_id
+                # Use scene selection
+                if entity_id > 0:
+                    self.scene.select_entity(entity_id)
+                else:
+                    self.scene.clear_selection()
 
             selected_entity = self.entities.get(self.selected_entity_id, None)
             model_matrix = selected_entity.component_transform.world_matrix if selected_entity else None
@@ -451,22 +482,29 @@ class Scene3DViewer(Editor):
     # ======================================================================
 
     def render_ui_entity_list(self):
-        """
-        Shows the list of current entities in the scene, and which entity is actively selected
-        :return:
-        """
+        """Shows the list of current entities in the scene"""
         imgui.push_style_var(imgui.STYLE_FRAME_BORDERSIZE, 1.0)
         imgui.text("Entities")
-        with imgui.begin_list_box("", 250, 150) as list_box:
-            for entity_id, entity in self.entities.items():
-                text = f"[{entity_id}] {entity.label}"
-                if self.selected_entity_id == entity_id:
-                    imgui.selectable(text, True)
-                    continue
-                opened, selected = imgui.selectable(text, False)
-                if selected:
-                    self.selected_entity_id = entity_id
 
-                    # TODO: Think of a way to trigger updates when selected from the entity list
-                    self.bezier_gizmo.update_selection(component=self.entities[entity_id].component_bezier_segment)
+        with imgui.begin_list_box("", 250, 150) as list_box:
+            # Render hierarchy
+            def render_node(node, depth=0):
+                indent = "  " * depth
+                entity = node.entity
+                selected = node.entity_id in self.scene._selected_entity_ids
+
+                text = f"{indent}[{node.entity_id}] {entity.label}"
+                opened, selected = imgui.selectable(text, selected)
+
+                if selected:
+                    self.scene.select_entity(node.entity_id)
+
+                # Render children
+                for child in node.children:
+                    render_node(child, depth + 1)
+
+            # Render root nodes
+            for root_node in self.scene._root_nodes:
+                render_node(root_node)
+
         imgui.pop_style_var(1)

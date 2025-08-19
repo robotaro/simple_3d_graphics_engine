@@ -4,6 +4,7 @@ import moderngl
 
 from itertools import accumulate
 
+
 class UBOInstance:
 
     __slots__ = [
@@ -19,6 +20,7 @@ class UBOInstance:
 
     def bind(self):
         self.ubo.bind_to_uniform_block(self.binding_point)
+
 
 class UBOManager:
 
