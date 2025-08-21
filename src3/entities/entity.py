@@ -2,8 +2,8 @@ import moderngl
 
 from src3.ubo_manager import UBOManager
 from src3.shader_loader import ShaderLoader
-from src3.components.mesh_component import MeshComponent
-from src3.components.transform_component import TransformComponent
+from src3.components.mesh import Mesh
+from src3.components.transform import Transform
 from src3.components.material_component import MaterialComponent
 from src3.components.bezier_segment_component import BezierSegmentComponent
 from src3.components.point_cloud_component import PointCloudComponent
@@ -32,11 +32,11 @@ class Entity:
 
         # Assign components
         for component in component_list:
-            if isinstance(component, TransformComponent):
+            if isinstance(component, Transform):
                 self.component_transform = component
             elif isinstance(component, MaterialComponent):
                 self.component_material = component
-            elif isinstance(component, MeshComponent):
+            elif isinstance(component, Mesh):
                 self.component_mesh = component
             elif isinstance(component, PointCloudComponent):
                 self.component_point_cloud = component

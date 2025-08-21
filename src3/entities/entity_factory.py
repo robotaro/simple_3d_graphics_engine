@@ -6,9 +6,9 @@ from src3 import constants
 from src3.io.gltf_reader import GLTFReader
 
 # Components
-from src3.components.mesh_component import MeshComponent
+from src3.components.mesh import Mesh
 from src3.components.point_cloud_component import PointCloudComponent
-from src3.components.transform_component import TransformComponent
+from src3.components.transform import Transform
 from src3.components.material_component import MaterialComponent
 from src3.components.bezier_segment_component import BezierSegmentComponent
 

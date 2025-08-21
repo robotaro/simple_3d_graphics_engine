@@ -55,7 +55,7 @@ class RenderStageShadow(RenderStage):
         if directional_light_uid is None:
             return
 
-        for mesh_entity_uid, mesh_component in scene.mesh_components.items():
+        for mesh_entity_uid, mesh_component in scene.meshs.items():
 
             material = scene.material_components[mesh_entity_uid]
 

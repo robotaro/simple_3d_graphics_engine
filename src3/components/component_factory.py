@@ -3,9 +3,9 @@ import numpy as np
 from glm import vec3, quat
 
 from src3 import constants
-from src3.components.mesh_component import MeshComponent
+from src3.components.mesh import Mesh
 from src3.components.point_cloud_component import PointCloudComponent
-from src3.components.transform_component import TransformComponent
+from src3.components.transform import Transform
 from src3.components.material_component import MaterialComponent
 from src3.components.bezier_segment_component import BezierSegmentComponent
 from src3.shader_loader import ShaderLoader
@@ -20,9 +20,9 @@ class ComponentFactory:
         self.shader_loader = shader_loader
 
     def create_transform(self, position=vec3(0, 0, 0), rotation=vec3(0, 0, 0), scale=vec3(1, 1, 1)):
-        transform = TransformComponent(position=position,
-                                       rotation=quat(rotation),
-                                       scale=scale)
+        transform = Transform(position=position,
+                              rotation=quat(rotation),
+                              scale=scale)
         return transform
 
     def create_material(self, color=(1, 1, 1), texture=None):
@@ -32,9 +32,9 @@ class ComponentFactory:
                     vertices: np.array,
                     normals=None,
                     colors=None,
-                    indices=None) -> MeshComponent:
+                    indices=None) -> Mesh:
 
-        mesh = MeshComponent(
+        mesh = Mesh(
             ctx=self.ctx,
             program=self.shader_loader.get_program(shader_filename="basic.glsl"),
             vertices=vertices,

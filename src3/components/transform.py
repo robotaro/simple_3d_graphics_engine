@@ -2,7 +2,7 @@ import glm
 from src.core import constants
 
 
-class TransformComponent:
+class Transform:
 
     _type = "transform_3d"
 

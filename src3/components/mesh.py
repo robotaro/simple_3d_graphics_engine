@@ -15,7 +15,7 @@ VBO_DECLARATION_MAP = {
 }
 
 
-class MeshComponent:
+class Mesh:
 
     __slots__ = [
         "ctx",
